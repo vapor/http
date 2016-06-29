@@ -41,7 +41,11 @@ let package = Package(
     ],
     targets: [
         Target(
-            name: "Vapor"
+            name: "Vapor",
+            dependencies: [
+                .Target(name: "libc"),
+               .Target(name: "ToolBox")
+            ]
         ),
         Target(
             name: "Development",
@@ -57,6 +61,10 @@ let package = Package(
         ),
         Target(
             name: "Generator"
+        ),
+        // TODO: Might not need permanent
+        Target(
+            name: "ToolBox"
         )
     ]
 )

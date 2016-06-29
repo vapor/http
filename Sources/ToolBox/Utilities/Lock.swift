@@ -8,7 +8,7 @@
     A Swift wrapper around pthread_mutex from
     Swift's Foundation project.
 */
-public final class Lock {
+public class Lock {
 
     let mutex = UnsafeMutablePointer<pthread_mutex_t>(allocatingCapacity: 1)
 
@@ -30,7 +30,7 @@ public final class Lock {
         pthread_mutex_unlock(mutex)
     }
 
-    public func locked(_ closure: @noescape () throws -> Void) rethrows {
+    public func locked(closure: @noescape () throws -> Void) rethrows {
         lock()
         try closure()
         unlock()

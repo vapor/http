@@ -7,19 +7,11 @@
     Wrappers around String can be built
 */
 
-public func percentDecoded(_ input: ArraySlice<Byte>, transform: (Byte) -> (Byte) = { $0 }) -> Data? {
-    return percentDecoded(Data(input), transform: transform)
+public func percentDecoded(_ input: ArraySlice<Byte>, transform: (Byte) -> (Byte) = { $0 }) -> Bytes? {
+    return percentDecoded(Array(input), transform: transform)
 }
 
-public func percentDecoded(_ input: Data, transform: (Byte) -> (Byte) = { $0 }) -> Data? {
-    guard let bytes = percentDecoded(input.bytes, transform: transform) else {
-        return nil
-    }
-
-    return Data(bytes)
-}
-
-public func percentDecoded(_ input: [Byte], transform: (Byte) -> (Byte) = { $0 }) -> [Byte]? {
+public func percentDecoded(_ input: Bytes, transform: (Byte) -> (Byte) = { $0 }) -> [Byte]? {
     var idx = 0
     var group: [Byte] = []
     while idx < input.count {
@@ -33,7 +25,9 @@ public func percentDecoded(_ input: [Byte], transform: (Byte) -> (Byte) = { $0 }
 
             guard secondHex < input.count else { return nil }
             let bytes = input[firstHex...secondHex].array
-            guard let str = try? bytes.toString() else { return nil }
+
+            let str = bytes.string
+            guard !str.isEmpty else { return nil }
             guard let encodedByte = Byte(str, radix: 16) else { return nil }
             group.append(encodedByte)
         } else {
