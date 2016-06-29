@@ -1,13 +1,12 @@
-
 extension UnsignedInteger {
     /*
         [0b1111_1011, 0b0000_1111]
         =>
         0b1111_1011_0000_1111
     */
-    public init(_ bytes: [Byte]) {
+    init(_ bytes: [Byte]) {
         // 8 bytes in UInt64, etc. clips overflow
-        let prefix = bytes.prefix(sizeof(Self))
+        let prefix = bytes.prefix(sizeof(Self.self))
         var value: UIntMax = 0
         prefix.forEach { byte in
             value <<= 8 // 1 byte is 8 bits
@@ -17,9 +16,9 @@ extension UnsignedInteger {
         self.init(value)
     }
 
-    public func bytes() -> [Byte] {
+    func bytes() -> [Byte] {
         let byteMask: Self = 0b1111_1111
-        let size = sizeof(Self)
+        let size = sizeof(Self.self)
         var copy = self
         var bytes: [Byte] = []
         (1...size).forEach { _ in
@@ -40,10 +39,9 @@ extension UnsignedInteger {
 }
 
 extension UnsignedInteger {
-    public mutating func shiftRight(_ places: Int) {
+    mutating func shiftRight(_ places: Int) {
         (1...places).forEach { _ in
             self /= 2
         }
     }
 }
-

@@ -1,6 +1,7 @@
 #if !os(Linux)
 
     import Foundation
+    import ToolBox
 
     /*
      Temporarily not available on Linux until Foundation's 'Dispatch apis are available
@@ -17,7 +18,7 @@
     public final class Promise<T> {
         private var result: Result<T>? = .none
         private let semaphore: DispatchSemaphore
-        private let lock = Lock()
+        private let lock = ToolBox.Lock()
 
         private init(_ semaphore: DispatchSemaphore) {
             self.semaphore = semaphore

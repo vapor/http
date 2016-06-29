@@ -9,7 +9,7 @@ public protocol Client: Program, Responder {
 extension Client {
     public func request(_ method: Vapor.Method, path: String, headers: Headers = [:], query: [String: StructuredDataRepresentable] = [:], body: Vapor.HTTPBody = []) throws -> Response {
         // TODO: Move finish("/") to initializer
-        var uri = URI(scheme: "", userInfo: nil, host: host, port: port, path: path.finish("/"), query: nil, fragment: nil)
+        var uri = URI(scheme: scheme, userInfo: nil, host: host, port: port, path: path.finished(with: "/"), query: nil, fragment: nil)
         uri.append(query: StructuredData(query))
         let request = Request(method: method, uri: uri, version: Version(major: 1, minor: 1), headers: headers, body: body)
         return try respond(to: request)

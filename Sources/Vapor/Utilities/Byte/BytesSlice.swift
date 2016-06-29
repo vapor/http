@@ -1,9 +1,12 @@
-public typealias BytesSlice = ArraySlice<Byte>
+// TODO: Temporary
+@_exported import ToolBox
 
-func ~=(pattern: Bytes, value: BytesSlice) -> Bool {
-    return BytesSlice(pattern) == value
-}
-
-func ~=(pattern: BytesSlice, value: BytesSlice) -> Bool {
-    return pattern == value
-}
+//public typealias BytesSlice = ArraySlice<Byte>
+//
+//func ~=(pattern: Bytes, value: BytesSlice) -> Bool {
+//    return BytesSlice(pattern) == value
+//}
+//
+//func ~=(pattern: BytesSlice, value: BytesSlice) -> Bool {
+//    return pattern == value
+//}

@@ -43,8 +43,7 @@ let package = Package(
         Target(
             name: "Vapor",
             dependencies: [
-                .Target(name: "libc"),
-               .Target(name: "ToolBox")
+                .Target(name: "ToolBox")
             ]
         ),
         Target(

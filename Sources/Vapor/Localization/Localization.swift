@@ -10,7 +10,7 @@ public class Localization {
         self.init(jsonDirectory: localization)
     }
 
-    init(jsonDirectory: JSONDirectory? = nil) {
+    public init(jsonDirectory: JSONDirectory? = nil) {
         localization = jsonDirectory ?? JSONDirectory(name: "empty", files: [])
     }
 
