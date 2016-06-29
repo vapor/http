@@ -34,7 +34,7 @@ public class ChunkStream {
     public func send(_ bytes: Bytes, timingOut deadline: Double) throws {
         var buffer = "\(bytes.count.hex)\r\n".bytes
         buffer += bytes
-        buffer += "\r\n".data.bytes
+        buffer += "\r\n".bytes
         try raw.send(buffer)
     }
 
