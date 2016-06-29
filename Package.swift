@@ -64,6 +64,13 @@ let package = Package(
         // TODO: Might not need permanent
         Target(
             name: "ToolBox"
+        ),
+        Target(
+            name: "Engine",
+            dependencies: [
+                .Target(name: "libc"),
+                .Target(name: "ToolBox")
+            ]
         )
     ]
 )
