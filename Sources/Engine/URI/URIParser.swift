@@ -307,7 +307,7 @@ extension URIParser {
         Port:
         https://tools.ietf.org/html/rfc3986#section-3.2.3
     */
-    private func parse(hostAndPort: [Byte]) throws -> (host: ArraySlice<Byte>, port: ArraySlice<Byte>?) {
+    private func parse(hostAndPort: Bytes) throws -> (host: BytesSlice, port: BytesSlice?) {
         /**
             move in reverse looking for ':' or ']' or end of line
 
@@ -362,7 +362,7 @@ extension URIParser {
         passing of authentication information in clear text has proven to be
         a security risk in almost every case where it has been used.
     */
-    private func parse(userInfo: [Byte]) throws -> (username: ArraySlice<Byte>, auth: ArraySlice<Byte>?) {
+    private func parse(userInfo: Bytes) throws -> (username: BytesSlice, auth: BytesSlice?) {
         /**
             Iterate as 'username' until we find `:`, then give `auth` remaining bytes
         */

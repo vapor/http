@@ -14,7 +14,7 @@ private let CONNECT = "CONNECT".bytes
 private let TRACE = "TRACE".bytes
 
 extension Method {
-    init(uppercased method: Bytes) {
+    internal init(uppercased method: Bytes) {
         switch method {
         case GET:
             self = .get

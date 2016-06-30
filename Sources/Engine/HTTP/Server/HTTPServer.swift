@@ -33,7 +33,7 @@ public final class HTTPServer<
     where
         Parser.MessageType == HTTPRequest,
         Serializer.MessageType == HTTPResponse
->: Server {
+    >: Server {
 
     let server: ServerStreamType
 

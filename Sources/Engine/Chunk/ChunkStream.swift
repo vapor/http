@@ -12,7 +12,7 @@
 */
 public class ChunkStream {
     public let raw: Stream
-    public var closed: Bool
+    public private(set) var closed: Bool
 
     public init(stream: Stream) {
         self.raw = stream

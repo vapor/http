@@ -25,13 +25,13 @@ public final class Content {
 
     // Some closure weirdness to allow more complex capturing or lazy loading internally
 
+    public func append(_ element: ContentLoader) {
+        content.append(element)
+    }
+
     public func append<E where E: PathIndexable, E: Polymorphic>(_ element: (Void) -> E?) {
         let finder: ContentLoader = { indexes in return element()?[indexes] }
         content.append(finder)
-    }
-
-    public func append(_ element: ContentLoader) {
-        content.append(element)
     }
 
     public func append<E where E: PathIndexable, E: Polymorphic>(_ element: E?) {

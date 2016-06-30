@@ -22,8 +22,7 @@ extension Client {
     public func request(_ method: Method, path: String, headers: Headers = [:], query: [String: StructuredDataRepresentable] = [:], body: HTTPBody = []) throws -> Response {
         // TODO: Move finish("/") to initializer
         var uri = URI(scheme: scheme, userInfo: nil, host: host, port: port, path: path.finished(with: "/"), query: nil, fragment: nil)
-        print("NOT YET IMPLEMENTED")
-//        uri.append(query: StructuredData(query))
+        uri.append(query: StructuredData(query))
         let request = Request(method: method, uri: uri, version: Version(major: 1, minor: 1), headers: headers, body: body)
         return try respond(to: request)
     }
@@ -58,10 +57,9 @@ extension Client {
 
     public static func request(_ method: Method, _ uri: String, headers: Headers = [:], query: [String: StructuredDataRepresentable], body: HTTPBody = []) throws -> Response {
         var uri = try URI(uri)
-//        let structure = StructuredData(query)
-//        // Always append query incase URI also contains query
-//        uri.append(query: structure)
-        fatalError("// TODO: ENGINE")
+        let structure = StructuredData(query)
+        // Always append query incase URI also contains query
+        uri.append(query: structure)
         let request = Request(method: method, uri: uri, headers: headers, body: body)
         return try respond(to: request)
     }
@@ -110,5 +108,17 @@ extension HTTPBody: ArrayLiteralConvertible {
     /// Creates an instance initialized with the given elements.
     public init(arrayLiteral elements: Byte...) {
         self.init(elements)
+    }
+}
+
+// MARK: StructuredData + Initializers
+
+extension StructuredData {
+    public init(_ representableObject: [String: StructuredDataRepresentable]) {
+        var object: [String: StructuredData] = [:]
+        representableObject.forEach { key, val in
+            object[key] = val.structuredData
+        }
+        self = .dictionary(object)
     }
 }

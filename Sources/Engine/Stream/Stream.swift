@@ -23,7 +23,7 @@ extension Stream {
         Reads and filters non-valid ASCII characters
         from the stream until a new line character is returned.
     */
-    func receiveLine() throws -> Bytes {
+    public func receiveLine() throws -> Bytes {
         var line: Bytes = []
 
         var lastByte: Byte? = nil
@@ -62,17 +62,22 @@ extension Stream {
 }
 
 extension Stream {
-    func send(_ byte: Byte) throws {
+    public func send(_ byte: Byte) throws {
         try send([byte])
     }
 
-    func send(_ string: String) throws {
+    public func send<S: Sequence where S.Iterator.Element == Byte>(_ bytes: S) throws {
+        try send(bytes.array)
+    }
+
+    public func send(_ string: String) throws {
         try send(string.bytes)
     }
 }
 
 extension Stream {
-    func sendLine() throws {
+    // TODO: RM if possible
+    internal func sendLineTerminator() throws {
         try send([.carriageReturn, .newLine])
     }
 }
