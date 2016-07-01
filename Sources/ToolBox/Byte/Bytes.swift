@@ -24,6 +24,10 @@ public func ~=(pattern: Bytes, value: Bytes) -> Bool {
     return pattern == value
 }
 
+public func ~=(pattern: Bytes, value: Byte) -> Bool {
+    return pattern.contains(value)
+}
+
 extension Sequence where Iterator.Element == Byte {
     /**
         Converts a slice of bytes to

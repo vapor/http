@@ -7,3 +7,9 @@ extension String: HTTPBodyRepresentable {
         return HTTPBody(self)
     }
 }
+
+extension HTTPBody: HTTPBodyRepresentable {
+    public func makeBody() -> HTTPBody {
+        return self
+    }
+}

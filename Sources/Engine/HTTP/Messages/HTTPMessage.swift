@@ -46,21 +46,3 @@ extension HTTPMessage {
         return !value.contains("close")
     }
 }
-
-// TODO:
-import Jay
-
-extension HTTPMessage {
-    public var json: JSON? {
-        if let existing = storage["json"] as? JSON {
-            return existing
-        } else if let type = headers["Content-Type"] where type.contains("application/json") {
-            guard case let .data(body) = body else { return nil }
-            guard let json = try? Jay().typesafeJsonFromData(body) else { return nil }
-            storage["json"] = json
-            return json
-        } else {
-            return nil
-        }
-    }
-}

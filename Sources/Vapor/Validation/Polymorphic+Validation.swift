@@ -184,14 +184,3 @@ extension Extractable where Wrapped == [String : Polymorphic] {
         return try mapped.validated(by: validator)
     }
 }
-
-extension Optional: Extractable {
-    /**
-        Extract the underlying value if possible
-
-        - returns: a value if possible
-     */
-    public func extract() -> Wrapped? {
-        return self
-    }
-}

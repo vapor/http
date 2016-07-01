@@ -5,8 +5,6 @@
 #endif
 
 import Strand
-import Socks
-import SocksCore
 
 public protocol Program {
     init(host: String, port: Int, securityLayer: SecurityLayer) throws

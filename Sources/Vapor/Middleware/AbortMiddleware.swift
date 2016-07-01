@@ -48,3 +48,24 @@ public class AbortMiddleware: Middleware {
     }
 
 }
+
+
+public class ContentMiddlewareTest: Middleware {
+    public func respond(to request: Request, chainingTo next: Responder) throws -> Response {
+        request.data.append(request.query)
+        request.data.append(request.json)
+        request.data.append(request.formURLEncoded)
+        request.data.append { [weak request] indexes in
+            guard let first = indexes.first else { return nil }
+            if let string = first as? String {
+                return request?.multipart?[string]
+            } else if let int = first as? Int {
+                return request?.multipart?["\(int)"]
+            } else {
+                return nil
+            }
+        }
+
+        return try next.respond(to: request)
+    }
+}

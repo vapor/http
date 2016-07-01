@@ -85,10 +85,16 @@ extension Byte {
             return true
         case .zero ... .nine:
             return true
-        case Byte.hyphen, Byte.period, Byte.underscore, Byte.tilda:
+        case Bytes(.hyphen, .period, .underscore, .tilda):
             return true
         default:
             return false
         }
+    }
+}
+
+extension Array {
+    init(_ elements: Element...) {
+        self = elements
     }
 }
