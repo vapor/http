@@ -1,6 +1,6 @@
 extension Stream {
     public var sender: Sender {
-        return Sender(stream: self)
+        return Sender(self)
     }
 }
 
@@ -10,7 +10,7 @@ extension Stream {
 public class Sender: SendingStream {
     public let stream: Stream
 
-    public init(stream: Stream) {
+    public init(_ stream: Stream) {
         self.stream = stream
     }
 
