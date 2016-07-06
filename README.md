@@ -4,9 +4,9 @@ The core transport layer used in [Vapor](https://github.com/qutheory/github)
 
 ## 🚦 Current Environment
 
-| Vapor | Xcode | Swift |
+| Engine | Xcode | Swift |
 |:-:|:-:|:-:|
-|0.13.x|8.0 Beta|DEVELOPMENT-SNAPSHOT-2016-06-20-a|
+|0.1.x|8.0 Beta|DEVELOPMENT-SNAPSHOT-2016-06-20-a|
 
 <h3 align="center">❗️<b>WARNING</b>❗️</h3>
 
@@ -22,13 +22,65 @@ sudo xcode-select -s /Applications/Xcode.app/
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-## HTTPServer
+## Quick Start
+
+#### HTTPClient
+
+```Swift
+import Engine
+
+let response = try HTTPClient<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
+print(response)
+```
+
+#### HTTPServer
+
+```Swift
+import Engine
+
+final class Responder: HTTPResponder {
+    func respond(to request: Request) throws -> Response {
+        print(request)
+        let body = "Hello World".makeBody()
+        return Response(body: body)
+    }
+}
+
+let server = try HTTPServer<TCPServerStream, HTTPParser<HTTPRequest>, HTTPSerializer<HTTPResponse>>(port: port)
+
+print("visit http://localhost:\(port)/")
+try server.start(responder: Responder()) { error in
+    print("Got error: \(error)")
+}
+```
+
+#### WebSockets
+
+```Swift
+import Engine
+
+try WebSocket.connect(to: url) { ws in
+    print("Connected to \(url)")
+
+    ws.onText = { ws, text in
+        print("[event] - \(text)")
+    }
+
+    ws.onClose = { ws, _, _, _ in
+        print("\n[CLOSED]\n")
+    }
+}
+```
+
+## Architecture
+
+#### HTTPServer
 
 The HTTPServer is responsible for listening and accepting remote connections, then relaying requests and responses between the received connection and the responder.
 
 ![](/Resources/Diagrams/HTTPServerDiagram.png)
 
-## HTTPClient
+#### HTTPClient
 
 The HTTPClient is responsible for establishing remote connections and relaying requests and responses between the remote connection and the caller.
 
