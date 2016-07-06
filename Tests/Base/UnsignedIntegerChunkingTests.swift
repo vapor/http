@@ -11,7 +11,8 @@ class UnsignedIntegerChunkingTests: XCTestCase {
             ("testUIntChunking16", testUIntChunking16),
             ("testUIntChunking32", testUIntChunking32),
             ("testUIntChunking64", testUIntChunking64),
-            ("testByteArrayToUInt", testByteArrayToUInt)
+            ("testByteArrayToUInt", testByteArrayToUInt),
+            ("testHex", testHex)
         ]
     }
 
