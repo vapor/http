@@ -226,7 +226,7 @@ public final class HTTPParser<Message: HTTPMessage>: TransferParser {
     func parseBody(with headers: Headers) throws -> HTTPBody {
         let body: Bytes
 
-        if let contentLength = headers["content-length"]?.int {
+        if let contentLength = headers["content-length"].flatMap({ Int($0) }) {
             body = try stream.receive(max: contentLength)
         } else if
             let transferEncoding = headers["transfer-encoding"]

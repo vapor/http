@@ -1,5 +1,3 @@
-import C7
-
 /**
     Buffers receive and send calls to a Stream.
  

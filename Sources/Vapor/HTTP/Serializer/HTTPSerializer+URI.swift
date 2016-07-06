@@ -1,7 +1,6 @@
 // TODO: Temporary
 
 @_exported import ToolBox
-@_exported import Polymorphic
 
 extension String: CustomStringConvertible {
     public var description: String { return self }
