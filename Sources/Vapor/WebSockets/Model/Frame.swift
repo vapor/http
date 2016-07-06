@@ -415,6 +415,3 @@ extension WebSocket.Frame {
         return header.fin && header.opCode == .continuation
     }
 }
-
-// TODO: Move to Separate file when possible -- Vapor Dependency
-extension WebSocket.Frame: Validatable {}

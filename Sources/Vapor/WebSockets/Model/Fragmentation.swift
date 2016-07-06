@@ -69,29 +69,25 @@
     a message MUST be either text, binary, or one of the reserved
     opcodes.
 */
-struct IsFragment: ValidationSuite {
-    static func validate(input value: WebSocket.Frame) throws {
-        guard value.isFragment else {
-            throw error(with: value)
-        }
-    }
-}
-
-typealias FragmentedFrame = Valid<IsFragment>
 
 extension WebSocket {
     internal final class FragmentAggregator {
-        private var currentBuffer: [FragmentedFrame] = []
+        enum Error: ErrorProtocol {
+            case receivedUnfragmentedFrame
+        }
+
+        private var currentBuffer: [Frame] = []
 
         private var messageComplete: Bool {
-            guard currentBuffer.first?.value.isFragmentHeader == true else { return false }
-            guard currentBuffer.last?.value.isFragmentFooter == true else { return false }
+            guard currentBuffer.first?.isFragmentHeader == true else { return false }
+            guard currentBuffer.last?.isFragmentFooter == true else { return false }
             return true
         }
 
         internal init() {}
 
-        internal func append(fragment frame: FragmentedFrame) throws {
+        internal func append(fragment frame: Frame) throws {
+            guard frame.isFragment else { throw Error.receivedUnfragmentedFrame }
             // TODO:
             // if not first, ensure first is fragment header, and ensure this is body or footer
             // generally validate that it's expected frame
@@ -104,13 +100,13 @@ extension WebSocket {
                 return nil
             }
 
-            guard let opCode = currentBuffer.first?.value.header.opCode else {
+            guard let opCode = currentBuffer.first?.header.opCode else {
                 return nil
             }
 
             var data: [Byte] = []
             for frame in currentBuffer {
-                data.append(contentsOf: frame.value.payload)
+                data.append(contentsOf: frame.payload)
             }
 
             // flush existing to start over

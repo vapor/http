@@ -156,8 +156,7 @@ extension WebSocket {
     }
 
     private func receivedFragment(_ frame: Frame) throws {
-        let fragment = try FragmentedFrame(frame)
-        try aggregator?.append(fragment: fragment)
+        try aggregator?.append(fragment: frame)
 
         guard let (opCode, payload) = aggregator?.receiveCompleteMessage() else { return }
         try routeMessage(for: opCode, payload: payload)
