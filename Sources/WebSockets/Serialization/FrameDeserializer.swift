@@ -1,4 +1,4 @@
-import ToolBox
+import Base
 import protocol Engine.Stream
 
 public enum FrameParserError: ErrorProtocol {

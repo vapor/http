@@ -1,5 +1,5 @@
 import Engine
-import ToolBox
+import Base
 
 extension WebSocket {
     public static func background(to uri: String, using client: Client.Type = HTTPClient<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
