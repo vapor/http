@@ -7,23 +7,23 @@
     Send calls are buffered until `flush()` is called.
 */
 public final class StreamBuffer: Stream {
-    public var closed: Bool {
-        return stream.closed
-    }
-    public func close() throws {
-        try stream.close()
-    }
-
     private let stream: Stream
     private let size: Int
 
+    private var receiveIterator: IndexingIterator<[Byte]>
+    internal private(set) var sendBuffer: Bytes
+
+    public var closed: Bool {
+        return stream.closed
+    }
 
     public func setTimeout(_ timeout: Double) throws {
         try stream.setTimeout(timeout)
     }
 
-    private var receiveIterator: IndexingIterator<[Byte]>
-    private var sendBuffer: Bytes
+    public func close() throws {
+        try stream.close()
+    }
 
     public init(_ stream: Stream, size: Int = 2048) {
         self.size = size
@@ -64,14 +64,5 @@ public final class StreamBuffer: Stream {
         try stream.send(sendBuffer)
         try stream.flush()
         sendBuffer = []
-    }
-
-    /**
-         Sometimes we let sockets queue things up before flushing, but in situations like web sockets,
-         we may want to skip that functionality
-     */
-    public func send(_ bytes: Bytes, flushing: Bool) throws {
-        try send(bytes)
-        if flushing { try flush() }
     }
 }

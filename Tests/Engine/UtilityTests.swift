@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
-@testable import ToolBox
 
+@testable import ToolBox
 
 class UtilityTests: XCTestCase {
 

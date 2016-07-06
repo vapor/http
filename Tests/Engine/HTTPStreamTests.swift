@@ -75,9 +75,12 @@ class HTTPStreamTests: XCTestCase {
 final class TestStream: Engine.Stream {
     var closed: Bool
     var buffer: Bytes
+    var timeout: Double = -1
+    // number of times flush was called
+    var flushedCount = 0
 
     func setTimeout(_ timeout: Double) throws {
-        
+            self.timeout = timeout
     }
 
     init() {
@@ -97,7 +100,7 @@ final class TestStream: Engine.Stream {
     }
 
     func flush() throws {
-
+        flushedCount += 1
     }
 
     func receive(max: Int) throws -> Bytes {

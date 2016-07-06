@@ -47,6 +47,10 @@ extension Stream {
         return line
     }
 
+    /**
+     Sometimes we let sockets queue things up before flushing, but in situations like web sockets,
+     we may want to skip that functionality
+     */
     public func send(_ bytes: Bytes, flushing: Bool) throws {
         try send(bytes)
         if flushing { try flush() }

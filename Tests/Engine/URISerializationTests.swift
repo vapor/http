@@ -7,7 +7,10 @@ import libc
 class URISerializationTests: XCTestCase {
     
     static let allTests = [
-        ("testParsing", testParsing)
+        ("testParsing", testParsing),
+        ("testPercentEncodedInsideParsing", testPercentEncodedInsideParsing),
+        ("testPercentEncodedOutsideParsing", testPercentEncodedOutsideParsing),
+        ("testStringInitializer", testStringInitializer)
     ]
 
     func testParsing() throws {
@@ -178,6 +181,16 @@ class URISerializationTests: XCTestCase {
                      path: "",
                      query: decoded,
                      fragment: nil)
+    }
+
+    func testStringInitializer() throws {
+        let testString = "https://api.spotify.com/v1/search?q=beyonce&type=artist"
+        let uri = try URI(testString)
+        XCTAssert(uri.scheme == "https")
+        XCTAssert(uri.host == "api.spotify.com")
+        XCTAssert(uri.port == 443)
+        XCTAssert(uri.path == "/v1/search")
+        XCTAssert(uri.query == "q=beyonce&type=artist")
     }
 
     private func makeSure(input: String,

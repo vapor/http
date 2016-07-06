@@ -6,7 +6,6 @@ extension TCPInternetSocket: Stream {
     }
 
     public func send(_ bytes: Bytes) throws {
-        //print(bytes.string)
         do {
             try send(data: bytes)
         } catch {

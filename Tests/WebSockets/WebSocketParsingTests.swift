@@ -406,3 +406,52 @@ extension UInt8 {
         return UInt8(val)
     }
 }
+
+import Engine
+final class TestStream: Engine.Stream {
+    var closed: Bool
+    var buffer: Bytes
+
+    func setTimeout(_ timeout: Double) throws {
+
+    }
+
+    init() {
+        closed = false
+        buffer = []
+    }
+
+    func close() throws {
+        if !closed {
+            closed = true
+        }
+    }
+
+    func send(_ bytes: Bytes) throws {
+        closed = false
+        buffer += bytes
+    }
+
+    func flush() throws {
+
+    }
+
+    func receive(max: Int) throws -> Bytes {
+        if buffer.count == 0 {
+            try close()
+            return []
+        }
+
+        if max >= buffer.count {
+            try close()
+            let data = buffer
+            buffer = []
+            return data
+        }
+
+        let data = buffer[0..<max]
+        buffer.removeFirst(max)
+        
+        return Bytes(data)
+    }
+}
