@@ -1,15 +1,3 @@
-import Foundation
-
-let portArgument = ProcessInfo.processInfo()
-    .arguments
-    .lazy
-    .filter { $0.hasPrefix("--port=") }
-    .first?
-    .characters
-    .dropFirst("--port=".characters.count)
-
-let port = Int(String(portArgument)) ?? 8080
-
 import Engine
 
 func client() throws {
