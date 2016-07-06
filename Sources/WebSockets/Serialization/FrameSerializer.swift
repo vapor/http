@@ -1,5 +1,5 @@
-import struct ToolBox.Byte
-import struct ToolBox.Bytes
+import struct Base.Byte
+import struct Base.Bytes
 
 /*
      0               1               2               3

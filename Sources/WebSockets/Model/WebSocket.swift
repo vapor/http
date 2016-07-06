@@ -1,4 +1,4 @@
-import struct ToolBox.Bytes
+import struct Base.Bytes
 import protocol Engine.Stream
 
 public final class WebSocket {

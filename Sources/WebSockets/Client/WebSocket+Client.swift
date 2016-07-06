@@ -8,7 +8,7 @@ extension WebSocket {
     }
 
     public static func background(to uri: URI, using client: Client.Type = HTTPClient<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
-        _ = try ToolBox.background {
+        _ = try Base.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
             _ = try? connect(to: uri, using: client, protocols: protocols, onConnect: onConnect)
         }
