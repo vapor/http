@@ -7,17 +7,17 @@ let package = Package(
         .Package(url: "https://github.com/open-swift/S4.git", majorVersion: 0, minor: 10),
 
         //Parses and serializes JSON - using fork until update core library
-        .Package(url: "https://github.com/czechboy0/Jay.git", majorVersion: 0, minor: 12),
+        // .Package(url: "https://github.com/czechboy0/Jay.git", majorVersion: 0, minor: 12),
 
         //SHA2 + HMAC hashing. Used by the core to create session identifiers.
-        .Package(url: "https://github.com/CryptoKitten/HMAC.git", majorVersion: 0, minor: 8),
-        .Package(url: "https://github.com/CryptoKitten/SHA2.git", majorVersion: 0, minor: 8),
+        // .Package(url: "https://github.com/CryptoKitten/HMAC.git", majorVersion: 0, minor: 8),
+        // .Package(url: "https://github.com/CryptoKitten/SHA2.git", majorVersion: 0, minor: 8),
 
         //Websockets
         .Package(url: "https://github.com/CryptoKitten/SHA1.git", majorVersion: 0, minor: 8),
 
         //ORM for interacting with databases
-        .Package(url: "https://github.com/qutheory/fluent.git", majorVersion: 0, minor: 7),
+        // .Package(url: "https://github.com/qutheory/fluent.git", majorVersion: 0, minor: 7),
 
         //Allows complex key path subscripts
         .Package(url: "https://github.com/qutheory/path-indexable.git", majorVersion: 0, minor: 2),
