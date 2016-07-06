@@ -52,15 +52,6 @@ let package = Package(
                 .Target(name: "Vapor")
             ]
         ),
-        Target(
-            name: "Performance",
-            dependencies: [
-                .Target(name: "Vapor")
-            ]
-        ),
-        Target(
-            name: "Generator"
-        ),
         // TODO: Might not need permanent
         Target(
             name: "ToolBox"
