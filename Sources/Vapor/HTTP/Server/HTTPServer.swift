@@ -4,7 +4,6 @@
     import Darwin
 #endif
 
-import Strand
 import Socks
 import SocksCore
 
@@ -48,7 +47,7 @@ public final class HTTPServer<
             }
 
             do {
-                _ = try Strand {
+                _ = try background {
                     do {
                         try self.respond(stream: stream, responder: responder)
                     } catch {
