@@ -1,10 +1,18 @@
+// TODO: Temporary
+
+@_exported import ToolBox
+@_exported import Polymorphic
+
+extension String: CustomStringConvertible {
+    public var description: String { return self }
+}
+
 extension URI {
-    public mutating func append(query appendQuery: StructuredData) {
-        guard let object = appendQuery.object where !object.isEmpty else { return }
-        let appendQuery = object
-            .flatMap { key, value in
-                guard let string = value.string else { return nil }
-                return "\(key)=\(string)"
+    public mutating func append(query appendQuery: [String: CustomStringConvertible]) {
+        guard !appendQuery.isEmpty else { return }
+        let appendQuery = appendQuery
+            .map { key, value in
+                return "\(key)=\(value)"
             }
             .joined(separator: "&")
 
