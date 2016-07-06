@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 
-@testable import ToolBox
+@testable import Base
 
 class UtilityTests: XCTestCase {
 
@@ -16,7 +16,7 @@ class UtilityTests: XCTestCase {
         let test = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*()"
 
         XCTAssertEqual(
-            test.data.lowercased.string,
+            test.bytes.lowercased.string,
             test.lowercased(),
             "Data utility did not match Foundation"
         )
@@ -26,7 +26,7 @@ class UtilityTests: XCTestCase {
         let test = "abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()"
 
         XCTAssertEqual(
-            test.data.uppercased.string,
+            test.bytes.uppercased.string,
             test.uppercased(),
             "Data utility did not match Foundation"
         )

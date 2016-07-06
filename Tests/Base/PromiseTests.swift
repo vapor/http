@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import ToolBox
+@testable import Base
 
 private enum PromiseTestError: ErrorProtocol {
     case someError

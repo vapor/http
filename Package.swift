@@ -30,7 +30,7 @@ let package = Package(
         Target(
             name: "Engine",
             dependencies: [
-                .Target(name: "ToolBox")
+                .Target(name: "Base")
             ]
         ),
         Target(
@@ -47,7 +47,7 @@ let package = Package(
             ]
         ),
         Target(
-            name: "ToolBox"
+            name: "Base"
         ),
     ]
 )
