@@ -22,8 +22,6 @@ public final class HTTPResponse: HTTPMessage {
 
         let statusLine = "HTTP/\(version.major).\(version.minor) \(status.statusCode) \(status.reasonPhrase)"
         super.init(startLine: statusLine, headers: headers, body: body)
-
-        self.data.append(self.json)
     }
 
     public convenience required init(

@@ -49,8 +49,6 @@ public final class HTTPRequest: HTTPMessage {
         let versionLine = "HTTP/\(version.major).\(version.minor)"
         let requestLine = "\(method) \(path) \(versionLine)"
         super.init(startLine: requestLine, headers: headers, body: body)
-
-        setupContent()
     }
 
     public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: Headers, body: HTTPBody) throws {
@@ -80,22 +78,6 @@ public final class HTTPRequest: HTTPMessage {
         let version = try Version(httpVersionSlice)
 
         self.init(method: method, uri: uri, version: version, headers: headers, body: body)
-    }
-
-    private func setupContent() {
-        self.data.append(self.query)
-        self.data.append(self.json)
-        self.data.append(self.formURLEncoded)
-        self.data.append { [weak self] indexes in
-            guard let first = indexes.first else { return nil }
-            if let string = first as? String {
-                return self?.multipart?[string]
-            } else if let int = first as? Int {
-                return self?.multipart?["\(int)"]
-            } else {
-                return nil
-            }
-        }
     }
 }
 
