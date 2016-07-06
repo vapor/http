@@ -49,6 +49,7 @@ public final class TCPClientStream: TCPProgramStream, ClientStream  {
     public func connect() throws -> Stream {
         if securityLayer == .tls {
             #if !os(Linux)
+                print("Making tls call over Foundation apis. This will break on Linux. Visit https://github.com/qutheory/vapor-tls")
                 let foundation = try FoundationStream(host: host, port: port, securityLayer: securityLayer)
                 return try foundation.connect()
             #else

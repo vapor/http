@@ -1,9 +1,8 @@
 import Engine
-import WebSockets
 
 func client() throws {
-    let response = try HTTPClient<TCPClientStream>.get("https://api.spotify.com/v1/search?q=beyonce&type=artist")
-    print(response.body.bytes?.string)
+    let response = try HTTPClient<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
+    print(response)
 }
 
 func server() throws {
@@ -14,10 +13,8 @@ func server() throws {
         }
     }
 
-    let server = try HTTPServer<TCPServerStream, HTTPParser<HTTPRequest>, HTTPSerializer<HTTPResponse>>()
+    let server = try HTTPServer()
     try server.start(responder: Responder(), errors: { _ in })
 }
 
-// Call
-
-try server()
+try client()
