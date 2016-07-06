@@ -11,7 +11,7 @@ public class HTTPMessage {
     public var body: HTTPBody
 
     public var storage: [String: Any] = [:]
-    public private(set) final lazy var data: Content = Content(self)
+    public final let data = Content()
 
     public convenience required init(
         startLineComponents: (BytesSlice, BytesSlice, BytesSlice),
