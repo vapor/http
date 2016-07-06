@@ -7,12 +7,14 @@ import Foundation
     typealias NSProcessInfo = ProcessInfo
 #endif
 
-let portArgument = NSProcessInfo.processInfo()
+let port = NSProcessInfo.processInfo()
     .arguments
     .lazy
     .filter { $0.hasPrefix("--port=") }
     .first?
     .characters
-    .dropFirst("--port=".characters.count)
-
-let port = Int(String(portArgument)) ?? 8080
+    .split(separator: "=")
+    .last
+    .flatMap { String($0) }
+    .flatMap { Int($0) }
+    ?? 8080
