@@ -1,5 +1,8 @@
 import libc
 
+import struct ToolBox.Byte
+import struct ToolBox.Bytes
+
 // MARK:
 
 extension WebSocket {
@@ -27,9 +30,9 @@ extension WebSocket {
     */
     public final class Frame {
         public let header: Header
-        public let payload: Data
+        public let payload: Bytes
 
-        public init(header: Header, payload: Data) {
+        public init(header: Header, payload: Bytes) {
             self.header = header
             self.payload = payload
         }

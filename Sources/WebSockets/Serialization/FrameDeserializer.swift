@@ -1,4 +1,5 @@
 import ToolBox
+import protocol Engine.Stream
 
 public enum FrameParserError: ErrorProtocol {
     case missingByte
@@ -47,7 +48,7 @@ public final class FrameParser {
             payloadLength: payloadLength,
             maskingKey: maskingKey
         )
-        return WebSocket.Frame(header: header, payload: Data(payload))
+        return WebSocket.Frame(header: header, payload: payload)
     }
 
     // MARK: Private

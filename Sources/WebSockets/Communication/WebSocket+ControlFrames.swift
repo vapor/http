@@ -1,8 +1,10 @@
+import struct ToolBox.Bytes
+
 /*
      'close' included in Model file to ensure safety while interacting with sensitive variables
  */
 extension WebSocket {
-    public func ping(_ payload: Data = Data()) throws {
+    public func ping(_ payload: Bytes = []) throws {
         let header = Frame.Header(
             fin: true,
             rsv1: false,
@@ -13,7 +15,7 @@ extension WebSocket {
             payloadLength: UInt64(payload.count),
             maskingKey: mode.makeKey()
         )
-        let msg = Frame(header: header, payload: Data(payload))
+        let msg = Frame(header: header, payload: payload)
         try send(msg)
     }
 
@@ -22,7 +24,7 @@ extension WebSocket {
 
          Applications may opt to send unsolicited .pong messages as a sort of keep awake heart beat
      */
-    public func pong(_ payload: Data = Data()) throws {
+    public func pong(_ payload: Bytes = []) throws {
         let header = Frame.Header(
             fin: true,
             rsv1: false,

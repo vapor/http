@@ -1,3 +1,6 @@
+import Engine
+import ToolBox
+
 extension WebSocket {
     public static func background(to uri: String, using client: Client.Type = HTTPClient<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
         let uri = try URI(uri)

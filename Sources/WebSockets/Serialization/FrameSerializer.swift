@@ -1,3 +1,6 @@
+import struct ToolBox.Byte
+import struct ToolBox.Bytes
+
 /*
      0               1               2               3
      0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7 0 1 2 3 4 5 6 7
@@ -25,7 +28,7 @@ public final class FrameSerializer {
         self.frame = frame
     }
 
-    public func serialize() -> [Byte] {
+    public func serialize() -> Bytes {
         let header = serializeHeader()
         let payload = serializePayload()
         return header + payload
@@ -33,14 +36,14 @@ public final class FrameSerializer {
 
     // MARK: Private
 
-    private func serializeHeader() -> [Byte] {
+    private func serializeHeader() -> Bytes {
         let zero = serializeByteZero()
         let maskAndLength = serializeMaskAndLength()
         let maskingKey = serializeMaskingKey()
         return zero + maskAndLength + maskingKey
     }
 
-    private func serializeByteZero() -> [Byte] {
+    private func serializeByteZero() -> Bytes {
         let header = frame.header
 
         var byte: Byte = 0
@@ -63,7 +66,7 @@ public final class FrameSerializer {
         return [byte]
     }
 
-    func serializeMaskAndLength() -> [Byte] {
+    func serializeMaskAndLength() -> Bytes {
         let header = frame.header
 
         // first length byte is bit 0: mask, bit 1...7: length or indicator of additional bytes
@@ -86,7 +89,7 @@ public final class FrameSerializer {
         }
     }
 
-    private func serializeMaskingKey() -> [Byte] {
+    private func serializeMaskingKey() -> Bytes {
         switch frame.header.maskingKey {
         case .none:
             return []
@@ -97,7 +100,7 @@ public final class FrameSerializer {
 
     // MARK: Payload
 
-    private func serializePayload() -> [Byte] {
+    private func serializePayload() -> Bytes {
         return frame.header.maskingKey.hash(frame.payload)
     }
 }

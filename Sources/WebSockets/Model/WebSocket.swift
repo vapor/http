@@ -1,3 +1,6 @@
+import struct ToolBox.Bytes
+import protocol Engine.Stream
+
 public final class WebSocket {
 
     public typealias EventHandler<T> = (T) throws -> Void
@@ -28,22 +31,22 @@ public final class WebSocket {
     // MARK: Non Control Frames
 
     public var onText: EventHandler<(ws: WebSocket, text: String)>? = nil
-    public var onBinary: EventHandler<(ws: WebSocket, binary: Data)>? = nil
+    public var onBinary: EventHandler<(ws: WebSocket, binary: Bytes)>? = nil
 
     // MARK: Non Control Extensions
 
     public var onNonControlExtension:
-        EventHandler<(ws: WebSocket, code: Frame.OpCode.NonControlFrameExtension, data: Data)>? = nil
+        EventHandler<(ws: WebSocket, code: Frame.OpCode.NonControlFrameExtension, data: Bytes)>? = nil
 
     // MARK: Control Frames
 
-    public var onPing: EventHandler<(ws: WebSocket, frame: Data)>? = nil
-    public var onPong: EventHandler<(ws: WebSocket, frame: Data)>? = nil
+    public var onPing: EventHandler<(ws: WebSocket, frame: Bytes)>? = nil
+    public var onPong: EventHandler<(ws: WebSocket, frame: Bytes)>? = nil
 
     // MARK: Control Frame Extensions
 
     public var onControlExtension:
-        EventHandler<(ws: WebSocket, code: Frame.OpCode.ControlFrameExtension, data: Data)>? = nil
+        EventHandler<(ws: WebSocket, code: Frame.OpCode.ControlFrameExtension, data: Bytes)>? = nil
 
     // MARK: Close: (Control Frame)
 
@@ -131,7 +134,7 @@ extension WebSocket {
         }
     }
 
-    private func routeMessage(for opCode: Frame.OpCode, payload: Data) throws {
+    private func routeMessage(for opCode: Frame.OpCode, payload: Bytes) throws {
         switch opCode {
         case .continuation:
             // fragment handled above
@@ -162,7 +165,7 @@ extension WebSocket {
         try routeMessage(for: opCode, payload: payload)
     }
 
-    private func handleClose(payload: Data) throws {
+    private func handleClose(payload: Bytes) throws {
         /*
              If there is a body, the first two bytes of
              the body MUST be a 2-byte unsigned integer (in network byte order)
@@ -175,15 +178,16 @@ extension WebSocket {
              be human readable, clients MUST NOT show it to end users.
          */
         var statusCode: UInt16?
-        var statusCodeData: Data? = nil
+        var statusCodeData: Bytes? = nil
         var reason: String? = nil
         if !payload.isEmpty {
-            var iterator = payload.makeIterator()
-            let statusCodeBytes = try iterator.chunk(length: 2)
+            // if NOT empty, MUST be at least 2 byte UInt16 optionally followed by reason
+            guard payload.count >= 2 else { throw FrameParserError.missingByte }
+            let statusCodeBytes = payload[0...1].array
             statusCode = UInt16(statusCodeBytes)
-            statusCodeData = Data(statusCodeBytes)
-            // TODO: Test this only grabs bytes left
-            reason = try Data(iterator).toString()
+            statusCodeData = statusCodeBytes
+            // stringify remaining bytes -- if there are any
+            reason = statusCodeBytes.dropFirst(2).string
         }
 
         switch  state {
@@ -250,7 +254,7 @@ extension WebSocket {
             throw Error.invalidPingFormat
         }
         
-        var payload: [Byte] = []
+        var payload: Bytes = []
         if let status = statusCode {
             payload += status.bytes()
         }
@@ -258,12 +262,12 @@ extension WebSocket {
             payload += reason.toBytes()
         }
 
-        let msg = Frame(header: header, payload: Data(payload))
+        let msg = Frame(header: header, payload: payload)
         try send(msg)
     }
 
     // https://tools.ietf.org/html/rfc6455#section-5.5.1
-    private func respondToClose(echo payload: Data) throws {
+    private func respondToClose(echo payload: Bytes) throws {
         // ensure haven't already sent
         guard state != .closed else { return }
         state = .closing

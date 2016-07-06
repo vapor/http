@@ -47,9 +47,16 @@ let package = Package(
             ]
         ),
         Target(
-            name: "Development",
+            name: "WebSockets",
             dependencies: [
                 .Target(name: "Engine")
+            ]
+        ),
+        Target(
+            name: "Development",
+            dependencies: [
+                .Target(name: "Engine"),
+                .Target(name: "WebSockets")
             ]
         ),
         // TODO: Might not need permanent

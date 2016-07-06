@@ -1,4 +1,9 @@
-extension Request {
+import struct Engine.Headers
+
+import class Engine.HTTPRequest
+import class Engine.HTTPResponse
+
+extension HTTPRequest {
     /**
         Upgrades the request to a WebSocket connection
         WebSocket connection to provide two way information
@@ -6,7 +11,7 @@ extension Request {
     */
     public func upgradeToWebSocket(
         supportedProtocols: ([String]) -> [String] = { $0 },
-        body: (ws: WebSocket) throws -> Void) throws -> Response {
+        body: (ws: WebSocket) throws -> Void) throws -> HTTPResponse {
         guard let requestKey = headers.secWebSocketKey else {
             throw WebSocket.FormatError.missingSecKeyHeader
         }

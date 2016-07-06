@@ -1,3 +1,5 @@
+import struct ToolBox.Bytes
+
 /**
      Technically WebSockets supports up to UInt64.max packet sizes, however
      frameworks have the discretion to break up large packets into fragments
@@ -23,16 +25,16 @@ private let PayloadSplitSize = Int(64_000)
 
 extension WebSocket {
     public func send(_ text: String) throws {
-        let payload = Data(text)
+        let payload = text.bytes
         try send(opCode: .text, with: payload)
     }
 
-    public func send(_ binary: Data) throws {
+    public func send(_ binary: Bytes) throws {
         let payload = binary
         try send(opCode: .binary, with: payload)
     }
 
-    public func send(_ ncf: Frame.OpCode.NonControlFrameExtension, payload: Data) throws {
+    public func send(_ ncf: Frame.OpCode.NonControlFrameExtension, payload: Bytes) throws {
         try send(opCode: .nonControlExtension(ncf), with: payload)
     }
 }
@@ -52,7 +54,7 @@ extension WebSocket {
                      rsv2: Bool = false,
                      rsv3: Bool = false,
                      opCode: Frame.OpCode,
-                     with payload: Data) throws {
+                     with payload: Bytes) throws {
         let isMasked = mode.maskOutgoingMessages
 
         if payload.count < PayloadSplitSize {
@@ -69,11 +71,11 @@ extension WebSocket {
             let frame = Frame(header: header, payload: payload)
             try send(frame)
         } else {
-            let chunks = payload.bytes.chunked(size: PayloadSplitSize)
+            let chunks = payload.chunked(size: PayloadSplitSize)
             let first = 0
             let last = chunks.count - 1
             try chunks.enumerated().forEach { idx, bytes in
-                let payload = Data(bytes)
+                let payload = bytes
 
                 let fin: Bool
                 let op: Frame.OpCode

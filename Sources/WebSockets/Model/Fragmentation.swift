@@ -1,3 +1,5 @@
+import struct ToolBox.Bytes
+
 /*
 
     // MARK: Fragmentation
@@ -95,7 +97,7 @@ extension WebSocket {
             currentBuffer.append(frame)
         }
 
-        internal func receiveCompleteMessage() -> (opCode: Frame.OpCode, payload: Data)? {
+        internal func receiveCompleteMessage() -> (opCode: Frame.OpCode, payload: Bytes)? {
             guard messageComplete else {
                 return nil
             }
@@ -104,14 +106,14 @@ extension WebSocket {
                 return nil
             }
 
-            var data: [Byte] = []
+            var data: Bytes = []
             for frame in currentBuffer {
                 data.append(contentsOf: frame.payload)
             }
 
             // flush existing to start over
             currentBuffer = []
-            return (opCode, Data(data))
+            return (opCode, data)
         }
     }
 }
