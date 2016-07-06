@@ -14,7 +14,7 @@ public protocol Provider {
 
         - parameter application: the application to which the provider will be providing
     */
-    func boot(with application: Application)
+//    func boot(with application: Application)
 
     /**
         An optional `ServerDriver` Type to provide

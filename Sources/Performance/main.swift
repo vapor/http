@@ -1,11 +1,11 @@
 import Vapor
 
-let app = Application()
-
-app.get("plaintext") { request in
-    return "Hello, world"
-}
-
-app.globalMiddleware = []
-
-app.serve()
+//let app = Application()
+//
+//app.get("plaintext") { request in
+//    return "Hello, world"
+//}
+//
+//app.globalMiddleware = []
+//
+//app.serve()
