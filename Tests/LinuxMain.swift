@@ -9,6 +9,8 @@ XCTMain([
     // BaseTestSuite
     testCase(PromiseTests.allTests),
     testCase(UtilityTests.allTests),
+    testCase(PercentEncodingTests.allTests),
+    testCase(UnsignedIntegerChunkingTests.allTests),
 
     // EngineTestSuite
     testCase(HTTPBodyTests.allTests),
@@ -16,7 +18,6 @@ XCTMain([
     testCase(HTTPRequestTests.allTests),
     testCase(HTTPStreamTests.allTests),
     testCase(HTTPVersionTests.allTests),
-    testCase(PercentEncodingTests.allTests),
     testCase(ResponseTests.allTests),
     testCase(StreamBufferTests.allTests),
     testCase(URISerializationTests.allTests),
@@ -24,7 +25,6 @@ XCTMain([
     // WebSocketsTestSuite
     testCase(WebSocketSerializationTests.allTests),
     testCase(WebSocketKeyTests.allTests),
-    testCase(UnsignedIntegerChunkingTests.allTests),
 ])
 
 #endif
