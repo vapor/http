@@ -51,7 +51,6 @@ public class Config {
         arguments: [String] = NSProcessInfo.processInfo().arguments
     ) throws {
         let configDirectory = workingDirectory.finished(with: "/") + "Config/"
-        self.configDirectory = configDirectory
         self.environment = environment ?? Environment.loader(arguments: arguments)
 
         let seedFile = JSONFile(name: "app", json: seed)

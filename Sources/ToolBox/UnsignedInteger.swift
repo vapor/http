@@ -4,7 +4,7 @@ extension UnsignedInteger {
         =>
         0b1111_1011_0000_1111
     */
-    init(_ bytes: [Byte]) {
+    public init(_ bytes: [Byte]) {
         // 8 bytes in UInt64, etc. clips overflow
         let prefix = bytes.prefix(sizeof(Self.self))
         var value: UIntMax = 0
@@ -16,7 +16,7 @@ extension UnsignedInteger {
         self.init(value)
     }
 
-    func bytes() -> [Byte] {
+    public func bytes() -> [Byte] {
         let byteMask: Self = 0b1111_1111
         let size = sizeof(Self.self)
         var copy = self

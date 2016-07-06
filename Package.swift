@@ -68,7 +68,6 @@ let package = Package(
         Target(
             name: "Engine",
             dependencies: [
-                .Target(name: "libc"),
                 .Target(name: "ToolBox")
             ]
         )

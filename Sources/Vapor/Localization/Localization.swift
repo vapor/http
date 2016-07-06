@@ -5,12 +5,12 @@ public class Localization {
     private let localization: JSONDirectory
 
     public convenience init(workingDirectory: String) throws {
-        let configDirectory = workingDirectory.finish("/") + "Localization/"
+        let configDirectory = workingDirectory.finished(with: "/") + "Localization/"
         let localization = try FileManager.loadDirectory(configDirectory)
         self.init(jsonDirectory: localization)
     }
 
-    public init(jsonDirectory: JSONDirectory? = nil) {
+    init(jsonDirectory: JSONDirectory? = nil) {
         localization = jsonDirectory ?? JSONDirectory(name: "empty", files: [])
     }
 

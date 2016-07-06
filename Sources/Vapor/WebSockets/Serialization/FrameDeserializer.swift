@@ -1,3 +1,5 @@
+import ToolBox
+
 public enum FrameParserError: ErrorProtocol {
     case missingByte
 }

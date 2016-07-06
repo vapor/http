@@ -3,7 +3,16 @@ public enum ClientError: ErrorProtocol {
 }
 
 public protocol Client: Program, Responder {
+    var scheme: String { get }
     var stream: Stream { get }
+    init(scheme: String, host: String, port: Int, securityLayer: SecurityLayer) throws
+}
+
+extension Client {
+    public init(host: String, port: Int, securityLayer: SecurityLayer) throws {
+        // default to "https" secure -- most common for clients
+        try self.init(scheme: "https", host: host, port: port, securityLayer: securityLayer)
+    }
 }
 
 extension Client {

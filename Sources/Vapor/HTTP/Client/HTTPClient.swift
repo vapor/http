@@ -7,13 +7,15 @@ public enum HTTPClientError: ErrorProtocol {
 }
 
 public final class HTTPClient<ClientStreamType: ClientStream>: Client {
+    public let scheme: String
     public let host: String
     public let port: Int
     public let securityLayer: SecurityLayer
 
     public let stream: Stream
 
-    public init(host: String, port: Int, securityLayer: SecurityLayer) throws {
+    public init(scheme: String, host: String, port: Int, securityLayer: SecurityLayer) throws {
+        self.scheme = scheme
         self.host = host
         self.port = port
         self.securityLayer = securityLayer
