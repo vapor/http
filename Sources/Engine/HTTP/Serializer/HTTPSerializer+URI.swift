@@ -1,7 +1,3 @@
-// TODO: Temporary
-
-@_exported import ToolBox
-
 extension String: CustomStringConvertible {
     public var description: String { return self }
 }

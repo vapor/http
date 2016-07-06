@@ -1,6 +1,3 @@
-import CryptoEssentials
-import libc
-
 extension WebSocket {
     public static func background(to uri: String, using client: Client.Type = HTTPClient<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
         let uri = try URI(uri)
@@ -8,7 +5,7 @@ extension WebSocket {
     }
 
     public static func background(to uri: URI, using client: Client.Type = HTTPClient<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
-        _ = try Vapor.background {
+        _ = try ToolBox.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
             _ = try? connect(to: uri, using: client, protocols: protocols, onConnect: onConnect)
         }
@@ -67,22 +64,10 @@ extension WebSocket {
      MUST be selected randomly for each connection.
      */
     static func makeRequestKey() -> String {
-        return makeRequestKeyBytes().base64
+        return makeRequestKeyBytes().base64String
     }
 
     private static func makeRequestKeyBytes() -> Bytes {
         return (1...16).map { _ in UInt8.random() }
-    }
-}
-
-extension UInt8 {
-    static func random() -> UInt8 {
-        let max = UInt32(UInt8.max)
-        #if os(Linux)
-            let val = UInt8(libc.random() % Int(max))
-        #else
-            let val = UInt8(arc4random_uniform(max))
-        #endif
-        return val
     }
 }

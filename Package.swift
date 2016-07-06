@@ -1,7 +1,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Vapor",
+    name: "Engine",
     dependencies: [
         //Standards package. Contains protocols for cross-project compatability.
         .Package(url: "https://github.com/open-swift/S4.git", majorVersion: 0, minor: 10),
@@ -41,7 +41,7 @@ let package = Package(
     ],
     targets: [
         Target(
-            name: "Vapor",
+            name: "Engine",
             dependencies: [
                 .Target(name: "ToolBox")
             ]
@@ -49,7 +49,7 @@ let package = Package(
         Target(
             name: "Development",
             dependencies: [
-                .Target(name: "Vapor")
+                .Target(name: "Engine")
             ]
         ),
         // TODO: Might not need permanent
