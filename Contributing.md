@@ -29,9 +29,9 @@ swift package generate-xcodeproj
 open *.xcodeproj
 ```
 
-## Development
+## EngineExample
 
-We have a `Development` target inside of the project that can be used for live testing.
+We have a `EngineExample` target inside of the project that can be used for live testing. It is imperative that this be left as server in shipping, this is how we provide the heroku button.
 
 ## Tests
 
@@ -39,4 +39,4 @@ Pull requests without adequate testing may be delayed. Please add tests alongsid
 
 ## Slack
 
-Join us in the #development channel in slack, for questions and discussions. 
+Join us in the #development channel in slack, for questions and discussions.
