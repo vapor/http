@@ -9,9 +9,6 @@ let package = Package(
         //Websockets
         .Package(url: "https://github.com/CryptoKitten/SHA1.git", majorVersion: 0, minor: 8),
 
-        //Allows complex key path subscripts
-        // .Package(url: "https://github.com/qutheory/path-indexable.git", majorVersion: 0, minor: 2),
-
         //Wrapper around pthreads
         .Package(url: "https://github.com/ketzusaka/Strand.git", majorVersion: 1, minor: 5),
 
@@ -22,9 +19,7 @@ let package = Package(
         .Package(url: "https://github.com/qutheory/libc.git", majorVersion: 0, minor: 1)
     ],
     exclude: [
-        "XcodeProject",
-        "Generator",
-        "Development"
+        "Resources"
     ],
     targets: [
         Target(

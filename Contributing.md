@@ -4,7 +4,7 @@ If you've never contributed to an OSS project before, here's a <a href="https://
 
 # Building Vapor
 
-The Vapor master branch is often ahead of our release, so the tooling can be a bit different.
+The Engine master branch is often ahead of our release, so the tooling can be a bit different.
 
 ## Swift Version
 
