@@ -40,7 +40,6 @@ import Engine
 
 final class Responder: HTTPResponder {
     func respond(to request: Request) throws -> Response {
-        print(request)
         let body = "Hello World".makeBody()
         return Response(body: body)
     }
@@ -58,6 +57,7 @@ try server.start(responder: Responder()) { error in
 
 ```Swift
 import Engine
+import WebSockets
 
 try WebSocket.connect(to: url) { ws in
     print("Connected to \(url)")
