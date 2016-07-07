@@ -14,7 +14,7 @@ public protocol ProgramStream {
 }
 
 extension ProgramStream {
-    init(host: String, port: Int) throws {
+    public init(host: String, port: Int) throws {
         try self.init(host: host, port: port, securityLayer: .none)
     }
 }
@@ -24,7 +24,7 @@ public enum SecurityLayer {
 }
 
 extension String {
-    var securityLayer: SecurityLayer {
+    public var securityLayer: SecurityLayer {
         if self == "https" || self == "wss" {
             return .tls
         } else {

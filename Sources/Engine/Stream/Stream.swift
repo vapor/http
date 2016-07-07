@@ -68,17 +68,17 @@ extension Stream {
 }
 
 extension Stream {
-    func send(_ byte: Byte) throws {
+    public func send(_ byte: Byte) throws {
         try send([byte])
     }
 
-    func send(_ string: String) throws {
+    public func send(_ string: String) throws {
         try send(string.bytes)
     }
 }
 
 extension Stream {
-    func sendLine() throws {
+    public func sendLine() throws {
         try send([.carriageReturn, .newLine])
     }
 }

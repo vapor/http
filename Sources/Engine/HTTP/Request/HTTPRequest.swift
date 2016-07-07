@@ -1,11 +1,11 @@
 public final class HTTPRequest: HTTPMessage {
-    // TODO: internal set for head request in application, serializer should change it, avoid exposing to end user
-    public internal(set) var method: Method
+    // TODO: public set for head request in application, serializer should change it, avoid exposing to end user
+    public var method: Method
 
     public var uri: URI
     public let version: Version
 
-    public internal(set) var parameters: [String: String] = [:]
+    public var parameters: [String: String] = [:]
 
     public convenience init(method: Method, path: String, host: String = "*", version: Version = Version(major: 1, minor: 1), headers: Headers = [:], body: HTTPBody = .data([])) throws {
         let path = path.hasPrefix("/") ? path : "/" + path
