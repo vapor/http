@@ -8,7 +8,6 @@ func client() throws {
 func server() throws {
     final class Responder: HTTPResponder {
         func respond(to request: Request) throws -> Response {
-            print(request)
             let body = "Hello World".makeBody()
             return Response(body: body)
         }

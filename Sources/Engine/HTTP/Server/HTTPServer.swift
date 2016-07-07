@@ -4,9 +4,6 @@
     import Darwin
 #endif
 
-import Socks
-import SocksCore
-
 public final class HTTPServer<
     ServerStreamType: ServerStream,
     Parser: TransferParser,

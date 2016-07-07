@@ -1,41 +1,28 @@
 #if os(Linux)
 
 import XCTest
-@testable import VaporTestSuite
+@testable import BaseTestSuite
+@testable import EngineTestSuite
+@testable import WebSocketsTestSuite
 
 XCTMain([
-    testCase(ApplicationTests.allTests),
-    testCase(ConfigTests.allTests),
-    testCase(ConsoleTests.allTests),
-    testCase(ContentTests.allTests),
-    testCase(ControllerTests.allTests),
-    testCase(DataSplitTests.allTests),
-    testCase(EnvironmentTests.allTests),
-    testCase(EventTests.allTests),
-    testCase(HashTests.allTests),
+    // BaseTestSuite
+    testCase(PromiseTests.allTests),
+    testCase(UtilityTests.allTests),
+    testCase(PercentEncodingTests.allTests),
+    testCase(UnsignedIntegerChunkingTests.allTests),
+
+    // EngineTestSuite
     testCase(HTTPBodyTests.allTests),
     testCase(HTTPHeadersTests.allTests),
     testCase(HTTPRequestTests.allTests),
     testCase(HTTPStreamTests.allTests),
     testCase(HTTPVersionTests.allTests),
-    testCase(LocalizationTests.allTests),
-    testCase(LogTests.allTests),
-    testCase(MemorySessionDriverTests.allTests),
-    testCase(PercentEncodingTests.allTests),
-    testCase(ProcessTests.allTests),
-    testCase(PromiseTests.allTests),
     testCase(ResponseTests.allTests),
-    testCase(RouterTests.allTests),
-    testCase(RouteTests.allTests),
-    testCase(SessionTests.allTests),
-    testCase(TypedRouteTests.allTests),
-    testCase(UnsignedIntegerChunkingTests.allTests),
+    testCase(StreamBufferTests.allTests),
     testCase(URISerializationTests.allTests),
-    testCase(UtilityTests.allTests),
-    testCase(ValidationConvenienceTests.allTests),
-    testCase(ValidationCountTests.allTests),
-    testCase(ValidationTests.allTests),
-    testCase(ValidationUniqueTests.allTests),
+
+    // WebSocketsTestSuite
     testCase(WebSocketSerializationTests.allTests),
     testCase(WebSocketKeyTests.allTests),
 ])
