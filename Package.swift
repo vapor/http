@@ -23,6 +23,9 @@ let package = Package(
     ],
     targets: [
         Target(
+            name: "Base"
+        ),
+        Target(
             name: "Engine",
             dependencies: [
                 .Target(name: "Base")
@@ -35,14 +38,17 @@ let package = Package(
             ]
         ),
         Target(
+            name: "SMTP",
+            dependencies: [
+              .Target(name: "Engine")
+            ]
+        ),
+        Target(
             name: "EngineExample",
             dependencies: [
                 .Target(name: "Engine"),
                 .Target(name: "WebSockets")
             ]
-        ),
-        Target(
-            name: "Base"
-        ),
+        )
     ]
 )
