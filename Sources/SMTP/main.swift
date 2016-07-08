@@ -565,6 +565,8 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         try logReply(key: "mail from")
         try send(line: "RCPT TO:<logan.william.wright@gmail.com>")
         try logReply(key: "rcpt to")
+        try send(line: "RCPT TO:<logan@qutheory.io>")
+        try logReply(key: "cc to")
 
         // open data
         try send(line: "DATA")
@@ -581,7 +583,8 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         try send(line: "Message-id: \(id)")
         try send(line: "From: Logan <logan.william.wright@gmail.com>")
         try send(line: "To: Logan <logan.william.wright@gmail.com>")
-        try send(line: "Subject: Testing alternative date\r\n")
+        try send(line: "cc: Logan <logan@qutheory.io>")
+        try send(line: "Subject: Testing CC (3)")
         try send(line: "") // empty line to start body
         try send(line: "Hello from smtp")
 
@@ -601,6 +604,7 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         try Promise.timeout(.fiveMinutes, operation: initializeSession)
         // TODO: Should default to localhost?
         let (_, extensions) = try initiate(fromDomain: "localhost")
+        // TODO: Should upgrade to TLS here if STARTTLS command exists.
         try authorize(with: extensions)
     }
 
