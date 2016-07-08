@@ -469,6 +469,70 @@ extension Sequence where Iterator.Element == EHLOExtension {
     }
 }
 
+
+/*
+ Specific sequences are:
+
+ CONNECTION ESTABLISHMENT
+
+ S: 220
+ E: 554
+
+ EHLO or HELO
+
+ S: 250
+ E: 504 (a conforming implementation could return this code only
+ in fairly obscure cases), 550, 502 (permitted only with an old-
+ style server that does not support EHLO)
+
+ MAIL
+
+ S: 250
+ E: 552, 451, 452, 550, 553, 503, 455, 555
+
+ RCPT
+
+ S: 250, 251 (but see Section 3.4 for discussion of 251 and 551)
+ E: 550, 551, 552, 553, 450, 451, 452, 503, 455, 555
+
+ DATA
+
+ I: 354 -> data -> S: 250
+
+ E: 552, 554, 451, 452
+
+ E: 450, 550 (rejections for policy reasons)
+
+ E: 503, 554
+
+ RSET
+
+ S: 250
+
+ VRFY
+
+ S: 250, 251, 252
+ E: 550, 551, 553, 502, 504
+
+ EXPN
+
+ S: 250, 252
+ E: 550, 500, 502, 504
+
+ HELP
+
+ S: 211, 214
+ E: 502, 504
+
+ NOOP
+
+ S: 250
+
+ QUIT
+
+ S: 221
+*/
+
 /*
  Timeouts - https://tools.ietf.org/html/rfc5321#section-4.5.3.2
  */
@@ -495,30 +559,62 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     }
 
     func send() throws {
-        try Promise.timeout(.fiveMinutes, operation: initializeSession)
-        // TODO: Should default to localhost?
-        let (header, extensions) = try initiate(fromDomain: "localhost")
+        try start()
 
-        print("[initiated] \(header)")
-        print("[initiated] \n\t\(extensions.map({"\($0)"}).joined(separator: "\n\t"))")
-        try authorize(with: extensions)
+        try send(line: "MAIL FROM:<smtp.test@sendgrid.com>")
+        try logReply(key: "mail from")
+        try send(line: "RCPT TO:<logan.william.wright@gmail.com>")
+        try logReply(key: "rcpt to")
 
-//        if let auth = extensions.authExtension {
-//            if auth.params.contains({ $0.equals(caseInsensitive: "LOGIN") }) {
-//                try authorize(method: .login, user: "smtp.test", pass: "smtp.pass1")
-//            } else if auth.params.contains({ $0.equals(caseInsensitive: "PLAIN") }) {
-//                try authorize(method: .plain, user: "smtp.test", pass: "smtp.pass1")
-//            } else {
-//                throw "no supported auth method"
-//            }
-//        }
+        // open data
+        try send(line: "DATA")
+        try logReply(key: "open data")
+//        /*
+//         C: Date: Thu, 21 May 1998 05:33:22 -0700
+//         C: From: John Q. Public <JQP@bar.com>
+//         C: Subject:  The Next Meeting of the Board
+//         C: To: Jones@xyz.com
+//         */
+        try send(line: "Date: \(RFC1123.now())")
+        let id = NSUUID().uuidString.replacingOccurrences(of: "-", with: "")
+        print("ID: \(id)")
+        try send(line: "Message-id: \(id)")
+        try send(line: "From: Logan <logan.william.wright@gmail.com>")
+        try send(line: "To: Logan <logan.william.wright@gmail.com>")
+        try send(line: "Subject: Testing alternative date\r\n")
+        try send(line: "") // empty line to start body
+        try send(line: "Hello from smtp")
+
+        // close data w/ data terminator
+        try stream.send("\r\n.\r\n")
+        try logReply(key: "close data")
+
+        try quit()
     }
 
-    func authorize(with extensions: [EHLOExtension]) throws {
+    private func logReply(key: String) throws {
+        let (code, reply, _) = try acceptReplyLine()
+        print("[\(key)] \(code) \(reply)")
+    }
+
+    private func start() throws {
+        try Promise.timeout(.fiveMinutes, operation: initializeSession)
+        // TODO: Should default to localhost?
+        let (_, extensions) = try initiate(fromDomain: "localhost")
+        try authorize(with: extensions)
+    }
+
+    private func quit() throws {
+        try send(line: "QUIT")
+        let (code, reply, isLast) = try acceptReplyLine()
+        guard isLast && code == 221 else { throw "failed to quit \(code) \(reply)" }
+    }
+
+    private func authorize(with extensions: [EHLOExtension]) throws {
         if let auth = extensions.authExtension {
-//            if auth.params.contains({ $0.equals(caseInsensitive: "LOGIN") }) {
-//                try authorize(method: .login, user: "smtp.test", pass: "smtp.pass1")
-//            } else
+            if auth.params.contains({ $0.equals(caseInsensitive: "LOGIN") }) {
+                try authorize(method: .login, user: "smtp.test", pass: "smtp.pass1")
+            } else
             if auth.params.contains({ $0.equals(caseInsensitive: "PLAIN") }) {
                 try authorize(method: .plain, user: "smtp.test", pass: "smtp.pass1")
             } else {
@@ -758,6 +854,7 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         guard isLast && code == 235 else { throw "invalid reply \(code) \(reply)" }
 
         // authorization successful
+        return
     }
 
     private func send(line: String) throws {
@@ -814,10 +911,6 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         // any NON-hyphen == last
         return (replyCode, reply, token != .hyphen)
     }
-
-    private func quit() throws {
-        try stream.send("QUIT".bytes + crlf)
-    }
 }
 
 
@@ -860,7 +953,7 @@ func originalWorkingSave() throws {
     print(try connection.receive(max: 5000).string)
     try connection.send("smtp.pass1".bytes.base64String + "\r\n")
     print(try connection.receive(max: 5000).string)
-    try connection.send("MAIL FROM:<smtp.test@sendgrid.com> BODY=8BITMIME\r\n")
+    try connection.send("MAIL FROM:<smtp.test@sendgrid.com>\r\n")
     print(try connection.receive(max: 5000).string)
     try connection.send("RCPT TO:<logan.william.wright@gmail.com> \r\n")
     print(try connection.receive(max: 5000).string)
@@ -887,6 +980,8 @@ func originalWorkingSave() throws {
     print("SMTP")
 }
 
+//try originalWorkingSave()
+//print("")
 //
 //import Foundation
 //
