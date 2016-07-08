@@ -12,6 +12,14 @@ extension Sequence where Iterator.Element == Byte {
     }
 }
 
+extension String {
+    public var base64DecodedString: String {
+        guard let data = NSData(base64Encoded: self) else { return "" }
+        var bytes = Bytes(repeating: 0, count: data.length)
+        data.getBytes(&bytes, length: data.length)
+        return bytes.string
+    }
+}
 
 extension NSData {
     // TODO: Add Link

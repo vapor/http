@@ -8,10 +8,16 @@
  
  AUTH
  https://tools.ietf.org/html/rfc821#page-4
+ GREAT UNOFFICIAL AUTH
+ http://www.fehcom.de/qmail/smtpauth.html
 
  LEGACY - DO NOT SUPPORT
  https://tools.ietf.org/html/rfc821#page-4
  */
+
+import Base
+print("\0test\0testpass".bytes.base64String)
+print()
 
 import Foundation
 
@@ -48,14 +54,15 @@ extension Date {
 //    let recipients: [String]
 //}
 //
-//let stream = try FoundationStream(host: "smtp.gmail.com", port: 465, securityLayer: .tls)
-//let connection = try stream.connect()
+import Engine
+//let sssstream = try FoundationStream(host: "smtp.gmail.com", port: 587, securityLayer: .none)
+//let cccconnection = try sssstream.connect()
 //// 220 service ready greeting
-//print(try connection.receive(max: 5000).string)
+////print(try cccconnection.receive(max: 5000).string)
 ///*
 // 220 smtp.gmail.com ESMTP p39sm303264qtp.14 - gsmtp
 // */
-//try connection.send("EHLO localhost \r\n")
+//try cccconnection.send("EHLO localhost \r\n")
 //
 ///*
 // https://tools.ietf.org/html/rfc5321#section-4.1.1.1
@@ -71,32 +78,32 @@ extension Date {
 // 
 // FINAL LINE IS `250` w/ NO `-`
 // */
-//print(try connection.receive(max: 5000).string)
+//print(try cccconnection.receive(max: 5000).string)
 //
-//try connection.send("AUTH LOGIN\r\n")
-//print(try connection.receive(max: 5000).string)
-//try connection.send("vapor.smtptest@gmail.com".bytes.base64String + "\r\n")
-//print(try connection.receive(max: 5000).string)
-//try connection.send("vapor.test".bytes.base64String + "\r\n")
-//print(try connection.receive(max: 5000).string)
-//try connection.send("MAIL FROM:<vapor.smtptest@gmail.com> BODY=8BITMIME\r\n")
-//print(try connection.receive(max: 5000).string)
-//try connection.send("RCPT TO:<logan@qutheory.io> \r\n")
-//print(try connection.receive(max: 5000).string)
-//try connection.send("DATA\r\n")
-//print(try connection.receive(max: 5000).string)
+//try cccconnection.send("AUTH LOGIN\r\n")
+//print(try cccconnection.receive(max: 5000).string)
+//try cccconnection.send("vapor.smtptest@gmail.com".bytes.base64String + "\r\n")
+//print(try cccconnection.receive(max: 5000).string)
+//try cccconnection.send("vapor.test".bytes.base64String + "\r\n")
+//print(try cccconnection.receive(max: 5000).string)
+//try cccconnection.send("MAIL FROM:<vapor.smtptest@gmail.com> BODY=8BITMIME\r\n")
+//print(try cccconnection.receive(max: 5000).string)
+//try cccconnection.send("RCPT TO:<logan@qutheory.io> \r\n")
+//print(try cccconnection.receive(max: 5000).string)
+//try cccconnection.send("DATA\r\n")
+//print(try cccconnection.receive(max: 5000).string)
 ///*
 // C: Date: Thu, 21 May 1998 05:33:22 -0700
 // C: From: John Q. Public <JQP@bar.com>
 // C: Subject:  The Next Meeting of the Board
 // C: To: Jones@xyz.com
 // */
-//try connection.send("Subject: SMTP Subject Test\r\n")
-//try connection.send("Hello from smtp")
-//try connection.send("\r\n.\r\n")
-//print(try connection.receive(max: 5000).string)
-//try connection.send("QUIT\r\n")
-//print(try connection.receive(max: 5000).string)
+//try cccconnection.send("Subject: SMTP Subject Test\r\n")
+//try cccconnection.send("Hello from smtp")
+//try cccconnection.send("\r\n.\r\n")
+//print(try cccconnection.receive(max: 5000).string)
+//try cccconnection.send("QUIT\r\n")
+//print(try cccconnection.receive(max: 5000).string)
 //print("SMTP")
 
 import Engine
@@ -444,6 +451,24 @@ struct EHLOExtension {
     }
 }
 
+extension String {
+    func equals(caseInsensitive: String) -> Bool {
+        return lowercased() == caseInsensitive.lowercased()
+    }
+}
+
+enum SMTPAuthMethod {
+    case plain
+    case login
+    // TODO: Support additional auth methods
+}
+
+extension Sequence where Iterator.Element == EHLOExtension {
+    var authExtension: EHLOExtension? {
+        return self.lazy.filter { $0.keyword.equals(caseInsensitive: "AUTH") } .first
+    }
+}
+
 /*
  Timeouts - https://tools.ietf.org/html/rfc5321#section-4.5.3.2
  */
@@ -474,11 +499,36 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         // TODO: Should default to localhost?
         let (header, extensions) = try initiate(fromDomain: "localhost")
 
-        // TODO: localhost?
-//        let (initiateCode, replies) = try initiate(currentHost: "localhost")
         print("[initiated] \(header)")
         print("[initiated] \n\t\(extensions.map({"\($0)"}).joined(separator: "\n\t"))")
-        print("")
+        try authorize(with: extensions)
+
+//        if let auth = extensions.authExtension {
+//            if auth.params.contains({ $0.equals(caseInsensitive: "LOGIN") }) {
+//                try authorize(method: .login, user: "smtp.test", pass: "smtp.pass1")
+//            } else if auth.params.contains({ $0.equals(caseInsensitive: "PLAIN") }) {
+//                try authorize(method: .plain, user: "smtp.test", pass: "smtp.pass1")
+//            } else {
+//                throw "no supported auth method"
+//            }
+//        }
+    }
+
+    func authorize(with extensions: [EHLOExtension]) throws {
+        if let auth = extensions.authExtension {
+//            if auth.params.contains({ $0.equals(caseInsensitive: "LOGIN") }) {
+//                try authorize(method: .login, user: "smtp.test", pass: "smtp.pass1")
+//            } else
+            if auth.params.contains({ $0.equals(caseInsensitive: "PLAIN") }) {
+                try authorize(method: .plain, user: "smtp.test", pass: "smtp.pass1")
+            } else {
+                throw "no supported auth method"
+            }
+        } else {
+            // no authorization required -- should we throw here? 
+            // I'm pretty sure classic SMTP is no logging
+            return
+        }
     }
 
     /*
@@ -655,6 +705,61 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         return (header, extensions)
     }
 
+    private func authorize(method: SMTPAuthMethod, user: String, pass: String) throws {
+        switch method {
+        case .login:
+            try authorizeLogin(user: user, pass: pass)
+        case .plain:
+            try authorizePlain(user: user, pass: pass)
+        }
+    }
+
+    private func authorizeLogin(user: String, pass: String) throws {
+        func handleUsername() throws {
+            let (code, reply, isLast) = try acceptReplyLine()
+            guard isLast else { throw "invalid username reply \(code) \(reply)" }
+            guard code == 334 && reply.base64DecodedString.equals(caseInsensitive: "Username:") else { throw " invalid login reply \(code) \(reply)" }
+            try send(line: user.bytes.base64String)
+        }
+
+        func handlePass() throws {
+            let (code, reply, isLast) = try acceptReplyLine()
+            guard isLast else { throw "invalid password reply \(code) \(reply)" }
+            guard code == 334 && reply.base64DecodedString.equals(caseInsensitive: "Password:") else { throw " invalid login reply \(code) \(reply)" }
+            try send(line: pass.bytes.base64String)
+        }
+
+        try send(line: "AUTH LOGIN")
+        try handleUsername()
+        try handlePass()
+
+        let (code, reply, isLast) = try acceptReplyLine()
+        guard isLast else { throw "unexpected authorization reply \(code) \(reply)" }
+        guard code == 235 else { throw "authorization failed w/ \(code) \(reply)" }
+
+        return // logged in successful
+    }
+
+    /*
+     http://www.fehcom.de/qmail/smtpauth.html
+
+     bash-2.05b$ printf "test" | base64 -e
+     dGVzdA==
+     bash-2.05b$ printf "testpass" | base64 -e
+     dGVzdHBhc3M=
+     bash-2.05b$ printf "\0test\0testpass" | base64 -e
+     AHRlc3QAdGVzdHBhc3M=
+     */
+    private func authorizePlain(user: String, pass: String) throws {
+        let plainAuth = "\0\(user)\0\(pass)".bytes.base64String
+        try send(line: "AUTH PLAIN \(plainAuth)")
+        let (code, reply, isLast) = try acceptReplyLine()
+        // 235 == authorization successful
+        guard isLast && code == 235 else { throw "invalid reply \(code) \(reply)" }
+
+        // authorization successful
+    }
+
     private func send(line: String) throws {
         try stream.send(line)
         try stream.send(crlf)
@@ -782,9 +887,135 @@ func originalWorkingSave() throws {
     print("SMTP")
 }
 
+//
+//import Foundation
+//
+//public class FoundationStream: NSObject, Stream, ClientStream, Foundation.StreamDelegate {
+//    public enum Error: ErrorProtocol {
+//        case unableToCompleteReadOperation
+//        case unableToCompleteWriteOperation
+//        case unableToConnectToHost
+//        case unableToUpgradeToSSL
+//    }
+//
+//    public func setTimeout(_ timeout: Double) throws {
+//        throw StreamError.unsupported
+//    }
+//
+//    public var closed: Bool {
+//        return input.streamStatus == .closed
+//            || output.streamStatus == .closed
+//    }
+//
+//    public let host: String
+//    public let port: Int
+//    public let securityLayer: SecurityLayer
+//    let input: InputStream
+//    let output: NSOutputStream
+//
+//    public required init(host: String, port: Int, securityLayer: SecurityLayer) throws {
+//        self.host = host
+//        self.port = port
+//        self.securityLayer = securityLayer
+//        var inputStream: InputStream? = nil
+//        var outputStream: NSOutputStream? = nil
+//        Foundation.Stream.getStreamsToHost(withName: host,
+//                                           port: port,
+//                                           inputStream: &inputStream,
+//                                           outputStream: &outputStream)
+//        guard
+//            let input = inputStream,
+//            let output = outputStream
+//            else { throw Error.unableToConnectToHost }
+//        self.input = input
+//        self.output = output
+//        super.init()
+//
+//        self.input.delegate = self
+//        self.output.delegate = self
+//    }
+//
+//    public func close() throws {
+//        output.close()
+//        input.close()
+//    }
+//
+//    func send(_ byte: Byte) throws {
+//        try send([byte])
+//    }
+//
+//    public func send(_ bytes: Bytes) throws {
+//        guard !bytes.isEmpty else { return }
+//
+//        var buffer = bytes
+//        let written = output.write(&buffer, maxLength: buffer.count)
+//        guard written == bytes.count else {
+//            throw Error.unableToCompleteWriteOperation
+//        }
+//    }
+//
+//    public func flush() throws {}
+//
+//    public func receive() throws -> Byte? {
+//        return try receive(max: 1).first
+//    }
+//
+//    public func receive(max: Int) throws -> Bytes {
+//        var buffer = Bytes(repeating: 0, count: max)
+//        let read = input.read(&buffer, maxLength: max)
+//        guard read != -1 else { throw Error.unableToCompleteReadOperation }
+//        return buffer.prefix(read).array
+//    }
+//
+//    // MARK: Connect
+//
+//    public func connect() throws -> Stream {
+//        if securityLayer == .tls {
+//            _ = input.upgradeSSL()
+//            _ = output.upgradeSSL()
+//        }
+//        input.open()
+//        output.open()
+//        return self
+//    }
+//
+//    // MARK: Stream Events
+//
+//    public func stream(_ aStream: Foundation.Stream, handle eventCode: Foundation.Stream.Event) {
+//        if eventCode.contains(.endEncountered) { _ = try? close() }
+//    }
+//}
+//
+//extension FoundationStream {
+//    public func upgradeSSL(peerName: String? = nil) {
+//        for stream in [input, output] {
+//            _ = stream.setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
+//                                   forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey.rawValue)
+//        }
+//
+//    }
+//}
+//
+//extension Foundation.Stream {
+//    func upgradeSSL() -> Bool {
+//        return setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
+//                           forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey.rawValue)
+//    }
+//}
+//
+//
+//public protocol SecurableStream: Engine.Stream {
+//    func upgradeToSecure() throws
+//}
+//
+//extension FoundationStream: SecurableStream {
+//    public func upgradeToSecure() throws {
+//        try upgradeSSL()
+//    }
+//}
 
-//var stream = try FoundationStream(host: "smtp.sendgrid.net", port: 2525, securityLayer: .none)
-//let connection = try stream.connect()
+//let stream = try FoundationStream(host: "smtp.sendgrid.net", port: 2525, securityLayer: .none)
+//var connection = try stream.connect()
 //// 220 service ready greeting
 //print(try connection.receive(max: 5000).string)
 ///*
@@ -794,10 +1025,16 @@ func originalWorkingSave() throws {
 //print(try connection.receive(max: 5000).string)
 //try connection.send("STARTTLS\r\n")
 //print(try connection.receive(max: 5000).string)
-//stream = try FoundationStream(host: "smtp.sendgrid.net", port: 587, securityLayer: .tls)
+//stream.upgradeSSL()
+////connection = try FoundationStream(host: "smtp.sendgrid.net", port: 587, securityLayer: .tls).connect()
+//try connection.send("ehlo localhost \r\n")
 //print(try connection.receive(max: 5000).string)
 //print("")
+
+//try originalWorkingSave()
+
 let client = try SMTPClient<FoundationStream>(host: "smtp.sendgrid.net", port: 465, securityLayer: .tls)
 try client.send()
 print("")
 //try originalWorkingSave()
+
