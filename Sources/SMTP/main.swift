@@ -111,7 +111,7 @@ import Engine
 import Foundation
 
 extension NSUUID {
-    var messageId: String {
+    static var smtpMessageId: String {
         return NSUUID().uuidString.components(separatedBy: "-").joined(separator: "")
     }
 }
@@ -439,16 +439,16 @@ struct EmailAddress {
 //     optional-field)
 //     */
 struct EmailMessage {
-    var from: EmailAddress = EmailAddress(name: "SendGrid", address: "smtp.test@sendgrid.com")
-    var to: [EmailAddress] = []
+    let from: EmailAddress
+    let to: [EmailAddress]
 //    var cc: [EmailAddress] = []
 //    var bcc: [EmailAddress] = []
 
-    var id: String = NSUUID().uuidString.components(separatedBy: "-").joined(separator: "")
+    let id: String = NSUUID().uuidString.components(separatedBy: "-").joined(separator: "")
     // TODO:
 //    let inReplyTo: String? = nil
 
-    var subject: String = "some email subject"
+    let subject: String
 
     // TODO:
 //    var comments: [String] = []
@@ -459,7 +459,28 @@ struct EmailMessage {
     // TODO:
 //    var extendedFields: [String: String] = [:]
 
-    var message: String = "[message]"
+    let message: String
+
+    init(from: EmailAddress, to: EmailAddress..., subject: String, message: String) {
+        self.from = from
+        self.to = to
+        self.subject = subject
+        self.message = message
+    }
+}
+
+extension EmailAddress: StringLiteralConvertible {
+    init(stringLiteral string: String) {
+        self.init(name: nil, address: string)
+    }
+
+    init(extendedGraphemeClusterLiteral string: String){
+        self.init(name: nil, address: string)
+    }
+
+    init(unicodeScalarLiteral string: String){
+        self.init(name: nil, address: string)
+    }
 }
 
 extension EmailAddress {
@@ -471,7 +492,6 @@ extension EmailAddress {
             formatted += " "
         }
         formatted += "<\(address)>"
-        print("SMTP FORMATTED \(formatted)")
         return formatted
     }
 }
@@ -621,95 +641,38 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         }
     }
 
-    func _send(_ email: EmailMessage) throws {
-        try start()
-
+    func send(user: String, pass: String, _ email: EmailMessage) throws {
+        try start(user: user, pass: pass)
         try transmit(email)
         try quit()
     }
 
     private func transmit(_ email: EmailMessage) throws {
         try send(line: "MAIL FROM: <\(email.from.address)>", expectingCode: 250)
-//        try logReply(key: "mail from")
         for to in email.to {
             try send(line: "RCPT TO: <\(to.address)>", expectingCode: 250)
         }
-//        try send(line: "RCPT TO:<logan.william.wright@gmail.com>", expectingCode: 250)
-////        try logReply(key: "rcpt to")
-//        try send(line: "RCPT TO:<logan@qutheory.io>", expectingCode: 250)
-//        try logReply(key: "cc to")
 
         // open data
         try send(line: "DATA", expectingCode: 354)
-//        try logReply(key: "open data")
-        //        /*
-        //         C: Date: Thu, 21 May 1998 05:33:22 -0700
-        //         C: From: John Q. Public <JQP@bar.com>
-        //         C: Subject:  The Next Meeting of the Board
-        //         C: To: Jones@xyz.com
-        //         */
+
+        // Data Headers
         try send(line: "Date: \(RFC1123.now())")
-        let id = NSUUID().uuidString.replacingOccurrences(of: "-", with: "")
-        print("ID: \(id)")
+        let id = NSUUID.smtpMessageId
         try send(line: "Message-id: \(id)")
-        // TODO: Can this be different than MAIL From???????
         try send(line: "From: " + email.from.smtpLongFormatted)
         let to = email.to.map { $0.smtpLongFormatted } .joined(separator: ", ")
         try send(line: "To: \(to)")
-        //        try send(line: "cc: Logan <logan@qutheory.io>")
         try send(line: "Subject: " + email.subject)
         try send(line: "") // empty line to start body
+        // Data Headers End
 
-        try stream.send(email.message)
-        try stream.flush()
-        try send(line: "")
-
-        // close data w/ data terminator
-        try stream.send("\r\n.\r\n")
-        try logReply(key: "close data")
-    }
-
-    private func send(line: String, expectingCode: Int) throws {
-        try send(line: line)
-        let (code, replies) = try acceptReply()
-        guard code == expectingCode else { throw "unexpected response to \(line) received \(code) \(replies) expected \(expectingCode)" }
-    }
-
-    func send() throws {
-        try start()
-
-        try send(line: "MAIL FROM: SMTP <smtp.test@sendgrid.com>")
-        try logReply(key: "mail from")
-        try send(line: "RCPT TO:<logan.william.wright@gmail.com>")
-        try logReply(key: "rcpt to")
-        try send(line: "RCPT TO:<logan@qutheory.io>")
-        try logReply(key: "cc to")
-
-        // open data
-        try send(line: "DATA")
-        try logReply(key: "open data")
-//        /*
-//         C: Date: Thu, 21 May 1998 05:33:22 -0700
-//         C: From: John Q. Public <JQP@bar.com>
-//         C: Subject:  The Next Meeting of the Board
-//         C: To: Jones@xyz.com
-//         */
-        try send(line: "Date: \(RFC1123.now())")
-        let id = NSUUID().uuidString.replacingOccurrences(of: "-", with: "")
-        print("ID: \(id)")
-        try send(line: "Message-id: \(id)")
-        try send(line: "From: Logan <logan.william.wright@gmail.com>")
-        try send(line: "To: Logan <logan.william.wright@gmail.com>, Logan <logan@qutheory.io>")
-//        try send(line: "cc: Logan <logan@qutheory.io>")
-        try send(line: "Subject: Testing CC (4)")
-        try send(line: "") // empty line to start body
-        try send(line: "Hello from smtp")
+        // Send Message
+        try stream.send(email.message.bytes, flushing: true)
+        // Message Done
 
         // close data w/ data terminator
-        try stream.send("\r\n.\r\n")
-        try logReply(key: "close data")
-
-        try quit()
+        try send(raw: "\r\n.\r\n", expectingCode: 250)
     }
 
     private func logReply(key: String) throws {
@@ -717,12 +680,12 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         print("[\(key)] \(code) \(reply)")
     }
 
-    private func start() throws {
+    private func start(user: String, pass: String) throws {
         try Promise.timeout(.fiveMinutes, operation: initializeSession)
         // TODO: Should default to localhost?
         let (_, extensions) = try initiate(fromDomain: "localhost")
         // TODO: Should upgrade to TLS here if STARTTLS command exists.
-        try authorize(with: extensions)
+        try authorize(user: user, pass: pass, with: extensions)
     }
 
     private func quit() throws {
@@ -731,13 +694,13 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         guard isLast && code == 221 else { throw "failed to quit \(code) \(reply)" }
     }
 
-    private func authorize(with extensions: [EHLOExtension]) throws {
+    private func authorize(user: String, pass: String, with extensions: [EHLOExtension]) throws {
         if let auth = extensions.authExtension {
             if auth.params.contains({ $0.equals(caseInsensitive: "LOGIN") }) {
-                try authorize(method: .login, user: "smtp.test", pass: "smtp.pass1")
+                try authorize(method: .login, user: user, pass: pass)
             } else
             if auth.params.contains({ $0.equals(caseInsensitive: "PLAIN") }) {
-                try authorize(method: .plain, user: "smtp.test", pass: "smtp.pass1")
+                try authorize(method: .plain, user: user, pass: pass)
             } else {
                 throw "no supported auth method"
             }
@@ -978,9 +941,27 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         return
     }
 
+
+    private func send(line: String, expectingCode: Int) throws {
+        try send(line: line)
+        let (code, replies) = try acceptReply()
+        guard code == expectingCode else { throw "unexpected response to \(line) received \(code) \(replies) expected \(expectingCode)" }
+    }
+
+    private func send(raw: String, expectingCode: Int) throws {
+        try send(raw: raw)
+        let (code, replies) = try acceptReply()
+        guard code == expectingCode else { throw "unexpected response to \(raw) received \(code) \(replies) expected \(expectingCode)" }
+    }
+
     private func send(line: String) throws {
         try stream.send(line)
         try stream.send(crlf)
+        try stream.flush()
+    }
+
+    private func send(raw: String) throws {
+        try stream.send(raw)
         try stream.flush()
     }
 
@@ -1034,232 +1015,23 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     }
 }
 
-
-func originalWorkingSave() throws {
-    // MARK: WORKING
-
-    /*
-     Ports
-     Use port 25, 2525, or 587 for unencrypted / TLS connections
-     Use port 465 for SSL connections
-     */
-    let stream = try FoundationStream(host: "smtp.sendgrid.net", port: 465, securityLayer: .tls)
-    let connection = try stream.connect()
-    // 220 service ready greeting
-    print(try connection.receive(max: 5000).string)
-    /*
-     220 smtp.gmail.com ESMTP p39sm303264qtp.14 - gsmtp
-     */
-    try connection.send("EHLO localhost \r\n")
-
-    /*
-     https://tools.ietf.org/html/rfc5321#section-4.1.1.1
-
-     250-smtp.gmail.com at your service, [209.6.42.158]
-     250-SIZE 35882577
-     250-8BITMIME
-     250-AUTH LOGIN PLAIN XOAUTH2 PLAIN-CLIENTTOKEN OAUTHBEARER XOAUTH
-     250-ENHANCEDSTATUSCODES
-     250-PIPELINING
-     250-CHUNKING
-     250 SMTPUTF8
-
-     FINAL LINE IS `250` w/ NO `-`
-     */
-    print(try connection.receive(max: 5000).string)
-
-    try connection.send("AUTH LOGIN\r\n")
-    print(try connection.receive(max: 5000).string)
-    try connection.send("smtp.test".bytes.base64String + "\r\n")
-    print(try connection.receive(max: 5000).string)
-    try connection.send("smtp.pass1".bytes.base64String + "\r\n")
-    print(try connection.receive(max: 5000).string)
-    try connection.send("MAIL FROM:<smtp.test@sendgrid.com>\r\n")
-    print(try connection.receive(max: 5000).string)
-    try connection.send("RCPT TO:<logan.william.wright@gmail.com> \r\n")
-    print(try connection.receive(max: 5000).string)
-    try connection.send("DATA\r\n")
-    print(try connection.receive(max: 5000).string)
-    /*
-     C: Date: Thu, 21 May 1998 05:33:22 -0700
-     C: From: John Q. Public <JQP@bar.com>
-     C: Subject:  The Next Meeting of the Board
-     C: To: Jones@xyz.com
-     */
-    try connection.send("Date: \(RFC1123.now())\r\n")
-    let id = NSUUID().uuidString.replacingOccurrences(of: "-", with: "")
-    print("ID: \(id)")
-    try connection.send("Message-id: \(id)\r\n")
-    try connection.send("From: Logan <logan.william.wright@gmail.com>\r\n")
-    try connection.send("To: Logan <logan.william.wright@gmail.com>\r\n")
-    try connection.send("Subject: Testing alternative date\r\n\r\n")
-    try connection.send("Hello from smtp")
-    try connection.send("\r\n.\r\n")
-    print(try connection.receive(max: 5000).string)
-    try connection.send("QUIT\r\n")
-    print(try connection.receive(max: 5000).string)
-    print("SMTP")
-}
-
-//try originalWorkingSave()
-//print("")
-//
-//import Foundation
-//
-//public class FoundationStream: NSObject, Stream, ClientStream, Foundation.StreamDelegate {
-//    public enum Error: ErrorProtocol {
-//        case unableToCompleteReadOperation
-//        case unableToCompleteWriteOperation
-//        case unableToConnectToHost
-//        case unableToUpgradeToSSL
-//    }
-//
-//    public func setTimeout(_ timeout: Double) throws {
-//        throw StreamError.unsupported
-//    }
-//
-//    public var closed: Bool {
-//        return input.streamStatus == .closed
-//            || output.streamStatus == .closed
-//    }
-//
-//    public let host: String
-//    public let port: Int
-//    public let securityLayer: SecurityLayer
-//    let input: InputStream
-//    let output: NSOutputStream
-//
-//    public required init(host: String, port: Int, securityLayer: SecurityLayer) throws {
-//        self.host = host
-//        self.port = port
-//        self.securityLayer = securityLayer
-//        var inputStream: InputStream? = nil
-//        var outputStream: NSOutputStream? = nil
-//        Foundation.Stream.getStreamsToHost(withName: host,
-//                                           port: port,
-//                                           inputStream: &inputStream,
-//                                           outputStream: &outputStream)
-//        guard
-//            let input = inputStream,
-//            let output = outputStream
-//            else { throw Error.unableToConnectToHost }
-//        self.input = input
-//        self.output = output
-//        super.init()
-//
-//        self.input.delegate = self
-//        self.output.delegate = self
-//    }
-//
-//    public func close() throws {
-//        output.close()
-//        input.close()
-//    }
-//
-//    func send(_ byte: Byte) throws {
-//        try send([byte])
-//    }
-//
-//    public func send(_ bytes: Bytes) throws {
-//        guard !bytes.isEmpty else { return }
-//
-//        var buffer = bytes
-//        let written = output.write(&buffer, maxLength: buffer.count)
-//        guard written == bytes.count else {
-//            throw Error.unableToCompleteWriteOperation
-//        }
-//    }
-//
-//    public func flush() throws {}
-//
-//    public func receive() throws -> Byte? {
-//        return try receive(max: 1).first
-//    }
-//
-//    public func receive(max: Int) throws -> Bytes {
-//        var buffer = Bytes(repeating: 0, count: max)
-//        let read = input.read(&buffer, maxLength: max)
-//        guard read != -1 else { throw Error.unableToCompleteReadOperation }
-//        return buffer.prefix(read).array
-//    }
-//
-//    // MARK: Connect
-//
-//    public func connect() throws -> Stream {
-//        if securityLayer == .tls {
-//            _ = input.upgradeSSL()
-//            _ = output.upgradeSSL()
-//        }
-//        input.open()
-//        output.open()
-//        return self
-//    }
-//
-//    // MARK: Stream Events
-//
-//    public func stream(_ aStream: Foundation.Stream, handle eventCode: Foundation.Stream.Event) {
-//        if eventCode.contains(.endEncountered) { _ = try? close() }
-//    }
-//}
-//
-//extension FoundationStream {
-//    public func upgradeSSL(peerName: String? = nil) {
-//        for stream in [input, output] {
-//            _ = stream.setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
-//                                   forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey.rawValue)
-//        }
-//
-//    }
-//}
-//
-//extension Foundation.Stream {
-//    func upgradeSSL() -> Bool {
-//        return setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
-//                           forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey.rawValue)
-//    }
-//}
-//
-//
-//public protocol SecurableStream: Engine.Stream {
-//    func upgradeToSecure() throws
-//}
-//
-//extension FoundationStream: SecurableStream {
-//    public func upgradeToSecure() throws {
-//        try upgradeSSL()
-//    }
-//}
-
-//let stream = try FoundationStream(host: "smtp.sendgrid.net", port: 2525, securityLayer: .none)
-//var connection = try stream.connect()
-//// 220 service ready greeting
-//print(try connection.receive(max: 5000).string)
-///*
-// 220 smtp.gmail.com ESMTP p39sm303264qtp.14 - gsmtp
-// */
-//try connection.send("ehlo localhost \r\n")
-//print(try connection.receive(max: 5000).string)
-//try connection.send("STARTTLS\r\n")
-//print(try connection.receive(max: 5000).string)
-//stream.upgradeSSL()
-////connection = try FoundationStream(host: "smtp.sendgrid.net", port: 587, securityLayer: .tls).connect()
-//try connection.send("ehlo localhost \r\n")
-//print(try connection.receive(max: 5000).string)
-//print("")
-
-//try originalWorkingSave()
+//EmailMessage(from: "logan.william.wright@gmail.com", to: ["logan@qutheory.io", "logan.william.wright@gmail.com"], subject: "Hi", message: "Here's a message")
+//var email = EmailMessage()
+//email.from = EmailAddress(name: "logan", address: "logan.william.wright@gmail.com")
+//email.to = [
+//    EmailAddress(name: "Logan P", address: "logan.william.wright@gmail.com"),
+////    EmailAddress(name: "Logan Q", address: "logan@qutheory.io")
+//]
+//email.subject = "Email Subject"
+//email.message = "<h1> Title </h1> <p align=\"center\"> Here's some paragraph </p>"
 
 let client = try SMTPClient<FoundationStream>(host: "smtp.sendgrid.net", port: 465, securityLayer: .tls)
-
-var email = EmailMessage()
-email.from = EmailAddress(name: "logan", address: "logan.william.wright@gmail.com")
-email.to = [
-    EmailAddress(name: "Logan P", address: "logan.william.wright@gmail.com"),
-    EmailAddress(name: "Logan Q", address: "logan@qutheory.io")
-]
-email.subject = "come on testing"
-email.message = "please just send"
-try client._send(email)
+let email = EmailMessage(from: "logan.william.wright@gmail.com",
+                         to: "logan@qutheory.io", "logan.william.wright@gmail.com",
+                         subject: "smtp logins",
+                         message: "it's all working!")
+try client.send(user: "smtp.test", pass: "smtp.pass1", email)
 print("")
+
 //try originalWorkingSave()
 
