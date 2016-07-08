@@ -116,27 +116,27 @@ extension NSUUID {
     }
 }
 
-struct InternetMessage {
-    /*
-     to /
-     cc /
-     bcc /
-     message-id /
-     in-reply-to /
-     references /
-     subject /
-     comments /
-     keywords /
-     optional-field)
-     */
-    let to: String
-    let from: String
-    let cc: [String]?
-    let bcc: [String]?
-    let id: String
-    let replyToId: String?
-
-}
+//struct InternetMessage {
+//    /*
+//     to /
+//     cc /
+//     bcc /
+//     message-id /
+//     in-reply-to /
+//     references /
+//     subject /
+//     comments /
+//     keywords /
+//     optional-field)
+//     */
+//    let to: String
+//    let from: String
+//    let cc: [String]?
+//    let bcc: [String]?
+//    let id: String
+//    let replyToId: String?
+//
+//}
 
 /*
  Field           Min number      Max number      Notes
@@ -421,6 +421,61 @@ struct SMTPExtension {
 
 }
 
+struct EmailAddress {
+    let name: String?
+    let address: String
+}
+
+//    /*
+//     to /
+//     cc /
+//     bcc /
+//     message-id /
+//     in-reply-to /
+//     references /
+//     subject /
+//     comments /
+//     keywords /
+//     optional-field)
+//     */
+struct EmailMessage {
+    var from: EmailAddress = EmailAddress(name: "SendGrid", address: "smtp.test@sendgrid.com")
+    var to: [EmailAddress] = []
+//    var cc: [EmailAddress] = []
+//    var bcc: [EmailAddress] = []
+
+    var id: String = NSUUID().uuidString.components(separatedBy: "-").joined(separator: "")
+    // TODO:
+//    let inReplyTo: String? = nil
+
+    var subject: String = "some email subject"
+
+    // TODO:
+//    var comments: [String] = []
+//    var keywords: [String] = []
+
+    let date: String = RFC1123.now()
+
+    // TODO:
+//    var extendedFields: [String: String] = [:]
+
+    var body: Bytes = "Hello world".bytes
+}
+
+extension EmailAddress {
+    var smtpLongFormatted: String {
+        var formatted = ""
+
+        if let name = self.name {
+            formatted += name
+            formatted += " "
+        }
+        formatted += "<\(address)>"
+        print("SMTP FORMATTED \(formatted)")
+        return formatted
+    }
+}
+
 struct SMTPHeader {
     let domain: String
     let greeting: String
@@ -558,10 +613,62 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         }
     }
 
+    func _send(_ email: EmailMessage) throws {
+        try start()
+
+        try transmit(email)
+        try quit()
+    }
+
+    private func transmit(_ email: EmailMessage) throws {
+        try send(line: "MAIL FROM: <\(email.from.address)>", expectingCode: 250)
+//        try logReply(key: "mail from")
+        for to in email.to {
+            try send(line: "RCPT TO: <\(to.address)>", expectingCode: 250)
+        }
+//        try send(line: "RCPT TO:<logan.william.wright@gmail.com>", expectingCode: 250)
+////        try logReply(key: "rcpt to")
+//        try send(line: "RCPT TO:<logan@qutheory.io>", expectingCode: 250)
+//        try logReply(key: "cc to")
+
+        // open data
+        try send(line: "DATA", expectingCode: 354)
+//        try logReply(key: "open data")
+        //        /*
+        //         C: Date: Thu, 21 May 1998 05:33:22 -0700
+        //         C: From: John Q. Public <JQP@bar.com>
+        //         C: Subject:  The Next Meeting of the Board
+        //         C: To: Jones@xyz.com
+        //         */
+        try send(line: "Date: \(RFC1123.now())")
+        let id = NSUUID().uuidString.replacingOccurrences(of: "-", with: "")
+        print("ID: \(id)")
+        try send(line: "Message-id: \(id)")
+        // TODO: Can this be different than MAIL From???????
+        try send(line: "From: <logan.william.wright@gmail.com>")// + email.from.smtpFormatted)
+        let to = email.to.map { $0.smtpLongFormatted } .joined(separator: ", ")
+        try send(line: "To: \(to)")
+        //        try send(line: "cc: Logan <logan@qutheory.io>")
+        try send(line: "Subject: " + email.subject)
+        try send(line: "") // empty line to start body
+
+        try stream.send(email.body)
+
+        // close data w/ data terminator
+        try stream.send("\r\n.\r\n")
+        try logReply(key: "close data")
+    }
+
+    private func send(line: String, expectingCode: Int) throws {
+        try send(line: line)
+        let (code, replies) = try acceptReply()
+        guard code == expectingCode else { throw "unexpected response to \(line) received \(code) \(replies) expected \(expectingCode)" }
+    }
+
     func send() throws {
         try start()
 
-        try send(line: "MAIL FROM:<smtp.test@sendgrid.com>")
+        try send(line: "MAIL FROM: SMTP <smtp.test@sendgrid.com>")
         try logReply(key: "mail from")
         try send(line: "RCPT TO:<logan.william.wright@gmail.com>")
         try logReply(key: "rcpt to")
@@ -582,9 +689,9 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         print("ID: \(id)")
         try send(line: "Message-id: \(id)")
         try send(line: "From: Logan <logan.william.wright@gmail.com>")
-        try send(line: "To: Logan <logan.william.wright@gmail.com>")
-        try send(line: "cc: Logan <logan@qutheory.io>")
-        try send(line: "Subject: Testing CC (3)")
+        try send(line: "To: Logan <logan.william.wright@gmail.com>, Logan <logan@qutheory.io>")
+//        try send(line: "cc: Logan <logan@qutheory.io>")
+        try send(line: "Subject: Testing CC (4)")
         try send(line: "") // empty line to start body
         try send(line: "Hello from smtp")
 
@@ -1133,7 +1240,16 @@ func originalWorkingSave() throws {
 //try originalWorkingSave()
 
 let client = try SMTPClient<FoundationStream>(host: "smtp.sendgrid.net", port: 465, securityLayer: .tls)
-try client.send()
+
+var email = EmailMessage()
+email.from = EmailAddress(name: "smtptest", address: "smtp.test@sendgrid.com")
+email.to = [
+    EmailAddress(name: "Logan P", address: "logan.william.wright@gmail.com"),
+    EmailAddress(name: "Logan Q", address: "logan@qutheory.io")
+]
+email.subject = "multiple recipients"
+email.body = "whoooooo, multiple".bytes
+try client._send(email)
 print("")
 //try originalWorkingSave()
 
