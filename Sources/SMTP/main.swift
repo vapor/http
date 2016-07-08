@@ -459,7 +459,7 @@ struct EmailMessage {
     // TODO:
 //    var extendedFields: [String: String] = [:]
 
-    var body: Bytes = "Hello world".bytes
+    var message: String = "[message]"
 }
 
 extension EmailAddress {
@@ -524,6 +524,14 @@ extension Sequence where Iterator.Element == EHLOExtension {
     }
 }
 
+
+extension NSUUID {
+    var smtpId: String {
+        return NSUUID().uuidString
+            .components(separatedBy: "-")
+            .joined(separator: "")
+    }
+}
 
 /*
  Specific sequences are:
@@ -645,14 +653,16 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         print("ID: \(id)")
         try send(line: "Message-id: \(id)")
         // TODO: Can this be different than MAIL From???????
-        try send(line: "From: <logan.william.wright@gmail.com>")// + email.from.smtpFormatted)
+        try send(line: "From: " + email.from.smtpLongFormatted)
         let to = email.to.map { $0.smtpLongFormatted } .joined(separator: ", ")
         try send(line: "To: \(to)")
         //        try send(line: "cc: Logan <logan@qutheory.io>")
         try send(line: "Subject: " + email.subject)
         try send(line: "") // empty line to start body
 
-        try stream.send(email.body)
+        try stream.send(email.message)
+        try stream.flush()
+        try send(line: "")
 
         // close data w/ data terminator
         try stream.send("\r\n.\r\n")
@@ -1242,13 +1252,13 @@ func originalWorkingSave() throws {
 let client = try SMTPClient<FoundationStream>(host: "smtp.sendgrid.net", port: 465, securityLayer: .tls)
 
 var email = EmailMessage()
-email.from = EmailAddress(name: "smtptest", address: "smtp.test@sendgrid.com")
+email.from = EmailAddress(name: "logan", address: "logan.william.wright@gmail.com")
 email.to = [
     EmailAddress(name: "Logan P", address: "logan.william.wright@gmail.com"),
     EmailAddress(name: "Logan Q", address: "logan@qutheory.io")
 ]
-email.subject = "multiple recipients"
-email.body = "whoooooo, multiple".bytes
+email.subject = "come on testing"
+email.message = "please just send"
 try client._send(email)
 print("")
 //try originalWorkingSave()
