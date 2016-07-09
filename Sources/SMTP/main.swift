@@ -368,28 +368,6 @@ extension Promise {
  LF           ::= <the line-feed character
  (ASCII decimal code 10)>
  */
-final class SMTPResponse {
-    let replyCode: Int
-    let domain: String
-    let greeting: String?
-
-    private(set) var extensions: [String] = []
-    private init(replyCode: Int, domain: String, greeting: String?) {
-        self.replyCode = replyCode
-        self.domain = domain
-        self.greeting = greeting
-    }
-}
-
-final class ReplyAggregator {
-//    private
-    private(set) var complete: Bool = false
-    init() {}
-
-    func process(line: Bytes) throws {
-    }
-}
-
 extension String {
     var int: Int? {
         return Int(self)
@@ -441,31 +419,55 @@ struct EmailAddress {
 struct EmailMessage {
     let from: EmailAddress
     let to: [EmailAddress]
-//    var cc: [EmailAddress] = []
-//    var bcc: [EmailAddress] = []
+
+    // TODO:
+    //    var cc: [EmailAddress] = []
+    //    var bcc: [EmailAddress] = []
 
     let id: String = NSUUID().uuidString.components(separatedBy: "-").joined(separator: "")
     // TODO:
-//    let inReplyTo: String? = nil
+    //    let inReplyTo: String? = nil
 
     let subject: String
 
     // TODO:
-//    var comments: [String] = []
-//    var keywords: [String] = []
+    //    var comments: [String] = []
+    //    var keywords: [String] = []
 
     let date: String = RFC1123.now()
 
     // TODO:
-//    var extendedFields: [String: String] = [:]
+    //    var extendedFields: [String: String] = [:]
 
-    let message: String
+    var body: Bytes
 
-    init(from: EmailAddress, to: EmailAddress..., subject: String, message: String) {
-        self.from = from
-        self.to = to
+    init(from: EmailAddressRepresentable, to: EmailAddressRepresentable..., subject: String, message: String) {
+        self.from = from.emailAddress
+        self.to = to.map { $0.emailAddress }
         self.subject = subject
-        self.message = message
+        self.body = message.bytes
+    }
+}
+
+extension Sequence where Iterator.Element == EmailAddress {
+    func smtpFormatted() -> String {
+        return self.map { $0.smtpLongFormatted } .joined(separator: ", ")
+    }
+}
+
+protocol EmailAddressRepresentable {
+    var emailAddress: EmailAddress { get }
+}
+
+extension EmailAddress: EmailAddressRepresentable {
+    var emailAddress: EmailAddress {
+        return self
+    }
+}
+
+extension String: EmailAddressRepresentable {
+    var emailAddress: EmailAddress {
+        return EmailAddress(name: nil, address: self)
     }
 }
 
@@ -538,20 +540,17 @@ enum SMTPAuthMethod {
     // TODO: Support additional auth methods
 }
 
+struct SMTPAuth {
+    let user: String
+    let pass: String
+}
+
 extension Sequence where Iterator.Element == EHLOExtension {
     var authExtension: EHLOExtension? {
         return self.lazy.filter { $0.keyword.equals(caseInsensitive: "AUTH") } .first
     }
 }
 
-
-extension NSUUID {
-    var smtpId: String {
-        return NSUUID().uuidString
-            .components(separatedBy: "-")
-            .joined(separator: "")
-    }
-}
 
 /*
  Specific sequences are:
@@ -641,57 +640,15 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         }
     }
 
-    func send(user: String, pass: String, _ email: EmailMessage) throws {
-        try start(user: user, pass: pass)
-        try transmit(email)
-        try quit()
-    }
+    // MARK: Initialization
 
-    private func transmit(_ email: EmailMessage) throws {
-        try send(line: "MAIL FROM: <\(email.from.address)>", expectingCode: 250)
-        for to in email.to {
-            try send(line: "RCPT TO: <\(to.address)>", expectingCode: 250)
-        }
-
-        // open data
-        try send(line: "DATA", expectingCode: 354)
-
-        // Data Headers
-        try send(line: "Date: \(RFC1123.now())")
-        let id = NSUUID.smtpMessageId
-        try send(line: "Message-id: \(id)")
-        try send(line: "From: " + email.from.smtpLongFormatted)
-        let to = email.to.map { $0.smtpLongFormatted } .joined(separator: ", ")
-        try send(line: "To: \(to)")
-        try send(line: "Subject: " + email.subject)
-        try send(line: "") // empty line to start body
-        // Data Headers End
-
-        // Send Message
-        try stream.send(email.message.bytes, flushing: true)
-        // Message Done
-
-        // close data w/ data terminator
-        try send(raw: "\r\n.\r\n", expectingCode: 250)
-    }
-
-    private func logReply(key: String) throws {
-        let (code, reply, _) = try acceptReplyLine()
-        print("[\(key)] \(code) \(reply)")
-    }
-
-    private func start(user: String, pass: String) throws {
-        try Promise.timeout(.fiveMinutes, operation: initializeSession)
+    private func initializeSession(using auth: SMTPAuth) throws {
+        // TODO: Timeouts
+        try acceptGreeting()
         // TODO: Should default to localhost?
         let (_, extensions) = try initiate(fromDomain: "localhost")
-        // TODO: Should upgrade to TLS here if STARTTLS command exists.
-        try authorize(user: user, pass: pass, with: extensions)
-    }
-
-    private func quit() throws {
-        try send(line: "QUIT")
-        let (code, reply, isLast) = try acceptReplyLine()
-        guard isLast && code == 221 else { throw "failed to quit \(code) \(reply)" }
+        // TODO: Should upgrade to TLS here if STARTTLS command exists BEFORE authorizing
+        try authorize(user: auth.user, pass: auth.pass, with: extensions)
     }
 
     private func authorize(user: String, pass: String, with extensions: [EHLOExtension]) throws {
@@ -699,27 +656,70 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
             if auth.params.contains({ $0.equals(caseInsensitive: "LOGIN") }) {
                 try authorize(method: .login, user: user, pass: pass)
             } else
-            if auth.params.contains({ $0.equals(caseInsensitive: "PLAIN") }) {
-                try authorize(method: .plain, user: user, pass: pass)
-            } else {
-                throw "no supported auth method"
+                if auth.params.contains({ $0.equals(caseInsensitive: "PLAIN") }) {
+                    try authorize(method: .plain, user: user, pass: pass)
+                } else {
+                    throw "no supported auth method"
             }
         } else {
-            // no authorization required -- should we throw here? 
-            // I'm pretty sure classic SMTP is no logging
+            // no authorization required -- should we throw here?
+            // I'm pretty sure classic SMTP is no login, aka, supah safe
             return
         }
     }
 
-    /*
-     4.5.3.2.1.  Initial 220 Message: 5 Minutes
+    // MARK: Quit
 
-     An SMTP client process needs to distinguish between a failed TCP
-     connection and a delay in receiving the initial 220 greeting message.
-     Many SMTP servers accept a TCP connection but delay delivery of the
-     220 message until their system load permits more mail to be
-     processed.
-     */
+    private func quit() throws -> (code: Int, greeting: String) {
+        try send(line: "QUIT")
+        let (code, reply, isLast) = try acceptReplyLine()
+        guard isLast && code == 221 else { throw "failed to quit \(code) \(reply)" }
+        return (code, reply)
+    }
+
+    @discardableResult
+    func send(_ email: EmailMessage, using auth: SMTPAuth) throws -> (code: Int, greeting: String) {
+        // open
+        try initializeSession(using: auth)
+
+        // commands go here
+        try send(email)
+
+        // close
+        return try quit()
+    }
+
+    private func send(_ email: EmailMessage) throws {
+        try send(line: "MAIL FROM: <\(email.from.address)>", expectingReplyCode: 250)
+        for to in email.to {
+            try send(line: "RCPT TO: <\(to.address)>", expectingReplyCode: 250)
+        }
+
+        try transmitDATA(for: email)
+    }
+
+    private func transmitDATA(for email: EmailMessage) throws {
+        // open data
+        try send(line: "DATA", expectingReplyCode: 354)
+
+        // Data Headers
+        try send(line: "Date: \(RFC1123.now())")
+        try send(line: "Message-id: \(email.id)")
+        try send(line: "From: " + email.from.smtpLongFormatted)
+        try send(line: "To:" + email.to.smtpFormatted())
+        try send(line: "Subject: " + email.subject)
+        try send(line: "") // empty line to start body
+        // Data Headers End
+
+        // Send Message
+        try stream.send(email.body, flushing: true)
+        // Message Done
+
+        // TODO: Send Attachments
+
+        // close data w/ data terminator
+        try send(raw: "\r\n.\r\n", expectingCode: 250)
+    }
 
 
     /*
@@ -752,13 +752,14 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
      system.
 
      */
-    private func initializeSession() throws {
+    private func acceptGreeting() throws {
+        // After connect, client receives from server first.
         let (replyCode, greeting, isLast) = try acceptReplyLine()
-        print("[initialized] \(replyCode) \(greeting)")
         // initialization should be single line w/ 220
         if isLast && replyCode == 220 { return }
         else {
-            try quit()
+            // quit
+            _ = try? quit()
             throw SMTPClientError.initializationFailed(code: replyCode, greeting: greeting)
         }
     }
@@ -857,9 +858,10 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     private func initiate(fromDomain: String = "localhost") throws -> (header: SMTPHeader, extensions: [EHLOExtension]) {
         try send(line: "EHLO \(fromDomain)")
         var (code, replies) = try acceptReply()
+
         /*
          The 500 response indicates that the server SMTP does
-         not implement the extensions specified here.  The
+         not implement thse extensions specified here.  The
          client would normally send a HELO command and proceed
          as specified in RFC 821.   See section 4.7 for
          additional discussion.
@@ -880,11 +882,19 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
             throw "error initiating \(code)"
         }
 
-        guard let header = try replies.first.flatMap(SMTPHeader.init) else { throw "response should have at least one line" }
+        /*
+            First line is header, subsequent lines are ehlo extensions
+        */
+        guard let header = try replies.first.flatMap(SMTPHeader.init) else { throw "response should have at least one line -- even in SMTP original" }
         let extensions = try replies.dropFirst().map(EHLOExtension.init)
         return (header, extensions)
     }
 
+}
+
+// MARK: Authorization
+
+extension SMTPClient {
     private func authorize(method: SMTPAuthMethod, user: String, pass: String) throws {
         switch method {
         case .login:
@@ -940,20 +950,11 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         // authorization successful
         return
     }
+}
 
+// MARK: Sending
 
-    private func send(line: String, expectingCode: Int) throws {
-        try send(line: line)
-        let (code, replies) = try acceptReply()
-        guard code == expectingCode else { throw "unexpected response to \(line) received \(code) \(replies) expected \(expectingCode)" }
-    }
-
-    private func send(raw: String, expectingCode: Int) throws {
-        try send(raw: raw)
-        let (code, replies) = try acceptReply()
-        guard code == expectingCode else { throw "unexpected response to \(raw) received \(code) \(replies) expected \(expectingCode)" }
-    }
-
+extension SMTPClient {
     private func send(line: String) throws {
         try stream.send(line)
         try stream.send(crlf)
@@ -964,6 +965,23 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         try stream.send(raw)
         try stream.flush()
     }
+
+    private func send(line: String, expectingReplyCode: Int) throws {
+        try send(line: line)
+        let (code, replies) = try acceptReply()
+        guard code == expectingReplyCode else { throw "unexpected response to \(line) received \(code) \(replies) expected \(expectingReplyCode)" }
+    }
+
+    private func send(raw: String, expectingCode: Int) throws {
+        try send(raw: raw)
+        let (code, replies) = try acceptReply()
+        guard code == expectingCode else { throw "unexpected response to \(raw) received \(code) \(replies) expected \(expectingCode)" }
+    }
+}
+
+// MARK: Accept
+
+extension SMTPClient {
 
     /*
      The format for multiline replies requires that every line, except the
@@ -1015,22 +1033,15 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     }
 }
 
-//EmailMessage(from: "logan.william.wright@gmail.com", to: ["logan@qutheory.io", "logan.william.wright@gmail.com"], subject: "Hi", message: "Here's a message")
-//var email = EmailMessage()
-//email.from = EmailAddress(name: "logan", address: "logan.william.wright@gmail.com")
-//email.to = [
-//    EmailAddress(name: "Logan P", address: "logan.william.wright@gmail.com"),
-////    EmailAddress(name: "Logan Q", address: "logan@qutheory.io")
-//]
-//email.subject = "Email Subject"
-//email.message = "<h1> Title </h1> <p align=\"center\"> Here's some paragraph </p>"
+// MARK: Demo
 
 let client = try SMTPClient<FoundationStream>(host: "smtp.sendgrid.net", port: 465, securityLayer: .tls)
 let email = EmailMessage(from: "logan.william.wright@gmail.com",
-                         to: "logan@qutheory.io", "logan.william.wright@gmail.com",
+                         to: "logan@qutheory.io",
                          subject: "smtp logins",
                          message: "it's all working!")
-try client.send(user: "smtp.test", pass: "smtp.pass1", email)
+let auth = SMTPAuth(user: "smtp.test", pass: "smtp.pass1")
+try client.send(email, using: auth)
 print("")
 
 //try originalWorkingSave()
