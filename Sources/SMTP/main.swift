@@ -16,11 +16,21 @@ print("URL: \(url)")
 let testData = NSData(contentsOf: url)!
 var bytes = Bytes(repeating: 0, count: testData.length)
 testData.getBytes(&bytes, length: testData.length)
-
-let attach = EmailAttachment(filename: "vapor-test-img", type: "png", body: bytes)
+let attach = EmailAttachment(filename: "vapor-test-img.png", contentType: "image/png", body: bytes)
 //print("Got data: \(testData)")
 print("")
 
+func pdfAttachment() -> EmailAttachment {
+    let url = NSURL.fileURL(withPath: workDir! + "/vapor-test-pdf.pdf")
+    //let url = URL(string: workDir! + "/vapor-test-img")!
+    print("URL: \(url)")
+    let testData = NSData(contentsOf: url)!
+    var bytes = Bytes(repeating: 0, count: testData.length)
+    testData.getBytes(&bytes, length: testData.length)
+    return EmailAttachment(filename: "vapor-test-pdf.pdf", contentType: "application/pdf", body: bytes)
+    //print("Got data: \(testData)")
+    print("")
+}
 
 // MARK: Demo
 //
@@ -40,9 +50,12 @@ let client = try SMTPClient<FoundationStream>.makeSendGridClient()
 let address = EmailAddress(name: "Vapor SMTP", address: "logan.william.wright@gmail.com")
 var email = EmailMessage(from: address,
                          to: "logan@qutheory.io",
-                         subject: "smtp-formatted-html",
+                         subject: "Images & PDF",
                          body: html)
 email.attachments.append(attach)
+email.attachments.append(attach)
+email.attachments.append(attach)
+email.attachments.append(pdfAttachment())
 let auth = SMTPCredentials(user: "smtp.test", pass: "smtp.pass1")
 let (code, reply) = try client.send(email, using: auth)
 print("\(code) \(reply)") // smtp.pass1

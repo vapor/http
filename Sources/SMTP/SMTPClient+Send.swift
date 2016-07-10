@@ -79,7 +79,10 @@ extension SMTPClient {
 //        try transmit(line: "preamble, ignored by parsers, handy info for non-mime compliant reader", terminating: false)
 //        try transmit(line: "--vapor-smtp-boundary")
         try transmit(email.body, withBoundary: boundary)
-        
+
+        try email.attachments.forEach { attachment in
+            try transmit(attachment, withBoundary: boundary)
+        }
 //        try stream.send("Content-Type: text/html; charset=utf8\r\n\r\n")
 //        try stream.send("HTML? <b>im bold</b>\r\n")
 //        try transmit(line: "This is implicitly typed plain ASCII text. It does NOT end with a linebreak. ", terminating: false)
@@ -112,7 +115,23 @@ extension SMTPClient {
         try transmit(line: "Content-Type: \(contentType); charset=utf8")
         try transmit(line: "")  // empty line
 
-        try transmit(line: body.content)
+        try stream.send(body.content)
+        try transmit(line: "")
+    }
+
+    private func transmit(_ attachment: EmailAttachment, withBoundary boundary: String) throws {
+        try transmit(line: "--\(boundary)")
+        try transmit(line: "Content-Disposition: attachment; filename=\(attachment.filename)\r\n", terminating: false)
+        try transmit(line: "Content-Type: \(attachment.contentType); name=\(attachment.filename)\r\n", terminating: false)
+        try transmit(line: "Content-Transfer-Encoding: base64")
+        try transmit(line: "")
+        /*
+         Note that we are converting ALL attachments to base64. This is supported by all SMTP systems
+         others do support 'BINARYMIME', but none in my tests seemed to, so in the interest
+         of brevity and consistency, we're sacraficing a very small amount of performance
+        */
+        try stream.send(attachment.body.base64Data)
+        try transmit(line: "") // empty line
     }
 }
 

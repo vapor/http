@@ -10,6 +10,22 @@ extension Sequence where Iterator.Element == Byte {
             return data.base64EncodedString(options: [])
         #endif
     }
+
+    public var base64Data: Bytes {
+        let bytes = [Byte](self)
+        let data = NSData(bytes: bytes)
+        #if os(Linux)
+            let encodedData = data.base64EncodedData([])
+            var encodedBytes = Bytes(repeating: 0, count: encodedData.length)
+            encodedData.getBytes(to: &encodedBytes, count: encodedBytes.count)
+        #else
+            let encodedData = data.base64EncodedData(options: [])
+            var encodedBytes = Bytes(repeating: 0, count: encodedData.count)
+            encodedData.copyBytes(to: &encodedBytes, count: encodedData.count)
+        #endif
+
+        return encodedBytes
+    }
 }
 
 extension String {
