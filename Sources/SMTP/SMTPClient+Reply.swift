@@ -50,3 +50,9 @@ extension SMTPClient {
         return (replyCode, reply, token != .hyphen)
     }
 }
+
+extension String {
+    private var int: Int? {
+        return Int(self)
+    }
+}
