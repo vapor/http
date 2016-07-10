@@ -1,6 +1,55 @@
 import Foundation
 import struct Base.Bytes
 
+public struct EmailContent {
+
+}
+
+public struct EmailBody {
+    public enum BodyType {
+        case html, plain
+    }
+
+    public let type: BodyType
+    public let content: String
+
+    public init(type: BodyType = .plain, _ content: String) {
+        self.type = type
+        self.content = content
+    }
+}
+
+public protocol EmailBodyRepresentable {
+    var emailBody: EmailBody { get }
+}
+
+extension String: EmailBodyRepresentable {
+    public var emailBody: EmailBody {
+        return EmailBody(self)
+    }
+}
+
+extension EmailBody: EmailBodyRepresentable {
+    public var emailBody: EmailBody {
+        return self
+    }
+}
+
+public struct EmailAttachment {
+    public let filename: String
+    public let type: String
+    public let encoding: String
+
+    public let body: Bytes
+
+    public init(filename: String, type: String, encoding: String, body: Bytes) {
+        self.filename = filename
+        self.type = type
+        self.encoding = encoding
+        self.body = body
+    }
+}
+
 //    /*
 //     to /
 //     cc /
@@ -36,12 +85,14 @@ public struct EmailMessage {
     // TODO:
     //    var extendedFields: [String: String] = [:]
 
-    public var body: Bytes
+    public var body: EmailBody
+    public var attachments: [EmailAttachment] = []
 
-    public init(from: EmailAddressRepresentable, to: EmailAddressRepresentable..., subject: String, message: String) {
+
+    public init(from: EmailAddressRepresentable, to: EmailAddressRepresentable..., subject: String, body: EmailBodyRepresentable) {
         self.from = from.emailAddress
         self.to = to.map { $0.emailAddress }
         self.subject = subject
-        self.body = message.bytes
+        self.body = body.emailBody
     }
 }
