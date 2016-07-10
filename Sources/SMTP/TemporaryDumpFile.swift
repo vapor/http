@@ -274,7 +274,6 @@ extension NSUUID {
  */
 
 extension DispatchTime {
-
     static var fiveMinutes: DispatchTime {
         // TODO: Currently can only set distant future or now :( fix when foundation updates
         return DispatchTime.distantFuture
@@ -377,134 +376,9 @@ extension String {
     }
 }
 
-extension Collection {
-    public subscript(safe idx: Index) -> Iterator.Element? {
-        guard startIndex <= idx else { return nil }
-        // NOT >=, endIndex is "past the end"
-        guard endIndex > idx else { return nil }
-        return self[idx]
-    }
-}
-
-enum SMTPClientError: ErrorProtocol {
-    case initializationFailed(code: Int, greeting: String)
-    case initializationFailed554(reason: String)
-    case invalidMultilineReplyCode(expected: Int, got: Int)
-    case invalidEhloHeader
-}
-
 extension String: ErrorProtocol {}
 import Base
 
-private let crlf: Bytes = [.carriageReturn, .newLine]
-
-struct SMTPExtension {
-
-}
-
-struct EmailAddress {
-    let name: String?
-    let address: String
-
-    init(name: String? = nil, address: String) {
-        self.name = name
-        self.address = address
-    }
-}
-
-//    /*
-//     to /
-//     cc /
-//     bcc /
-//     message-id /
-//     in-reply-to /
-//     references /
-//     subject /
-//     comments /
-//     keywords /
-//     optional-field)
-//     */
-struct EmailMessage {
-    let from: EmailAddress
-    let to: [EmailAddress]
-
-    // TODO:
-    //    var cc: [EmailAddress] = []
-    //    var bcc: [EmailAddress] = []
-
-    let id: String = NSUUID().uuidString.components(separatedBy: "-").joined(separator: "")
-    // TODO:
-    //    let inReplyTo: String? = nil
-
-    let subject: String
-
-    // TODO:
-    //    var comments: [String] = []
-    //    var keywords: [String] = []
-
-    let date: String = RFC1123.now()
-
-    // TODO:
-    //    var extendedFields: [String: String] = [:]
-
-    var body: Bytes
-
-    init(from: EmailAddressRepresentable, to: EmailAddressRepresentable..., subject: String, message: String) {
-        self.from = from.emailAddress
-        self.to = to.map { $0.emailAddress }
-        self.subject = subject
-        self.body = message.bytes
-    }
-}
-
-extension Sequence where Iterator.Element == EmailAddress {
-    func smtpFormatted() -> String {
-        return self.map { $0.smtpLongFormatted } .joined(separator: ", ")
-    }
-}
-
-protocol EmailAddressRepresentable {
-    var emailAddress: EmailAddress { get }
-}
-
-extension EmailAddress: EmailAddressRepresentable {
-    var emailAddress: EmailAddress {
-        return self
-    }
-}
-
-extension String: EmailAddressRepresentable {
-    var emailAddress: EmailAddress {
-        return EmailAddress(name: nil, address: self)
-    }
-}
-
-extension EmailAddress: StringLiteralConvertible {
-    init(stringLiteral string: String) {
-        self.init(name: nil, address: string)
-    }
-
-    init(extendedGraphemeClusterLiteral string: String){
-        self.init(name: nil, address: string)
-    }
-
-    init(unicodeScalarLiteral string: String){
-        self.init(name: nil, address: string)
-    }
-}
-
-extension EmailAddress {
-    var smtpLongFormatted: String {
-        var formatted = ""
-
-        if let name = self.name {
-            formatted += name
-            formatted += " "
-        }
-        formatted += "<\(address)>"
-        return formatted
-    }
-}
 
 internal struct SMTPHeader {
     internal let domain: String
@@ -523,7 +397,7 @@ internal struct SMTPHeader {
 
 /*
  ehlo-line    ::= ehlo-keyword *( SP ehlo-param )
- */
+*/
 struct EHLOExtension {
     let keyword: String
     let params: [String]
@@ -536,92 +410,26 @@ struct EHLOExtension {
     }
 }
 
-extension String {
-    func equals(caseInsensitive: String) -> Bool {
-        return lowercased() == caseInsensitive.lowercased()
-    }
-}
-
-enum SMTPAuthMethod {
-    case plain
-    case login
-    // TODO: Support additional auth methods
-}
-
-struct SMTPCredentials {
-    let user: String
-    let pass: String
-}
-
 extension Sequence where Iterator.Element == EHLOExtension {
     var authExtension: EHLOExtension? {
         return self.lazy.filter { $0.keyword.equals(caseInsensitive: "AUTH") } .first
     }
 }
 
+extension String {
+    func equals(caseInsensitive: String) -> Bool {
+        return lowercased() == caseInsensitive.lowercased()
+    }
+}
 
-/*
- Specific sequences are:
-
- CONNECTION ESTABLISHMENT
-
- S: 220
- E: 554
-
- EHLO or HELO
-
- S: 250
- E: 504 (a conforming implementation could return this code only
- in fairly obscure cases), 550, 502 (permitted only with an old-
- style server that does not support EHLO)
-
- MAIL
-
- S: 250
- E: 552, 451, 452, 550, 553, 503, 455, 555
-
- RCPT
-
- S: 250, 251 (but see Section 3.4 for discussion of 251 and 551)
- E: 550, 551, 552, 553, 450, 451, 452, 503, 455, 555
-
- DATA
-
- I: 354 -> data -> S: 250
-
- E: 552, 554, 451, 452
-
- E: 450, 550 (rejections for policy reasons)
-
- E: 503, 554
-
- RSET
-
- S: 250
-
- VRFY
-
- S: 250, 251, 252
- E: 550, 551, 553, 502, 504
-
- EXPN
-
- S: 250, 252
- E: 550, 500, 502, 504
-
- HELP
-
- S: 211, 214
- E: 502, 504
-
- NOOP
-
- S: 250
-
- QUIT
-
- S: 221
- */
+extension Collection {
+    public subscript(safe idx: Index) -> Iterator.Element? {
+        guard startIndex <= idx else { return nil }
+        // NOT >=, endIndex is "past the end"
+        guard endIndex > idx else { return nil }
+        return self[idx]
+    }
+}
 
 
 // MARK: Sending

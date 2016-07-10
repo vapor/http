@@ -24,9 +24,10 @@ let address = EmailAddress(name: "Vapor SMTP", address: "logan.william.wright@gm
 //                             subject: "[multiple - \(i)]",
 //                             message: "😶")
 //}
+//let (code, reply) = try client.send(emails: emails, using: credentials)
 let email = EmailMessage(from: address,
                          to: "logan@qutheory.io",
-                         subject: "[single]",
+                         subject: "buffer is much faster",
                          message: "😶")
 let (code, reply) = try client.send(email, using: credentials)
 print("\(code) \(reply)")

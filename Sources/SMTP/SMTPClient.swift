@@ -20,26 +20,34 @@ import Engine
  Timeouts
  https://tools.ietf.org/html/rfc5321#section-4.5.3.2
  */
-final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
-    let host: String
-    let port: Int
-    let securityLayer: SecurityLayer
+public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
+    public let host: String
+    public let port: Int
+    public let securityLayer: SecurityLayer
 
-    let stream: Engine.Stream
+    internal let stream: Engine.Stream
 
-    init(host: String, port: Int, securityLayer: SecurityLayer) throws {
+    public init(host: String, port: Int, securityLayer: SecurityLayer) throws {
         self.host = host
         self.port = port
         self.securityLayer  = securityLayer
 
         let client = try ClientStreamType(host: host, port: port, securityLayer: securityLayer)
-        self.stream = try client.connect()
+        let stream = try client.connect()
+        self.stream = StreamBuffer(stream)
     }
 
     deinit {
         if !stream.closed {
             _ = try? stream.close()
         }
+    }
+
+    @discardableResult
+    internal func negotiateSession(using credentials: SMTPCredentials, handler: @noescape (SMTPClient) throws -> Void) throws -> (code: Int, greeting: String) {
+        try initializeSession(using: credentials)
+        try handler(self)
+        return try quit()
     }
 
     // MARK: Initialization
@@ -68,80 +76,6 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
             return
         }
     }
-
-    // MARK: Quit
-
-    private func quit() throws -> (code: Int, greeting: String) {
-        try transmit(line: "QUIT")
-        let (code, reply, isLast) = try acceptReplyLine()
-        guard isLast && code == 221 else { throw "failed to quit \(code) \(reply)" }
-        return (code, reply)
-    }
-
-    // MARK: Send Emails
-
-    /*
-     Can send multiple emails, some limits. for example, SendGrid limits to 100 messages per connection.
-     Because we can't determine the amount of permitted emails on a single connection, it is the user's
-     responsibility to determine and enforce the limits of the system they are using.
-     */
-    @discardableResult
-    func send(_ emails: EmailMessage..., using auth: SMTPCredentials) throws -> (code: Int, greeting: String) {
-        return try send(emails: emails, using: auth)
-    }
-
-    /**
-     Can send multiple emails, some limits. for example, SendGrid limits to 100 messages per connection.
-     Because we can't determine the amount of permitted emails on a single connection, it is the user's
-     responsibility to determine and enforce the limits of the system they are using.
-     */
-    @discardableResult
-    func send(emails: [EmailMessage], using auth: SMTPCredentials) throws -> (code: Int, greeting: String) {
-        // open
-        try initializeSession(using: auth)
-
-        // commands go here
-        try emails.forEach(transmit)
-
-        // close
-        return try quit()
-    }
-
-    /**
-     Once a session has been initialized, emails can be processed
-     */
-    private func transmit(_ email: EmailMessage) throws {
-        try transmit(line: "MAIL FROM: <\(email.from.address)>", expectingReplyCode: 250)
-        for to in email.to {
-            try transmit(line: "RCPT TO: <\(to.address)>", expectingReplyCode: 250)
-        }
-
-        try transmitDATA(for: email)
-    }
-
-    private func transmitDATA(for email: EmailMessage) throws {
-        // open data
-        try transmit(line: "DATA", expectingReplyCode: 354)
-
-        // Data Headers
-        try transmit(line: "Date: \(email.date)")
-        try transmit(line: "Message-id: \(email.id)")
-        try transmit(line: "From: " + email.from.smtpLongFormatted)
-        try transmit(line: "To:" + email.to.smtpFormatted())
-        try transmit(line: "Subject: " + email.subject)
-        try transmit(line: "") // empty line to start body
-        // Data Headers End
-
-        // Send Message
-        try stream.send(email.body, flushing: true)
-        // Message Done
-
-        // TODO: Send Attachments
-
-        // close data w/ data terminator -- don't need additional terminating `\r\n`
-        try transmit(line: "\r\n.\r\n", terminating: false, expectingReplyCode: 250)
-    }
-
 
     /*
      https://tools.ietf.org/html/rfc5321#section-3.1
@@ -224,5 +158,13 @@ final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         let extensions = try replies.dropFirst().map(EHLOExtension.init)
         return (header, extensions)
     }
-    
+
+    // MARK: Quit
+
+    private func quit() throws -> (code: Int, greeting: String) {
+        try transmit(line: "QUIT")
+        let (code, reply, isLast) = try acceptReplyLine()
+        guard isLast && code == 221 else { throw "failed to quit \(code) \(reply)" }
+        return (code, reply)
+    }
 }
