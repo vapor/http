@@ -38,14 +38,13 @@ extension EmailBody: EmailBodyRepresentable {
 public struct EmailAttachment {
     public let filename: String
     public let type: String
-    public let encoding: String
+//    public let encoding: String
 
     public let body: Bytes
 
-    public init(filename: String, type: String, encoding: String, body: Bytes) {
+    public init(filename: String, type: String, body: Bytes) {
         self.filename = filename
         self.type = type
-        self.encoding = encoding
         self.body = body
     }
 }

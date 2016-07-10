@@ -70,21 +70,23 @@ extension SMTPClient {
         try transmit(line: "To:" + email.to.smtpLongFormatted)
         try transmit(line: "Subject: " + email.subject)
         try transmit(line: "MIME-Version: 1.0 (Vapor SMTP)")
-        try transmit(line: "Content-type: multipart/mixed; boundary=\"vapor-smtp-boundary\"")
+        let boundary = "vapor-smtp-multipart-boundary"
+        try transmit(line: "Content-type: multipart/mixed; boundary=\"\(boundary)\"")
         try transmit(line: "") // empty line to start body
         // Data Headers End
 
         // TODO: Lines should always terminate, right? Is this something else?
 //        try transmit(line: "preamble, ignored by parsers, handy info for non-mime compliant reader", terminating: false)
-        try transmit(line: "--vapor-smtp-boundary")
-        try transmit(email.body)
+//        try transmit(line: "--vapor-smtp-boundary")
+        try transmit(email.body, withBoundary: boundary)
+        
 //        try stream.send("Content-Type: text/html; charset=utf8\r\n\r\n")
 //        try stream.send("HTML? <b>im bold</b>\r\n")
 //        try transmit(line: "This is implicitly typed plain ASCII text. It does NOT end with a linebreak. ", terminating: false)
 //        try transmit(line: "--simple boundary\r\n", terminating: false)
 //        try transmit(line: "Content-type: text/plain; charset=us-ascii\r\n\r\n", terminating: false)
 //        try transmit(line: "This IS explicitly typed plain ascii text. it DOES end w/ a line break", terminating: true)
-        try transmit(line: "--vapor-smtp-boundary--")
+        try transmit(line: "--\(boundary)--")
         try transmit(line: "") // empty line
 
         // Send Message
@@ -97,8 +99,8 @@ extension SMTPClient {
         try transmit(line: "\r\n.\r\n", terminating: false, expectingReplyCode: 250)
     }
 
-    private func transmit(_ body: EmailBody) throws {
-//        try transmit(line: "--vapor-smtp-boundary\r\n", terminating: false)
+    private func transmit(_ body: EmailBody, withBoundary boundary: String) throws {
+        try transmit(line: "--\(boundary)")
 
         let contentType: String
         switch body.type {
