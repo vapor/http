@@ -12,7 +12,9 @@ The core transport layer used in [Vapor](https://github.com/qutheory/github).
 |:-:|:-:|:-:|
 |0.1.x|8.0 Beta|DEVELOPMENT-SNAPSHOT-2016-06-20-a|
 
-## [Install trouble shooting](http://stackoverflow.com/questions/38296145/vapor-web-framework-error-swift-does-not-support-the-sdk-macosx10-11-sdk)
+## ⛔️ Important Install Notes
+
+[StackOverflow](http://stackoverflow.com/questions/38296145/vapor-web-framework-error-swift-does-not-support-the-sdk-macosx10-11-sdk)
 
 Vapor requires Xcode 8 to be fully installed including command line tools. Once Xcode 8 is opened, select:
 
