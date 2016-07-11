@@ -6,7 +6,7 @@ extension SMTPClient {
      Credentials:
      https://app.sendgrid.com/settings/credentials
      */
-    static func makeSendGridClient() throws -> SMTPClient {
+    public static func makeSendGridClient() throws -> SMTPClient {
         return try SMTPClient(host: "smtp.sendgrid.net", port: 465, securityLayer: .tls)
     }
 
@@ -17,7 +17,7 @@ extension SMTPClient {
      user: Your full Gmail or Google Apps email address (e.g. example@gmail.com or example@yourdomain.com)
      pass: Your Gmail or Google Apps email password
      */
-    static func makeGMailClient() throws -> SMTPClient {
+    public static func makeGMailClient() throws -> SMTPClient {
         return try SMTPClient(host: "smtp.gmail.com", port: 465, securityLayer: .tls)
     }
 }

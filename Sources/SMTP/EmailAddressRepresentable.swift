@@ -1,4 +1,3 @@
-
 public protocol EmailAddressRepresentable {
     var emailAddress: EmailAddress { get }
 }

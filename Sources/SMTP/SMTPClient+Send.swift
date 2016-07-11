@@ -64,39 +64,33 @@ extension SMTPClient {
         // Data Headers
         // TODO: Might not need date, add way to customize email headers!
         // TODO: Don't forget header extensibility
-        try transmit(line: "Date: " + email.date)
-        try transmit(line: "Message-id: " + email.id)
-        try transmit(line: "From: " + email.from.smtpLongFormatted)
-        try transmit(line: "To:" + email.to.smtpLongFormatted)
-        try transmit(line: "Subject: " + email.subject)
-        try transmit(line: "MIME-Version: 1.0 (Vapor SMTP)")
+//        try transmit(line: "Date: " + email.date)
+//        try transmit(line: "Message-id: " + email.id)
+//        try transmit(line: "From: " + email.from.smtpLongFormatted)
+//        try transmit(line: "To:" + email.to.smtpLongFormatted)
+//        try transmit(line: "Subject: " + email.subject)
+//        try transmit(line: "MIME-Version: 1.0 (Vapor SMTP)")
+//        let boundary = "vapor-smtp-multipart-boundary"
+//        try transmit(line: "Content-type: multipart/mixed; boundary=\"\(boundary)\"")
+//        for (key, val) in email.extendedFields {
+//            try transmit(line: "\(key): \(val)")
+//        }
+        for (key, val) in email.makeDataHeaders() {
+            try transmit(line: "\(key): \(val)")
+        }
         let boundary = "vapor-smtp-multipart-boundary"
         try transmit(line: "Content-type: multipart/mixed; boundary=\"\(boundary)\"")
         try transmit(line: "") // empty line to start body
         // Data Headers End
 
-        // TODO: Lines should always terminate, right? Is this something else?
-//        try transmit(line: "preamble, ignored by parsers, handy info for non-mime compliant reader", terminating: false)
-//        try transmit(line: "--vapor-smtp-boundary")
         try transmit(email.body, withBoundary: boundary)
-
-        try email.attachments.forEach { attachment in
+        try email.attachments.map { $0.emailAttachment } .forEach { attachment in
             try transmit(attachment, withBoundary: boundary)
         }
-//        try stream.send("Content-Type: text/html; charset=utf8\r\n\r\n")
-//        try stream.send("HTML? <b>im bold</b>\r\n")
-//        try transmit(line: "This is implicitly typed plain ASCII text. It does NOT end with a linebreak. ", terminating: false)
-//        try transmit(line: "--simple boundary\r\n", terminating: false)
-//        try transmit(line: "Content-type: text/plain; charset=us-ascii\r\n\r\n", terminating: false)
-//        try transmit(line: "This IS explicitly typed plain ascii text. it DOES end w/ a line break", terminating: true)
+
+        // terminate multipart
         try transmit(line: "--\(boundary)--")
         try transmit(line: "") // empty line
-
-        // Send Message
-//        try stream.send(email.body, flushing: true)
-        // Message Done
-
-        // TODO: Send Attachments? Migh tbe below operator
 
         // close data w/ data terminator -- don't need additional terminating `\r\n`
         try transmit(line: "\r\n.\r\n", terminating: false, expectingReplyCode: 250)
@@ -113,10 +107,10 @@ extension SMTPClient {
             contentType = "text/plain"
         }
         try transmit(line: "Content-Type: \(contentType); charset=utf8")
-        try transmit(line: "")  // empty line
+        try transmit(line: "") // empty line
 
         try stream.send(body.content)
-        try transmit(line: "")
+        try transmit(line: "") // empty line
     }
 
     private func transmit(_ attachment: EmailAttachment, withBoundary boundary: String) throws {
