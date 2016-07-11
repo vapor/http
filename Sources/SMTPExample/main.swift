@@ -19,7 +19,7 @@ enum Error: ErrorProtocol {
 
 func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable) throws -> Email {
     // MARK: Templated Body
-    let body = multicolorHTML(pairs: ["va": "paleblue", "p": "white", "or": "purple"])
+    let body = multicolorHTML(pairs: ["va": "powderblue", "p": "white", "or": "purple"])
 
     // MARK: Attachment files
     guard let testPDF = EmailAttachment(filename: "vapor-test-pdf.pdf", in: workDir) else {
@@ -75,8 +75,12 @@ assert(from != nil, "set from email, ex: ")
 
 /*
  The target email address. For example:
- 
-    let to: EmailAddressRepresentable = "someUser@fancyemail.com"
+
+     let to: EmailAddressRepresentable = EmailAddress(name: "Password Rest", address: "password.reset@myapp.com")
+
+     or
+
+     let to: EmailAddressRepresentable = "noreply@myapp.com"
  */
 let to: EmailAddressRepresentable! = nil
 assert(from != nil, "set from email")
