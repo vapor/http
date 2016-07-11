@@ -4,11 +4,11 @@ import SMTP
 
 // Simple Email
 
-func simpleEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable) throws -> EmailMessage {
-    return EmailMessage(from: from,
-                        to: to,
-                        subject: "Vapor SMTP - Simple",
-                        body: "Hello from Vapor SMTP 👋")
+func simpleEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable) throws -> Email {
+    return Email(from: from,
+                 to: to,
+                 subject: "Vapor SMTP - Simple",
+                 body: "Hello from Vapor SMTP 👋")
 }
 
 // Complex Email
@@ -17,7 +17,7 @@ enum Error: ErrorProtocol {
     case missingFile
 }
 
-func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable) throws -> EmailMessage {
+func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable) throws -> Email {
     // MARK: Templated Body
     let body = multicolorHTML(pairs: ["va": "paleblue", "p": "white", "or": "purple"])
 
@@ -30,10 +30,10 @@ func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable
     }
 
     // MARK: Email
-    let email = EmailMessage(from: from,
-                             to: to,
-                             subject: "Vapor SMTP - Attachments, HTML",
-                             body: body)
+    let email = Email(from: from,
+                      to: to,
+                      subject: "Vapor SMTP - Attachments, HTML",
+                      body: body)
     email.attachments.append(testPDF)
     email.attachments.append(testPNG)
     return email
@@ -87,7 +87,7 @@ assert(from != nil, "set from email")
  
      let email = try simpleEmail(from: from, to: to)
  */
-let email: EmailMessage = try complexEmail(from: from, to: to)
+let email: Email = try complexEmail(from: from, to: to)
 
 // MARK: Send
 

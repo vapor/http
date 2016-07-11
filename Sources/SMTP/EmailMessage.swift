@@ -13,8 +13,7 @@ import struct Base.Bytes
 //     keywords /
 //     optional-field)
 //     */
-// TODO: EmailMessage => Email?
-public final class EmailMessage {
+public final class Email {
 
     public let from: EmailAddress
     public let to: [EmailAddress]

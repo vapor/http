@@ -5,7 +5,7 @@ extension SMTPClient {
      Send an email to connection using specified credentials
      */
     @discardableResult
-    public func send(_ email: EmailMessage, using auth: SMTPCredentials) throws -> (code: Int, greeting: String) {
+    public func send(_ email: Email, using auth: SMTPCredentials) throws -> (code: Int, greeting: String) {
         return try send([email], using: auth)
     }
 
@@ -15,7 +15,7 @@ extension SMTPClient {
      responsibility to determine and enforce the limits of the system they are using.
      */
     @discardableResult
-    public func send(_ emails: [EmailMessage], using creds: SMTPCredentials) throws -> (code: Int, greeting: String) {
+    public func send(_ emails: [Email], using creds: SMTPCredentials) throws -> (code: Int, greeting: String) {
         return try negotiateSession(using: creds) { client in
             try emails.forEach(transmit)
         }
@@ -24,7 +24,7 @@ extension SMTPClient {
     /**
      Once a session has been initialized, emails can be processed
      */
-    private func transmit(_ email: EmailMessage) throws {
+    private func transmit(_ email: Email) throws {
         try transmit(line: "MAIL FROM: <\(email.from.address)>", expectingReplyCode: 250)
         for to in email.to {
             try transmit(line: "RCPT TO: <\(to.address)>", expectingReplyCode: 250)
@@ -57,7 +57,7 @@ extension SMTPClient {
      --simple boundary--
      This is the epilogue.  It is also to be ignored.
      */
-    private func transmitDATA(for email: EmailMessage) throws {
+    private func transmitDATA(for email: Email) throws {
         // open data
         try transmit(line: "DATA", expectingReplyCode: 354)
 
