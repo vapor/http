@@ -2,89 +2,92 @@ import Base
 import Engine
 
 /*
- SMTP Makes use of multiple RFC specs
+     SMTP Makes use of multiple RFC specs
 
- ESMTP
- https://tools.ietf.org/html/rfc1869#section-4.3
- SMTP
- https://tools.ietf.org/html/rfc5321#section-4.5.3.2
+     ESMTP
+     https://tools.ietf.org/html/rfc1869#section-4.3
+     SMTP
+     https://tools.ietf.org/html/rfc5321#section-4.5.3.2
 
- AUTH
- https://tools.ietf.org/html/rfc821#page-4
- GREAT UNOFFICIAL AUTH
- http://www.fehcom.de/qmail/smtpauth.html
+     AUTH
+     https://tools.ietf.org/html/rfc821#page-4
+     GREAT UNOFFICIAL AUTH
+     http://www.fehcom.de/qmail/smtpauth.html
 
- LEGACY - DO NOT SUPPORT
- https://tools.ietf.org/html/rfc821#page-4
+     LEGACY - DO NOT SUPPORT
+     https://tools.ietf.org/html/rfc821#page-4
 
- Timeouts
- https://tools.ietf.org/html/rfc5321#section-4.5.3.2
- 
- 
- Quickstart
- Specific sequences are:
+     Timeouts
+     https://tools.ietf.org/html/rfc5321#section-4.5.3.2
+     
+     
+     Quickstart
+     Specific sequences are:
 
- CONNECTION ESTABLISHMENT
+     CONNECTION ESTABLISHMENT
 
- S: 220
- E: 554
+     S: 220
+     E: 554
 
- EHLO or HELO
+     EHLO or HELO
 
- S: 250
- E: 504 (a conforming implementation could return this code only
- in fairly obscure cases), 550, 502 (permitted only with an old-
- style server that does not support EHLO)
+     S: 250
+     E: 504 (a conforming implementation could return this code only
+     in fairly obscure cases), 550, 502 (permitted only with an old-
+     style server that does not support EHLO)
 
- MAIL
+     MAIL
 
- S: 250
- E: 552, 451, 452, 550, 553, 503, 455, 555
+     S: 250
+     E: 552, 451, 452, 550, 553, 503, 455, 555
 
- RCPT
+     RCPT
 
- S: 250, 251 (but see Section 3.4 for discussion of 251 and 551)
- E: 550, 551, 552, 553, 450, 451, 452, 503, 455, 555
+     S: 250, 251 (but see Section 3.4 for discussion of 251 and 551)
+     E: 550, 551, 552, 553, 450, 451, 452, 503, 455, 555
 
- DATA
+     DATA
 
- I: 354 -> data -> S: 250
+     I: 354 -> data -> S: 250
 
- E: 552, 554, 451, 452
+     E: 552, 554, 451, 452
 
- E: 450, 550 (rejections for policy reasons)
+     E: 450, 550 (rejections for policy reasons)
 
- E: 503, 554
+     E: 503, 554
 
- RSET
+     RSET
 
- S: 250
+     S: 250
 
- VRFY
+     VRFY
 
- S: 250, 251, 252
- E: 550, 551, 553, 502, 504
+     S: 250, 251, 252
+     E: 550, 551, 553, 502, 504
 
- EXPN
+     EXPN
 
- S: 250, 252
- E: 550, 500, 502, 504
+     S: 250, 252
+     E: 550, 500, 502, 504
 
- HELP
+     HELP
 
- S: 211, 214
- E: 502, 504
+     S: 211, 214
+     E: 502, 504
 
- NOOP
+     NOOP
 
- S: 250
+     S: 250
 
- QUIT
+     QUIT
 
- S: 221
+     S: 221
 */
 
 
+/**
+    SMTPClient is designed to connect and transmit messages to SMTP Servers
+*/
 public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     public let host: String
     public let port: Int
@@ -92,6 +95,11 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
 
     internal let stream: Engine.Stream
 
+    /**
+         Connect the client to given SMTP Server
+         
+            try SMTPClient(host: "smtp.gmail.com", port: 465, securityLayer: .tls)
+    */
     public init(host: String, port: Int, securityLayer: SecurityLayer) throws {
         self.host = host
         self.port = port
