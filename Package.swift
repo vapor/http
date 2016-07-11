@@ -46,7 +46,12 @@ let package = Package(
         Target(
             name: "EngineExample",
             dependencies: [
-                .Target(name: "Engine"),
+                .Target(name: "Engine")
+            ]
+        ),
+        Target(
+            name: "WebSocketsExample",
+            dependencies: [
                 .Target(name: "WebSockets")
             ]
         ),

@@ -1,22 +1,26 @@
 # Engine
 
-The core transport layer used in [Vapor](https://github.com/qutheory/github)
+The core transport layer used in [Vapor](https://github.com/qutheory/github).
 
-## 🚦 Current Environment
+* [🚒 Engine](#httpclient)
+* [🕸 WebSockets](#websockets)
+* [📬 SMTP](#smtp)
+
+## 🌎 Current Environment
 
 | Engine | Xcode | Swift |
 |:-:|:-:|:-:|
 |0.1.x|8.0 Beta|DEVELOPMENT-SNAPSHOT-2016-06-20-a|
 
-<h3 align="center">❗️<b>WARNING</b>❗️</h3>
+## [Install trouble shooting](http://stackoverflow.com/questions/38296145/vapor-web-framework-error-swift-does-not-support-the-sdk-macosx10-11-sdk)
 
-<b>Only applies to versions <= 0.12.x</b>
-
-If you've installed Xcode 8, you'll likely get an SDK error when building from command line. The following command has been known to help:
+Vapor requires Xcode 8 to be fully installed including command line tools. Once Xcode 8 is opened, select:
 
 ```
-sudo xcode-select -s /Applications/Xcode.app/
+Xcode > Preferences > Location > Command Line Tools > Xcode 8
 ```
+
+[More Help Here!](http://stackoverflow.com/questions/38296145/vapor-web-framework-error-swift-does-not-support-the-sdk-macosx10-11-sdk) Or [visit us in slack](http://slack.qutheory.io).
 
 ## Linux Ready
 
@@ -53,7 +57,7 @@ try server.start(responder: Responder()) { error in
 }
 ```
 
-#### WebSockets
+#### WebSocket Client
 
 ```Swift
 import Engine
@@ -70,6 +74,57 @@ try WebSocket.connect(to: url) { ws in
         print("\n[CLOSED]\n")
     }
 }
+```
+
+#### WebSocket Server
+
+```Swift
+import Engine
+import WebSockets
+
+final class Responder: HTTPResponder {
+    func respond(to request: Request) throws -> Response {
+        return try request.upgradeToWebSocket { ws in
+            print("[ws connected]")
+
+            ws.onText = { ws, text in
+                print("[ws text] \(text)")
+                try ws.send("🎙 \(text)")
+            }
+
+            ws.onClose = { _, code, reason, clean in
+                print("[ws close] \(clean ? "clean" : "dirty") \(code?.description ?? "") \(reason ?? "")")
+            }
+        }
+    }
+}
+
+let server = try HTTPServer<TCPServerStream, HTTPParser<HTTPRequest>, HTTPSerializer<HTTPResponse>>(port: port)
+
+print("Connect websocket to http://localhost:\(port)/")
+try server.start(responder: Responder()) { error in
+    print("Got server error: \(error)")
+}
+```
+
+#### SMTP
+
+```Swift
+import SMTP
+
+let credentials = SMTPCredentials(user: "server-admin-login",
+                                  pass: "secret-server-password")
+
+let from = EmailAddress(name: "Password Rest",
+                        address: "noreply@myapp.com")
+let to = "some-user@random.com"
+let email: Email = Email(from: from,
+                         to: to,
+                         subject: "Vapor SMTP - Simple",
+                         body: "Hello from Vapor SMTP 👋")
+
+let client = try SMTPClient<TCPClientStream>.makeGMailClient()
+try client.send(email, using: credentials)
 ```
 
 ## Architecture
