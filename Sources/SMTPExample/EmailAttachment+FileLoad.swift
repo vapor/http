@@ -17,7 +17,10 @@ let mediaTypes: [String: String] = [
 
 extension EmailAttachment {
     init?(filename: String, in directory: String) {
-        guard let suffix = filename.components(separatedBy: ".").last, let mediaType = mediaTypes[suffix] else { return nil }
+        guard
+            let suffix = filename.components(separatedBy: ".").last,
+            let mediaType = mediaTypes[suffix]
+            else { return nil }
         let url = NSURL.fileURL(withPath: directory.finished(with: "/") + filename)
         guard let data = NSData(contentsOf: url) else { return nil }
         var bytes = [UInt8](repeating: 0, count: data.length)

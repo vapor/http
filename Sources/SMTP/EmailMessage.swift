@@ -33,7 +33,11 @@ public final class EmailMessage {
     //    var comments: [String] = [] // ?
     //    var keywords: [String] = [] // ?
 
-    public let date: String = RFC1123.now()
+    #if os(Linux)
+    public let date: NSDate = NSDate()
+    #else
+    public let date: Date = Date()
+    #endif
 
     // TODO:
     var extendedFields: [String: String] = [:]
@@ -51,7 +55,7 @@ public final class EmailMessage {
 
     public func makeDataHeaders() -> [String: String] {
         var dataHeaders: [String : String] = [:]
-        dataHeaders["Date"] = date
+        dataHeaders["Date"] = date.smtpFormatted
         dataHeaders["Message-Id"] = id
         dataHeaders["From"] = from.smtpLongFormatted
         dataHeaders["To"] = to.smtpLongFormatted

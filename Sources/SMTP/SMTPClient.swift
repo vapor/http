@@ -126,7 +126,7 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
 
      [WARNING] - sensitive code, make sure to consult rfc thoroughly
      */
-    private func initiate(fromDomain: String = "localhost") throws -> (header: SMTPHeader, extensions: [EHLOExtension]) {
+    private func initiate(fromDomain: String = "localhost") throws -> (greeting: SMTPGreeting, extensions: [EHLOExtension]) {
         try transmit(line: "EHLO \(fromDomain)")
         var (code, replies) = try acceptReply()
 
@@ -156,9 +156,11 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         /*
          First line is header, subsequent lines are ehlo extensions
          */
-        guard let header = try replies.first.flatMap(SMTPHeader.init) else { throw "response should have at least one line -- even in SMTP original" }
+        guard let greeting = try replies.first.flatMap(SMTPGreeting.init) else {
+            throw "response should have at least one line -- even in SMTP original"
+        }
         let extensions = try replies.dropFirst().map(EHLOExtension.init)
-        return (header, extensions)
+        return (greeting, extensions)
     }
 
     // MARK: Quit
