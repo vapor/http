@@ -39,7 +39,7 @@ func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable
     return email
 }
 
-// MARK: Send
+// MARK: Config
 
 /*
  Set your username and password here
@@ -59,13 +59,19 @@ func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable
     SMTPCredentials(user: "noreply", pass: "*********")
  */
 let credentials: SMTPCredentials! = nil
+assert(credentials != nil, "set credentials")
 
 /*
- The sender's email address, for example:
+ A Valid sender's email address, for example:
  
     let from: EmailAddressRepresentable = EmailAddress(name: "Password Rest", address: "password.reset@myapp.com")
+ 
+    or
+    
+    let from: EmailAddressRepresentable = "noreply@myapp.com"
  */
 let from: EmailAddressRepresentable! = nil
+assert(from != nil, "set from email, ex: ")
 
 /*
  The target email address. For example:
@@ -73,13 +79,17 @@ let from: EmailAddressRepresentable! = nil
     let to: EmailAddressRepresentable = "someUser@fancyemail.com"
  */
 let to: EmailAddressRepresentable! = nil
+assert(from != nil, "set from email")
 
-/*
+
+/**
  The email that will be sent to the target address, also try
  
      let email = try simpleEmail(from: from, to: to)
  */
 let email: EmailMessage = try complexEmail(from: from, to: to)
+
+// MARK: Send
 
 let client = try SMTPClient<TCPClientStream>.makeGMailClient()
 let (code, reply) = try client.send(email, using: credentials)
