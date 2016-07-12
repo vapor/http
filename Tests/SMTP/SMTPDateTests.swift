@@ -10,6 +10,11 @@ import XCTest
 import Foundation
 @testable import SMTP
 
+#if Xcode
+/*
+    Structure date tests for remote server when possible
+*/
+
 class SMTPDateTests: XCTestCase {
     static let allTests = [
         ("testSMTPDate", testSMTPDate),
@@ -36,3 +41,5 @@ class SMTPDateTests: XCTestCase {
         XCTAssert(timeZone != timeOfDay)
     }
 }
+
+#endif
