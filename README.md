@@ -15,7 +15,7 @@ Send emails.
 
 | Engine | Xcode | Swift |
 |:-:|:-:|:-:|
-|0.1.x|8.0 Beta|DEVELOPMENT-SNAPSHOT-2016-06-20-a|
+|0.1.x|8.0 Beta|3.0-Preview-2|
 
 ## ⛔️ Important Install Notes
 
