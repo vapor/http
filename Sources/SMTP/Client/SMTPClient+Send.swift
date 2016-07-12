@@ -1,5 +1,3 @@
-import Foundation
-
 extension SMTPClient {
     /*
      Send an email to connection using specified credentials
@@ -34,47 +32,34 @@ extension SMTPClient {
     }
 
     /*
-     From: Nathaniel Borenstein <nsb@bellcore.com>
-     To:  Ned Freed <ned@innosoft.com>
-     Subject: Sample message
-     MIME-Version: 1.0
-     Content-type: multipart/mixed; boundary="simple
-     boundary"
+         From: Nathaniel Borenstein <nsb@bellcore.com>
+         To:  Ned Freed <ned@innosoft.com>
+         Subject: Sample message
+         MIME-Version: 1.0
+         Content-type: multipart/mixed; boundary="simple
+         boundary"
 
-     This is the preamble.  It is to be ignored, though it
-     is a handy place for mail composers to include an
-     explanatory note to non-MIME compliant readers.
-     --simple boundary
+         This is the preamble.  It is to be ignored, though it
+         is a handy place for mail composers to include an
+         explanatory note to non-MIME compliant readers.
+         --simple boundary
 
-     This is implicitly typed plain ASCII text.
-     It does NOT end with a linebreak.
-     --simple boundary
-     Content-type: text/plain; charset=us-ascii
+         This is implicitly typed plain ASCII text.
+         It does NOT end with a linebreak.
+         --simple boundary
+         Content-type: text/plain; charset=us-ascii
 
-     This is explicitly typed plain ASCII text.
-     It DOES end with a linebreak.
+         This is explicitly typed plain ASCII text.
+         It DOES end with a linebreak.
 
-     --simple boundary--
-     This is the epilogue.  It is also to be ignored.
-     */
+         --simple boundary--
+         This is the epilogue.  It is also to be ignored.
+    */
     private func transmitDATA(for email: Email) throws {
         // open data
         try transmit(line: "DATA", expectingReplyCode: 354)
 
-        // Data Headers
-        // TODO: Might not need date, add way to customize email headers!
-        // TODO: Don't forget header extensibility
-//        try transmit(line: "Date: " + email.date)
-//        try transmit(line: "Message-id: " + email.id)
-//        try transmit(line: "From: " + email.from.smtpLongFormatted)
-//        try transmit(line: "To:" + email.to.smtpLongFormatted)
-//        try transmit(line: "Subject: " + email.subject)
-//        try transmit(line: "MIME-Version: 1.0 (Vapor SMTP)")
-//        let boundary = "vapor-smtp-multipart-boundary"
-//        try transmit(line: "Content-type: multipart/mixed; boundary=\"\(boundary)\"")
-//        for (key, val) in email.extendedFields {
-//            try transmit(line: "\(key): \(val)")
-//        }
+        // transmit headers
         for (key, val) in email.makeDataHeaders() {
             try transmit(line: "\(key): \(val)")
         }
@@ -91,6 +76,7 @@ extension SMTPClient {
         // terminate multipart
         try transmit(line: "--\(boundary)--")
         try transmit(line: "") // empty line
+        // close parts
 
         // close data w/ data terminator -- don't need additional terminating `\r\n`
         try transmit(line: "\r\n.\r\n", terminating: false, expectingReplyCode: 250)
@@ -126,6 +112,22 @@ extension SMTPClient {
         */
         try stream.send(attachment.body.base64Data)
         try transmit(line: "") // empty line
+    }
+}
+
+extension Email {
+    private func makeDataHeaders() -> [String: String] {
+        var dataHeaders: [String : String] = [:]
+        dataHeaders["Date"] = date.smtpFormatted
+        dataHeaders["Message-Id"] = id
+        dataHeaders["From"] = from.smtpLongFormatted
+        dataHeaders["To"] = to.smtpLongFormatted
+        dataHeaders["Subject"] = subject
+        dataHeaders["MIME-Version"] = "1.0 (Vapor SMTP)"
+        for (key, val) in extendedFields {
+            dataHeaders[key] = val
+        }
+        return dataHeaders
     }
 }
 

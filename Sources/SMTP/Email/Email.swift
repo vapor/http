@@ -62,9 +62,13 @@ public final class Email {
     #endif
 
     /**
-        The main body of the email. Currently supports 
+        The main body of the email. Currently supports
     */
     public var body: EmailBody
+
+    /**
+        Attachments to include with the email.
+    */
     public var attachments: [EmailAttachmentRepresentable]
 
     /**
@@ -74,44 +78,14 @@ public final class Email {
      */
     public var extendedFields: [String: String] = [:]
 
+    /**
+        Email constructor w/ necessary components.
+    */
     public init(from: EmailAddressRepresentable, to: EmailAddressRepresentable..., subject: String, body: EmailBodyRepresentable, attachments: [EmailAttachmentRepresentable] = []) {
         self.from = from.emailAddress
         self.to = to.map { $0.emailAddress }
         self.subject = subject
         self.body = body.emailBody
         self.attachments = attachments
-    }
-
-    public func makeDataHeaders() -> [String: String] {
-        var dataHeaders: [String : String] = [:]
-        dataHeaders["Date"] = date.smtpFormatted
-        dataHeaders["Message-Id"] = id
-        dataHeaders["From"] = from.smtpLongFormatted
-        dataHeaders["To"] = to.smtpLongFormatted
-        dataHeaders["Subject"] = subject
-        dataHeaders["MIME-Version"] = "1.0 (Vapor SMTP)"
-        for (key, val) in extendedFields {
-            dataHeaders[key] = val
-        }
-        return dataHeaders
-    }
-}
-
-extension EmailAddress {
-    private var smtpLongFormatted: String {
-        var formatted = ""
-
-        if let name = self.name {
-            formatted += name
-            formatted += " "
-        }
-        formatted += "<\(address)>"
-        return formatted
-    }
-}
-
-extension Sequence where Iterator.Element == EmailAddress {
-    private var smtpLongFormatted: String {
-        return self.map { $0.smtpLongFormatted } .joined(separator: ", ")
     }
 }

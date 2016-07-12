@@ -42,55 +42,55 @@ func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable
 // MARK: Config
 
 /*
- Set your username and password here
- 
- SendGrid:
- 
- Credentials MUST have 'MAIL' permission. UI/API not required
- https://app.sendgrid.com/settings/credentials
- 
- GMail:
- 
- Gmail Username & Password
- LIMIT: Personal accounts have limits of about 100 emails a day.
- 
- Example:
+     Set your username and password here
+     
+     SendGrid:
+     
+     Credentials MUST have 'MAIL' permission. UI/API not required
+     https://app.sendgrid.com/settings/credentials
+     
+     GMail:
+     
+     Gmail Username & Password
+     LIMIT: Personal accounts have limits of about 100 emails a day.
+     
+     Example:
 
-    SMTPCredentials(user: "noreply", pass: "*********")
- */
+        SMTPCredentials(user: "noreply", pass: "*********")
+*/
 let credentials: SMTPCredentials! = nil
 assert(credentials != nil, "set credentials")
 
 /*
- A Valid sender's email address, for example:
- 
-    let from: EmailAddressRepresentable = EmailAddress(name: "Password Rest", address: "password.reset@myapp.com")
- 
-    or
-    
-    let from: EmailAddressRepresentable = "noreply@myapp.com"
- */
+     A Valid sender's email address, for example:
+     
+        let from: EmailAddressRepresentable = EmailAddress(name: "Password Rest", address: "password.reset@myapp.com")
+     
+        or
+        
+        let from: EmailAddressRepresentable = "noreply@myapp.com"
+*/
 let from: EmailAddressRepresentable! = nil
 assert(from != nil, "set from email, ex: ")
 
 /*
- The target email address. For example:
+     The target email address. For example:
 
-     let to: EmailAddressRepresentable = EmailAddress(name: "Password Rest", address: "password.reset@myapp.com")
+         let to: EmailAddressRepresentable = EmailAddress(name: "Password Rest", address: "password.reset@myapp.com")
 
-     or
+         or
 
-     let to: EmailAddressRepresentable = "noreply@myapp.com"
- */
+         let to: EmailAddressRepresentable = "noreply@myapp.com"
+*/
 let to: EmailAddressRepresentable! = nil
 assert(from != nil, "set from email")
 
 
 /**
- The email that will be sent to the target address, also try
- 
-     let email = try simpleEmail(from: from, to: to)
- */
+     The email that will be sent to the target address, also try
+     
+         let email = try simpleEmail(from: from, to: to)
+*/
 let email: Email = try complexEmail(from: from, to: to)
 
 // MARK: Send

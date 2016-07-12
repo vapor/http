@@ -1,4 +1,10 @@
+/*
+    Objects that can be represented as an EmailBody
+*/
 public protocol EmailBodyRepresentable {
+    /*
+        The email body that can represent the object
+    */
     var emailBody: EmailBody { get }
 }
 

@@ -151,34 +151,10 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     }
 
     /*
-     https://tools.ietf.org/html/rfc5321#section-3.1
+         https://tools.ietf.org/html/rfc5321#section-3.1
 
-     3.1.  Session Initiation
-
-     An SMTP session is initiated when a client opens a connection to a
-     server and the server responds with an opening message.
-
-     SMTP server implementations MAY include identification of their
-     software and version information in the connection greeting reply
-     after the 220 code, a practice that permits more efficient isolation
-     and repair of any problems.  Implementations MAY make provision for
-     SMTP servers to disable the software and version announcement where
-     it causes security concerns.  While some systems also identify their
-     contact point for mail problems, this is not a substitute for
-     maintaining the required "postmaster" address (see Section 4).
-
-     The SMTP protocol allows a server to formally reject a mail session
-     while still allowing the initial connection as follows: a 554
-     response MAY be given in the initial connection opening message
-     instead of the 220.  A server taking this approach MUST still wait
-     for the client to send a QUIT (see Section 4.1.1.10) before closing
-     the connection and SHOULD respond to any intervening commands with
-     "503 bad sequence of commands".  Since an attempt to make an SMTP
-     connection to such a system is probably in error, a server returning
-     a 554 response on connection opening SHOULD provide enough
-     information in the reply text to facilitate debugging of the sending
-     system.
-     */
+         Upon connection, client first accept's server's greeting
+    */
     private func acceptGreeting() throws {
         // After connect, client receives from server first.
         let (replyCode, greeting, isLast) = try acceptReplyLine()
@@ -192,11 +168,11 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     }
 
     /*
-     https://tools.ietf.org/html/rfc5321#section-3.2
-     https://tools.ietf.org/html/rfc1869#section-4.3
+         https://tools.ietf.org/html/rfc5321#section-3.2
+         https://tools.ietf.org/html/rfc1869#section-4.3
 
-     [WARNING] - sensitive code, make sure to consult rfc thoroughly
-     */
+         [WARNING] - sensitive code, make sure to consult rfc thoroughly
+    */
     private func initiate(fromDomain: String = "localhost") throws -> (greeting: SMTPGreeting, extensions: [EHLOExtension]) {
         try transmit(line: "EHLO \(fromDomain)")
         var (code, replies) = try acceptReply()

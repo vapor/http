@@ -1,3 +1,6 @@
+/*
+    The body of the email proper. At the moment, we support plain text and html formatted text.
+*/
 public struct EmailBody {
     public enum BodyType {
         case html, plain

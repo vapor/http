@@ -1,13 +1,11 @@
-// MARK: Authorization
-
 /*
- ***** [WARNING] *****
- Sensitive code below, carefully consult all relating RFC specs,
- these two are a good place to start
+     ***** [WARNING] *****
+     Sensitive code below, carefully consult all relating RFC specs,
+     these two are a good place to start
 
- https://tools.ietf.org/html/rfc2554
- http://www.fehcom.de/qmail/smtpauth.html
- */
+     https://tools.ietf.org/html/rfc2554
+     http://www.fehcom.de/qmail/smtpauth.html
+*/
 extension SMTPClient {
     internal func authorize(method: SMTPAuthMethod, using credentials: SMTPCredentials) throws {
         switch method {

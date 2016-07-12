@@ -2,13 +2,23 @@ import Foundation
 
 #if !os(Linux)
     /*
-        Temporary work around since things have different names on linux
-    */
+     Temporary work around since things have different names on linux
+     */
     typealias NSProcessInfo = ProcessInfo
 #endif
 
-let port = NSProcessInfo.processInfo()
-    .arguments
+
+extension NSProcessInfo {
+    static func arguments() -> [String] {
+        #if !os(Linux)
+            return NSProcessInfo.processInfo.arguments
+        #else
+            return NSProcessInfo.processInfo().arguments
+        #endif
+    }
+}
+let port = NSProcessInfo
+    .arguments()
     .lazy
     .filter { $0.hasPrefix("--port=") }
     .first?

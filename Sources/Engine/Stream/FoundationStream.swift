@@ -102,7 +102,7 @@
         public func upgradeSSL(peerName: String? = nil) {
             for stream in [input, output] {
                 _ = stream.setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
-                                       forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey.rawValue)
+                                       forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)
             }
 
         }
@@ -111,7 +111,7 @@
     extension Foundation.Stream {
         func upgradeSSL() -> Bool {
             return setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
-                               forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey.rawValue)
+                               forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)
         }
     }
 

@@ -10,8 +10,8 @@ import Foundation
 
 extension Date {
     /*
-     An SMTP formatted date string
-     */
+        An SMTP formatted date string
+    */
     public var smtpFormatted: String {
         return NSDateFormatter.sharedSMTPFormatter().string(from: self)
     }
@@ -26,35 +26,35 @@ extension NSDateFormatter {
     }
 
     /*
-     date-time       =   [ day-of-week "," ] date time [CFWS]
+         date-time       =   [ day-of-week "," ] date time [CFWS]
 
-     day-of-week     =   ([FWS] day-name) / obs-day-of-week
+         day-of-week     =   ([FWS] day-name) / obs-day-of-week
 
-     day-name        =   "Mon" / "Tue" / "Wed" / "Thu" /
-     "Fri" / "Sat" / "Sun"
+         day-name        =   "Mon" / "Tue" / "Wed" / "Thu" /
+         "Fri" / "Sat" / "Sun"
 
-     date            =   day month year
+         date            =   day month year
 
-     day             =   ([FWS] 1*2DIGIT FWS) / obs-day
+         day             =   ([FWS] 1*2DIGIT FWS) / obs-day
 
-     month           =   "Jan" / "Feb" / "Mar" / "Apr" /
-     "May" / "Jun" / "Jul" / "Aug" /
-     "Sep" / "Oct" / "Nov" / "Dec"
+         month           =   "Jan" / "Feb" / "Mar" / "Apr" /
+         "May" / "Jun" / "Jul" / "Aug" /
+         "Sep" / "Oct" / "Nov" / "Dec"
 
-     year            =   (FWS 4*DIGIT FWS) / obs-year
+         year            =   (FWS 4*DIGIT FWS) / obs-year
 
-     time            =   time-of-day zone
+         time            =   time-of-day zone
 
-     time-of-day     =   hour ":" minute [ ":" second ]
+         time-of-day     =   hour ":" minute [ ":" second ]
 
-     hour            =   2DIGIT / obs-hour
+         hour            =   2DIGIT / obs-hour
 
-     minute          =   2DIGIT / obs-minute
+         minute          =   2DIGIT / obs-minute
 
-     second          =   2DIGIT / obs-second
+         second          =   2DIGIT / obs-second
 
-     zone            =   (FWS ( "+" / "-" ) 4DIGIT) / obs-zone
-     */
+         zone            =   (FWS ( "+" / "-" ) 4DIGIT) / obs-zone
+    */
     static func makeSMTPFormatter() -> NSDateFormatter {
         let formatter = NSDateFormatter()
         formatter.dateFormat = "EEE, d MMM yyyy HH:mm:ss ZZZ"
