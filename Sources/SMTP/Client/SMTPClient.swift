@@ -125,7 +125,7 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
 
     // MARK: Initialization
 
-    private func initializeSession(using credentials: SMTPCredentials) throws {
+    internal func initializeSession(using credentials: SMTPCredentials) throws {
         // TODO: Timeouts
         try acceptGreeting()
         // TODO: Should default to localhost?
@@ -180,8 +180,7 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     private func initiate(fromDomain: String = "localhost") throws -> (greeting: SMTPGreeting, extensions: [EHLOExtension]) {
         try transmit(line: "EHLO \(fromDomain)")
         var (code, replies) = try acceptReply()
-        print("Code \(code) \(replies)")
-        print("")
+
         /*
              The 500 response indicates that the server SMTP does
              not implement thse extensions specified here.  The

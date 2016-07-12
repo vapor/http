@@ -17,7 +17,7 @@ extension SMTPClient {
          user: Your full Gmail or Google Apps email address (e.g. example@gmail.com or example@yourdomain.com)
          pass: Your Gmail or Google Apps email password
     */
-    public static func makeGMailClient() throws -> SMTPClient {
+    public static func makeGmailClient() throws -> SMTPClient {
         return try SMTPClient(host: "smtp.gmail.com", port: 465, securityLayer: .tls)
     }
 }

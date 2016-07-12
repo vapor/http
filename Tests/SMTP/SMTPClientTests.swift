@@ -24,7 +24,15 @@ let replies: [String: String] = [
     password.bytes.base64String + "\r\n": "235 passed",
     baduser.bytes.base64String + "\r\n": "500 invalid username",
     badpass.bytes.base64String + "\r\n": "500 invalid password",
-    "AUTH PLAIN " + plainLogin + "\r\n": "235 passed"
+    "AUTH PLAIN " + plainLogin + "\r\n": "235 passed",
+    "TEST LINE" + "\r\n": "042 ok",
+    "EHLO localhost" + "\r\n": ehloResponse,
+    "QUIT" + "\r\n": "221 ok, buh bye",
+    "MAIL FROM: <from@email.com>" + "\r\n": "250 go on",
+    "RCPT TO: <to1@email.com>" + "\r\n": "250 go on",
+    "RCPT TO: <to2@email.com>" + "\r\n": "250 go on",
+    "DATA" + "\r\n": "354 data ok",
+    "\r\n.\r\n": "250 email done"
 ]
 
 final class SMTPTestStream: Engine.ClientStream, Engine.Stream {
@@ -56,9 +64,13 @@ final class SMTPTestStream: Engine.ClientStream, Engine.Stream {
 
     func send(_ bytes: Bytes) throws {
         closed = false
-        print("Send: \(bytes.string)")
         if let response = replies[bytes.string] {
-            buffer += response.bytes
+            if bytes.string == "\r\n.\r\n" {
+                // email data terminator. overwrite buffer of dummy email
+                buffer = response.bytes
+            } else {
+                buffer += response.bytes
+            }
         } else {
             // If reply not known, set to buffer
             buffer += bytes
@@ -152,8 +164,8 @@ class SMTPClientTests: XCTestCase {
         let extensions = [try EHLOExtension("AUTH LOGIN PLAIN")]
         do {
             try client.authorize(extensions: extensions, using: credentials)
-            XCTFail("Should throw bad user")
-        } catch SMTPClientError.invalidUsername(code: _, reply: _) {
+            XCTFail("Should throw bad password")
+        } catch SMTPClientError.invalidPassword(code: _, reply: _) {
             return
         }
     }
@@ -165,25 +177,43 @@ class SMTPClientTests: XCTestCase {
         try client.authorize(extensions: extensions, using: credentials)
     }
 
-    func testSMTPDate() {
-        let date = NSDate(timeIntervalSince1970: 0)
-        let smtpFormatted = date.smtpFormatted
-        XCTAssert(smtpFormatted.hasPrefix("Wed, 31 Dec 1969 "))
-        let suffix = smtpFormatted.components(separatedBy: "Wed, 31 Dec 1969 ").last ?? ""
-        let timeComps = suffix.components(separatedBy: " ")
-        XCTAssert(timeComps.count == 2)
+    func testReplyLine() throws {
+        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        try client.transmit(line: "TEST LINE", expectingReplyCode: 42)
+    }
 
-        let timeOfDay = timeComps.first ?? ""
-        let hoursMinutesSecond = timeOfDay.components(separatedBy: ":")
-        XCTAssert(hoursMinutesSecond.count == 3)
-        hoursMinutesSecond.forEach { comp in
-            // ie: 01, not just 1
-            XCTAssert(comp.characters.count == 2)
+    func testReplyLineFail() throws {
+        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        do {
+            try client.transmit(line: "TEST LINE", expectingReplyCode: 100)
+            XCTFail("should throw error")
+        } catch SMTPClientError.unexpectedReply {
+            return
         }
+    }
 
-        let timeZone = timeComps.last ?? ""
-        XCTAssert(timeZone != "")
-        XCTAssert(timeZone != timeOfDay)
+    func testInitialize() throws {
+        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        try client.stream.send("220 smtp.mysite.io welcome\r\n".bytes, flushing: true)
+        let creds = SMTPCredentials(user: username, pass: password)
+        try client.initializeSession(using: creds)
+    }
+
+    func testSendEmail() throws {
+        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        try client.stream.send("220 smtp.mysite.io welcome\r\n".bytes, flushing: true)
+        let creds = SMTPCredentials(user: username, pass: password)
+
+        let email = Email(from: "from@email.com",
+                          to: "to1@email.com", "to2@email.com",
+                          subject: "Email Subject",
+                          body: "Hello Email")
+
+        let attachment = EmailAttachment(filename: "dummy.data",
+                                         contentType: "dummy/data",
+                                         body: [1,2,3,4,5])
+        email.attachments.append(attachment)
+        try client.send(email, using: creds)
     }
 }
 

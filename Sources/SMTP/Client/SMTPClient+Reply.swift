@@ -30,7 +30,11 @@ extension SMTPClient {
         var replies: [String] = [initialReply]
         while !finished {
             let (code, reply, done) = try acceptReplyLine()
-            guard code == replyCode else { throw SMTPClientError.invalidMultilineReply(expected: replyCode, got: code, replies: replies) }
+            guard code == replyCode else {
+                throw SMTPClientError.invalidMultilineReply(expected: replyCode,
+                                                            got: code,
+                                                            replies: replies)
+            }
             replies.append(reply)
             finished = done
         }
