@@ -1,8 +1,7 @@
 import Foundation
 import XCTest
-import libc
 
-@testable import Engine
+@testable import Base
 
 class PercentEncodingTests: XCTestCase {
     static let allTests = [
@@ -14,20 +13,20 @@ class PercentEncodingTests: XCTestCase {
         try utf8TestCases.forEach { character, encoding in
             let bytes = character.utf8
             let encoded = try percentEncoded(bytes.array, shouldEncode: { _ in true })
-            let string = try encoded.toString().uppercased()
+            let string = encoded.string.uppercased()
             XCTAssertTrue(string == encoding, "\(character) -- \(string) didn't equal expected encoding \(encoding)")
 
         }
     }
 
-    func testDecoding() throws {
-        try utf8TestCases.forEach { character, encoding in
+    func testDecoding() {
+        utf8TestCases.forEach { character, encoding in
             let encoded = encoding.utf8.array
             guard let decoded = percentDecoded(encoded) else {
                 XCTFail("Unable to percent decode string: \(encoded)")
                 return
             }
-            let decodedString = try decoded.toString()
+            let decodedString = decoded.string
             XCTAssert(decodedString == character, "\(character) -- \(decodedString) didn't equal expected decoding: \(character)")
         }
     }

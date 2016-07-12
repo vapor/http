@@ -95,6 +95,6 @@ let email: Email = try complexEmail(from: from, to: to)
 
 // MARK: Send
 
-let client = try SMTPClient<TCPClientStream>.makeGMailClient()
+let client = try SMTPClient<TCPClientStream>.makeSendGridClient()
 let (code, reply) = try client.send(email, using: credentials)
 print("Successfully sent email: \(code) \(reply)")

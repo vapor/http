@@ -59,7 +59,7 @@ extension SMTPClientError {
     /*
         Error Code, if applicable
     */
-    var code: Int {
+    public var code: Int {
         switch self {
         case let invalidMultilineReply(expected: _, got: errorCode, replies: _):
             return errorCode
