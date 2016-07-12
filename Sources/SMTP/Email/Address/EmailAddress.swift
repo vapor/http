@@ -22,3 +22,10 @@ public struct EmailAddress {
         self.address = address
     }
 }
+
+extension EmailAddress: Equatable {}
+
+public func ==(lhs: EmailAddress, rhs: EmailAddress) -> Bool {
+    return lhs.name == rhs.name
+        && lhs.address == rhs.address
+}

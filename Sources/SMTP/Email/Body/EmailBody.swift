@@ -14,3 +14,9 @@ public struct EmailBody {
         self.content = content
     }
 }
+
+extension EmailBody: Equatable {}
+public func ==(lhs: EmailBody, rhs: EmailBody) -> Bool {
+    return lhs.type == rhs.type
+        && lhs.content == rhs.content
+}
