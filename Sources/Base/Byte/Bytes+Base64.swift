@@ -30,9 +30,20 @@ extension Sequence where Iterator.Element == Byte {
 
 extension String {
     public var base64DecodedString: String {
-        guard let data = NSData(base64Encoded: self) else { return "" }
-        var bytes = Bytes(repeating: 0, count: data.length)
-        data.getBytes(&bytes, length: data.length)
+        #if os(Linux)
+        guard let data = Data(base64EncodedString: self) else { return "" }
+        #else
+        guard let data = Data(base64Encoded: self) else { return "" }
+        #endif
+
+
+
+        var bytes = Bytes(repeating: 0, count: data.count)
+        #if os(Linux)
+            data.getBytes(to: &bytes, count: data.length)
+        #else
+            data.copyBytes(to: &bytes, count: data.count)
+        #endif
         return bytes.string
     }
 }
