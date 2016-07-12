@@ -37,7 +37,7 @@ XCTMain([
     testCase(SMTPCredentialsTests.allTests),
     testCase(SMTPDateTests.allTests),
     testCase(SMTPExtensionsTests.allTests),
-    testCase(SMTPGreetingsTests.allTests),
+    testCase(SMTPGreetingTests.allTests),
     testCase(SMTPUUIDTests.allTests),
 ])
 
