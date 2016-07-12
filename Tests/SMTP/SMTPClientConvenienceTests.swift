@@ -11,14 +11,14 @@ import XCTest
 
 class SMTPClientConvenienceTests: XCTestCase {
     func testGmail() throws {
-        let gmail = try SMTPClient<TestStream>.makeGmailClient()
+        let gmail = try SMTPClient<SMTPTestStream>.makeGmailClient()
         XCTAssert(gmail.host == "smtp.gmail.com")
         XCTAssert(gmail.port == 465)
         XCTAssert(gmail.securityLayer == .tls)
     }
 
     func testSendGrid() throws {
-        let gmail = try SMTPClient<TestStream>.makeSendGridClient()
+        let gmail = try SMTPClient<SMTPTestStream>.makeSendGridClient()
         XCTAssert(gmail.host == "smtp.sendgrid.net")
         XCTAssert(gmail.port == 465)
         XCTAssert(gmail.securityLayer == .tls)
