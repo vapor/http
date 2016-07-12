@@ -99,7 +99,7 @@
     }
 
     extension FoundationStream {
-        public func upgradeSSL(peerName: String? = nil) {
+        public func upgradeSSL() {
             for stream in [input, output] {
                 _ = stream.setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
                                        forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)

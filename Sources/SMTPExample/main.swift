@@ -58,7 +58,7 @@ func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable
 
         SMTPCredentials(user: "noreply", pass: "*********")
 */
-let credentials: SMTPCredentials! = nil
+let credentials: SMTPCredentials! = SMTPCredentials(user: "vapor.smtptest", pass: "smtp.pass1")
 assert(credentials != nil, "set credentials")
 
 /*
@@ -70,7 +70,7 @@ assert(credentials != nil, "set credentials")
         
         let from: EmailAddressRepresentable = "noreply@myapp.com"
 */
-let from: EmailAddressRepresentable! = nil
+let from: EmailAddressRepresentable! = EmailAddress(name: "Vapor SMTP", address: "vapor.smtptest@gmail.com")
 assert(from != nil, "set from email, ex: ")
 
 /*
@@ -82,7 +82,7 @@ assert(from != nil, "set from email, ex: ")
 
          let to: EmailAddressRepresentable = "noreply@myapp.com"
 */
-let to: EmailAddressRepresentable! = nil
+let to: EmailAddressRepresentable! = "logan@qutheory.io"
 assert(from != nil, "set from email")
 
 

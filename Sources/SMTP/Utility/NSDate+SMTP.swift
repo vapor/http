@@ -2,8 +2,8 @@ import Foundation
 
 #if !os(Linux)
     /*
-     Temporary Foundation Naming Fix
-     */
+        Temporary Foundation Naming Fix
+    */
     typealias NSDateFormatter = DateFormatter
     typealias NSDate = Date
 #endif

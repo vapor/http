@@ -1,17 +1,17 @@
 extension SMTPClient {
-    /*
-     Send an email to connection using specified credentials
-     */
+    /**
+        Send an email to connection using specified credentials
+    */
     @discardableResult
     public func send(_ email: Email, using auth: SMTPCredentials) throws -> (code: Int, greeting: String) {
         return try send([email], using: auth)
     }
 
     /**
-     Can send multiple emails, some limits. for example, SendGrid limits to 100 messages per connection.
-     Because we can't determine the amount of permitted emails on a single connection, it is the user's
-     responsibility to determine and enforce the limits of the system they are using.
-     */
+         Can send multiple emails, some limits. for example, SendGrid limits to 100 messages per connection.
+         Because we can't determine the amount of permitted emails on a single connection, it is the user's
+         responsibility to determine and enforce the limits of the system they are using.
+    */
     @discardableResult
     public func send(_ emails: [Email], using creds: SMTPCredentials) throws -> (code: Int, greeting: String) {
         return try negotiateSession(using: creds) { client in
@@ -20,8 +20,8 @@ extension SMTPClient {
     }
 
     /**
-     Once a session has been initialized, emails can be processed
-     */
+        Once a session has been initialized, emails can be processed
+    */
     private func transmit(_ email: Email) throws {
         try transmit(line: "MAIL FROM: <\(email.from.address)>", expectingReplyCode: 250)
         for to in email.to {
@@ -106,9 +106,9 @@ extension SMTPClient {
         try transmit(line: "Content-Transfer-Encoding: base64")
         try transmit(line: "")
         /*
-         Note that we are converting ALL attachments to base64. This is supported by all SMTP systems
-         others do support 'BINARYMIME', but none in my tests seemed to, so in the interest
-         of brevity and consistency, we're sacraficing a very small amount of performance
+             Note that we are converting ALL attachments to base64. This is supported by all SMTP systems
+             others do support 'BINARYMIME', but none in my tests seemed to, so in the interest
+             of brevity and consistency, we're sacraficing a very small amount of performance
         */
         try stream.send(attachment.body.base64Data)
         try transmit(line: "") // empty line

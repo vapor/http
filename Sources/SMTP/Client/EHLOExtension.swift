@@ -1,6 +1,6 @@
 /*
- ehlo-line    ::= ehlo-keyword *( SP ehlo-param )
- */
+    ehlo-line    ::= ehlo-keyword *( SP ehlo-param )
+*/
 struct EHLOExtension {
     let keyword: String
     let params: [String]
