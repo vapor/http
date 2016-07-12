@@ -7,7 +7,7 @@ extension Sequence where Iterator.Element == Byte {
         #if os(Linux)
             return data.base64EncodedString([])
         #else
-            return data.base64EncodedString([])
+            return data.base64EncodedString(options: [])
         #endif
     }
 
@@ -17,7 +17,7 @@ extension Sequence where Iterator.Element == Byte {
         #if os(Linux)
             let encodedData = data.base64EncodedData([]) as NSData
         #else
-            let encodedData = data.base64EncodedData([]) as NSData
+            let encodedData = data.base64EncodedData(options: []) as NSData
         #endif
         var encodedBytes = Bytes(repeating: 0, count: encodedData.length)
         encodedData.getBytes(&encodedBytes,  length: encodedData.length)

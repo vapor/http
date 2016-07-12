@@ -11,7 +11,7 @@ import Foundation
 extension NSProcessInfo {
     static func arguments() -> [String] {
         #if !os(Linux)
-            return NSProcessInfo.processInfo().arguments
+            return NSProcessInfo.processInfo.arguments
         #else
             return NSProcessInfo.processInfo().arguments
         #endif
