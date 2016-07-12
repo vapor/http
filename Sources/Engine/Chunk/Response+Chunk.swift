@@ -1,4 +1,4 @@
-extension Response {
+extension HTTPResponse {
     /**
         Send chunked data with the
         `Transfer-Encoding: Chunked` header.

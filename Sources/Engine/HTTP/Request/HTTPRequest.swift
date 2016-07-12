@@ -82,8 +82,8 @@ public final class HTTPRequest: HTTPMessage {
 }
 
 extension HTTPRequest {
-    public struct Handler: Responder {
-        public typealias Closure = (Request) throws -> Response
+    public struct Handler: HTTPResponder {
+        public typealias Closure = (HTTPRequest) throws -> HTTPResponse
 
         private let closure: Closure
 
@@ -98,7 +98,7 @@ extension HTTPRequest {
             - throws: an error if response fails
             - returns: a response if possible
         */
-        public func respond(to request: Request) throws -> Response {
+        public func respond(to request: HTTPRequest) throws -> HTTPResponse {
             return try closure(request)
         }
     }

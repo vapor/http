@@ -31,7 +31,7 @@ public final class HTTPServer<
         }
     }
 
-    public func start(responder: Responder, errors: ServerErrorHandler) throws {
+    public func start(responder: HTTPResponder, errors: ServerErrorHandler) throws {
         // no throwing inside of the loop
         while true {
             let stream: Stream
@@ -57,7 +57,7 @@ public final class HTTPServer<
         }
     }
 
-    private func respond(stream: Stream, responder: Responder) throws {
+    private func respond(stream: Stream, responder: HTTPResponder) throws {
         let stream = StreamBuffer(stream)
         try stream.setTimeout(30)
 

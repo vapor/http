@@ -6,21 +6,21 @@
         return object //must be of type `ResponseRepresentable`
     }```
 */
-public protocol ResponseRepresentable {
-    func makeResponse(for request: Request) throws -> HTTPResponse
+public protocol HTTPResponseRepresentable {
+    func makeResponse(for request: HTTPRequest) throws -> HTTPResponse
 }
 
 
 ///Allows responses to be returned through closures
-extension HTTPResponse: ResponseRepresentable {
-    public func makeResponse(for request: Request) -> HTTPResponse {
+extension HTTPResponse: HTTPResponseRepresentable {
+    public func makeResponse(for request: HTTPRequest) -> HTTPResponse {
         return self
     }
 }
 
 ///Allows Swift Strings to be returned through closures
-extension Swift.String: ResponseRepresentable {
-    public func makeResponse(for request: Request) -> HTTPResponse {
+extension Swift.String: HTTPResponseRepresentable {
+    public func makeResponse(for request: HTTPRequest) -> HTTPResponse {
         let data = self.utf8.array
         return HTTPResponse(body: .data(data))
     }

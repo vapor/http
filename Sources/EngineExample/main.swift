@@ -7,9 +7,9 @@ func httpClient() throws {
 
 func httpServer() throws {
     final class Responder: HTTPResponder {
-        func respond(to request: Request) throws -> Response {
+        func respond(to request: HTTPRequest) throws -> HTTPResponse {
             let body = "Hello World".makeBody()
-            return Response(body: body)
+            return HTTPResponse(body: body)
         }
     }
 

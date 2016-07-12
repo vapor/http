@@ -9,7 +9,7 @@ class ResponseTests: XCTestCase {
     func testRedirect() {
         let url = "http://tanner.xyz"
 
-        let redirect = Response(redirect: url)
+        let redirect = HTTPResponse(redirect: url)
         XCTAssert(redirect.headers["location"] == url, "Location header should be in headers")
     }
 }
