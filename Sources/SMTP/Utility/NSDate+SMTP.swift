@@ -8,7 +8,7 @@ import Foundation
     typealias NSDate = Date
 #endif
 
-extension Date {
+extension NSDate {
     /*
         An SMTP formatted date string
     */
