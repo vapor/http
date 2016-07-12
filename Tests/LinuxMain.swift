@@ -35,7 +35,7 @@ XCTMain([
     testCase(SMTPClientErrorTests.allTests),
     testCase(SMTPClientTests.allTests),
     testCase(SMTPCredentialsTests.allTests),
-    testCase(SMTPDateTests.allTests),
+    // testCase(SMTPDateTests.allTests),
     testCase(SMTPExtensionsTests.allTests),
     testCase(SMTPGreetingTests.allTests),
     testCase(SMTPUUIDTests.allTests),
