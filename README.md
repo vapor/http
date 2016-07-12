@@ -2,9 +2,9 @@
 
 The core transport layer used in [Vapor](https://github.com/qutheory/github).
 
-* [🚒 Engine](#httpclient)
-* [🕸 WebSockets](#websockets)
-* [📬 SMTP](#smtp)
+* [Engine](#httpclient)
+* [WebSockets](#websockets)
+* [SMTP](#smtp)
 
 ## 🌎 Current Environment
 
