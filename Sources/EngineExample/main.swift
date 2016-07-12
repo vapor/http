@@ -1,5 +1,4 @@
 import Engine
-import WebSockets
 
 func httpClient() throws {
     let response = try HTTPClient<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
