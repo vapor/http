@@ -7,6 +7,7 @@
 //
 
 import XCTest
+import Foundation
 @testable import SMTP
 
 class SMTPUUIDTests: XCTestCase {
