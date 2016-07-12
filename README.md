@@ -13,9 +13,11 @@ Send emails.
 
 ## 🌎 Current Environment
 
-| Engine | Xcode | Swift |
+| Vapor | Xcode | Swift |
 |:-:|:-:|:-:|
-|0.1.x|8.0 Beta|3.0-Preview-2|
+|0.13.x|8.0 Beta <b>2</b>|3.0-PREVIEW-2|
+
+>This build will _not_ work with beta 1 users <b>MUST</b> use Xcode 8 beta 2
 
 ## ⛔️ Important Install Notes
 
