@@ -19,15 +19,21 @@ extension SMTPClient {
     private func authorizeLogin(_ credentials: SMTPCredentials) throws {
         func handleUsername() throws {
             let (code, reply, isLast) = try acceptReplyLine()
-            guard isLast else { throw "invalid username reply \(code) \(reply)" }
-            guard code == 334 && reply.base64DecodedString.equals(caseInsensitive: "Username:") else { throw " invalid login reply \(code) \(reply)" }
+            guard
+                isLast
+                && code == 334
+                && reply.base64DecodedString.equals(caseInsensitive: "Username:")
+                else { throw SMTPClientError.invalidUsername(code: code, reply: reply) }
             try transmit(line: credentials.user.bytes.base64String)
         }
 
         func handlePass() throws {
             let (code, reply, isLast) = try acceptReplyLine()
-            guard isLast else { throw "invalid password reply \(code) \(reply)" }
-            guard code == 334 && reply.base64DecodedString.equals(caseInsensitive: "Password:") else { throw " invalid login reply \(code) \(reply)" }
+            guard
+                isLast
+                && code == 334
+                && reply.base64DecodedString.equals(caseInsensitive: "Password:")
+                else { throw SMTPClientError.invalidPassword(code: code, reply: reply) }
             try transmit(line: credentials.pass.bytes.base64String)
         }
 
@@ -36,8 +42,10 @@ extension SMTPClient {
         try handlePass()
 
         let (code, reply, isLast) = try acceptReplyLine()
-        guard isLast else { throw "unexpected authorization reply \(code) \(reply)" }
-        guard code == 235 else { throw "authorization failed w/ \(code) \(reply)" }
+        guard
+            isLast
+            && code == 235
+            else { throw SMTPClientError.authorizationFailed(code: code, reply: reply) }
 
         return // logged in successful
     }
@@ -47,7 +55,10 @@ extension SMTPClient {
         try transmit(line: "AUTH PLAIN \(plainAuth)")
         let (code, reply, isLast) = try acceptReplyLine()
         // 235 == authorization successful
-        guard isLast && code == 235 else { throw "invalid reply \(code) \(reply)" }
+        guard
+            isLast
+            && code == 235
+            else { throw SMTPClientError.authorizationFailed(code: code, reply: reply) }
 
         // authorization successful
         return

@@ -141,7 +141,8 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
             } else if auth.params.contains({ $0.equals(caseInsensitive: "PLAIN") }) {
                 try authorize(method: .plain, using: credentials)
             } else {
-                throw "no supported auth method"
+                throw SMTPClientError.unsupportedAuth(supportedByServer: auth.params,
+                                                      supportedBySMTP: SMTPAuthMethod.all)
             }
         } else {
             // no authorization required -- should we throw here?
@@ -163,7 +164,7 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         else {
             // quit
             _ = try? quit()
-            throw SMTPClientError.initializationFailed(code: replyCode, greeting: greeting)
+            throw SMTPClientError.invalidGreeting(code: replyCode, greeting: greeting)
         }
     }
 
@@ -178,12 +179,12 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         var (code, replies) = try acceptReply()
 
         /*
-         The 500 response indicates that the server SMTP does
-         not implement thse extensions specified here.  The
-         client would normally send a HELO command and proceed
-         as specified in RFC 821.   See section 4.7 for
-         additional discussion.
-         */
+             The 500 response indicates that the server SMTP does
+             not implement thse extensions specified here.  The
+             client would normally send a HELO command and proceed
+             as specified in RFC 821.   See section 4.7 for
+             additional discussion.
+        */
         if code == 500 {
             try transmit(line: "HELO \(fromDomain)")
             (code, replies) = try acceptReply()
@@ -191,20 +192,20 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
 
         guard code == 250 else {
             /*
-             In the case of any error response, the client SMTP should issue
-             either the HELO or QUIT command.
+                 In the case of any error response, the client SMTP should issue
+                 either the HELO or QUIT command.
 
-             ^ we already tried HELO -- now we quit
-             */
+                 ^ we already tried HELO -- now we quit
+            */
             _ = try? quit()
-            throw "error initiating \(code)"
+            throw SMTPClientError.initiationFailed(code: code, replies: replies)
         }
 
         /*
-         First line is header, subsequent lines are ehlo extensions
-         */
+             First line is header, subsequent lines are ehlo extensions
+        */
         guard let greeting = try replies.first.flatMap(SMTPGreeting.init) else {
-            throw "response should have at least one line -- even in SMTP original"
+            throw SMTPClientError.missingGreeting
         }
         let extensions = try replies.dropFirst().map(EHLOExtension.init)
         return (greeting, extensions)
@@ -215,7 +216,7 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     private func quit() throws -> (code: Int, greeting: String) {
         try transmit(line: "QUIT")
         let (code, reply, isLast) = try acceptReplyLine()
-        guard isLast && code == 221 else { throw "failed to quit \(code) \(reply)" }
+        guard isLast && code == 221 else { throw SMTPClientError.quitFailed(code: code, reply: reply) }
         return (code, reply)
     }
 }

@@ -7,8 +7,14 @@ internal struct SMTPGreeting {
             .bytes
             .split(separator: .space, maxSplits: 1)
             .map { $0.string }
-        guard split.count >= 1 else { throw "must at least have domain" }
+        guard split.count >= 1 else { throw Error.missingDomain }
         domain = split[0]
         greeting = split[safe: 1] ?? ""
+    }
+}
+
+extension SMTPGreeting {
+    enum Error: ErrorProtocol {
+        case missingDomain
     }
 }

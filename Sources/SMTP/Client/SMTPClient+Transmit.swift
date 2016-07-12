@@ -13,6 +13,8 @@ extension SMTPClient {
     internal func transmit(line: String, terminating: Bool = true, expectingReplyCode: Int) throws {
         try transmit(line: line, terminating: terminating)
         let (code, replies) = try acceptReply()
-        guard code == expectingReplyCode else { throw "unexpected response to \(line) received \(code) \(replies) expected \(expectingReplyCode)" }
+        guard code == expectingReplyCode else {
+            throw SMTPClientError.unexpectedReply(expected: expectingReplyCode, got: code, replies: replies, initiator: line)
+        }
     }
 }

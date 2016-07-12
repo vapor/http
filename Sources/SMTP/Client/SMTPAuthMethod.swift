@@ -3,3 +3,7 @@ internal enum SMTPAuthMethod {
     case login
     // TODO: Support additional auth methods
 }
+
+extension SMTPAuthMethod {
+    static let all: [String] = ["PLAIN", "LOGIN"]
+}
