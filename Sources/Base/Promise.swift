@@ -84,4 +84,18 @@
             }
         }
     }
+
+    extension Promise {
+        /**
+            Execute timeout operations synchronously.
+        */
+        static func timeout(_ timingOut: DispatchTime, operation: () throws -> T) throws -> T {
+            // TODO: async is locked, it needs to be something like `block` or `lockForAsync`
+            return try Promise<T>.async(timingOut: timingOut) { promise in
+                let value = try operation()
+                promise.resolve(with: value)
+            }
+        }
+    }
+
 #endif
