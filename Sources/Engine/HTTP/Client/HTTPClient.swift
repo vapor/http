@@ -25,7 +25,7 @@ public final class HTTPClient<ClientStreamType: ClientStream>: Client {
         self.stream = stream
     }
 
-    public func respond(to request: Request) throws -> Response {
+    public func respond(to request: HTTPRequest) throws -> HTTPResponse {
         try assertValid(request)
         guard !stream.closed else { throw HTTPClientError.unableToConnect }
         let buffer = StreamBuffer(stream)
@@ -41,10 +41,10 @@ public final class HTTPClient<ClientStreamType: ClientStream>: Client {
         */
         request.headers["Host"] = host
 
-        let serializer = HTTPSerializer<Request>(stream: buffer)
+        let serializer = HTTPSerializer<HTTPRequest>(stream: buffer)
         try serializer.serialize(request)
 
-        let parser = HTTPParser<Response>(stream: buffer)
+        let parser = HTTPParser<HTTPResponse>(stream: buffer)
         let response = try parser.parse()
 
         try buffer.flush()
@@ -52,7 +52,7 @@ public final class HTTPClient<ClientStreamType: ClientStream>: Client {
         return response
     }
 
-    private func assertValid(_ request: Request) throws {
+    private func assertValid(_ request: HTTPRequest) throws {
         if !request.uri.host.isNilOrEmpty {
             guard request.uri.host == host else { throw HTTPClientError.invalidRequestHost }
         }

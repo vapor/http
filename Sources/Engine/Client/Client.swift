@@ -2,7 +2,7 @@ public enum ClientError: ErrorProtocol {
     case missingHost
 }
 
-public protocol Client: Program, Responder {
+public protocol Client: Program, HTTPResponder {
     var scheme: String { get }
     var stream: Stream { get }
     init(scheme: String, host: String, port: Int, securityLayer: SecurityLayer) throws
@@ -16,37 +16,37 @@ extension Client {
 }
 
 extension Client {
-    public func request(_ method: Method, path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> Response {
+    public func request(_ method: Method, path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         // TODO: Move finish("/") to initializer
         var uri = URI(scheme: scheme, userInfo: nil, host: host, port: port, path: path.finished(with: "/"), query: nil, fragment: nil)
         uri.append(query: query)
-        let request = Request(method: method, uri: uri, version: Version(major: 1, minor: 1), headers: headers, body: body)
+        let request = HTTPRequest(method: method, uri: uri, version: Version(major: 1, minor: 1), headers: headers, body: body)
         return try respond(to: request)
     }
 
-    public func get(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> Response {
+    public func get(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.get, path: path, headers: headers, query: query, body: body)
     }
 
-    public func post(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> Response {
+    public func post(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.post, path: path, headers: headers, query: query, body: body)
     }
 
-    public func put(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> Response {
+    public func put(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.put, path: path, headers: headers, query: query, body: body)
     }
 
-    public func patch(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> Response {
+    public func patch(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.patch, path: path, headers: headers, query: query, body: body)
     }
 
-    public func delete(_ path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> Response {
+    public func delete(_ path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.delete, path: path, headers: headers, query: query, body: body)
     }
 }
 
 extension Client {
-    public static func respond(to request: Request) throws -> Response {
+    public static func respond(to request: HTTPRequest) throws -> HTTPResponse {
         guard let host = request.uri.host else { throw ClientError.missingHost }
         let instance = try make(scheme: request.uri.scheme, host: host, port: request.uri.port)
         return try instance.respond(to: request)
@@ -64,10 +64,10 @@ extension Client {
         headers: Headers = [:],
         query: [String: CustomStringConvertible],
         body: HTTPBody = []
-    ) throws -> Response {
+    ) throws -> HTTPResponse {
         var uri = try URI(uri)
         uri.append(query: query)
-        let request = Request(method: method, uri: uri, headers: headers, body: body)
+        let request = HTTPRequest(method: method, uri: uri, headers: headers, body: body)
         return try respond(to: request)
     }
 
@@ -76,7 +76,7 @@ extension Client {
         headers: Headers = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
-    ) throws -> Response {
+    ) throws -> HTTPResponse {
         return try request(.get, uri, headers: headers, query: query, body: body)
     }
 
@@ -85,7 +85,7 @@ extension Client {
         headers: Headers = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
-    ) throws -> Response {
+    ) throws -> HTTPResponse {
         return try request(.post, uri, headers: headers, query: query, body: body)
     }
 
@@ -94,7 +94,7 @@ extension Client {
         headers: Headers = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
-    ) throws -> Response {
+    ) throws -> HTTPResponse {
         return try request(.put, uri, headers: headers, query: query, body: body)
     }
 
@@ -103,7 +103,7 @@ extension Client {
         headers: Headers = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
-    ) throws -> Response {
+    ) throws -> HTTPResponse {
         return try request(.patch, uri, headers: headers, query: query, body: body)
     }
 
@@ -112,7 +112,7 @@ extension Client {
         headers: Headers = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
-    ) throws -> Response {
+    ) throws -> HTTPResponse {
         return try request(.delete, uri, headers: headers, query: query, body: body)
     }
 }

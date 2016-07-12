@@ -17,7 +17,7 @@ func webSocketClient(to url: String) throws {
 
 func webSocketServer() throws {
     final class Responder: HTTPResponder {
-        func respond(to request: Request) throws -> Response {
+        func respond(to request: HTTPRequest) throws -> HTTPResponse {
             return try request.upgradeToWebSocket { ws in
                 print("[ws connected]")
 
