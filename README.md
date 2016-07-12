@@ -1,9 +1,9 @@
 # Engine
 
-The core transport layer used in [Vapor](https://github.com/qutheory/github).
+<b>The core transport layer used in [Vapor](https://github.com/qutheory/github).</b>
 
 ##### [Engine](#httpclient)
-Core HTTP and Stream layers
+HTTP and Stream layers
 
 ##### [WebSockets](#websockets)
 Realtime websockets
