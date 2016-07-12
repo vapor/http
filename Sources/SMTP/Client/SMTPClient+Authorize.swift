@@ -23,7 +23,8 @@ extension SMTPClient {
                 isLast
                 && code == 334
                 && reply.base64DecodedString.equals(caseInsensitive: "Username:")
-                else { throw SMTPClientError.invalidUsername(code: code, reply: reply) }
+                // This means the command BEFORE failed
+                else { throw SMTPClientError.authorizationFailed(code: code, reply: reply) }
             try transmit(line: credentials.user.bytes.base64String)
         }
 
@@ -33,7 +34,8 @@ extension SMTPClient {
                 isLast
                 && code == 334
                 && reply.base64DecodedString.equals(caseInsensitive: "Password:")
-                else { throw SMTPClientError.invalidPassword(code: code, reply: reply) }
+                // If Username fails, we don't get password
+                else { throw SMTPClientError.invalidUsername(code: code, reply: reply) }
             try transmit(line: credentials.pass.bytes.base64String)
         }
 
@@ -45,7 +47,7 @@ extension SMTPClient {
         guard
             isLast
             && code == 235
-            else { throw SMTPClientError.authorizationFailed(code: code, reply: reply) }
+            else { throw SMTPClientError.invalidPassword(code: code, reply: reply) }
 
         return // logged in successful
     }

@@ -134,7 +134,7 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
         try authorize(extensions: extensions, using: credentials)
     }
 
-    private func authorize(extensions: [EHLOExtension], using credentials: SMTPCredentials) throws {
+    internal func authorize(extensions: [EHLOExtension], using credentials: SMTPCredentials) throws {
         if let auth = extensions.authExtension {
             if auth.params.contains({ $0.equals(caseInsensitive: "LOGIN") }) {
                 try authorize(method: .login, using: credentials)
@@ -156,16 +156,19 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
 
          Upon connection, client first accept's server's greeting
     */
-    private func acceptGreeting() throws {
+    @discardableResult
+    internal func acceptGreeting() throws -> (replyCode: Int, greeting: SMTPGreeting) {
         // After connect, client receives from server first.
         let (replyCode, greeting, isLast) = try acceptReplyLine()
         // initialization should be single line w/ 220
-        if isLast && replyCode == 220 { return }
+        guard isLast && replyCode == 220
         else {
             // quit
             _ = try? quit()
             throw SMTPClientError.invalidGreeting(code: replyCode, greeting: greeting)
         }
+
+        return (replyCode, try SMTPGreeting(greeting))
     }
 
     /*
@@ -177,7 +180,8 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     private func initiate(fromDomain: String = "localhost") throws -> (greeting: SMTPGreeting, extensions: [EHLOExtension]) {
         try transmit(line: "EHLO \(fromDomain)")
         var (code, replies) = try acceptReply()
-
+        print("Code \(code) \(replies)")
+        print("")
         /*
              The 500 response indicates that the server SMTP does
              not implement thse extensions specified here.  The
