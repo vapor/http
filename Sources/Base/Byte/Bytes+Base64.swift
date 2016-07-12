@@ -15,14 +15,12 @@ extension Sequence where Iterator.Element == Byte {
         let bytes = [Byte](self)
         let data = NSData(bytes: bytes)
         #if os(Linux)
-            let encodedData = data.base64EncodedData([])
-            var encodedBytes = Bytes(repeating: 0, count: encodedData.length)
-            encodedData.copyBytes(to: &encodedBytes, count: encodedBytes.count)
+            let encodedData = data.base64EncodedData([]) as NSData
         #else
-            let encodedData = data.base64EncodedData(options: [])
-            var encodedBytes = Bytes(repeating: 0, count: encodedData.count)
-            encodedData.copyBytes(to: &encodedBytes, count: encodedData.count)
+            let encodedData = data.base64EncodedData(options: []) as NSData
         #endif
+        var encodedBytes = Bytes(repeating: 0, count: encodedData.length)
+        encodedData.getBytes(&encodedBytes,  length: encodedData.length)
 
         return encodedBytes
     }
@@ -33,17 +31,11 @@ extension String {
         #if os(Linux)
         guard let data = NSData(base64EncodedString: self) else { return "" }
         #else
-        guard let data = Data(base64Encoded: self) else { return "" }
+        guard let data = NSData(base64Encoded: self) else { return "" }
         #endif
 
-
-
-        var bytes = Bytes(repeating: 0, count: data.count)
-        #if os(Linux)
-            data.copyBytes(to: &bytes, count: data.length)
-        #else
-            data.copyBytes(to: &bytes, count: data.count)
-        #endif
+        var bytes = Bytes(repeating: 0, count: data.length)
+        data.getBytes(&bytes,  length: data.length)
         return bytes.string
     }
 }
