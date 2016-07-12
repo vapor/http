@@ -17,7 +17,7 @@ extension Sequence where Iterator.Element == Byte {
         #if os(Linux)
             let encodedData = data.base64EncodedData([])
             var encodedBytes = Bytes(repeating: 0, count: encodedData.length)
-            encodedData.getBytes(to: &encodedBytes, count: encodedBytes.count)
+            encodedData.copyBytes(to: &encodedBytes, count: encodedBytes.count)
         #else
             let encodedData = data.base64EncodedData(options: [])
             var encodedBytes = Bytes(repeating: 0, count: encodedData.count)
@@ -31,7 +31,7 @@ extension Sequence where Iterator.Element == Byte {
 extension String {
     public var base64DecodedString: String {
         #if os(Linux)
-        guard let data = Data(base64EncodedString: self) else { return "" }
+        guard let data = NSData(base64EncodedString: self) else { return "" }
         #else
         guard let data = Data(base64Encoded: self) else { return "" }
         #endif
@@ -40,7 +40,7 @@ extension String {
 
         var bytes = Bytes(repeating: 0, count: data.count)
         #if os(Linux)
-            data.getBytes(to: &bytes, count: data.length)
+            data.copyBytes(to: &bytes, count: data.length)
         #else
             data.copyBytes(to: &bytes, count: data.count)
         #endif
