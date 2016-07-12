@@ -1,11 +1,11 @@
 import Engine
 
-func client() throws {
+func httpClient() throws {
     let response = try HTTPClient<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
     print(response)
 }
 
-func server() throws {
+func httpServer() throws {
     final class Responder: HTTPResponder {
         func respond(to request: Request) throws -> Response {
             let body = "Hello World".makeBody()
@@ -21,4 +21,4 @@ func server() throws {
     }
 }
 
-try server()
+try httpServer()

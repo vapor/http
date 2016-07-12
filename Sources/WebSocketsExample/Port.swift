@@ -2,8 +2,8 @@ import Foundation
 
 #if !os(Linux)
     /*
-     Temporary work around since things have different names on linux
-     */
+        Temporary work around since things have different names on linux
+    */
     typealias NSProcessInfo = ProcessInfo
 #endif
 
