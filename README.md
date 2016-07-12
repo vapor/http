@@ -1,6 +1,6 @@
 # Engine
 
-<b>The core transport layer used in [Vapor](https://github.com/qutheory/github).</b>
+Engine is a collection of low level transport protocols implemented in pure Swift intended for use in server side and client side applications. It is used as the core transport layer in [Vapor](https://github.com/qutheory/github).
 
 ##### [Engine](#httpclient)
 HTTP and Stream layers
