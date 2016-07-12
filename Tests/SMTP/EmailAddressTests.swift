@@ -11,6 +11,11 @@ import Base
 @testable import SMTP
 
 class EmailAddressTests: XCTestCase {
+    static let allTests = [
+        ("testLiteral", testLiteral),
+        ("testRepresentable", testRepresentable),
+    ]
+
     func testLiteral() {
         let a = EmailAddress(stringLiteral: "test@app.com")
         let b = EmailAddress(extendedGraphemeClusterLiteral: "test@app.com")

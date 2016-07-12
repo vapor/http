@@ -11,6 +11,11 @@ import XCTest
 @testable import SMTP
 
 class EmailBodyTests: XCTestCase {
+    static let allTests = [
+        ("testLiteral", testLiteral),
+        ("testHTML", testHTML),
+    ]
+
     func testLiteral() {
         let a = EmailBody(content: "Hello SMTP!")
         let b = "Hello SMTP!"

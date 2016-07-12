@@ -10,6 +10,10 @@ import XCTest
 @testable import SMTP
 
 class SMTPDateTests: XCTestCase {
+    static let allTests = [
+        ("testSMTPDate", testSMTPDate),
+    ]
+
     func testSMTPDate() {
         let date = NSDate(timeIntervalSince1970: 0)
         let smtpFormatted = date.smtpFormatted

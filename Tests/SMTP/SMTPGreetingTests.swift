@@ -10,6 +10,12 @@ import XCTest
 @testable import SMTP
 
 class SMTPGreetingTests: XCTestCase {
+    static let allTests = [
+        ("testGmailGreeting", testGmailGreeting),
+        ("testSendGridGreeting", testSendGridGreeting),
+        ("testBadDomain", testBadDomain),
+    ]
+
     func testGmailGreeting() throws {
         let gmailGreeting = "smtp.gmail.com at your service, [199.6.34.128]"
         let greeting = try SMTPGreeting(gmailGreeting)

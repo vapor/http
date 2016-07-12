@@ -11,6 +11,10 @@ import Base
 @testable import SMTP
 
 class EmailAttachmentTests: XCTestCase {
+    static let allTests = [
+        ("testAttachment", testAttachment),
+    ]
+
     func testAttachment() {
         let attachment = EmailAttachment(filename: "test.png",
                                          contentType: "image/png",

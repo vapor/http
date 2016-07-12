@@ -10,6 +10,14 @@ import XCTest
 @testable import SMTP
 
 class SMTPExtensionsTests: XCTestCase {
+    static let allTests = [
+        ("testMissing", testMissing),
+        ("testSingle", testSingle),
+        ("testDouble", testDouble),
+        ("testTriple", testTriple),
+        ("testAuthExtension", testAuthExtension),
+    ]
+
     func testMissing() {
         do {
             _ = try EHLOExtension("")

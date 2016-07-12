@@ -10,6 +10,11 @@ import XCTest
 import SMTP
 
 class SMTPClientErrorTests: XCTestCase {
+    static let allTests = [
+        ("testReplies", testReplies),
+        ("testCodes", testCodes),
+    ]
+
     func testReplies() throws {
         let replies: [String] = ["test", "replies"]
         assert(.invalidMultilineReply(expected: 0, got: 0, replies: ["test reply"]), has: ["test reply"])
@@ -23,7 +28,6 @@ class SMTPClientErrorTests: XCTestCase {
         assert(.invalidGreeting(code: 0, greeting: "not allowed"), has: ["not allowed"])
         assert(.quitFailed(code: 0, reply: "working"), has: ["working"])
     }
-
 
     func testCodes() throws {
         assert(.invalidMultilineReply(expected: 220, got: 500, replies: []), hasErrorCode: 500)

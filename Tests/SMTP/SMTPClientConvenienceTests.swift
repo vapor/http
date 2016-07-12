@@ -10,6 +10,11 @@ import XCTest
 @testable import SMTP
 
 class SMTPClientConvenienceTests: XCTestCase {
+    static let allTests = [
+        ("testGmail", testGmail),
+        ("testSendGrid", testSendGrid),
+    ]
+
     func testGmail() throws {
         let gmail = try SMTPClient<SMTPTestStream>.makeGmailClient()
         XCTAssert(gmail.host == "smtp.gmail.com")

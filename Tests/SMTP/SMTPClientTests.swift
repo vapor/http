@@ -13,6 +13,19 @@ import Engine
 @testable import SMTP
 
 class SMTPClientTests: XCTestCase {
+    static let allTests = [
+        ("testGreeting", testGreeting),
+        ("testInitializing", testInitializing),
+        ("testAuthorizeLogin", testAuthorizeLogin),
+        ("testAuthorizeLoginBadUser", testAuthorizeLoginBadUser),
+        ("testAuthorizeLoginBadPass", testAuthorizeLoginBadPass),
+        ("testAuthorizePlain", testAuthorizePlain),
+        ("testReplyLine", testReplyLine),
+        ("testReplyLineFail", testReplyLineFail),
+        ("testInitialize", testInitialize),
+        ("testSendEmail", testSendEmail),
+    ]
+
     func testGreeting() throws {
         let client = try makeTestClient()
         // load buffer

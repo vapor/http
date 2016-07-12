@@ -10,7 +10,11 @@ import XCTest
 @testable import SMTP
 
 class SMTPUUIDTests: XCTestCase {
-    func testSMTPDate() {
+    static let allTests = [
+        ("testSMTPUUID", testSMTPUUID),
+    ]
+
+    func testSMTPUUID() {
         XCTAssert(NSUUID.smtpMessageId.components(separatedBy: "-").count == 1)
     }
 }

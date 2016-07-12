@@ -4,6 +4,7 @@ import XCTest
 @testable import BaseTestSuite
 @testable import EngineTestSuite
 @testable import WebSocketsTestSuite
+@testable import SMTPTestSuite
 
 XCTMain([
     // BaseTestSuite
@@ -25,6 +26,19 @@ XCTMain([
     // WebSocketsTestSuite
     testCase(WebSocketSerializationTests.allTests),
     testCase(WebSocketKeyTests.allTests),
+
+    // SMTPTestSuite
+    testCase(EmailAddressTests.allTests),
+    testCase(EmailAttachmentTests.allTests),
+    testCase(EmailBodyTests.allTests),
+    testCase(SMTPClientConvenienceTests.allTests),
+    testCase(SMTPClientErrorTests.allTests),
+    testCase(SMTPClientTests.allTests),
+    testCase(SMTPCredentialsTests.allTests),
+    testCase(SMTPDateTests.allTests),
+    testCase(SMTPExtensionsTests.allTests),
+    testCase(SMPTGreetingsTests.allTests),
+    testCase(SMPTUUIDTests.allTests),
 ])
 
 #endif
