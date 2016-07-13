@@ -4,7 +4,7 @@ public enum HTTPMessageError: ErrorProtocol {
 
 public class HTTPMessage {
     public let startLine: String
-    public var headers: Headers
+    public var headers: HTTPHeaders
 
     // Settable for HEAD request -- evaluate alternatives -- Perhaps serializer should handle it.
     // must NOT be exposed public because changing body will break behavior most of time
@@ -14,7 +14,7 @@ public class HTTPMessage {
 
     public convenience required init(
         startLineComponents: (BytesSlice, BytesSlice, BytesSlice),
-        headers: Headers,
+        headers: HTTPHeaders,
         body: HTTPBody
     ) throws {
         var startLine = startLineComponents.0.string
@@ -26,7 +26,7 @@ public class HTTPMessage {
         self.init(startLine: startLine, headers: headers,body: body)
     }
 
-    public init(startLine: String, headers: Headers, body: HTTPBody) {
+    public init(startLine: String, headers: HTTPHeaders, body: HTTPBody) {
         self.startLine = startLine
         self.headers = headers
         self.body = body

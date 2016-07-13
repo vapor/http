@@ -16,31 +16,31 @@ extension Client {
 }
 
 extension Client {
-    public func request(_ method: Method, path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
+    public func request(_ method: HTTPMethod, path: String, headers: HTTPHeaders = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         // TODO: Move finish("/") to initializer
         var uri = URI(scheme: scheme, userInfo: nil, host: host, port: port, path: path.finished(with: "/"), query: nil, fragment: nil)
         uri.append(query: query)
-        let request = HTTPRequest(method: method, uri: uri, version: Version(major: 1, minor: 1), headers: headers, body: body)
+        let request = HTTPRequest(method: method, uri: uri, version: HTTPVersion(major: 1, minor: 1), headers: headers, body: body)
         return try respond(to: request)
     }
 
-    public func get(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
+    public func get(path: String, headers: HTTPHeaders = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.get, path: path, headers: headers, query: query, body: body)
     }
 
-    public func post(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
+    public func post(path: String, headers: HTTPHeaders = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.post, path: path, headers: headers, query: query, body: body)
     }
 
-    public func put(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
+    public func put(path: String, headers: HTTPHeaders = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.put, path: path, headers: headers, query: query, body: body)
     }
 
-    public func patch(path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
+    public func patch(path: String, headers: HTTPHeaders = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.patch, path: path, headers: headers, query: query, body: body)
     }
 
-    public func delete(_ path: String, headers: Headers = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
+    public func delete(_ path: String, headers: HTTPHeaders = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         return try request(.delete, path: path, headers: headers, query: query, body: body)
     }
 }
@@ -59,9 +59,9 @@ extension Client {
     }
 
     public static func request(
-        _ method: Method,
+        _ method: HTTPMethod,
         _ uri: String,
-        headers: Headers = [:],
+        headers: HTTPHeaders = [:],
         query: [String: CustomStringConvertible],
         body: HTTPBody = []
     ) throws -> HTTPResponse {
@@ -73,7 +73,7 @@ extension Client {
 
     public static func get(
         _ uri: String,
-        headers: Headers = [:],
+        headers: HTTPHeaders = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
     ) throws -> HTTPResponse {
@@ -82,7 +82,7 @@ extension Client {
 
     public static func post(
         _ uri: String,
-        headers: Headers = [:],
+        headers: HTTPHeaders = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
     ) throws -> HTTPResponse {
@@ -91,7 +91,7 @@ extension Client {
 
     public static func put(
         _ uri: String,
-        headers: Headers = [:],
+        headers: HTTPHeaders = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
     ) throws -> HTTPResponse {
@@ -100,7 +100,7 @@ extension Client {
 
     public static func patch(
         _ uri: String,
-        headers: Headers = [:],
+        headers: HTTPHeaders = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
     ) throws -> HTTPResponse {
@@ -109,7 +109,7 @@ extension Client {
 
     public static func delete(
         _ uri: String,
-        headers: Headers = [:],
+        headers: HTTPHeaders = [:],
         query: [String: CustomStringConvertible] = [:],
         body: HTTPBody = []
     ) throws -> HTTPResponse {

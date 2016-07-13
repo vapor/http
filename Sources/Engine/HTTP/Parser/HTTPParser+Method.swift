@@ -8,7 +8,7 @@ private let HEAD = "HEAD".bytes
 private let CONNECT = "CONNECT".bytes
 private let TRACE = "TRACE".bytes
 
-extension Method {
+extension HTTPMethod {
     init(uppercased method: Bytes) {
         switch method {
         case GET:
