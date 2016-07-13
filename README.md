@@ -8,7 +8,7 @@ HTTP and Stream layers
 ##### [WebSockets](#websockets)
 Realtime websockets
 
-##### [SMTP](#smtp)
+##### [SMTP](#smtp-1)
 Send emails.
 
 ## 🌎 Current Environment
