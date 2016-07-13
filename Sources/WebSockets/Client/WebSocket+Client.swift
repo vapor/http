@@ -24,7 +24,7 @@ extension WebSocket {
 
         let requestKey = WebSocket.makeRequestKey()
 
-        var headers = Headers()
+        var headers = HTTPHeaders()
         headers.secWebSocketKey = requestKey
         headers.connection = "Upgrade"
         headers.upgrade = "websocket"
@@ -40,7 +40,7 @@ extension WebSocket {
 
         let client = try client.make(scheme: uri.scheme, host: host, port: uri.port)
         // manually requesting to preserve queries that might be in URI easily
-        let request = HTTPRequest(method: .get, uri: uri, version: Version(major: 1, minor: 1), headers: headers, body: .data([]))
+        let request = HTTPRequest(method: .get, uri: uri, version: HTTPVersion(major: 1, minor: 1), headers: headers, body: .data([]))
         let response = try client.respond(to: request)
 
         // Don't need to check version in server response

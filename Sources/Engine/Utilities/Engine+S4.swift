@@ -25,8 +25,8 @@ extension S4.Headers {
     public typealias Key = C7.CaseInsensitiveString
 }
 
-public typealias Headers = S4.Headers
-public typealias Version = S4.Version
+public typealias HTTPHeaders = S4.Headers
+public typealias HTTPVersion = S4.Version
 
-public typealias Status = S4.Status
-public typealias Method = S4.Method
+public typealias HTTPStatus = S4.Status
+public typealias HTTPMethod = S4.Method

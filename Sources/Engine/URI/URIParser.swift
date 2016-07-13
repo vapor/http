@@ -40,21 +40,21 @@ public final class URIParser: StaticDataBuffer {
     // If we have authority, we should also have scheme?
     let existingHost: Bytes?
 
-    /*
-     The most common form of Request-URI is that used to identify a
-     resource on an origin server or gateway. In this case the absolute
-     path of the URI MUST be transmitted (see section 3.2.1, abs_path) as
-     the Request-URI, and the network location of the URI (authority) MUST
-     be transmitted in a Host header field. For example, a client wishing
-     to retrieve the resource above directly from the origin server would
-     create a TCP connection to port 80 of the host "www.w3.org" and send
-     the lines:
+    /**
+        The most common form of Request-URI is that used to identify a
+        resource on an origin server or gateway. In this case the absolute
+        path of the URI MUST be transmitted (see section 3.2.1, abs_path) as
+        the Request-URI, and the network location of the URI (authority) MUST
+        be transmitted in a Host header field. For example, a client wishing
+        to retrieve the resource above directly from the origin server would
+        create a TCP connection to port 80 of the host "www.w3.org" and send
+        the lines:
 
-     GET /pub/WWW/TheProject.html HTTP/1.1
-     Host: www.w3.org
-     
-     If host exists, and scheme exists, use those
-     */
+        GET /pub/WWW/TheProject.html HTTP/1.1
+        Host: www.w3.org
+
+        If host exists, and scheme exists, use those
+    */
     public init(bytes: Bytes, existingHost: String? = nil) {
         self.existingHost = existingHost?.bytes
         super.init(bytes: bytes)

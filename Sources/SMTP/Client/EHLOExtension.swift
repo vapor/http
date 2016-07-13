@@ -1,4 +1,4 @@
-/*
+/**
     ehlo-line    ::= ehlo-keyword *( SP ehlo-param )
 */
 struct EHLOExtension {

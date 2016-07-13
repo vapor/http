@@ -5,10 +5,12 @@ import SMTP
 // Simple Email
 
 func simpleEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable) throws -> Email {
-    return Email(from: from,
-                 to: to,
-                 subject: "Vapor SMTP - Simple",
-                 body: "Hello from Vapor SMTP 👋")
+    return Email(
+        from: from,
+        to: to,
+        subject: "Vapor SMTP - Simple",
+        body: "Hello from Vapor SMTP 👋"
+    )
 }
 
 // Complex Email
@@ -30,10 +32,12 @@ func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable
     }
 
     // MARK: Email
-    let email = Email(from: from,
-                      to: to,
-                      subject: "Vapor SMTP - Attachments, HTML",
-                      body: body)
+    let email = Email(
+        from: from,
+        to: to,
+        subject: "Vapor SMTP - Attachments, HTML",
+        body: body
+    )
     email.attachments.append(testPDF)
     email.attachments.append(testPNG)
     return email

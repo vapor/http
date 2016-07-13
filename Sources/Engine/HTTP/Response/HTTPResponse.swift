@@ -46,7 +46,7 @@ public final class HTTPResponse: HTTPMessage {
 }
 
 extension HTTPResponse {
-    /*
+    /**
         Creates a redirect response.
      
         Set permanently to 'true' to allow caching to automatically redirect from browsers.
@@ -62,7 +62,7 @@ extension HTTPResponse {
 }
 
 extension HTTPResponse {
-    /*
+    /**
         Creates a Response with a body of Bytes.
     */
     public convenience init<
@@ -76,7 +76,7 @@ extension HTTPResponse {
 
 
 extension HTTPResponse {
-    /*
+    /**
         Creates a Response with a HTTPBodyRepresentable Body
     */
     public convenience init(

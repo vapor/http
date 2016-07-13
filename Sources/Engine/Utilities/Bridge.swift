@@ -1,6 +1,6 @@
 /*
- Temporary file to ease burden if different names on Linux and osx :(
- */
+    Temporary file to ease burden if different names on Linux and osx :(
+*/
 #if !os(Linux)
     import Foundation
     typealias NSDate = Date
