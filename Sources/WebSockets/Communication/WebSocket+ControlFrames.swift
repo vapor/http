@@ -2,7 +2,7 @@ import struct Base.Bytes
 
 /*
      'close' included in Model file to ensure safety while interacting with sensitive variables
- */
+*/
 extension WebSocket {
     public func ping(_ payload: Bytes = []) throws {
         let header = Frame.Header(
@@ -23,7 +23,7 @@ extension WebSocket {
          If we receive a .ping, we must .pong identical data
 
          Applications may opt to send unsolicited .pong messages as a sort of keep awake heart beat
-     */
+    */
     public func pong(_ payload: Bytes = []) throws {
         let header = Frame.Header(
             fin: true,

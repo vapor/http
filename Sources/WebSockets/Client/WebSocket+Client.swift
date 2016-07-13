@@ -31,9 +31,9 @@ extension WebSocket {
         headers.secWebSocketVersion = "13"
 
         /*
-         If protocols are empty they should not be added,
-         it was kicking back errors on nginx proxies in tests
-         */
+            If protocols are empty they should not be added,
+            it was kicking back errors on nginx proxies in tests
+        */
         if let protocols = protocols where !protocols.isEmpty {
             headers.secWebProtocol = protocols
         }
@@ -60,12 +60,12 @@ extension WebSocket {
 
 extension WebSocket {
     /*
-     The request MUST include a header field with the name
-     |Sec-WebSocket-Key|.  The value of this header field MUST be a
-     nonce consisting of a randomly selected 16-byte value that has
-     been base64-encoded (see Section 4 of [RFC4648]).  The nonce
-     MUST be selected randomly for each connection.
-     */
+        The request MUST include a header field with the name
+        |Sec-WebSocket-Key|.  The value of this header field MUST be a
+        nonce consisting of a randomly selected 16-byte value that has
+        been base64-encoded (see Section 4 of [RFC4648]).  The nonce
+        MUST be selected randomly for each connection.
+    */
     static func makeRequestKey() -> String {
         return makeRequestKeyBytes().base64String
     }
