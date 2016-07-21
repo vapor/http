@@ -58,15 +58,15 @@ public final class HTTPSerializer<Message: HTTPMessage>: TransferSerializer {
         value; a proxy MUST NOT change the order of these field values when
         forwarding a message.
 
-        Note: In practice, the "Set-Cookie" header field ([RFC6265]) often
-        appears multiple times in a response message and does not use the
-        list syntax, violating the above requirements on multiple header
-        fields with the same name.  Since it cannot be combined into a
-        single field-value, recipients ought to handle "Set-Cookie" as a
-        special case while processing header fields.  (See Appendix A.2.3
-        of [Kri2001] for details.)
-    */
-    private func serialize(_ headers: HTTPHeaders) throws {
+         Note: In practice, the "Set-Cookie" header field ([RFC6265]) often
+         appears multiple times in a response message and does not use the
+         list syntax, violating the above requirements on multiple header
+         fields with the same name.  Since it cannot be combined into a
+         single field-value, recipients ought to handle "Set-Cookie" as a
+         special case while processing header fields.  (See Appendix A.2.3
+         of [Kri2001] for details.)
+     */
+    private func serialize(_ headers: [HeaderKey: String]) throws {
         /*
             // TODO: Ordered in future, but not necessary now: https://tools.ietf.org/html/rfc7230#section-3.2.2
 

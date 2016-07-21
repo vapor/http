@@ -8,7 +8,7 @@ extension HTTPResponse {
 
         https://en.wikipedia.org/wiki/Chunked_transfer_encoding
     */
-    public convenience init(status: HTTPStatus = .ok, headers: HTTPHeaders = [:], chunked closure: ((ChunkStream) throws -> Void)) {
+    public convenience init(status: Status = .ok, headers: [HeaderKey: String] = [:], chunked closure: ((ChunkStream) throws -> Void)) {
         self.init(status: status, headers: headers, body: .chunked(closure))
     }
 }

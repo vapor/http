@@ -1,9 +1,6 @@
 import PackageDescription
 
 var dependencies: [Package.Dependency] = [
-    //Standards package. Contains protocols for cross-project compatability.
-    .Package(url: "https://github.com/open-swift/S4.git", majorVersion: 0, minor: 10),
-
     //Websockets
     .Package(url: "https://github.com/CryptoKitten/SHA1.git", majorVersion: 0, minor: 8),
 
@@ -23,10 +20,6 @@ dependencies += [
 
 let package = Package(
     name: "Engine",
-    dependencies: dependencies,
-    exclude: [
-        "Resources"
-    ],
     targets: [
         Target(
             name: "Base"
@@ -68,5 +61,9 @@ let package = Package(
                 .Target(name: "SMTP")
             ]
         )
+    ],
+    dependencies: dependencies,
+    exclude: [
+        "Resources"
     ]
 )

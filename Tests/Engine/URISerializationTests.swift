@@ -206,7 +206,7 @@ class URISerializationTests: XCTestCase {
         XCTAssert(uri.scheme == scheme, "\(input) -- expected scheme: \(scheme) got: \(uri.scheme)")
         XCTAssert(uri.host == host, "\(input) -- expected host: \(host) got: \(uri.host)")
         let testUsername = uri.userInfo?.username ?? ""
-        let testPass = uri.userInfo?.password ?? ""
+        let testPass = uri.userInfo?.info ?? ""
         XCTAssert(testUsername == username, "\(input) -- expected username: \(username) got: \(testUsername)")
         XCTAssert(testPass == pass, "\(input) -- expected password: \(pass), got: \(testPass)")
         XCTAssert(uri.port == port, "\(input) -- expected port: \(port) got: \(uri.port)")

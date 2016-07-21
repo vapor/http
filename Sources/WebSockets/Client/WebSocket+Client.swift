@@ -20,11 +20,11 @@ extension WebSocket {
     }
 
     public static func connect(to uri: URI, using client: Client.Type = HTTPClient<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
-        guard let host = uri.host else { throw WebSocket.FormatError.invalidURI }
+        guard !uri.host.isEmpty else { throw WebSocket.FormatError.invalidURI }
 
         let requestKey = WebSocket.makeRequestKey()
 
-        var headers = HTTPHeaders()
+        var headers = [HeaderKey: String]()
         headers.secWebSocketKey = requestKey
         headers.connection = "Upgrade"
         headers.upgrade = "websocket"
@@ -38,9 +38,9 @@ extension WebSocket {
             headers.secWebProtocol = protocols
         }
 
-        let client = try client.make(scheme: uri.scheme, host: host, port: uri.port)
+        let client = try client.make(scheme: uri.scheme, host: uri.host, port: uri.port)
         // manually requesting to preserve queries that might be in URI easily
-        let request = HTTPRequest(method: .get, uri: uri, version: HTTPVersion(major: 1, minor: 1), headers: headers, body: .data([]))
+        let request = HTTPRequest(method: .get, uri: uri, version: Version(major: 1, minor: 1), headers: headers, body: .data([]))
         let response = try client.respond(to: request)
 
         // Don't need to check version in server response

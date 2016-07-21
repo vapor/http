@@ -1,7 +1,7 @@
-import S4
+import Engine
 
 // https://tools.ietf.org/html/rfc6455#section-1.2
-extension Headers {
+extension KeyAccessible where Key == HeaderKey, Value == String {
     public var isWebSocketRequest: Bool {
         guard upgrade == "websocket" else { return false }
         guard connection == "Upgrade" else { return false }

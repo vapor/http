@@ -1,5 +1,3 @@
-import S4
-
 // So common we simplify it
 
 public final class HTTPResponse: HTTPMessage {
@@ -13,7 +11,7 @@ public final class HTTPResponse: HTTPMessage {
     public init(
         version: Version = Version(major: 1, minor: 1),
         status: Status = .ok,
-        headers: Headers = [:],
+        headers: [HeaderKey: String] = [:],
         body: HTTPBody = .data([])
     ) {
         self.version = version
@@ -26,20 +24,15 @@ public final class HTTPResponse: HTTPMessage {
 
     public convenience required init(
         startLineComponents: (BytesSlice, BytesSlice, BytesSlice),
-        headers: Headers,
+        headers: [HeaderKey: String],
         body: HTTPBody
     ) throws {
         let (httpVersionSlice, statusCodeSlice, reasonPhrase) = startLineComponents
-        // TODO: Right now in Status, if you pass reason phrase, it automatically overrides status code. Try to use reason phrase
-        // keeping weirdness here to help reminder and silence warnings
-        _ = reasonPhrase
-
-        let version = try Version(httpVersionSlice)
+        let version = try Version.makeParsed(with: httpVersionSlice)
         guard let statusCode = Int(statusCodeSlice.string) else {
             throw HTTPMessageError.invalidStartLine
         }
-        // TODO: If we pass status reason phrase, it overrides status, adjust so that's not a thing
-        let status = Status(statusCode: statusCode)
+        let status = Status(statusCode: statusCode, reasonPhrase: reasonPhrase.string)
 
         self.init(version: version, status: status, headers: headers, body: body)
     }
@@ -52,7 +45,7 @@ extension HTTPResponse {
         Set permanently to 'true' to allow caching to automatically redirect from browsers.
         Defaulting to non-permanent to prevent unexpected caching.
     */
-    public convenience init(headers: Headers = [:], redirect location: String, permanently: Bool = false) {
+    public convenience init(headers: [HeaderKey: String] = [:], redirect location: String, permanently: Bool = false) {
         var headers = headers
         headers["Location"] = location
         // .found == 302 and is commonly used for temporarily moved
@@ -67,7 +60,7 @@ extension HTTPResponse {
     */
     public convenience init<
         S: Sequence where S.Iterator.Element == Byte
-    >(version: Version = Version(major: 1, minor: 1), status: Status = .ok, headers: Headers = [:], body: S) {
+    >(version: Version = Version(major: 1, minor: 1), status: Status = .ok, headers: [HeaderKey: String] = [:], body: S) {
         let body = HTTPBody(body)
         self.init(version: version, status: status, headers: headers, body: body)
     }
@@ -82,7 +75,7 @@ extension HTTPResponse {
     public convenience init(
         version: Version = Version(major: 1, minor: 1),
         status: Status = .ok,
-        headers: Headers = [:],
+        headers: [HeaderKey: String] = [:],
         body: HTTPBodyRepresentable
     ) {
         let body = body.makeBody()

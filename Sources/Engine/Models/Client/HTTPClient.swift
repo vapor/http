@@ -53,12 +53,12 @@ public final class HTTPClient<ClientStreamType: ClientStream>: Client {
     }
 
     private func assertValid(_ request: HTTPRequest) throws {
-        if !request.uri.host.isNilOrEmpty {
+        if request.uri.host.isEmpty {
             guard request.uri.host == host else { throw HTTPClientError.invalidRequestHost }
         }
 
-        if !request.uri.scheme.isNilOrEmpty {
-            guard request.uri.scheme?.securityLayer == securityLayer else { throw HTTPClientError.invalidRequestScheme }
+        if request.uri.scheme.isEmpty {
+            guard request.uri.scheme.securityLayer == securityLayer else { throw HTTPClientError.invalidRequestScheme }
         }
 
         if let requestPort = request.uri.port {

@@ -52,7 +52,7 @@ class HTTPVersionTests: XCTestCase {
         }
     }
 
-    private func makeVersion(with versionString: String) throws -> HTTPVersion {
-        return try HTTPVersion(versionString.utf8)
+    private func makeVersion(with versionString: String) throws -> Version {
+        return try Version.makeParsed(with: versionString.utf8)
     }
 }

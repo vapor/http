@@ -29,7 +29,7 @@ public final class StreamBuffer: Stream {
         self.size = size
         self.stream = stream
 
-        self.receiveIterator = Data().makeIterator()
+        self.receiveIterator = Bytes().makeIterator()
         self.sendBuffer = []
     }
 

@@ -123,8 +123,8 @@ public final class HTTPParser<Message: HTTPMessage>: TransferParser {
         return (comps[0], comps[1], comps[2])
     }
 
-    func parseHeaders() throws -> HTTPHeaders {
-        var headers: HTTPHeaders = [:]
+    func parseHeaders() throws -> [HeaderKey: String] {
+        var headers: [HeaderKey: String] = [:]
 
         var lastField: String? = nil
 
@@ -215,15 +215,15 @@ public final class HTTPParser<Message: HTTPMessage>: TransferParser {
     }
 
     /**
-        4.3 Message Body
+         4.3 Message Body
 
-        The message-body (if any) of an HTTP message is used to carry the
-        entity-body associated with the request or response. The message-body
-        differs from the entity-body only when a transfer-coding has been
-        applied, as indicated by the Transfer-Encoding header field (section
-        14.41).
+         The message-body (if any) of an HTTP message is used to carry the
+         entity-body associated with the request or response. The message-body
+         differs from the entity-body only when a transfer-coding has been
+         applied, as indicated by the Transfer-Encoding header field (section
+         14.41).
     */
-    func parseBody(with headers: HTTPHeaders) throws -> HTTPBody {
+    func parseBody(with headers: [HeaderKey: String]) throws -> HTTPBody {
         let body: Bytes
 
         if let contentLength = headers["content-length"].flatMap({ Int($0) }) {
