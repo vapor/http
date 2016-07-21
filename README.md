@@ -8,28 +8,20 @@ HTTP and Stream layers
 ##### [WebSockets](#websockets)
 Realtime websockets
 
-##### [SMTP](#smtp)
+##### [SMTP](#smtp-1)
 Send emails.
 
-## 🌎 Current Environment
+## 🌏 Current Environment
 
-| Vapor | Xcode | Swift |
-|:-:|:-:|:-:|
-|0.13.x|8.0 Beta <b>2</b>|3.0-PREVIEW-2|
+| Vapor |     Xcode    |    Swift    |
+|:-----:|:------------:|:-----------:|
+|0.14.x |8.0 Beta **2**|3.0-PREVIEW-2|
 
->This build will _not_ work with beta 1 users <b>MUST</b> use Xcode 8 beta 2
+You can run the following script to verify your environment is correct.
 
-## ⛔️ Important Install Notes
-
-[StackOverflow](http://stackoverflow.com/questions/38296145/vapor-web-framework-error-swift-does-not-support-the-sdk-macosx10-11-sdk)
-
-Vapor requires Xcode 8 to be fully installed including command line tools. Once Xcode 8 is opened, select:
-
+```sh
+curl -sL check.qutheory.io | bash
 ```
-Xcode > Preferences > Location > Command Line Tools > Xcode 8
-```
-
-[More Help Here!](http://stackoverflow.com/questions/38296145/vapor-web-framework-error-swift-does-not-support-the-sdk-macosx10-11-sdk) Or [visit us in slack](http://slack.qutheory.io).
 
 ## Linux Ready
 
@@ -52,9 +44,9 @@ print(response)
 import Engine
 
 final class Responder: HTTPResponder {
-    func respond(to request: Request) throws -> Response {
+    func respond(to request: HTTPRequest) throws -> HTTPResponse {
         let body = "Hello World".makeBody()
-        return Response(body: body)
+        return HTTPResponse(body: body)
     }
 }
 
@@ -92,7 +84,7 @@ import Engine
 import WebSockets
 
 final class Responder: HTTPResponder {
-    func respond(to request: Request) throws -> Response {
+    func respond(to request: HTTPRequest) throws -> HTTPResponse {
         return try request.upgradeToWebSocket { ws in
             print("[ws connected]")
 
@@ -121,10 +113,12 @@ try server.start(responder: Responder()) { error in
 ```Swift
 import SMTP
 
-let credentials = SMTPCredentials(user: "server-admin-login",
-                                  pass: "secret-server-password")
+let credentials = SMTPCredentials(
+    user: "server-admin-login",
+    pass: "secret-server-password"
+)
 
-let from = EmailAddress(name: "Password Rest",
+let from = EmailAddress(name: "Password Reset",
                         address: "noreply@myapp.com")
 let to = "some-user@random.com"
 let email: Email = Email(from: from,
@@ -132,7 +126,7 @@ let email: Email = Email(from: from,
                          subject: "Vapor SMTP - Simple",
                          body: "Hello from Vapor SMTP 👋")
 
-let client = try SMTPClient<TCPClientStream>.makeGMailClient()
+let client = try SMTPClient<TCPClientStream>.makeGmailClient()
 try client.send(email, using: credentials)
 ```
 

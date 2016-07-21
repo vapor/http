@@ -39,6 +39,7 @@
                 let input = inputStream,
                 let output = outputStream
                 else { throw Error.unableToConnectToHost }
+            
             self.input = input
             self.output = output
             super.init()

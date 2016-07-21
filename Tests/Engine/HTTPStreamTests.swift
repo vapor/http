@@ -32,7 +32,7 @@ class HTTPStreamTests: XCTestCase {
             let request = try HTTPParser<HTTPRequest>(stream: stream).parse()
 
             //MARK: Verify Request
-            XCTAssert(request.method == Method.post, "Incorrect method \(request.method)")
+            XCTAssert(request.method == HTTPMethod.post, "Incorrect method \(request.method)")
             XCTAssert(request.uri.path == "/json", "Incorrect path \(request.uri.path)")
             XCTAssert(request.version.major == 1 && request.version.minor == 1, "Incorrect version")
         } catch {

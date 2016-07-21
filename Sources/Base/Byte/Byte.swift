@@ -125,9 +125,9 @@ extension Byte {
 
 extension Byte {
     /**
-     Defines the `crlf` used to denote
-     line breaks in HTTP.
-     */
+        Defines the `crlf` used to denote
+        line breaks in HTTP.
+    */
     public static let crlf: Bytes = [
         .carriageReturn,
         .newLine

@@ -17,8 +17,8 @@ public final class FrameParser {
         let (isMasked, payloadLengthInfo) = try extractByteOne()
 
         /**
-         Returns UInt64 to encompass highest possible length. Length may be UInt16
-         */
+            Returns UInt64 to encompass highest possible length. Length may be UInt16
+        */
         let payloadLength: UInt64
         switch payloadLengthInfo {
         case Byte.twoBytePayloadLength:
@@ -76,8 +76,8 @@ public final class FrameParser {
     }
 
     /**
-     Returns UInt64 to encompass highest possible length. Length will be UInt16
-     */
+        Returns UInt64 to encompass highest possible length. Length will be UInt16
+    */
     private func extractTwoBytePayloadLengthExtension() throws -> UInt64 {
         let two = try stream.receive(max: 2)
         return UInt64(two)

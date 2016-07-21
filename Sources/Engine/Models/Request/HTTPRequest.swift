@@ -1,24 +1,34 @@
 public final class HTTPRequest: HTTPMessage {
     // TODO: public set for head request in application, serializer should change it, avoid exposing to end user
-    public var method: Method
+    public var method: HTTPMethod
 
     public var uri: URI
     public let version: Version
 
     public var parameters: [String: String] = [:]
-
-//    public convenience init(method: Method, path: String, host: String = "*", version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
+//
+//<<<<<<< HEAD:Sources/Engine/Models/Request/HTTPRequest.swift
+////    public convenience init(method: Method, path: String, host: String = "*", version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
+////        let path = path.hasPrefix("/") ? path : "/" + path
+////        let uri = try URI(path)
+////        self.init(method: method, uri: uri, version: version, headers: headers, body: body)
+////    }
+//
+//    public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
+//=======
+//    public convenience init(method: HTTPMethod, path: String, host: String = "*", version: HTTPVersion = HTTPVersion(major: 1, minor: 1), headers: HTTPHeaders = [:], body: HTTPBody = .data([])) throws {
 //        let path = path.hasPrefix("/") ? path : "/" + path
-//        let uri = try URI(path)
+//        var uri = try URI(path)
+//        uri.host = host
 //        self.init(method: method, uri: uri, version: version, headers: headers, body: body)
 //    }
 
-    public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
+    public convenience init(method: HTTPMethod, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
         let uri = try URI(uri)
         self.init(method: method, uri: uri, version: version, headers: headers, body: body)
     }
 
-    public init(method: Method,
+    public init(method: HTTPMethod,
                 uri: URI,
                 version: Version = Version(major: 1, minor: 1),
                 headers: [HeaderKey: String] = [:],
@@ -70,7 +80,7 @@ public final class HTTPRequest: HTTPMessage {
             security filters along the request chain.
         */
         let (methodSlice, uriSlice, httpVersionSlice) = startLineComponents
-        let method = Method(uppercased: methodSlice.uppercased)
+        let method = HTTPMethod(uppercased: methodSlice.uppercased)
         let uriParser = URIParser(bytes: uriSlice.array, existingHost: headers["Host"])
         var uri = try uriParser.parse()
         uri.scheme = uri.scheme.isEmpty ? "http" : uri.scheme

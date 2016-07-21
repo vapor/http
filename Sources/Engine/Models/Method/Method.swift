@@ -22,7 +22,7 @@
      SOFTWARE.
 */
 
-public enum Method {
+public enum HTTPMethod {
     case delete
     case get
     case head
@@ -35,7 +35,7 @@ public enum Method {
     case other(method: String)
 }
 
-extension Method {
+extension HTTPMethod {
     init(_ rawValue: String) {
         let method = rawValue.uppercased()
         switch method {
@@ -63,7 +63,7 @@ extension Method {
     }
 }
 
-extension Method: CustomStringConvertible {
+extension HTTPMethod: CustomStringConvertible {
     public var description: String {
         switch self {
         case .delete:            return "DELETE"
@@ -80,7 +80,7 @@ extension Method: CustomStringConvertible {
     }
 }
 
-extension Method: Hashable {
+extension HTTPMethod: Hashable {
     public var hashValue: Int {
         switch self {
         case .delete:            return 0
@@ -97,6 +97,6 @@ extension Method: Hashable {
     }
 }
 
-public func ==(lhs: Method, rhs: Method) -> Bool {
+public func ==(lhs: HTTPMethod, rhs: HTTPMethod) -> Bool {
     return lhs.description == rhs.description
 }

@@ -2,17 +2,17 @@ import Foundation
 import struct Base.Bytes
 
 /*
- to /
- cc /
- bcc /
- message-id /
- in-reply-to /
- references /
- subject /
- comments /
- keywords /
- optional-field)
- */
+    to /
+    cc /
+    bcc /
+    message-id /
+    in-reply-to /
+    references /
+    subject /
+    comments /
+    keywords /
+    optional-field)
+*/
 
 /**
     An email message that can be sent via an SMTP Client

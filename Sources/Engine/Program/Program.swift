@@ -10,7 +10,7 @@ extension Program {
         host: String? = nil,
         port: Int? = nil,
         securityLayer: SecurityLayer = .tls
-    )  throws -> Self {
+    ) throws -> Self {
         let host = host ?? "0.0.0.0"
         let port = port ?? (securityLayer == .tls ? 443 : 80)
         return try Self(host: host, port: port, securityLayer: securityLayer)

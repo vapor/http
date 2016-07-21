@@ -16,7 +16,7 @@ extension Client {
 }
 
 extension Client {
-    public func request(_ method: Method, path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
+    public func request(_ method: HTTPMethod, path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: HTTPBody = []) throws -> HTTPResponse {
         // TODO: Move finish("/") to initializer
         var uri = URI(scheme: scheme, userInfo: nil, host: host, port: port, path: path.finished(with: "/"), query: nil, fragment: nil)
         uri.append(query: query)
@@ -59,7 +59,7 @@ extension Client {
     }
 
     public static func request(
-        _ method: Method,
+        _ method: HTTPMethod,
         _ uri: String,
         headers: [HeaderKey: String] = [:],
         query: [String: CustomStringConvertible],

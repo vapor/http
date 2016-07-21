@@ -1,21 +1,21 @@
 /**
- We can't generically extend optionals based on their contents being protocols concretely,
- ie: where Wrapped == SomeProtocol
+    We can't generically extend optionals based on their contents being protocols concretely,
+    ie: where Wrapped == SomeProtocol
 
- This allows us to do so because extending protocol can use concrete generic constraints
- */
+    This allows us to do so because extending protocol can use concrete generic constraints
+*/
 public protocol Extractable {
 
     /**
-     The underlying type
-     */
+        The underlying type
+    */
     associatedtype Wrapped
 
     /**
-     Access the underlying value
+        Access the underlying value
 
-     - returns: the underlying value if exists
-     */
+        - returns: the underlying value if exists
+    */
     func extract() -> Wrapped?
 }
 

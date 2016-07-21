@@ -20,7 +20,7 @@ import struct Base.Bytes
      It is necessary to expose this functions because extensions may negotiate various usages of extensions
      etc. that is required to not be overridden
 
- */
+*/
 private let PayloadSplitSize = Int(64_000)
 
 extension WebSocket {
