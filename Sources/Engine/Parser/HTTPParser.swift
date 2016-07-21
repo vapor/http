@@ -123,8 +123,8 @@ public final class HTTPParser<Message: HTTPMessage>: TransferParser {
         return (comps[0], comps[1], comps[2])
     }
 
-    func parseHeaders() throws -> Headers {
-        var headers: Headers = [:]
+    func parseHeaders() throws -> [HeaderKey: String] {
+        var headers: [HeaderKey: String] = [:]
 
         var lastField: String? = nil
 
@@ -223,7 +223,7 @@ public final class HTTPParser<Message: HTTPMessage>: TransferParser {
      applied, as indicated by the Transfer-Encoding header field (section
      14.41).
      */
-    func parseBody(with headers: Headers) throws -> HTTPBody {
+    func parseBody(with headers: [HeaderKey: String]) throws -> HTTPBody {
         let body: Bytes
 
         if let contentLength = headers["content-length"].flatMap({ Int($0) }) {

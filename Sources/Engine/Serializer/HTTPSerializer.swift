@@ -66,7 +66,7 @@ public final class HTTPSerializer<Message: HTTPMessage>: TransferSerializer {
      special case while processing header fields.  (See Appendix A.2.3
      of [Kri2001] for details.)
      */
-    private func serialize(_ headers: Headers) throws {
+    private func serialize(_ headers: [HeaderKey: String]) throws {
         /*
          // TODO: Ordered in future, but not necessary now: https://tools.ietf.org/html/rfc7230#section-3.2.2
 

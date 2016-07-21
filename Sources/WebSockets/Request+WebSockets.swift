@@ -1,7 +1,4 @@
-import struct Engine.Headers
-
-import class Engine.HTTPRequest
-import class Engine.HTTPResponse
+import Engine
 
 extension HTTPRequest {
     /**
@@ -27,7 +24,7 @@ extension HTTPRequest {
             throw WebSocket.FormatError.invalidOrUnsupportedVersion
         }
 
-        var responseHeaders: Headers = [:]
+        var responseHeaders: [HeaderKey: String] = [:]
         responseHeaders.connection = "Upgrade"
         responseHeaders.upgrade = "websocket"
         responseHeaders.secWebSocketAccept = WebSocket.exchange(requestKey: requestKey)

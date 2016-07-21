@@ -17,7 +17,7 @@ extension URI {
 
     // The default port associated with the scheme
     public var schemePort: Int? {
-        return scheme.flatMap { scheme in URI.defaultPorts[scheme] }
+        return URI.defaultPorts[scheme]
     }
 
     public init(_ str: String) throws {
@@ -64,7 +64,7 @@ public final class URIParser: StaticDataBuffer {
 
     internal func parse() throws -> URI {
         let (schemeBytes, authorityBytes, pathBytes, queryBytes, fragmentBytes) = try parse()
-        let (usernameBytes, authBytes, hostBytes, portBytes) = try parse(authority: authorityBytes)
+        let (usernameBytes, infoBytes, hostBytes, portBytes) = try parse(authority: authorityBytes)
 
         /*
             ***** [WARNING] *****
@@ -73,13 +73,13 @@ public final class URIParser: StaticDataBuffer {
         */
         let scheme = try percentDecodedString(schemeBytes)
         let username = try percentDecodedString(usernameBytes)
-        let auth = try percentDecodedString(authBytes)
+        let info = try percentDecodedString(infoBytes)
 
         let userInfo: URI.UserInfo?
         if let username = username where !username.isEmpty {
             userInfo = URI.UserInfo(
                 username: username,
-                password: auth ?? ""
+                info: info
             )
         } else {
             userInfo = nil

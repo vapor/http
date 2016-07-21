@@ -7,14 +7,13 @@ public final class HTTPRequest: HTTPMessage {
 
     public var parameters: [String: String] = [:]
 
-    public convenience init(method: Method, path: String, host: String = "*", version: Version = Version(major: 1, minor: 1), headers: Headers = [:], body: HTTPBody = .data([])) throws {
-        let path = path.hasPrefix("/") ? path : "/" + path
-        var uri = try URI(path)
-        uri.host = host
-        self.init(method: method, uri: uri, version: version, headers: headers, body: body)
-    }
+//    public convenience init(method: Method, path: String, host: String = "*", version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
+//        let path = path.hasPrefix("/") ? path : "/" + path
+//        let uri = try URI(path)
+//        self.init(method: method, uri: uri, version: version, headers: headers, body: body)
+//    }
 
-    public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: Headers = [:], body: HTTPBody = .data([])) throws {
+    public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
         let uri = try URI(uri)
         self.init(method: method, uri: uri, version: version, headers: headers, body: body)
     }
@@ -22,7 +21,7 @@ public final class HTTPRequest: HTTPMessage {
     public init(method: Method,
                 uri: URI,
                 version: Version = Version(major: 1, minor: 1),
-                headers: Headers = [:],
+                headers: [HeaderKey: String] = [:],
                 body: HTTPBody = .data([])) {
         var headers = headers
         headers.appendHost(for: uri)
@@ -51,7 +50,7 @@ public final class HTTPRequest: HTTPMessage {
         super.init(startLine: requestLine, headers: headers, body: body)
     }
 
-    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: Headers, body: HTTPBody) throws {
+    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: [HeaderKey: String], body: HTTPBody) throws {
         /**
             https://tools.ietf.org/html/rfc2616#section-5.1
 
@@ -74,8 +73,8 @@ public final class HTTPRequest: HTTPMessage {
         let method = Method(uppercased: methodSlice.uppercased)
         let uriParser = URIParser(bytes: uriSlice.array, existingHost: headers["Host"])
         var uri = try uriParser.parse()
-        uri.scheme = uri.scheme.isNilOrEmpty ? "http" : uri.scheme
-        let version = try Version(httpVersionSlice)
+        uri.scheme = uri.scheme.isEmpty ? "http" : uri.scheme
+        let version = try Version.makeParsed(with: httpVersionSlice)
 
         self.init(method: method, uri: uri, version: version, headers: headers, body: body)
     }
