@@ -23,10 +23,6 @@ dependencies += [
 
 let package = Package(
     name: "Engine",
-    dependencies: dependencies,
-    exclude: [
-        "Resources"
-    ],
     targets: [
         Target(
             name: "Base"
@@ -68,5 +64,9 @@ let package = Package(
                 .Target(name: "SMTP")
             ]
         )
+    ],
+    dependencies: dependencies,
+    exclude: [
+        "Resources"
     ]
 )
