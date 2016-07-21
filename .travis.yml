@@ -6,7 +6,8 @@ sudo: required
 dist: trusty
 osx_image: xcode8
 install:
-  - eval "$(curl -sL swift.qutheory.io/07-20)"
+  - curl -sL swift.qutheory.io/07-20 | bash
+  - source ~/.bashrc		    - source ~/.bashrc
 script:
   # Build Core
   - swift build
