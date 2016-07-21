@@ -1,7 +1,7 @@
 import libc
 
-import struct Base.Byte
-import struct Base.Bytes
+import struct Core.Byte
+import struct Core.Bytes
 
 // MARK:
 

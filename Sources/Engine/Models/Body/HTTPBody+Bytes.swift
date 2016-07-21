@@ -1,5 +1,5 @@
 // TODO: Temporary
-@_exported import Base
+@_exported import Core
 
 extension HTTPBody {
     public var bytes: Bytes? {

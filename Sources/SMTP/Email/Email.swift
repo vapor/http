@@ -1,5 +1,5 @@
 import Foundation
-import struct Base.Bytes
+import struct Core.Bytes
 
 /*
     to /

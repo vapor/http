@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import Base
+@testable import Core
 
 private enum PromiseTestError: Swift.Error {
     case someError

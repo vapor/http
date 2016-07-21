@@ -1,4 +1,4 @@
-import Base
+import Core
 import protocol Engine.Stream
 
 public enum FrameParserError: Swift.Error {
