@@ -7,8 +7,8 @@ var dependencies: [Package.Dependency] = [
     //Sockets, used by the built in HTTP server
     .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 8),
 
-    // libc
-    .Package(url: "https://github.com/qutheory/libc.git", majorVersion: 0, minor: 1)
+    //CoreComponents
+    .Package(url: "https://github.com/qutheory/core.git", majorVersion: 0, minor: 0)
 ]
 
 #if os(Linux)

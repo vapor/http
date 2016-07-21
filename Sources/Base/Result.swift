@@ -1,6 +1,6 @@
 public enum Result<T> {
     case success(T)
-    case failure(ErrorProtocol)
+    case failure(Error)
 }
 
 extension Result {
@@ -20,7 +20,7 @@ extension Result {
         return val
     }
 
-    public var error: ErrorProtocol? {
+    public var error: Swift.Error? {
         guard case let .failure(err) = self else { return nil }
         return err
     }

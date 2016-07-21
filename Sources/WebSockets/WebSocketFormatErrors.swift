@@ -1,5 +1,5 @@
 extension WebSocket {
-    public enum FormatError: ErrorProtocol {
+    public enum FormatError: Swift.Error {
         case missingSecKeyHeader
         case missingSecAcceptHeader
         case invalidSecAcceptHeader

@@ -18,7 +18,7 @@ extension HTTPBody {
     }
 }
 
-extension HTTPBody: ArrayLiteralConvertible {
+extension HTTPBody: ExpressibleByArrayLiteral {
     /// Creates an instance initialized with the given elements.
     public init(arrayLiteral elements: Byte...) {
         self.init(elements)

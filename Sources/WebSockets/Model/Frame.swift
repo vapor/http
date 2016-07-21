@@ -156,7 +156,7 @@ extension WebSocket.Frame {
 }
 
 extension WebSocket.Frame.OpCode {
-    public enum Error: ErrorProtocol { case invalid }
+    public enum Error: Swift.Error { case invalid }
 }
 
 extension WebSocket.Frame.OpCode {
@@ -370,7 +370,7 @@ extension WebSocket.Frame {
 }
 
 extension WebSocket.Frame {
-    public enum Error: ErrorProtocol {
+    public enum Error: Swift.Error {
         case failed
     }
 }

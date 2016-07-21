@@ -9,7 +9,7 @@
 import XCTest
 @testable import Base
 
-private enum PromiseTestError: ErrorProtocol {
+private enum PromiseTestError: Swift.Error {
     case someError
     case anotherError
 }

@@ -144,10 +144,10 @@ extension Array where Element: Hashable {
 
         var leading = 0
         var trailing = lastIdx
-        while let next = leadingIterator.next() where elements.contains(self[next]) {
+        while let next = leadingIterator.next(), elements.contains(self[next]) {
             leading += 1
         }
-        while let next = trailingIterator.next() where elements.contains(self[lastIdx - next]) {
+        while let next = trailingIterator.next(), elements.contains(self[lastIdx - next]) {
             trailing -= 1
         }
 

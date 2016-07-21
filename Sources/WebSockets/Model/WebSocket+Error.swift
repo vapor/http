@@ -1,5 +1,5 @@
 extension WebSocket {
-    public enum Error: ErrorProtocol {
+    public enum Error: Swift.Error {
         case invalidPingFormat
         case unexpectedFragmentFrame
     }

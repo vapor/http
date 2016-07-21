@@ -1,4 +1,4 @@
-public enum HTTPMessageError: ErrorProtocol {
+public enum HTTPMessageError: Error {
     case invalidStartLine
 }
 

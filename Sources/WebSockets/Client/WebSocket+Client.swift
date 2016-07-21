@@ -34,7 +34,7 @@ extension WebSocket {
             If protocols are empty they should not be added,
             it was kicking back errors on nginx proxies in tests
         */
-        if let protocols = protocols where !protocols.isEmpty {
+        if let protocols = protocols, !protocols.isEmpty {
             headers.secWebProtocol = protocols
         }
 

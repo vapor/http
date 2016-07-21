@@ -7,7 +7,7 @@ struct EHLOExtension {
 
     init(_ line: String) throws {
         let args = line.components(separatedBy: " ")
-        guard let keyword = args.first where !keyword.isEmpty else { throw Error.missingKeyword }
+        guard let keyword = args.first, !keyword.isEmpty else { throw Error.missingKeyword }
         self.keyword = keyword
         self.params = args.dropFirst().array // rm keyword
     }
@@ -20,7 +20,7 @@ extension Sequence where Iterator.Element == EHLOExtension {
 }
 
 extension EHLOExtension {
-    enum Error: ErrorProtocol {
+    enum Error: Swift.Error {
         case missingKeyword
     }
 }

@@ -1,4 +1,4 @@
-public enum ProgramStreamError: ErrorProtocol {
+public enum ProgramStreamError: Error {
     /**
         Visit https://github.com/qutheory/vapor-tls
         to learn about adding Transport Layer Security to Vapor.

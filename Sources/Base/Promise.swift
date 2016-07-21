@@ -7,7 +7,7 @@
 #if !os(Linux)
     import Foundation
 
-    public enum PromiseError: ErrorProtocol {
+    public enum PromiseError: Error {
         case promiseNotCalled
         case timedOut
     }
@@ -39,7 +39,7 @@
         /**
             Reject the promise with an appropriate error
         */
-        public func reject(with error: ErrorProtocol) {
+        public func reject(with error: Error) {
             lock.locked {
                 guard result == nil else { return }
                 result = .failure(error)

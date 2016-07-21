@@ -32,7 +32,7 @@ extension URI {
 
 public final class URIParser: StaticDataBuffer {
 
-    public enum Error: ErrorProtocol {
+    public enum Error: Swift.Error {
         case invalidPercentEncoding
         case unsupportedURICharacter(Byte)
     }
@@ -76,7 +76,7 @@ public final class URIParser: StaticDataBuffer {
         let info = try percentDecodedString(infoBytes)
 
         let userInfo: URI.UserInfo?
-        if let username = username where !username.isEmpty {
+        if let username = username, !username.isEmpty {
             userInfo = URI.UserInfo(
                 username: username,
                 info: info
