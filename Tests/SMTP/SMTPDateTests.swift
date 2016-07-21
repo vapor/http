@@ -21,7 +21,7 @@ class SMTPDateTests: XCTestCase {
     ]
 
     func testSMTPDate() {
-        let date = NSDate(timeIntervalSince1970: 0)
+        let date = Date(timeIntervalSince1970: 0)
         let smtpFormatted = date.smtpFormatted
         XCTAssert(smtpFormatted.hasPrefix("Wed, 31 Dec 1969 "))
         let suffix = smtpFormatted.components(separatedBy: "Wed, 31 Dec 1969 ").last ?? ""
