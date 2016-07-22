@@ -1,5 +1,5 @@
 // TODO: Temporary
-@_exported import Base
+@_exported import Core
 
 extension HTTPBody {
     public var bytes: Bytes? {
@@ -18,7 +18,7 @@ extension HTTPBody {
     }
 }
 
-extension HTTPBody: ArrayLiteralConvertible {
+extension HTTPBody: ExpressibleByArrayLiteral {
     /// Creates an instance initialized with the given elements.
     public init(arrayLiteral elements: Byte...) {
         self.init(elements)

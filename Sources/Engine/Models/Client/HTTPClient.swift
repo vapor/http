@@ -1,4 +1,4 @@
-public enum HTTPClientError: ErrorProtocol {
+public enum HTTPClientError: Swift.Error {
     case invalidRequestHost
     case invalidRequestScheme
     case invalidRequestPort

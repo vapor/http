@@ -1,4 +1,4 @@
-import struct Base.Bytes
+import struct Core.Bytes
 
 /*
 
@@ -74,7 +74,7 @@ import struct Base.Bytes
 
 extension WebSocket {
     internal final class FragmentAggregator {
-        enum Error: ErrorProtocol {
+        enum Error: Swift.Error {
             case receivedUnfragmentedFrame
         }
 

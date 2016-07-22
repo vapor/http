@@ -8,7 +8,7 @@
 
 import XCTest
 
-import Base
+import Core
 import Engine
 @testable import SMTP
 

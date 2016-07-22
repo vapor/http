@@ -1,5 +1,5 @@
 import Engine
-import Base
+import Core
 
 extension WebSocket {
     public static func background(to uri: String, using client: Client.Type = HTTPClient<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
@@ -8,7 +8,7 @@ extension WebSocket {
     }
 
     public static func background(to uri: URI, using client: Client.Type = HTTPClient<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
-        _ = try Base.background {
+        _ = try Core.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
             _ = try? connect(to: uri, using: client, protocols: protocols, onConnect: onConnect)
         }
@@ -34,7 +34,7 @@ extension WebSocket {
             If protocols are empty they should not be added,
             it was kicking back errors on nginx proxies in tests
         */
-        if let protocols = protocols where !protocols.isEmpty {
+        if let protocols = protocols, !protocols.isEmpty {
             headers.secWebProtocol = protocols
         }
 

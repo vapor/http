@@ -3,7 +3,7 @@
     import Foundation
 
     public class FoundationStream: NSObject, Stream, ClientStream, Foundation.StreamDelegate {
-        public enum Error: ErrorProtocol {
+        public enum Error: Swift.Error {
             case unableToCompleteReadOperation
             case unableToCompleteWriteOperation
             case unableToConnectToHost

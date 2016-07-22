@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 
-@testable import Base
+@testable import Core
 
 
 class UnsignedIntegerChunkingTests: XCTestCase {

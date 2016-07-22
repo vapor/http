@@ -1,4 +1,4 @@
-extension EmailAddress: StringLiteralConvertible {
+extension EmailAddress: ExpressibleByStringLiteral {
     /*
          Turn string into EmailAddress
          

@@ -1,5 +1,5 @@
-import struct Base.Byte
-import struct Base.Bytes
+import struct Core.Byte
+import struct Core.Bytes
 
 /*
      0               1               2               3

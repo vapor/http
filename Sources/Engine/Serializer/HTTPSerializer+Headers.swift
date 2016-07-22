@@ -20,7 +20,7 @@ extension KeyAccessible where Key == HeaderKey, Value == String {
         // Remove Content Length For Chunked Encoding
         self["Content-Length"] = nil
 
-        if let encoding = self["Transfer-Encoding"] where !encoding.isEmpty {
+        if let encoding = self["Transfer-Encoding"], !encoding.isEmpty {
             if encoding.hasSuffix("chunked") {
                 return
             } else {

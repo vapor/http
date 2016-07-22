@@ -1,26 +1,18 @@
 import Foundation
 
-#if !os(Linux)
-    /*
-        Temporary Foundation Naming Fix
-    */
-    typealias NSDateFormatter = DateFormatter
-    typealias NSDate = Date
-#endif
-
-extension NSDate {
+extension Date {
     /*
         An SMTP formatted date string
     */
     public var smtpFormatted: String {
-        return NSDateFormatter.sharedSMTPFormatter().string(from: self)
+        return DateFormatter.sharedSMTPFormatter().string(from: self)
     }
 }
 
-extension NSDateFormatter {
-    static func sharedSMTPFormatter() -> NSDateFormatter {
+extension DateFormatter {
+    static func sharedSMTPFormatter() -> DateFormatter {
         struct Static {
-            static let singleton: NSDateFormatter = .makeSMTPFormatter()
+            static let singleton: DateFormatter = .makeSMTPFormatter()
         }
         return Static.singleton
     }
@@ -55,8 +47,8 @@ extension NSDateFormatter {
 
          zone            =   (FWS ( "+" / "-" ) 4DIGIT) / obs-zone
     */
-    static func makeSMTPFormatter() -> NSDateFormatter {
-        let formatter = NSDateFormatter()
+    static func makeSMTPFormatter() -> DateFormatter {
+        let formatter = DateFormatter()
         formatter.dateFormat = "EEE, d MMM yyyy HH:mm:ss ZZZ"
         return formatter
     }

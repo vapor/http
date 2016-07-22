@@ -1,4 +1,4 @@
-public enum ClientError: ErrorProtocol {
+public enum ClientError: Swift.Error {
     case missingHost
 }
 

@@ -43,10 +43,10 @@ public final class HTTPRequest: HTTPMessage {
         // https://tools.ietf.org/html/rfc7230#section-3.1.2
         // status-line = HTTP-version SP status-code SP reason-phrase CRL
         var path = uri.path ?? "/"
-        if let q = uri.query where !q.isEmpty {
+        if let q = uri.query, !q.isEmpty {
             path += "?\(q)"
         }
-        if let f = uri.fragment where !f.isEmpty {
+        if let f = uri.fragment, !f.isEmpty {
             path += "#\(f)"
         }
         // Prefix w/ `/` to properly indicate that this we're not using absolute URI.

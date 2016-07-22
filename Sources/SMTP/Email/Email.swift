@@ -1,5 +1,5 @@
 import Foundation
-import struct Base.Bytes
+import struct Core.Bytes
 
 /*
     to /
@@ -49,17 +49,10 @@ public final class Email {
     //    var comments: [String] = [] // ?
     //    var keywords: [String] = [] // ?
 
-    #if os(Linux)
-    /**
-        The date the email was created
-    */
-    public let date: NSDate = NSDate()
-    #else
     /**
         The date the email was created
     */
     public let date: Date = Date()
-    #endif
 
     /**
         The main body of the email. Currently supports

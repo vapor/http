@@ -46,7 +46,7 @@ public func ==(lhs: HeaderKey, rhs: HeaderKey) -> Bool {
     return lhs.key == rhs.key
 }
 
-extension HeaderKey: StringLiteralConvertible {
+extension HeaderKey: ExpressibleByStringLiteral {
     public init(stringLiteral string: String) {
         self.init(string)
     }

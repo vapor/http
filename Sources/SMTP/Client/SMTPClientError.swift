@@ -1,7 +1,7 @@
 /*:
     Errors associated w/ SMTPClient
 */
-public enum SMTPClientError: ErrorProtocol {
+public enum SMTPClientError: Swift.Error {
     /*
         Multiline replies must have same reply code. If different, throws this error
     */
@@ -61,25 +61,25 @@ extension SMTPClientError {
     */
     public var code: Int {
         switch self {
-        case let invalidMultilineReply(expected: _, got: errorCode, replies: _):
+        case let .invalidMultilineReply(expected: _, got: errorCode, replies: _):
             return errorCode
-        case let invalidUsername(code: errorCode, reply: _):
+        case let .invalidUsername(code: errorCode, reply: _):
             return errorCode
-        case let invalidPassword(code: errorCode, reply: _):
+        case let .invalidPassword(code: errorCode, reply: _):
             return errorCode
-        case let authorizationFailed(code: errorCode, reply: _):
+        case let .authorizationFailed(code: errorCode, reply: _):
             return errorCode
-        case let unexpectedReply(expected: _, got: errorCode, replies: _, initiator: _):
+        case let .unexpectedReply(expected: _, got: errorCode, replies: _, initiator: _):
             return errorCode
-        case unsupportedAuth(supportedByServer: _, supportedBySMTP: _):
+        case .unsupportedAuth(supportedByServer: _, supportedBySMTP: _):
             return -1
-        case let initiationFailed(code: errorCode, replies: _):
+        case let .initiationFailed(code: errorCode, replies: _):
             return errorCode
-        case missingGreeting:
+        case .missingGreeting:
             return -2
-        case let invalidGreeting(code: errorCode, greeting: _):
+        case let .invalidGreeting(code: errorCode, greeting: _):
             return errorCode
-        case let quitFailed(code: errorCode, reply: _):
+        case let .quitFailed(code: errorCode, reply: _):
             return errorCode
         }
     }
@@ -89,25 +89,25 @@ extension SMTPClientError {
     */
     public var replies: [String] {
         switch self {
-        case let invalidMultilineReply(expected: _, got: _, replies: replies):
+        case let .invalidMultilineReply(expected: _, got: _, replies: replies):
             return replies
-        case let invalidUsername(code: _, reply: reply):
+        case let .invalidUsername(code: _, reply: reply):
             return [reply]
-        case let invalidPassword(code: _, reply: reply):
+        case let .invalidPassword(code: _, reply: reply):
             return [reply]
-        case let authorizationFailed(code: _, reply: reply):
+        case let .authorizationFailed(code: _, reply: reply):
             return [reply]
-        case let unexpectedReply(expected: _, got: _, replies: replies, initiator: _):
+        case let .unexpectedReply(expected: _, got: _, replies: replies, initiator: _):
             return replies
-        case unsupportedAuth(supportedByServer: _, supportedBySMTP: _):
+        case .unsupportedAuth(supportedByServer: _, supportedBySMTP: _):
             return []
-        case let initiationFailed(code: _, replies: replies):
+        case let .initiationFailed(code: _, replies: replies):
             return replies
-        case missingGreeting:
+        case .missingGreeting:
             return []
-        case let invalidGreeting(code: _, greeting: greeting):
+        case let .invalidGreeting(code: _, greeting: greeting):
             return [greeting]
-        case let quitFailed(code: _, reply: reply):
+        case let .quitFailed(code: _, reply: reply):
             return [reply]
         }
     }

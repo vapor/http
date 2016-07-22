@@ -14,7 +14,7 @@ internal struct SMTPGreeting {
 }
 
 extension SMTPGreeting {
-    enum Error: ErrorProtocol {
+    enum Error: Swift.Error {
         case missingDomain
     }
 }

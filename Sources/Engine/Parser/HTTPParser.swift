@@ -63,7 +63,7 @@
     ******************************
 */
 
-public enum HTTPParserError: ErrorProtocol {
+public enum HTTPParserError: Swift.Error {
     case streamEmpty
     case invalidStartLine
     case invalidRequest
@@ -229,8 +229,8 @@ public final class HTTPParser<Message: HTTPMessage>: TransferParser {
         if let contentLength = headers["content-length"].flatMap({ Int($0) }) {
             body = try stream.receive(max: contentLength)
         } else if
-            let transferEncoding = headers["transfer-encoding"]
-            where transferEncoding.lowercased().hasSuffix("chunked") // chunked MUST be last component
+            let transferEncoding = headers["transfer-encoding"],
+            transferEncoding.lowercased().hasSuffix("chunked") // chunked MUST be last component
         {
             /*
                 3.6.1 Chunked Transfer Coding
@@ -253,7 +253,7 @@ public final class HTTPParser<Message: HTTPMessage>: TransferParser {
                 }
 
                 // convert hex length data to int, or end of encoding
-                guard let length = lengthData.hexInt where length > 0 else {
+                guard let length = lengthData.hexInt, length > 0 else {
                     break
                 }
 

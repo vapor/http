@@ -7,7 +7,7 @@
 //
 
 import XCTest
-import Base
+import Core
 @testable import SMTP
 
 class EmailAttachmentTests: XCTestCase {

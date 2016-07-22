@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 import libc
 
-import Base
+import Core
 @testable import WebSockets
 
 

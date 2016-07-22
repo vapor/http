@@ -1,7 +1,7 @@
-import Base
+import Core
 import protocol Engine.Stream
 
-public enum FrameParserError: ErrorProtocol {
+public enum FrameParserError: Swift.Error {
     case missingByte
 }
 

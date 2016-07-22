@@ -1,34 +1,21 @@
 import PackageDescription
 
-var dependencies: [Package.Dependency] = [
+let dependencies: [Package.Dependency] = [
     //Websockets
-    .Package(url: "https://github.com/CryptoKitten/SHA1.git", majorVersion: 0, minor: 8),
+    .Package(url: "https://github.com/CryptoKitten/SHA1.git", majorVersion: 0, minor: 9),
 
     //Sockets, used by the built in HTTP server
-    .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 8),
+    .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 9),
 
-    // libc
-    .Package(url: "https://github.com/qutheory/libc.git", majorVersion: 0, minor: 1)
+    //CoreComponents
+    .Package(url: "https://github.com/qutheory/core.git", majorVersion: 0, minor: 2)
 ]
-
-#if os(Linux)
-dependencies += [
-  //Wrapper around pthreads
-  .Package(url: "https://github.com/ketzusaka/Strand.git", majorVersion: 1, minor: 5),
-]
-#endif
 
 let package = Package(
     name: "Engine",
     targets: [
         Target(
-            name: "Base"
-        ),
-        Target(
-            name: "Engine",
-            dependencies: [
-                .Target(name: "Base")
-            ]
+            name: "Engine"
         ),
         Target(
             name: "WebSockets",

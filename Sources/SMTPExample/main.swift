@@ -15,7 +15,7 @@ func simpleEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable)
 
 // Complex Email
 
-enum Error: ErrorProtocol {
+enum Error: Swift.Error {
     case missingFile
 }
 

@@ -20,7 +20,7 @@ extension HTTPRequest {
         }
 
         // TODO: Find other versions and see if we can support -- this is version mentioned in RFC
-        guard let version = headers.secWebSocketVersion where version == "13" else {
+        guard let version = headers.secWebSocketVersion, version == "13" else {
             throw WebSocket.FormatError.invalidOrUnsupportedVersion
         }
 
