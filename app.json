@@ -11,7 +11,7 @@
   ],
   "buildpacks": [
     {
-      "url": "https://github.com/kylef/heroku-buildpack-swift"
+      "url": "https://github.com/loganwright/heroku-buildpack-swift"
     }
   ]
 }
