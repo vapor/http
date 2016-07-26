@@ -23,14 +23,14 @@
         public let port: Int
         public let securityLayer: SecurityLayer
         let input: InputStream
-        let output: NSOutputStream
+        let output: OutputStream
 
         public required init(host: String, port: Int, securityLayer: SecurityLayer) throws {
             self.host = host
             self.port = port
             self.securityLayer = securityLayer
             var inputStream: InputStream? = nil
-            var outputStream: NSOutputStream? = nil
+            var outputStream: OutputStream? = nil
             Foundation.Stream.getStreamsToHost(withName: host,
                                       port: port,
                                       inputStream: &inputStream,
