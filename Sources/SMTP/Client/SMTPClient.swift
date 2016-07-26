@@ -136,9 +136,9 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
 
     internal func authorize(extensions: [EHLOExtension], using credentials: SMTPCredentials) throws {
         if let auth = extensions.authExtension {
-            if auth.params.contains({ $0.equals(caseInsensitive: "LOGIN") }) {
+            if auth.params.contains(where: { $0.equals(caseInsensitive: "LOGIN") }) {
                 try authorize(method: .login, using: credentials)
-            } else if auth.params.contains({ $0.equals(caseInsensitive: "PLAIN") }) {
+            } else if auth.params.contains(where: { $0.equals(caseInsensitive: "PLAIN") }) {
                 try authorize(method: .plain, using: credentials)
             } else {
                 throw SMTPClientError.unsupportedAuth(supportedByServer: auth.params,
