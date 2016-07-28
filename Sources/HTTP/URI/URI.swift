@@ -45,10 +45,11 @@ public struct URI {
         query: String? = nil,
         fragment: String? = nil
         ) {
-        self.scheme = scheme.lowercased()
+        let scheme = scheme.lowercased()
+        self.scheme = scheme
         self.userInfo = userInfo
         self.host = host.lowercased()
-        self.port = port
+        self.port = port ?? URI.defaultPorts[scheme]
         self.path = path
         self.query = query
         self.fragment = fragment

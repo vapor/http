@@ -6,28 +6,28 @@ extension URIParser {
 }
 
 extension URI {
-    public typealias Scheme = String
-    // TODO: Find RFC list of other defaults, implement and link source
-    static let defaultPorts: [Scheme: Int] = [
+    public init(_ str: String) throws {
+        self = try URIParser.parse(uri: str.utf8.array)
+        guard port == nil else { return }
+        // if no port, try scheme default if possible
+        port = defaultPort
+    }
+}
+
+extension URI {
+    // The default port associated with the scheme associated with this URI
+    public var defaultPort: Int? {
+        return URI.defaultPorts[scheme]
+    }
+
+    public static let defaultPorts = [
         "http": 80,
         "https": 443,
         "ws": 80,
         "wss": 443
     ]
-
-    // The default port associated with the scheme
-    public var schemePort: Int? {
-        return URI.defaultPorts[scheme]
-    }
-
-    public init(_ str: String) throws {
-        self = try URIParser.parse(uri: str.utf8.array)
-        guard port == nil else { return }
-        // if no port, try scheme default if possible
-        port = schemePort
-    }
-    
 }
+
 // ************************************
 
 public final class URIParser: StaticDataBuffer {
