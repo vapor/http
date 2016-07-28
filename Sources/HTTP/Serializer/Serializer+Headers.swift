@@ -1,3 +1,5 @@
+import URI
+
 extension KeyAccessible where Key == HeaderKey, Value == String {
     mutating func appendHost(for uri: URI) {
         // TODO: Should this overwrite, or only if non-existant so user can customize if there's something we're not considering

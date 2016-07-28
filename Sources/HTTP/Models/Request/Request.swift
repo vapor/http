@@ -1,3 +1,5 @@
+import URI
+
 public final class Request: Message {
     // TODO: public set for head request in application, serializer should change it, avoid exposing to end user
     public var method: Method
@@ -65,8 +67,7 @@ public final class Request: Message {
         */
         let (methodSlice, uriSlice, httpVersionSlice) = startLineComponents
         let method = Method(uppercased: methodSlice.uppercased)
-        let uriParser = URIParser(bytes: uriSlice.array, existingHost: headers["Host"])
-        var uri = try uriParser.parse()
+        var uri = try URIParser.parse(bytes: uriSlice.array, existingHost: headers["Host"])
         uri.scheme = uri.scheme.isEmpty ? "http" : uri.scheme
         let version = try Version.makeParsed(with: httpVersionSlice)
 

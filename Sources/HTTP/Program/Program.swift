@@ -1,3 +1,5 @@
+import URI
+
 public protocol Program {
     var host: String { get }
     var port: Int { get }

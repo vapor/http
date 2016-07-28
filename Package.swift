@@ -15,10 +15,13 @@ let package = Package(
     name: "Engine",
     targets: [
         Target(
-            name: "HTTP"
+            name: "URI"
         ),
         Target(
-            name: "URI"
+            name: "HTTP",
+            dependencies: [
+              "URI"
+            ]
         ),
         Target(
             name: "WebSockets",

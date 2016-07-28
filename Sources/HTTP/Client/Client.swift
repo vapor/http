@@ -1,3 +1,5 @@
+import URI
+
 public enum ClientProtocolError: Swift.Error {
     case missingHost
 }

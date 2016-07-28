@@ -1,3 +1,5 @@
+import URI
+
 extension String: CustomStringConvertible {
     public var description: String { return self }
 }

@@ -203,7 +203,7 @@ class URISerializationTests: XCTestCase {
                           query: String?,
                           fragment: String?) throws {
 
-        let uri = try URIParser.parse(uri: input.utf8.array)
+        let uri = try URIParser.parse(bytes: input.utf8.array)
         XCTAssert(uri.scheme == scheme, "\(input) -- expected scheme: \(scheme) got: \(uri.scheme)")
         XCTAssert(uri.host == host, "\(input) -- expected host: \(host) got: \(uri.host)")
         let testUsername = uri.userInfo?.username ?? ""
