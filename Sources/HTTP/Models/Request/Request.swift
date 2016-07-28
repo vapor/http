@@ -6,22 +6,6 @@ public final class HTTPRequest: HTTPMessage {
     public let version: Version
 
     public var parameters: [String: String] = [:]
-//
-//<<<<<<< HEAD:Sources/Engine/Models/Request/HTTPRequest.swift
-////    public convenience init(method: Method, path: String, host: String = "*", version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
-////        let path = path.hasPrefix("/") ? path : "/" + path
-////        let uri = try URI(path)
-////        self.init(method: method, uri: uri, version: version, headers: headers, body: body)
-////    }
-//
-//    public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
-//=======
-//    public convenience init(method: HTTPMethod, path: String, host: String = "*", version: HTTPVersion = HTTPVersion(major: 1, minor: 1), headers: HTTPHeaders = [:], body: HTTPBody = .data([])) throws {
-//        let path = path.hasPrefix("/") ? path : "/" + path
-//        var uri = try URI(path)
-//        uri.host = host
-//        self.init(method: method, uri: uri, version: version, headers: headers, body: body)
-//    }
 
     public convenience init(method: HTTPMethod, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
         let uri = try URI(uri)

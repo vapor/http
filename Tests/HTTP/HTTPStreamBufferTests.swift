@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 
-@testable import Engine
+@testable import HTTP
 
 class StreamBufferTests: XCTestCase {
     static let allTests = [

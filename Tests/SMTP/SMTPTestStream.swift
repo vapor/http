@@ -1,5 +1,5 @@
 import Core
-import Engine
+import HTTP
 @testable import SMTP
 
 let username = "user"
@@ -29,7 +29,7 @@ private let SMTPReplies: [String: String] = [
     "\r\n.\r\n": "250 email done"
 ]
 
-final class SMTPTestStream: Engine.ClientStream, Engine.Stream {
+final class SMTPTestStream: HTTP.ClientStream, HTTP.Stream {
     var closed: Bool
     var buffer: Bytes
 
@@ -94,7 +94,7 @@ final class SMTPTestStream: Engine.ClientStream, Engine.Stream {
         return Bytes(data)
     }
     
-    func connect() throws -> Engine.Stream {
+    func connect() throws -> HTTP.Stream {
         return self
     }
 }

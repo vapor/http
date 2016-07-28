@@ -1,5 +1,5 @@
 import Core
-import Engine
+import HTTP
 
 /*
      SMTP Makes use of multiple RFC specs
@@ -93,7 +93,7 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     public let port: Int
     public let securityLayer: SecurityLayer
 
-    internal let stream: Engine.Stream
+    internal let stream: HTTP.Stream
 
     /**
          Connect the client to given SMTP Server

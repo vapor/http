@@ -13,7 +13,7 @@ XCTMain([
     testCase(PercentEncodingTests.allTests),
     testCase(UnsignedIntegerChunkingTests.allTests),
 
-    // EngineTestSuite
+    // HTTPTestSuite
     testCase(HTTPBodyTests.allTests),
     testCase(HTTPHeadersTests.allTests),
     testCase(HTTPRequestTests.allTests),

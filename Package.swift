@@ -15,37 +15,36 @@ let package = Package(
     name: "Engine",
     targets: [
         Target(
-            name: "Engine"
+            name: "HTTP"
         ),
         Target(
             name: "WebSockets",
             dependencies: [
-                .Target(name: "Engine")
+                "HTTP"
             ]
         ),
         Target(
             name: "SMTP",
             dependencies: [
-              .Target(name: "Engine")
+                "HTTP"
             ]
         ),
         Target(
-            name: "EngineExample",
+            name: "HTTPExample",
             dependencies: [
-                .Target(name: "Engine")
+                "HTTP"
             ]
         ),
         Target(
             name: "WebSocketsExample",
             dependencies: [
-                .Target(name: "WebSockets")
+                "WebSockets"
             ]
         ),
         Target(
             name: "SMTPExample",
             dependencies: [
-                .Target(name: "Engine"),
-                .Target(name: "SMTP")
+                "HTTP", "SMTP"
             ]
         )
     ],

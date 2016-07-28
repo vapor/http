@@ -9,7 +9,7 @@
 import XCTest
 
 import Core
-import Engine
+import HTTP
 @testable import SMTP
 
 class SMTPClientTests: XCTestCase {

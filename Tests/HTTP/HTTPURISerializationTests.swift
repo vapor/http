@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 import libc
 
-@testable import Engine
+@testable import HTTP
 
 class URISerializationTests: XCTestCase {
     

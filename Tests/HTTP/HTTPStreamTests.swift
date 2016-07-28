@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 
-@testable import Engine
+@testable import HTTP
 
 class HTTPStreamTests: XCTestCase {
     static let allTests = [
@@ -72,7 +72,7 @@ class HTTPStreamTests: XCTestCase {
     }
 }
 
-final class TestStream: Engine.Stream {
+final class TestStream: HTTP.Stream {
     var closed: Bool
     var buffer: Bytes
     var timeout: Double = -1

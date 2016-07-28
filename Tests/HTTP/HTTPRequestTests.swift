@@ -1,5 +1,5 @@
 import XCTest
-@testable import Engine
+@testable import HTTP
 
 class HTTPRequestTests: XCTestCase {
     static var allTests = [
