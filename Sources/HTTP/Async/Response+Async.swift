@@ -6,7 +6,7 @@
 
     import Foundation
 
-    extension HTTPResponse {
+    extension Response {
         /**
             Sometimes, asynchronicity is required within Vapor's synchronous environment. 
             Use this function to enter an async context in which the 'promise' object can
@@ -14,8 +14,8 @@
         */
         public static func async(
             timingOut timeout: DispatchTime = .distantFuture,
-            _ handler: (Promise<HTTPResponseRepresentable>) throws -> Void
-        ) throws -> HTTPResponseRepresentable {
+            _ handler: (Promise<ResponseRepresentable>) throws -> Void
+        ) throws -> ResponseRepresentable {
             return try Promise.async(timingOut: timeout, handler)
         }
     }

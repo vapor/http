@@ -1,6 +1,6 @@
-extension HTTPBody {
+extension Body {
     /**
-        Creates an HTTPBody that will use the chunked
+        Creates an Body that will use the chunked
         transfer encoding to send data asynchronously.
 
         See the ChunkStream class for more information.

@@ -22,7 +22,7 @@ class HTTPHeadersTests: XCTestCase {
             try stream.sendLine()
             try stream.sendLine()
 
-            let headers = try HTTPParser<HTTPRequest>(stream: stream).parseHeaders()
+            let headers = try Parser<Request>(stream: stream).parseHeaders()
             XCTAssertEqual(headers["accept"], "*/*")
             XCTAssertEqual(headers["host"], "localhost:8080")
             XCTAssertEqual(headers["content-type"], "application/json")
@@ -45,7 +45,7 @@ class HTTPHeadersTests: XCTestCase {
             try stream.sendLine()
             try stream.sendLine()
 
-            let headers = try HTTPParser<HTTPRequest>(stream: stream).parseHeaders()
+            let headers = try Parser<Request>(stream: stream).parseHeaders()
             XCTAssertEqual(headers["cookie"], "1=1;2=2;")
         } catch {
             XCTFail("\(error)")
@@ -68,9 +68,9 @@ class HTTPHeadersTests: XCTestCase {
             try stream.sendLine()
             try stream.sendLine()
 
-            _ = try HTTPParser<HTTPRequest>(stream: stream).parseHeaders()
+            _ = try Parser<Request>(stream: stream).parseHeaders()
             XCTFail("Headers init should have thrown")
-        } catch HTTPParserError.invalidRequest {
+        } catch ParserError.invalidRequest {
             //
         } catch {
             XCTFail("Wrong error: \(error)")
@@ -87,9 +87,9 @@ class HTTPHeadersTests: XCTestCase {
             try stream.sendLine()
             try stream.sendLine()
 
-            _ = try HTTPParser<HTTPRequest>(stream: stream).parseHeaders()
+            _ = try Parser<Request>(stream: stream).parseHeaders()
             XCTFail("Headers init should have thrown")
-        } catch HTTPParserError.invalidKeyWhitespace {
+        } catch ParserError.invalidKeyWhitespace {
             //
         } catch {
             XCTFail("Wrong error: \(error)")

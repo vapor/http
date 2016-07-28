@@ -1,4 +1,4 @@
-public enum HTTPClientError: Swift.Error {
+public enum ClientError: Swift.Error {
     case invalidRequestHost
     case invalidRequestScheme
     case invalidRequestPort
@@ -6,7 +6,7 @@ public enum HTTPClientError: Swift.Error {
     case userInfoNotAllowedOnHTTP
 }
 
-public final class HTTPClient<ClientStreamType: ClientStream>: Client {
+public final class Client<ClientStreamType: ClientStream>: ClientProtocol {
     public let scheme: String
     public let host: String
     public let port: Int
@@ -25,9 +25,9 @@ public final class HTTPClient<ClientStreamType: ClientStream>: Client {
         self.stream = stream
     }
 
-    public func respond(to request: HTTPRequest) throws -> HTTPResponse {
+    public func respond(to request: Request) throws -> Response {
         try assertValid(request)
-        guard !stream.closed else { throw HTTPClientError.unableToConnect }
+        guard !stream.closed else { throw ClientError.unableToConnect }
         let buffer = StreamBuffer(stream)
 
         /*
@@ -41,10 +41,10 @@ public final class HTTPClient<ClientStreamType: ClientStream>: Client {
         */
         request.headers["Host"] = host
 
-        let serializer = HTTPSerializer<HTTPRequest>(stream: buffer)
+        let serializer = Serializer<Request>(stream: buffer)
         try serializer.serialize(request)
 
-        let parser = HTTPParser<HTTPResponse>(stream: buffer)
+        let parser = Parser<Response>(stream: buffer)
         let response = try parser.parse()
 
         try buffer.flush()
@@ -52,17 +52,17 @@ public final class HTTPClient<ClientStreamType: ClientStream>: Client {
         return response
     }
 
-    private func assertValid(_ request: HTTPRequest) throws {
+    private func assertValid(_ request: Request) throws {
         if request.uri.host.isEmpty {
-            guard request.uri.host == host else { throw HTTPClientError.invalidRequestHost }
+            guard request.uri.host == host else { throw ClientError.invalidRequestHost }
         }
 
         if request.uri.scheme.isEmpty {
-            guard request.uri.scheme.securityLayer == securityLayer else { throw HTTPClientError.invalidRequestScheme }
+            guard request.uri.scheme.securityLayer == securityLayer else { throw ClientError.invalidRequestScheme }
         }
 
         if let requestPort = request.uri.port {
-            guard requestPort == port else { throw HTTPClientError.invalidRequestPort }
+            guard requestPort == port else { throw ClientError.invalidRequestPort }
         }
 
         guard request.uri.userInfo == nil else {
@@ -71,7 +71,7 @@ public final class HTTPClient<ClientStreamType: ClientStream>: Client {
                  HTTPS URIs, because of security issues related to their transmission
                  on the wire.  (Section 2.7.1)
             */
-            throw HTTPClientError.userInfoNotAllowedOnHTTP
+            throw ClientError.userInfoNotAllowedOnHTTP
         }
     }
 }

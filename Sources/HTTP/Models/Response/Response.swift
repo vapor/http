@@ -1,6 +1,6 @@
 // So common we simplify it
 
-public final class HTTPResponse: HTTPMessage {
+public final class Response: Message {
     public let version: Version
     public let status: Status
 
@@ -12,7 +12,7 @@ public final class HTTPResponse: HTTPMessage {
         version: Version = Version(major: 1, minor: 1),
         status: Status = .ok,
         headers: [HeaderKey: String] = [:],
-        body: HTTPBody = .data([])
+        body: Body = .data([])
     ) {
         self.version = version
         self.status = status
@@ -25,12 +25,12 @@ public final class HTTPResponse: HTTPMessage {
     public convenience required init(
         startLineComponents: (BytesSlice, BytesSlice, BytesSlice),
         headers: [HeaderKey: String],
-        body: HTTPBody
+        body: Body
     ) throws {
         let (httpVersionSlice, statusCodeSlice, reasonPhrase) = startLineComponents
         let version = try Version.makeParsed(with: httpVersionSlice)
         guard let statusCode = Int(statusCodeSlice.string) else {
-            throw HTTPMessageError.invalidStartLine
+            throw MessageError.invalidStartLine
         }
         let status = Status(statusCode: statusCode, reasonPhrase: reasonPhrase.string)
 
@@ -38,7 +38,7 @@ public final class HTTPResponse: HTTPMessage {
     }
 }
 
-extension HTTPResponse {
+extension Response {
     /**
         Creates a redirect response.
      
@@ -54,29 +54,29 @@ extension HTTPResponse {
     }
 }
 
-extension HTTPResponse {
+extension Response {
     /**
         Creates a Response with a body of Bytes.
     */
     public convenience init<
         S: Sequence where S.Iterator.Element == Byte
     >(version: Version = Version(major: 1, minor: 1), status: Status = .ok, headers: [HeaderKey: String] = [:], body: S) {
-        let body = HTTPBody(body)
+        let body = Body(body)
         self.init(version: version, status: status, headers: headers, body: body)
     }
 }
 
 
 
-extension HTTPResponse {
+extension Response {
     /**
-        Creates a Response with a HTTPBodyRepresentable Body
+        Creates a Response with a BodyRepresentable Body
     */
     public convenience init(
         version: Version = Version(major: 1, minor: 1),
         status: Status = .ok,
         headers: [HeaderKey: String] = [:],
-        body: HTTPBodyRepresentable
+        body: BodyRepresentable
     ) {
         let body = body.makeBody()
         self.init(version: version, status: status, headers: headers, body: body)

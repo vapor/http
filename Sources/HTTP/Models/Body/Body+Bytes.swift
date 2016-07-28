@@ -1,14 +1,14 @@
 // TODO: Temporary
 @_exported import Core
 
-extension HTTPBody {
+extension Body {
     public var bytes: Bytes? {
         guard case let .data(bytes) = self else { return nil }
         return bytes
     }
 }
 
-extension HTTPBody {
+extension Body {
     public init(_ str: String) {
         self.init(str.bytes)
     }
@@ -18,7 +18,7 @@ extension HTTPBody {
     }
 }
 
-extension HTTPBody: ExpressibleByArrayLiteral {
+extension Body: ExpressibleByArrayLiteral {
     /// Creates an instance initialized with the given elements.
     public init(arrayLiteral elements: Byte...) {
         self.init(elements)

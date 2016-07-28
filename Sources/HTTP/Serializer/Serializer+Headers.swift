@@ -5,7 +5,7 @@ extension KeyAccessible where Key == HeaderKey, Value == String {
         self["Host"] = uri.host
     }
 
-    mutating func appendMetadata(for body: HTTPBody) {
+    mutating func appendMetadata(for body: Body) {
         switch body {
         case .chunked(_):
             setTransferEncodingChunked()

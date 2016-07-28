@@ -1,4 +1,4 @@
-public protocol HTTPParserProtocol {
+public protocol ParserProtocol {
     init(stream: Stream)
-    func parse<MessageType: HTTPMessage>(_ type: MessageType.Type) throws -> MessageType
+    func parse<MessageType: Message>(_ type: MessageType.Type) throws -> MessageType
 }

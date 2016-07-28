@@ -1,22 +1,22 @@
-public final class HTTPRequest: HTTPMessage {
+public final class Request: Message {
     // TODO: public set for head request in application, serializer should change it, avoid exposing to end user
-    public var method: HTTPMethod
+    public var method: Method
 
     public var uri: URI
     public let version: Version
 
     public var parameters: [String: String] = [:]
 
-    public convenience init(method: HTTPMethod, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: HTTPBody = .data([])) throws {
+    public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: Body = .data([])) throws {
         let uri = try URI(uri)
         self.init(method: method, uri: uri, version: version, headers: headers, body: body)
     }
 
-    public init(method: HTTPMethod,
+    public init(method: Method,
                 uri: URI,
                 version: Version = Version(major: 1, minor: 1),
                 headers: [HeaderKey: String] = [:],
-                body: HTTPBody = .data([])) {
+                body: Body = .data([])) {
         var headers = headers
         headers.appendHost(for: uri)
 
@@ -44,7 +44,7 @@ public final class HTTPRequest: HTTPMessage {
         super.init(startLine: requestLine, headers: headers, body: body)
     }
 
-    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: [HeaderKey: String], body: HTTPBody) throws {
+    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: [HeaderKey: String], body: Body) throws {
         /**
             https://tools.ietf.org/html/rfc2616#section-5.1
 
@@ -64,7 +64,7 @@ public final class HTTPRequest: HTTPMessage {
             security filters along the request chain.
         */
         let (methodSlice, uriSlice, httpVersionSlice) = startLineComponents
-        let method = HTTPMethod(uppercased: methodSlice.uppercased)
+        let method = Method(uppercased: methodSlice.uppercased)
         let uriParser = URIParser(bytes: uriSlice.array, existingHost: headers["Host"])
         var uri = try uriParser.parse()
         uri.scheme = uri.scheme.isEmpty ? "http" : uri.scheme
@@ -74,9 +74,9 @@ public final class HTTPRequest: HTTPMessage {
     }
 }
 
-extension HTTPRequest {
-    public struct Handler: HTTPResponder {
-        public typealias Closure = (HTTPRequest) throws -> HTTPResponse
+extension Request {
+    public struct Handler: Responder {
+        public typealias Closure = (Request) throws -> Response
 
         private let closure: Closure
 
@@ -91,7 +91,7 @@ extension HTTPRequest {
             - throws: an error if response fails
             - returns: a response if possible
         */
-        public func respond(to request: HTTPRequest) throws -> HTTPResponse {
+        public func respond(to request: Request) throws -> Response {
             return try closure(request)
         }
     }

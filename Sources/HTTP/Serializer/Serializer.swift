@@ -1,7 +1,8 @@
 private let crlf: Bytes = [.carriageReturn, .newLine]
 
-public final class HTTPSerializer<Message: HTTPMessage>: TransferSerializer {
-    public typealias MessageType = Message
+public final class Serializer<MessageProtocol: Message>: TransferSerializer {
+    // TODO: Need?
+    public typealias MessageType = MessageProtocol
 
     let stream: Stream
 
@@ -82,7 +83,7 @@ public final class HTTPSerializer<Message: HTTPMessage>: TransferSerializer {
         try stream.send(crlf)
     }
 
-    private func serialize(_ body: HTTPBody) throws {
+    private func serialize(_ body: Body) throws {
         switch body {
         case .data(let buffer):
             guard !buffer.isEmpty else { return }

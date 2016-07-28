@@ -29,10 +29,10 @@ class HTTPStreamTests: XCTestCase {
 
 
         do {
-            let request = try HTTPParser<HTTPRequest>(stream: stream).parse()
+            let request = try Parser<Request>(stream: stream).parse()
 
             //MARK: Verify Request
-            XCTAssert(request.method == HTTPMethod.post, "Incorrect method \(request.method)")
+            XCTAssert(request.method == Method.post, "Incorrect method \(request.method)")
             XCTAssert(request.uri.path == "/json", "Incorrect path \(request.uri.path)")
             XCTAssert(request.version.major == 1 && request.version.minor == 1, "Incorrect version")
         } catch {
@@ -42,7 +42,7 @@ class HTTPStreamTests: XCTestCase {
 
     func testSerializer() {
         //MARK: Create Response
-        let response = HTTPResponse(
+        let response = Response(
             status: .enhanceYourCalm,
             headers: [
                 "Test": "123",
@@ -55,7 +55,7 @@ class HTTPStreamTests: XCTestCase {
         )
 
         let stream = TestStream()
-        let serializer = HTTPSerializer<HTTPResponse>(stream: stream)
+        let serializer = Serializer<Response>(stream: stream)
         do {
             try serializer.serialize(response)
         } catch {

@@ -1,5 +1,4 @@
-
-extension HTTPMessage: CustomStringConvertible {
+extension Message: CustomStringConvertible {
     public var description: String {
         var d: [String] = []
 

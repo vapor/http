@@ -1,13 +1,13 @@
-public protocol Server: Program {
-    func start(responder: HTTPResponder, errors: ServerErrorHandler) throws
+public protocol ServerProtocol: Program {
+    func start(responder: Responder, errors: ServerErrorHandler) throws
 }
 
-extension Server {
+extension ServerProtocol {
     public static func start(
         host: String? = nil,
         port: Int? = nil,
         securityLayer: SecurityLayer = .none,
-        responder: HTTPResponder,
+        responder: Responder,
         errors: ServerErrorHandler
     ) throws {
         let server = try make(host: host, port: port, securityLayer: securityLayer)

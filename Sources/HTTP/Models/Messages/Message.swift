@@ -1,21 +1,21 @@
-public enum HTTPMessageError: Error {
+public enum MessageError: Error {
     case invalidStartLine
 }
 
-public class HTTPMessage {
+public class Message {
     public let startLine: String
     public var headers: [HeaderKey: String]
 
     // Settable for HEAD request -- evaluate alternatives -- Perhaps serializer should handle it.
     // must NOT be exposed public because changing body will break behavior most of time
-    public var body: HTTPBody
+    public var body: Body
 
     public var storage: [String: Any] = [:]
 
     public convenience required init(
         startLineComponents: (BytesSlice, BytesSlice, BytesSlice),
         headers: [HeaderKey: String],
-        body: HTTPBody
+        body: Body
     ) throws {
         var startLine = startLineComponents.0.string
         startLine += " "
@@ -26,16 +26,16 @@ public class HTTPMessage {
         self.init(startLine: startLine, headers: headers,body: body)
     }
 
-    public init(startLine: String, headers: [HeaderKey: String], body: HTTPBody) {
+    public init(startLine: String, headers: [HeaderKey: String], body: Body) {
         self.startLine = startLine
         self.headers = headers
         self.body = body
     }
 }
 
-extension HTTPMessage: TransferMessage {}
+extension Message: TransferMessage {}
 
-extension HTTPMessage {
+extension Message {
     public var contentType: String? {
         return headers["Content-Type"]
     }

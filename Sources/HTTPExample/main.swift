@@ -1,19 +1,19 @@
 import HTTP
 
-func httpClient() throws {
-    let response = try HTTPClient<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
+func client() throws {
+    let response = try Client<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
     print(response)
 }
 
-func httpServer() throws {
-    final class Responder: HTTPResponder {
-        func respond(to request: HTTPRequest) throws -> HTTPResponse {
+func server() throws {
+    final class Responder: HTTP.Responder {
+        func respond(to request: Request) throws -> Response {
             let body = "Hello World".makeBody()
-            return HTTPResponse(body: body)
+            return Response(body: body)
         }
     }
 
-    let server = try HTTPServer<TCPServerStream, HTTPParser<HTTPRequest>, HTTPSerializer<HTTPResponse>>(port: port)
+    let server = try Server<TCPServerStream, Parser<Request>, Serializer<Response>>(port: port)
 
     print("visit http://localhost:\(port)/")
     try server.start(responder: Responder()) { error in
@@ -21,4 +21,4 @@ func httpServer() throws {
     }
 }
 
-try httpServer()
+try server()

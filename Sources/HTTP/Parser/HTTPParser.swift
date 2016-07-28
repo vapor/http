@@ -63,7 +63,7 @@
     ******************************
 */
 
-public enum HTTPParserError: Swift.Error {
+public enum ParserError: Swift.Error {
     case streamEmpty
     case invalidStartLine
     case invalidRequest
@@ -71,9 +71,8 @@ public enum HTTPParserError: Swift.Error {
     case invalidVersion
 }
 
-public final class HTTPParser<Message: HTTPMessage>: TransferParser {
-    public typealias Error = HTTPParserError
-    public typealias MessageType = Message
+public final class Parser<MessageType: Message>: TransferParser {
+    public typealias Error = ParserError
 
     let stream: Stream
 
@@ -223,7 +222,7 @@ public final class HTTPParser<Message: HTTPMessage>: TransferParser {
          applied, as indicated by the Transfer-Encoding header field (section
          14.41).
     */
-    func parseBody(with headers: [HeaderKey: String]) throws -> HTTPBody {
+    func parseBody(with headers: [HeaderKey: String]) throws -> Body {
         let body: Bytes
 
         if let contentLength = headers["content-length"].flatMap({ Int($0) }) {

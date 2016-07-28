@@ -1,9 +1,9 @@
-public protocol HTTPBodyRepresentable {
-    func makeBody() -> HTTPBody
+public protocol BodyRepresentable {
+    func makeBody() -> Body
 }
 
-extension String: HTTPBodyRepresentable {
-    public func makeBody() -> HTTPBody {
-        return HTTPBody(self)
+extension String: BodyRepresentable {
+    public func makeBody() -> Body {
+        return Body(self)
     }
 }
