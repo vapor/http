@@ -8,9 +8,6 @@ extension URIParser {
 extension URI {
     public init(_ str: String) throws {
         self = try URIParser.parse(uri: str.utf8.array)
-        guard port == nil else { return }
-        // if no port, try scheme default if possible
-        port = defaultPort
     }
 }
 
@@ -38,7 +35,7 @@ public final class URIParser: StaticDataBuffer {
     }
 
     // If we have authority, we should also have scheme?
-    let existingHost: Bytes?
+    private let existingHost: Bytes?
 
     /**
         The most common form of Request-URI is that used to identify a

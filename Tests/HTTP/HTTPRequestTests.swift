@@ -22,7 +22,7 @@ class HTTPRequestTests: XCTestCase {
             let request = try Parser<Request>(stream: stream).parse()
             XCTAssertEqual(request.method, Method.get)
             XCTAssertEqual(request.uri.host, "qutheory.io")
-            XCTAssertEqual(request.uri.schemePort, 80)
+            XCTAssertEqual(request.uri.defaultPort, 80)
             XCTAssertEqual(request.uri.path, "/plaintext")
             XCTAssertEqual(request.version.major, 1)
             XCTAssertEqual(request.version.minor, 1)

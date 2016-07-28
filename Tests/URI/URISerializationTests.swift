@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 import libc
 
-@testable import HTTP
+@testable import URI
 
 class URISerializationTests: XCTestCase {
     
@@ -66,7 +66,7 @@ class URISerializationTests: XCTestCase {
                      host: "www.ietf.org",
                      username: "",
                      pass: "",
-                     port: nil,
+                     port: 80,
                      path: "/rfc/rfc2396.txt",
                      query: nil,
                      fragment: nil)
@@ -152,7 +152,7 @@ class URISerializationTests: XCTestCase {
                      host: "www.google.com",
                      username: "",
                      pass: "",
-                     port: nil,
+                     port: 80,
                      path: "",
                      query: nil,
                      fragment: nil)
@@ -177,7 +177,7 @@ class URISerializationTests: XCTestCase {
                      host: "www.google.com",
                      username: "",
                      pass: "",
-                     port: nil,
+                     port: 80,
                      path: "",
                      query: decoded,
                      fragment: nil)
@@ -202,7 +202,8 @@ class URISerializationTests: XCTestCase {
                           path: String,
                           query: String?,
                           fragment: String?) throws {
-        let uri = try! URIParser.parse(uri: input.utf8.array)
+
+        let uri = try URIParser.parse(uri: input.utf8.array)
         XCTAssert(uri.scheme == scheme, "\(input) -- expected scheme: \(scheme) got: \(uri.scheme)")
         XCTAssert(uri.host == host, "\(input) -- expected host: \(host) got: \(uri.host)")
         let testUsername = uri.userInfo?.username ?? ""

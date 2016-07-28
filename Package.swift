@@ -18,6 +18,9 @@ let package = Package(
             name: "HTTP"
         ),
         Target(
+            name: "URI"
+        ),
+        Target(
             name: "WebSockets",
             dependencies: [
                 "HTTP"
