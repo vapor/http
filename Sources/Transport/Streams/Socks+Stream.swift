@@ -19,13 +19,13 @@ extension TCPInternetSocket: Stream {
     }
 
     public func receive(max: Int) throws -> Bytes {
+        let bytes: Bytes
         do {
-            let bytes = try recv(maxBytes: max)
-            //print(bytes.string)
-            return bytes
+            bytes = try recv(maxBytes: max)
         } catch {
             throw StreamError.receive("There was a problem while receiving data.", error)
         }
+        return bytes
     }
 }
 
@@ -55,7 +55,6 @@ public final class TCPClientStream: TCPProgramStream, ClientStream  {
             #else
                 throw ProgramStreamError.unsupportedSecurityLayer
             #endif
-
         }
         try stream.connect()
         return stream

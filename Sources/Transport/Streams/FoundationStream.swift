@@ -15,8 +15,8 @@
         }
 
         public var closed: Bool {
-            return input.streamStatus == .closed
-                || output.streamStatus == .closed
+            return input.closed
+                || output.closed
         }
 
         public let host: String
@@ -29,12 +29,15 @@
             self.host = host
             self.port = port
             self.securityLayer = securityLayer
+
             var inputStream: InputStream? = nil
             var outputStream: OutputStream? = nil
-            Foundation.Stream.getStreamsToHost(withName: host,
-                                      port: port,
-                                      inputStream: &inputStream,
-                                      outputStream: &outputStream)
+            Foundation.Stream.getStreamsToHost(
+                withName: host,
+                port: port,
+                inputStream: &inputStream,
+                outputStream: &outputStream
+            )
             guard
                 let input = inputStream,
                 let output = outputStream
@@ -53,10 +56,6 @@
             input.close()
         }
 
-        func send(_ byte: Byte) throws {
-            try send([byte])
-        }
-
         public func send(_ bytes: Bytes) throws {
             guard !bytes.isEmpty else { return }
             
@@ -69,10 +68,6 @@
 
         public func flush() throws {}
 
-        public func receive() throws -> Byte? {
-            return try receive(max: 1).first
-        }
-
         public func receive(max: Int) throws -> Bytes {
             var buffer = Bytes(repeating: 0, count: max)
             let read = input.read(&buffer, maxLength: max)
@@ -84,8 +79,7 @@
 
         public func connect() throws -> Stream {
             if securityLayer == .tls {
-                _ = input.upgradeSSL()
-                _ = output.upgradeSSL()
+                upgradeSSL()
             }
             input.open()
             output.open()
@@ -101,18 +95,26 @@
 
     extension FoundationStream {
         public func upgradeSSL() {
-            for stream in [input, output] {
-                _ = stream.setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
-                                       forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)
-            }
-
+            [input, output].forEach { stream in stream.upgradeSSL() }
         }
     }
 
     extension Foundation.Stream {
+        @discardableResult
         func upgradeSSL() -> Bool {
             return setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
                                forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)
+        }
+    }
+
+    extension Foundation.Stream {
+        var closed: Bool {
+            switch streamStatus {
+            case .notOpen, .closed:
+                return true
+            default:
+                return false
+            }
         }
     }
 #endif

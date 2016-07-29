@@ -27,8 +27,8 @@ extension String {
     public var securityLayer: SecurityLayer {
         if self == "https" || self == "wss" {
             return .tls
-        } else {
-            return .none
         }
+
+        return .none
     }
 }
