@@ -7,21 +7,20 @@
     }```
 */
 public protocol ResponseRepresentable {
-    func makeResponse(for request: Request) throws -> Response
+    func makeResponse() throws -> Response
 }
 
 
 ///Allows responses to be returned through closures
 extension Response: ResponseRepresentable {
-    public func makeResponse(for request: Request) -> Response {
+    public func makeResponse() -> Response {
         return self
     }
 }
 
 ///Allows Swift Strings to be returned through closures
 extension Swift.String: ResponseRepresentable {
-    public func makeResponse(for request: Request) -> Response {
-        let data = self.utf8.array
-        return Response(body: .data(data))
+    public func makeResponse() -> Response {
+        return Response(headers: ["Content-Type": "text/plain"], body: self.bytes)
     }
 }
