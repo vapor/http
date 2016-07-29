@@ -1,3 +1,5 @@
+import Core
+
 public enum StreamError: Error {
     case unsupported
     case send(String, Error)

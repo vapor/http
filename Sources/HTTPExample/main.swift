@@ -1,4 +1,5 @@
 import HTTP
+import Transport
 
 func client() throws {
     let response = try Client<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")

@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 
+import Transport
 @testable import HTTP
 
 class StreamBufferTests: XCTestCase {

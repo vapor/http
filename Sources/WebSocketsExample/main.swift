@@ -1,4 +1,5 @@
 import HTTP
+import Transport
 import WebSockets
 
 func webSocketClient(to url: String) throws {

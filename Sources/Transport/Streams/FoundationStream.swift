@@ -1,5 +1,5 @@
 #if !os(Linux)
-
+    import Core
     import Foundation
 
     public class FoundationStream: NSObject, Stream, ClientStream, Foundation.StreamDelegate {
@@ -115,5 +115,4 @@
                                forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)
         }
     }
-
 #endif

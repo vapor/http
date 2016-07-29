@@ -1,3 +1,5 @@
+import Transport
+
 /**
     Chunked transfer encoding is a data transfer mechanism in 
     version 1.1 of the Hypertext Transfer Protocol (HTTP) in which 

@@ -1,5 +1,5 @@
 import Core
-import protocol HTTP.Stream
+import protocol Transport.Stream
 
 public enum FrameParserError: Swift.Error {
     case missingByte

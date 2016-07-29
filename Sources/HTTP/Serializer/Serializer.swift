@@ -1,3 +1,5 @@
+import Transport
+
 private let crlf: Bytes = [.carriageReturn, .newLine]
 
 public final class Serializer<MessageProtocol: Message>: TransferSerializer {

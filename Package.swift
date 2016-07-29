@@ -18,21 +18,24 @@ let package = Package(
             name: "URI"
         ),
         Target(
+            name: "Transport"
+        ),
+        Target(
             name: "HTTP",
             dependencies: [
-              "URI"
+              "URI", "Transport"
             ]
         ),
         Target(
             name: "WebSockets",
             dependencies: [
-                "HTTP"
+                "HTTP", "URI", "Transport"
             ]
         ),
         Target(
             name: "SMTP",
             dependencies: [
-                "HTTP"
+                "Transport"
             ]
         ),
         Target(
@@ -44,13 +47,13 @@ let package = Package(
         Target(
             name: "WebSocketsExample",
             dependencies: [
-                "WebSockets"
+                "WebSockets", "HTTP", "Transport"
             ]
         ),
         Target(
             name: "SMTPExample",
             dependencies: [
-                "HTTP", "SMTP"
+                "SMTP", "Transport"
             ]
         )
     ],

@@ -1,3 +1,5 @@
+import Core
+
 /**
     Buffers receive and send calls to a Stream.
  

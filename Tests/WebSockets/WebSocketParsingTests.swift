@@ -4,6 +4,7 @@ import Foundation
 import libc
 import HTTP
 import Core
+import Transport
 @testable import WebSockets
 
 
@@ -333,7 +334,7 @@ class WebSocketKeyTests: XCTestCase {
     }
 }
 
-final class TestStream: HTTP.Stream {
+final class TestStream: Transport.Stream {
     var closed: Bool
     var buffer: Bytes
 

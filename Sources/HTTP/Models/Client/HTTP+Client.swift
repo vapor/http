@@ -1,3 +1,5 @@
+import Transport
+
 public enum ClientError: Swift.Error {
     case invalidRequestHost
     case invalidRequestScheme

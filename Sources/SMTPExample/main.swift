@@ -1,5 +1,6 @@
 import Foundation
-import HTTP
+import Transport
+
 import SMTP
 
 // Simple Email

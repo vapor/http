@@ -4,6 +4,8 @@
     import Darwin
 #endif
 
+import Transport
+
 public final class Server<
     ServerStreamType: ServerStream,
     Parser: TransferParser,

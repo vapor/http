@@ -1,5 +1,5 @@
 import Core
-import HTTP
+import Transport
 
 private let crlf: Bytes = [.carriageReturn, .newLine]
 

@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 
+import Transport
 @testable import HTTP
 
 class HTTPStreamTests: XCTestCase {
@@ -72,7 +73,7 @@ class HTTPStreamTests: XCTestCase {
     }
 }
 
-final class TestStream: HTTP.Stream {
+final class TestStream: Transport.Stream {
     var closed: Bool
     var buffer: Bytes
     var timeout: Double = -1

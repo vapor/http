@@ -63,6 +63,8 @@
     ******************************
 */
 
+import Transport
+
 public enum ParserError: Swift.Error {
     case streamEmpty
     case invalidStartLine

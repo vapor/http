@@ -1,6 +1,8 @@
+import Core
+import Transport
+
 import URI
 import HTTP
-import Core
 
 extension WebSocket {
     public static func background(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {

@@ -1,3 +1,5 @@
+import Transport
+
 public enum MessageError: Error {
     case invalidStartLine
 }

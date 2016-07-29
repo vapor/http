@@ -1,3 +1,5 @@
+import Transport
+
 public protocol ServerProtocol: Program {
     func start(responder: Responder, errors: ServerErrorHandler) throws
 }
