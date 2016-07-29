@@ -21,8 +21,8 @@ extension URIParser {
         guard try next(matches: { $0.isLetter } ) else { return [] }
 
         let scheme = try collect(until: .colon, .forwardSlash)
-        let colon = try checkLeadingBuffer(matches: .colon)
-        guard colon else { return scheme }
+        let isColon = try checkLeadingBuffer(matches: .colon)
+        guard isColon else { return scheme }
         // if matches ':', then we have a scheme
         // clear ':' delimitter and continue we don't use this for further parsing
         try discardNext(1)

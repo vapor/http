@@ -193,6 +193,64 @@ class URISerializationTests: XCTestCase {
         XCTAssert(uri.query == "q=beyonce&type=artist")
     }
 
+    func testBadDecode() {
+        let invalid = "Hello%2World" // invalid percent incoding
+        do {
+            _ = try invalid.bytes.percentDecodedString()
+            XCTFail("Should throw")
+        } catch {}
+    }
+
+    func testInvalidURI() throws {
+        let invalid = "http://<google>.com"
+        do {
+            _ = try URI(invalid)
+            XCTFail("URI should throw invalid character")
+        } catch URIParser.Error.unsupportedURICharacter {}
+    }
+
+    func testURIWhitespace() throws {
+        let spaces = "http:// g o o g l e . c o m"
+        let uri = try URI(spaces)
+        XCTAssert(uri.scheme == "http")
+        XCTAssert(uri.host == "google.com")
+    }
+
+    func testAuthorityNil() throws {
+        let parser = URIParser(bytes: [])
+        let (usernameBytes, infoBytes, hostBytes, portBytes) = try parser.parse(authority: [])
+        XCTAssertNil(usernameBytes)
+        XCTAssertNil(infoBytes)
+        XCTAssert(hostBytes.isEmpty)
+        XCTAssertNil(portBytes)
+
+        let (host, port) = try parser.parse(hostAndPort: [])
+        XCTAssert(host.isEmpty)
+        XCTAssertNil(port)
+    }
+
+    func testUserInfo() throws {
+        let parser = URIParser(bytes: [])
+
+        let (username, auth) = try parser.parse(userInfo: [])
+        XCTAssert(username.isEmpty)
+        XCTAssertNil(auth)
+
+        let (justName, noAuth) = try parser.parse(userInfo: "hello".bytes)
+        XCTAssert(justName.string == "hello")
+        XCTAssertNil(noAuth)
+
+        let (existingName, existingAuth) = try parser.parse(userInfo: "hello:world".bytes)
+        XCTAssert(existingName.string == "hello")
+        XCTAssert(existingAuth?.string == "world")
+    }
+
+    func testEmptyScheme() throws {
+        let parser = URIParser(bytes: "http".bytes)
+        let scheme = try parser.parseScheme()
+        XCTAssert(scheme.string == "http")
+    }
+
     private func makeSure(input: String,
                           equalsScheme scheme: String,
                           host: String,

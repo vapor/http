@@ -19,7 +19,7 @@ extension URIParser {
             )
 
             // 1 or 2, Host and Port is ALWAYS last component, otherwise empty which is ok
-            guard let hostAndPort = comps.last else { return (nil, nil, [], nil) }
+            guard let hostAndPort = comps.last, !hostAndPort.isEmpty else { return (nil, nil, [], nil) }
             let (host, port) = try parse(hostAndPort: hostAndPort.array)
 
             guard comps.count == 2, let userinfo = comps.first else { return (nil, nil, host, port) }
