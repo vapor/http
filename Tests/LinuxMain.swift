@@ -11,7 +11,6 @@ XCTMain([
     // TransportTestSuite
     testCase(SockStreamTests.allTests),
     testCase(StreamBufferTests.allTests),
-    testCase(TransportTests.allTests),
 
     // URITestSuite
     testCase(URISerializationTests.allTests)
