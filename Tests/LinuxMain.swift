@@ -13,7 +13,7 @@ XCTMain([
     testCase(StreamBufferTests.allTests),
 
     // URITestSuite
-    testCase(URISerializationTests.allTests)
+    testCase(URISerializationTests.allTests),
 
     // HTTPTestSuite
     testCase(HTTPBodyTests.allTests),

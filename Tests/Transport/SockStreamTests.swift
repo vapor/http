@@ -6,7 +6,7 @@ import SocksCore
 @testable import Transport
 
 class SockStreamTests: XCTestCase {
-    let allTests = [
+    static let allTests = [
         ("testTCPInternetSocket", testTCPInternetSocket),
         ("testTCPInternetSocketThrows", testTCPInternetSocketThrows),
         ("testTCPServer", testTCPServer),
