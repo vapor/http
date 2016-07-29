@@ -1,7 +1,7 @@
 import XCTest
 @testable import HTTP
 
-class ResponseTests: XCTestCase {
+class HTTPResponseTests: XCTestCase {
     static let allTests = [
        ("testRedirect", testRedirect)
     ]

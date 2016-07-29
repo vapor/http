@@ -4,7 +4,7 @@ import XCTest
 import Transport
 @testable import HTTP
 
-class HTTPStreamTests: XCTestCase {
+class HTTPParsingTests: XCTestCase {
     static let allTests = [
        ("testParser", testParser),
        ("testSerializer", testSerializer)

@@ -10,7 +10,13 @@ class URISerializationTests: XCTestCase {
         ("testParsing", testParsing),
         ("testPercentEncodedInsideParsing", testPercentEncodedInsideParsing),
         ("testPercentEncodedOutsideParsing", testPercentEncodedOutsideParsing),
-        ("testStringInitializer", testStringInitializer)
+        ("testStringInitializer", testStringInitializer),
+        ("testBadDecode", testBadDecode),
+        ("testInvalidURI", testInvalidURI),
+        ("testURIWhitespace", testURIWhitespace),
+        ("testAuthorityNil", testAuthorityNil),
+        ("testUserInfo", testUserInfo),
+        ("testEmptyScheme", testEmptyScheme)
     ]
 
     func testParsing() throws {

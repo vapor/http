@@ -6,6 +6,16 @@ import SocksCore
 @testable import Transport
 
 class SockStreamTests: XCTestCase {
+    let allTests = [
+        ("testTCPInternetSocket", testTCPInternetSocket),
+        ("testTCPInternetSocketThrows", testTCPInternetSocketThrows),
+        ("testTCPServer", testTCPServer),
+        ("testSecurityLayerStrings", testSecurityLayerStrings),
+        ("testFoundationStream", testFoundationStream),
+        ("testFoundationThrows", testFoundationThrows),
+        ("testFoundationEventCode", testFoundationEventCode)
+    ]
+
     func testTCPInternetSocket() throws {
         // from SocksExampleTCPClient
         let stream = try TCPProgramStream(host: "google.com", port: 80)
