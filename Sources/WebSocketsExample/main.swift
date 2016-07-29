@@ -1,4 +1,5 @@
-import Engine
+import HTTP
+import Transport
 import WebSockets
 
 func webSocketClient(to url: String) throws {
@@ -16,8 +17,8 @@ func webSocketClient(to url: String) throws {
 }
 
 func webSocketServer() throws {
-    final class Responder: HTTPResponder {
-        func respond(to request: HTTPRequest) throws -> HTTPResponse {
+    final class Responder: HTTP.Responder {
+        func respond(to request: Request) throws -> Response {
             return try request.upgradeToWebSocket { ws in
                 print("[ws connected]")
 
@@ -33,7 +34,7 @@ func webSocketServer() throws {
         }
     }
 
-    let server = try HTTPServer<TCPServerStream, HTTPParser<HTTPRequest>, HTTPSerializer<HTTPResponse>>(port: port)
+    let server = try Server<TCPServerStream, Parser<Request>, Serializer<Response>>(port: port)
 
     print("Connect websocket to http://localhost:\(port)/")
     try server.start(responder: Responder()) { error in

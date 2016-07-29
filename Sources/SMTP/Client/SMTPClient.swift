@@ -1,6 +1,3 @@
-import Core
-import Engine
-
 /*
      SMTP Makes use of multiple RFC specs
 
@@ -84,6 +81,8 @@ import Engine
      S: 221
 */
 
+import Core
+import Transport
 
 /**
     SMTPClient is designed to connect and transmit messages to SMTP Servers
@@ -93,7 +92,7 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     public let port: Int
     public let securityLayer: SecurityLayer
 
-    internal let stream: Engine.Stream
+    internal let stream: Transport.Stream
 
     /**
          Connect the client to given SMTP Server

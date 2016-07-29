@@ -1,5 +1,5 @@
 import struct Core.Bytes
-import protocol Engine.Stream
+import protocol Transport.Stream
 
 public final class WebSocket {
 
