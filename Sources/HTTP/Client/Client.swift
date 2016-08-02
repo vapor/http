@@ -21,7 +21,7 @@ extension ClientProtocol {
 extension ClientProtocol {
     public func request(_ method: Method, path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: Body = []) throws -> Response {
         // TODO: Move finish("/") to initializer
-        var uri = URI(scheme: scheme, userInfo: nil, host: host, port: port, path: path.finished(with: "/"), query: nil, fragment: nil)
+        var uri = URI(scheme: scheme, userInfo: nil, host: host, port: port, path: path, query: nil, fragment: nil)
         uri.append(query: query)
         let request = Request(method: method, uri: uri, version: Version(major: 1, minor: 1), headers: headers, body: body)
         return try respond(to: request)
