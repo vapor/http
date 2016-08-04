@@ -1,5 +1,4 @@
 import URI
-import Node
 
 public final class Request: Message {
     // TODO: public set for head request in application, serializer should change it, avoid exposing to end user
