@@ -7,3 +7,9 @@ extension String: BodyRepresentable {
         return Body(self)
     }
 }
+
+extension Body: BodyRepresentable {
+    public func makeBody() -> Body {
+        return self
+    }
+}
