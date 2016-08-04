@@ -8,8 +8,6 @@ public final class Request: Message {
     public var uri: URI
     public let version: Version
 
-    public var parameters: Node = [:]
-
     public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: Body = .data([])) throws {
         let uri = try URI(uri)
         self.init(method: method, uri: uri, version: version, headers: headers, body: body)
@@ -29,7 +27,7 @@ public final class Request: Message {
 
         // https://tools.ietf.org/html/rfc7230#section-3.1.2
         // status-line = HTTP-version SP status-code SP reason-phrase CRL
-        var path = uri.path 
+        var path = uri.path
         if let q = uri.query, !q.isEmpty {
             path += "?\(q)"
         }
