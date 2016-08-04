@@ -1,4 +1,5 @@
 import URI
+import Node
 
 public final class Request: Message {
     // TODO: public set for head request in application, serializer should change it, avoid exposing to end user
@@ -7,7 +8,7 @@ public final class Request: Message {
     public var uri: URI
     public let version: Version
 
-    public var parameters: [String: String] = [:]
+    public var parameters: Node = [:]
 
     public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: Body = .data([])) throws {
         let uri = try URI(uri)
