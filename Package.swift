@@ -8,7 +8,7 @@ let dependencies: [Package.Dependency] = [
     .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 10),
 
     //CoreComponents
-    .Package(url: "https://github.com/qutheory/core.git", majorVersion: 0, minor: 3)
+    .Package(url: "https://github.com/vapor/core.git", majorVersion: 0, minor: 3),
 ]
 
 let package = Package(

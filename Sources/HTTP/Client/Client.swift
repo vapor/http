@@ -19,15 +19,17 @@ extension ClientProtocol {
 }
 
 extension ClientProtocol {
-    public func request(_ method: Method, path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: Body = []) throws -> Response {
+    public func request(_ method: Method, path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: BodyRepresentable = Body.data([])) throws -> Response {
         // TODO: Move finish("/") to initializer
-        var uri = URI(scheme: scheme, userInfo: nil, host: host, port: port, path: path, query: nil, fragment: nil)
+        var uri = URI(scheme: scheme, host: host, port: port, path: path)
         uri.append(query: query)
-        let request = Request(method: method, uri: uri, version: Version(major: 1, minor: 1), headers: headers, body: body)
+
+        let body = body.makeBody()
+        let request = Request(method: method, uri: uri, headers: headers, body: body)
         return try respond(to: request)
     }
 
-    public func get(path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: Body = []) throws -> Response {
+    public func get(path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: BodyRepresentable = Body.data([])) throws -> Response {
         return try request(.get, path: path, headers: headers, query: query, body: body)
     }
 
@@ -35,15 +37,15 @@ extension ClientProtocol {
         return try request(.post, path: path, headers: headers, query: query, body: body)
     }
 
-    public func put(path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: Body = []) throws -> Response {
+    public func put(path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: BodyRepresentable = Body.data([])) throws -> Response {
         return try request(.put, path: path, headers: headers, query: query, body: body)
     }
 
-    public func patch(path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: Body = []) throws -> Response {
+    public func patch(path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: BodyRepresentable = Body.data([])) throws -> Response {
         return try request(.patch, path: path, headers: headers, query: query, body: body)
     }
 
-    public func delete(_ path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: Body = []) throws -> Response {
+    public func delete(_ path: String, headers: [HeaderKey: String] = [:], query: [String: CustomStringConvertible] = [:], body: BodyRepresentable = Body.data([])) throws -> Response {
         return try request(.delete, path: path, headers: headers, query: query, body: body)
     }
 }
