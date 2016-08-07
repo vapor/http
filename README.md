@@ -29,31 +29,31 @@ curl -sL check.qutheory.io | bash
 
 ## Quick Start
 
-#### HTTPClient
+#### HTTP.Client
 
 ```Swift
-import Engine
+import HTTP
 
-let response = try HTTPClient<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
+let response = try Client<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
 print(response)
 ```
 
-#### HTTPServer
+#### HTTP.Server
 
 ```Swift
-import Engine
+import HTTP
 
-final class Responder: HTTPResponder {
-    func respond(to request: HTTPRequest) throws -> HTTPResponse {
+final class MyResponder: Responder {
+    func respond(to request: Request) throws -> Response {
         let body = "Hello World".makeBody()
-        return HTTPResponse(body: body)
+        return Response(body: body)
     }
 }
 
-let server = try HTTPServer<TCPServerStream, HTTPParser<HTTPRequest>, HTTPSerializer<HTTPResponse>>(port: port)
+let server = try Server<TCPServerStream, Parser<Request>, Serializer<Response>>(port: port)
 
 print("visit http://localhost:\(port)/")
-try server.start(responder: Responder()) { error in
+try server.start(responder: MyResponder()) { error in
     print("Got error: \(error)")
 }
 ```
@@ -80,11 +80,11 @@ try WebSocket.connect(to: url) { ws in
 #### WebSocket Server
 
 ```Swift
-import Engine
+import HTTP
 import WebSockets
 
-final class Responder: HTTPResponder {
-    func respond(to request: HTTPRequest) throws -> HTTPResponse {
+final class MyResponder: Responder {
+    func respond(to request: Request) throws -> Response {
         return try request.upgradeToWebSocket { ws in
             print("[ws connected]")
 
@@ -100,10 +100,10 @@ final class Responder: HTTPResponder {
     }
 }
 
-let server = try HTTPServer<TCPServerStream, HTTPParser<HTTPRequest>, HTTPSerializer<HTTPResponse>>(port: port)
+let server = try Server<TCPServerStream, Parser<Request>, Serializer<Response>>(port: port)
 
 print("Connect websocket to http://localhost:\(port)/")
-try server.start(responder: Responder()) { error in
+try server.start(responder: MyResponder()) { error in
     print("Got server error: \(error)")
 }
 ```
@@ -132,13 +132,13 @@ try client.send(email, using: credentials)
 
 ## Architecture
 
-#### HTTPServer
+#### HTTP.Server
 
 The HTTPServer is responsible for listening and accepting remote connections, then relaying requests and responses between the received connection and the responder.
 
 ![](/Resources/Diagrams/HTTPServerDiagram.png)
 
-#### HTTPClient
+#### HTTP.Client
 
 The HTTPClient is responsible for establishing remote connections and relaying requests and responses between the remote connection and the caller.
 
