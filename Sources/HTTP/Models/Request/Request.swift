@@ -16,7 +16,8 @@ public final class Request: Message {
                 uri: URI,
                 version: Version = Version(major: 1, minor: 1),
                 headers: [HeaderKey: String] = [:],
-                body: Body = .data([])) {
+                body: Body = .data([]),
+                peerAddress: String? = nil) {
         var headers = headers
         headers.appendHost(for: uri)
 
@@ -41,10 +42,10 @@ public final class Request: Message {
 
         let versionLine = "HTTP/\(version.major).\(version.minor)"
         let requestLine = "\(method) \(path) \(versionLine)"
-        super.init(startLine: requestLine, headers: headers, body: body)
+        super.init(startLine: requestLine, headers: headers, body: body, peerAddress: peerAddress)
     }
 
-    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: [HeaderKey: String], body: Body) throws {
+    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: [HeaderKey: String], body: Body, peerAddress: String?) throws {
         /**
             https://tools.ietf.org/html/rfc2616#section-5.1
 
@@ -69,7 +70,7 @@ public final class Request: Message {
         uri.scheme = uri.scheme.isEmpty ? "http" : uri.scheme
         let version = try Version.makeParsed(with: httpVersionSlice)
 
-        self.init(method: method, uri: uri, version: version, headers: headers, body: body)
+        self.init(method: method, uri: uri, version: version, headers: headers, body: body, peerAddress: peerAddress)
     }
 }
 

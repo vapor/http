@@ -89,9 +89,9 @@ public final class Parser<MessageType: Message>: TransferParser {
         let message = try MessageType(
             startLineComponents: startLineComponents,
             headers: headers,
-            body: body
+            body: body,
+            peerAddress: stream.peerAddress
         )
-        message.storage["peerAddress"] = stream.peerAddress
         return message
     }
 

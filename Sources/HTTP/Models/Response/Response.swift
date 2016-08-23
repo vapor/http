@@ -14,20 +14,22 @@ public final class Response: Message {
         version: Version = Version(major: 1, minor: 1),
         status: Status = .ok,
         headers: [HeaderKey: String] = [:],
-        body: Body = .data([])
+        body: Body = .data([]),
+        peerAddress: String? = nil
     ) {
         self.version = version
         self.status = status
 
 
         let statusLine = "HTTP/\(version.major).\(version.minor) \(status.statusCode) \(status.reasonPhrase)"
-        super.init(startLine: statusLine, headers: headers, body: body)
+        super.init(startLine: statusLine, headers: headers, body: body, peerAddress: peerAddress)
     }
 
     public convenience required init(
         startLineComponents: (BytesSlice, BytesSlice, BytesSlice),
         headers: [HeaderKey: String],
-        body: Body
+        body: Body,
+        peerAddress: String?
     ) throws {
         let (httpVersionSlice, statusCodeSlice, reasonPhrase) = startLineComponents
         let version = try Version.makeParsed(with: httpVersionSlice)
@@ -36,7 +38,7 @@ public final class Response: Message {
         }
         let status = Status(statusCode: statusCode, reasonPhrase: reasonPhrase.string)
 
-        self.init(version: version, status: status, headers: headers, body: body)
+        self.init(version: version, status: status, headers: headers, body: body, peerAddress: peerAddress)
     }
 }
 
