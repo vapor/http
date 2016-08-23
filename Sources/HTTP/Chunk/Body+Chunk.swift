@@ -5,7 +5,7 @@ extension Body {
 
         See the ChunkStream class for more information.
     */
-    public init(_ chunker: (ChunkStream) throws -> Void) {
+    public init(_ chunker: @escaping (ChunkStream) throws -> Void) {
         self = .chunked(chunker)
     }
 }

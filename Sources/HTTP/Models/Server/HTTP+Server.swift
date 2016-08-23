@@ -9,11 +9,11 @@ import Transport
 public final class Server<
     ServerStreamType: ServerStream,
     Parser: TransferParser,
-    Serializer: TransferSerializer
+    Serializer: TransferSerializer>: ServerProtocol
     where
-        Parser.MessageType == Request,
-        Serializer.MessageType == Response
->: ServerProtocol {
+    Parser.MessageType == Request,
+    Serializer.MessageType == Response
+ {
 
     let server: ServerStreamType
 
@@ -33,7 +33,7 @@ public final class Server<
         }
     }
 
-    public func start(responder: Responder, errors: ServerErrorHandler) throws {
+    public func start(responder: Responder, errors: @escaping ServerErrorHandler) throws {
         // no throwing inside of the loop
         while true {
             let stream: Stream

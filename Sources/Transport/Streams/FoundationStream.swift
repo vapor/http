@@ -108,8 +108,10 @@
     extension Foundation.Stream {
         @discardableResult
         func upgradeSSL() -> Bool {
-            return setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL,
-                               forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)
+            return setProperty(
+                StreamSocketSecurityLevel.negotiatedSSL.rawValue,
+                forKey: PropertyKey.socketSecurityLevelKey
+            )
         }
     }
 

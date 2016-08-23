@@ -8,7 +8,7 @@ extension Request {
     */
     public func upgradeToWebSocket(
         supportedProtocols: ([String]) -> [String] = { $0 },
-        body: (ws: WebSocket) throws -> Void) throws -> Response {
+        body: @escaping (WebSocket) throws -> Void) throws -> Response {
         guard let requestKey = headers.secWebSocketKey else {
             throw WebSocket.FormatError.missingSecKeyHeader
         }
@@ -27,7 +27,7 @@ extension Request {
         var responseHeaders: [HeaderKey: String] = [:]
         responseHeaders.connection = "Upgrade"
         responseHeaders.upgrade = "websocket"
-        responseHeaders.secWebSocketAccept = WebSocket.exchange(requestKey: requestKey)
+        responseHeaders.secWebSocketAccept = try WebSocket.exchange(requestKey: requestKey)
         responseHeaders.secWebSocketVersion = version
 
         if let passedProtocols = headers.secWebProtocol {
@@ -37,7 +37,7 @@ extension Request {
         let response = Response(status: .switchingProtocols, headers: responseHeaders)
         response.onComplete = { stream in
             let ws = WebSocket(stream, mode: .server)
-            try body(ws: ws)
+            try body(ws)
             try ws.listen()
         }
         return response
