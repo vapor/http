@@ -3,6 +3,12 @@
     import Foundation
 
     public class FoundationStream: NSObject, Stream, ClientStream, Foundation.StreamDelegate {
+        
+        public var peerAddress: String {
+            //treating as IPv4 for now
+            return "\(host):\(port)"
+        }
+
         public enum Error: Swift.Error {
             case unableToCompleteReadOperation
             case unableToCompleteWriteOperation

@@ -2,6 +2,25 @@ import Core
 import SocksCore
 
 extension TCPInternetSocket: Stream {
+    
+    public var peerAddress: String {
+        let address = self.address
+        switch try! address.addressFamily() {
+        case .inet:
+            // IPv4: e.g. "10.0.0.141:63234"
+            return "\(address.ipString()):\(address.port)"
+        case .inet6:
+            // IPv6: e.g. "[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443"
+            return "[\(address.ipString())]:\(address.port)"
+        case .unspecified:
+            //input by user, system never resolves an address to .unspecified
+            //ideally, we'd do a quick analysis of whether it's a hostname (treat as IPv4),
+            //or IPv4 literal (treat as IPv4) or IPv6 literal (treat as IPv6).
+            //most common are the first two, for simplicity we'll treat is at IPv4 always for now.
+            return "\(address.ipString()):\(address.port)"
+        }
+    }
+
     public func setTimeout(_ timeout: Double) throws {
         sendingTimeout = timeval(seconds: timeout)
     }

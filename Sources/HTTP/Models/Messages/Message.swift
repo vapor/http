@@ -46,4 +46,9 @@ extension Message {
         guard let value = headers["Connection"] else { return true }
         return !value.contains("close")
     }
+    
+    /// The address of the remote peer of this message.
+    public var peerAddress: String? {
+        return storage["peerAddress"] as? String
+    }
 }

@@ -20,6 +20,12 @@ public protocol Stream: class {
 
     // Optional, performance
     func receive() throws -> Byte?
+    
+    /// The address of the remote end of the stream.
+    /// Whatever makes sense in the context of the particular stream type.
+    /// E.g. a IPv4 stream will have the concatination of the IP address
+    /// and port: "10.0.0.130:63394"
+    var peerAddress: String { get }
 }
 
 extension Stream {
