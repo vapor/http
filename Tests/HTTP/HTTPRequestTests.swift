@@ -4,7 +4,9 @@ import XCTest
 class HTTPRequestTests: XCTestCase {
     static var allTests = [
         ("testParse", testParse),
-        ("testParseEdgecase", testParseEdgecase)
+        ("testParseEdgecase", testParseEdgecase),
+        ("testParseXForwardedFor", testParseXForwardedFor),
+        ("testParseForwarded", testParseForwarded)
     ]
 
     func testParse() {
@@ -58,6 +60,52 @@ class HTTPRequestTests: XCTestCase {
             XCTAssertTrue(request.headers["content-type"]?.contains("application/json") == true)
         } catch {
             print("ERRRR: \(error)")
+            XCTFail("\(error)")
+        }
+    }
+    
+    func testParseXForwardedFor() {
+        do {
+            let stream = TestStream()
+            
+            try stream.send("GET /plaintext HTTP/1.1")
+            try stream.sendLine()
+            try stream.send("Accept: */*")
+            try stream.sendLine()
+            try stream.send("Host: qutheory.io")
+            try stream.sendLine()
+            try stream.send("X-Forwarded-For: 5.6.7.8")
+            try stream.sendLine()
+            try stream.sendLine()
+            
+            let request = try Parser<Request>(stream: stream).parse()
+            XCTAssertEqual(request.method, Method.get)
+            XCTAssertEqual(request.peerAddress, "5.6.7.8")
+        } catch {
+            XCTFail("\(error)")
+        }
+    }
+    
+    func testParseForwarded() {
+        do {
+            let stream = TestStream()
+            
+            try stream.send("GET /plaintext HTTP/1.1")
+            try stream.sendLine()
+            try stream.send("Accept: */*")
+            try stream.sendLine()
+            try stream.send("Host: qutheory.io")
+            try stream.sendLine()
+            try stream.send("X-Forwarded-For: 5.6.7.8")
+            try stream.sendLine()
+            try stream.send("Forwarded: for=192.0.2.60; proto=http; by=203.0.113.43")
+            try stream.sendLine()
+            try stream.sendLine()
+            
+            let request = try Parser<Request>(stream: stream).parse()
+            XCTAssertEqual(request.method, Method.get)
+            XCTAssertEqual(request.peerAddress, "for=192.0.2.60; proto=http; by=203.0.113.43")
+        } catch {
             XCTFail("\(error)")
         }
     }
