@@ -13,11 +13,15 @@ public class Message {
     public var body: Body
 
     public var storage: [String: Any] = [:]
+    
+    /// The address of the remote peer of this message.
+    public var peerAddress: String?
 
     public convenience required init(
         startLineComponents: (BytesSlice, BytesSlice, BytesSlice),
         headers: [HeaderKey: String],
-        body: Body
+        body: Body,
+        peerAddress: String?
     ) throws {
         var startLine = startLineComponents.0.string
         startLine += " "
@@ -25,13 +29,14 @@ public class Message {
         startLine += " "
         startLine += startLineComponents.2.string
 
-        self.init(startLine: startLine, headers: headers,body: body)
+        self.init(startLine: startLine, headers: headers, body: body, peerAddress: peerAddress)
     }
 
-    public init(startLine: String, headers: [HeaderKey: String], body: Body) {
+    public init(startLine: String, headers: [HeaderKey: String], body: Body, peerAddress: String?) {
         self.startLine = startLine
         self.headers = headers
         self.body = body
+        self.peerAddress = peerAddress
     }
 }
 

@@ -335,6 +335,9 @@ class WebSocketKeyTests: XCTestCase {
 }
 
 final class TestStream: Transport.Stream {
+    
+    var peerAddress: String = "1.2.3.4:5678"
+
     var closed: Bool
     var buffer: Bytes
 

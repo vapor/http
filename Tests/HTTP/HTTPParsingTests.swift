@@ -74,6 +74,9 @@ class HTTPParsingTests: XCTestCase {
 }
 
 final class TestStream: Transport.Stream {
+
+    public var peerAddress: String = "1.2.3.4:5678"
+
     var closed: Bool
     var buffer: Bytes
     var timeout: Double = -1

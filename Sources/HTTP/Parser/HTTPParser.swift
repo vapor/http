@@ -86,11 +86,13 @@ public final class Parser<MessageType: Message>: TransferParser {
         let startLineComponents = try parseStartLine()
         let headers = try parseHeaders()
         let body = try parseBody(with: headers)
-        return try MessageType(
+        let message = try MessageType(
             startLineComponents: startLineComponents,
             headers: headers,
-            body: body
+            body: body,
+            peerAddress: stream.peerAddress
         )
+        return message
     }
 
     /**
