@@ -26,6 +26,7 @@ class HTTPRequestTests: XCTestCase {
             XCTAssertEqual(request.uri.path, "/plaintext")
             XCTAssertEqual(request.version.major, 1)
             XCTAssertEqual(request.version.minor, 1)
+            XCTAssertEqual(request.peerAddress, "1.2.3.4:5678")
         } catch {
             XCTFail("\(error)")
         }

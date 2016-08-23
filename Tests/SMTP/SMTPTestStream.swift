@@ -30,6 +30,11 @@ private let SMTPReplies: [String: String] = [
 ]
 
 final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
+
+    public var peerAddress: String {
+        return "\(host):\(port)"
+    }
+
     var closed: Bool
     var buffer: Bytes
 
