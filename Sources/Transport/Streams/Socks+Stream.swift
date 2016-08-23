@@ -5,7 +5,10 @@ extension TCPInternetSocket: Stream {
     
     public var peerAddress: String {
         let address = self.address
-        switch try! address.addressFamily() {
+        guard let addressFamily = try? address.addressFamily() else {
+            return "unknown address family"
+        }
+        switch addressFamily {
         case .inet:
             // IPv4: e.g. "10.0.0.141:63234"
             return "\(address.ipString()):\(address.port)"
