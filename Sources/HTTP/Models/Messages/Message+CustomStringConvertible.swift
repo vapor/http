@@ -2,7 +2,7 @@ extension Message: CustomStringConvertible {
     public var description: String {
         var d: [String] = []
 
-        d += ["\(self.dynamicType)"]
+        d += ["\(type(of: self))"]
         d += ["- " + startLine]
         d += ["- Headers:"]
         d += [headers.map { field, val in "\t\(field): \(val)" } .joined(separator: "\n")]

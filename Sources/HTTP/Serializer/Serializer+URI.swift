@@ -1,9 +1,5 @@
 import URI
 
-extension String: CustomStringConvertible {
-    public var description: String { return self }
-}
-
 extension URI {
     public mutating func append(query appendQuery: [String: CustomStringConvertible]) {
         guard !appendQuery.isEmpty else { return }

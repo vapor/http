@@ -80,7 +80,7 @@ extension Request {
 
         private let closure: Closure
 
-        public init(_ closure: Closure) {
+        public init(_ closure: @escaping Closure) {
             self.closure = closure
         }
 

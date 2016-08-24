@@ -33,7 +33,7 @@ public final class Server<
         }
     }
 
-    public func start(responder: Responder, errors: ServerErrorHandler) throws {
+    public func start(responder: Responder, errors: @escaping ServerErrorHandler) throws {
         // no throwing inside of the loop
         while true {
             let stream: Stream

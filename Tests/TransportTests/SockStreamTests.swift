@@ -18,6 +18,7 @@ class SockStreamTests: XCTestCase {
 
     func testTCPInternetSocket() throws {
         // from SocksExampleTCPClient
+        do {
         let stream = try TCPProgramStream(host: "google.com", port: 80)
         let sock = stream.stream
         try sock.setTimeout(10)
@@ -28,7 +29,12 @@ class SockStreamTests: XCTestCase {
         try sock.close()
 
         // Receiving the raw google homepage
-        XCTAssert(received.string.contains("<title>Google</title>"))
+        print("REceived: \(received.string)")
+            XCTAssert(received.string.contains("<title>Google</title>"))
+        } catch {
+            print("E: \(error)")
+            XCTFail()
+        }
     }
 
     func testTCPInternetSocketThrows() throws {
