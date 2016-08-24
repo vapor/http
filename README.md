@@ -1,5 +1,12 @@
 # Engine
 
+![Swift](http://img.shields.io/badge/swift-v3.0--dev.08.23-brightgreen.svg)
+[![Build Status](https://travis-ci.org/vapor/engine.svg?branch=master)](https://travis-ci.org/vapor/engine)
+[![CircleCI](https://circleci.com/gh/vapor/engine.svg?style=shield)](https://circleci.com/gh/vapor/engine)
+[![Code Coverage](https://codecov.io/gh/vapor/engine/branch/master/graph/badge.svg)](https://codecov.io/gh/vapor/engine)
+[![Codebeat](https://codebeat.co/badges/a793ad97-47e3-40d9-82cf-2aafc516ef4e)](https://codebeat.co/projects/github-com-vapor-engine)
+[![Slack Status](http://vapor.team/badge.svg)](http://vapor.team)
+
 Engine is a collection of low level transport protocols implemented in pure Swift intended for use in server side and client side applications. It is used as the core transport layer in [Vapor](https://github.com/qutheory/github).
 
 ##### [Engine](#httpclient)
@@ -13,9 +20,14 @@ Send emails.
 
 ## 🌏 Current Environment
 
-| Vapor |     Xcode    |    Swift    |
-|:-----:|:------------:|:-----------:|
-|0.14.x |8.0 Beta **2**|3.0-PREVIEW-2|
+|Engine|Xcode|Swift|
+|:-:|:-:|:-:|
+|0.6.x|8.0 Beta **6**|DEVELOPMENT-SNAPSHOT-2016-08-23-a|
+|0.5.x|8.0 Beta **3**|DEVELOPMENT-SNAPSHOT-2016-07-25-a|
+|0.4.x|8.0 Beta **3**|DEVELOPMENT-SNAPSHOT-2016-07-25-a|
+|0.3.x|8.0 Beta **3**|DEVELOPMENT-SNAPSHOT-2016-07-25-a|
+|0.2.x|8.0 Beta **3**|DEVELOPMENT-SNAPSHOT-2016-07-20-qutheory|
+|0.1.x|8.0 Beta **2**|3.0-PREVIEW-2|
 
 You can run the following script to verify your environment is correct.
 
