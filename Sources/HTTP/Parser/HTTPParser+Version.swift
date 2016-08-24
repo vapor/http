@@ -1,6 +1,6 @@
 
 extension Version {
-    static func makeParsed<S: Sequence where S.Iterator.Element == Byte>(with bytes: S) throws -> Version {
+    static func makeParsed<S: Sequence>(with bytes: S) throws -> Version where S.Iterator.Element == Byte {
         // ["HTTP", "1.1"]
         let comps = bytes.split(
             separator: .forwardSlash,

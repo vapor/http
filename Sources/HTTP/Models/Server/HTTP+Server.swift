@@ -9,11 +9,11 @@ import Transport
 public final class Server<
     ServerStreamType: ServerStream,
     Parser: TransferParser,
-    Serializer: TransferSerializer
+    Serializer: TransferSerializer>: ServerProtocol
     where
-        Parser.MessageType == Request,
-        Serializer.MessageType == Response
->: ServerProtocol {
+    Parser.MessageType == Request,
+    Serializer.MessageType == Response
+ {
 
     let server: ServerStreamType
 
