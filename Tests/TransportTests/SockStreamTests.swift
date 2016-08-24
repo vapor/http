@@ -33,7 +33,7 @@ class SockStreamTests: XCTestCase {
             XCTAssert(received.string.contains("<title>Google</title>"))
         } catch {
             print("E: \(error)")
-            XCTFail()
+            XCTFail("E: \(error)")
         }
     }
 
