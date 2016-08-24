@@ -30,8 +30,7 @@ extension WebSocket {
     */
     public static func exchange(requestKey: String) -> String {
         var data = requestKey.bytes.trimmed([.space]).array + hashKey.bytes
-        let SHA_DIGEST_LENGTH = 20
-        var digest = Bytes(repeating: 0, count: SHA_DIGEST_LENGTH)
+        var digest = Bytes(repeating: 0, count: Int(SHA_DIGEST_LENGTH))
         SHA1(&data, data.count, &digest)
         return digest.base64String
     }
