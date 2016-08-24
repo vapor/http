@@ -96,36 +96,13 @@ public final class Parser<MessageType: Message>: TransferParser {
         return message
     }
     
-    private func parsePeerAddress(headers: [HeaderKey: String]) -> String {
-        
-        // The peer (remote/client) address is important
-        // for availability (block bad clients by their IP) 
-        // or even security.
-        // We can always get the remote IP of the connection
-        // from the Stream. However, when clients go through
-        // a proxy or a load balancer, we'd like to get the
-        // original client's IP. Most proxy servers and load
-        // balancers communicate the information about the
-        // original client in certain headers.
-        // See https://en.wikipedia.org/wiki/X-Forwarded-For
-        
-        // Here, our priority is
-        // 1. try the "Forwarded" header (e.g. for=192.0.2.60; proto=http; by=203.0.113.43)
-        // 2. try the "X-Forwarded-For" header (e.g. client_IP, proxy1_IP, proxy2_IP)
-        // 3. fallback to the socket's remote address (192.0.2.60:62934)
-        
-        // 1.
-        if let forwarded = headers["Forwarded"] {
-            return forwarded
-        }
-        
-        // 2.
-        if let xForwardedFor = headers["X-Forwarded-For"] {
-            return xForwardedFor
-        }
-        
-        // 3.
-        return stream.peerAddress
+    private func parsePeerAddress(headers: [HeaderKey: String]) -> PeerAddress {
+        let forwarded = headers["Forwarded"]
+        let xForwardedFor = headers["X-Forwarded-For"]
+        let streamAddress = stream.peerAddress
+        return PeerAddress(forwarded: forwarded,
+                           xForwardedFor: xForwardedFor,
+                           stream: streamAddress)
     }
 
     /**

@@ -28,7 +28,7 @@ class HTTPRequestTests: XCTestCase {
             XCTAssertEqual(request.uri.path, "/plaintext")
             XCTAssertEqual(request.version.major, 1)
             XCTAssertEqual(request.version.minor, 1)
-            XCTAssertEqual(request.peerAddress, "1.2.3.4:5678")
+            XCTAssertEqual(request.peerAddress?.address(), "1.2.3.4:5678")
         } catch {
             XCTFail("\(error)")
         }
@@ -80,7 +80,9 @@ class HTTPRequestTests: XCTestCase {
             
             let request = try Parser<Request>(stream: stream).parse()
             XCTAssertEqual(request.method, Method.get)
-            XCTAssertEqual(request.peerAddress, "5.6.7.8")
+            XCTAssertEqual(request.peerAddress?.address(), "5.6.7.8")
+            XCTAssertEqual(request.peerAddress?.xForwardedFor, "5.6.7.8")
+            XCTAssertEqual(request.peerAddress?.stream, "1.2.3.4:5678")
         } catch {
             XCTFail("\(error)")
         }
@@ -104,7 +106,10 @@ class HTTPRequestTests: XCTestCase {
             
             let request = try Parser<Request>(stream: stream).parse()
             XCTAssertEqual(request.method, Method.get)
-            XCTAssertEqual(request.peerAddress, "for=192.0.2.60; proto=http; by=203.0.113.43")
+            XCTAssertEqual(request.peerAddress?.address(), "for=192.0.2.60; proto=http; by=203.0.113.43")
+            XCTAssertEqual(request.peerAddress?.forwarded, "for=192.0.2.60; proto=http; by=203.0.113.43")
+            XCTAssertEqual(request.peerAddress?.xForwardedFor, "5.6.7.8")
+            XCTAssertEqual(request.peerAddress?.stream, "1.2.3.4:5678")
         } catch {
             XCTFail("\(error)")
         }
