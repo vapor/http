@@ -39,7 +39,7 @@ public struct PeerAddress {
     
     /// Tries to parse the headers first, falls back to the
     /// socket address. If proxies are used, please ensure
-    /// you can trust proxies.
+    /// you can trust them.
     public func address() -> String {
         return forwarded ?? xForwardedFor ?? stream
     }
