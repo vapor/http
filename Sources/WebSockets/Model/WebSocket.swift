@@ -54,12 +54,12 @@ public final class WebSocket {
 
     // MARK: Attributes
 
-    public private(set) var state: State
+    public fileprivate(set) var state: State
 
     internal let mode: Mode
     internal let stream: Stream
 
-    private let aggregator: FragmentAggregator?
+    fileprivate let aggregator: FragmentAggregator?
 
     // MARK: Initialization
 
@@ -267,7 +267,7 @@ extension WebSocket {
     }
 
     // https://tools.ietf.org/html/rfc6455#section-5.5.1
-    private func respondToClose(echo payload: Bytes) throws {
+    fileprivate func respondToClose(echo payload: Bytes) throws {
         // ensure haven't already sent
         guard state != .closed else { return }
         state = .closing
@@ -286,7 +286,7 @@ extension WebSocket {
         try send(msg)
     }
 
-    private func completeCloseHandshake(statusCode: UInt16?, reason: String?, cleanly: Bool) throws {
+    fileprivate func completeCloseHandshake(statusCode: UInt16?, reason: String?, cleanly: Bool) throws {
         state = .closed
         try onClose?((self, statusCode, reason, cleanly))
     }

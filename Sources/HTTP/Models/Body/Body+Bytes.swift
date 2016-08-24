@@ -13,7 +13,7 @@ extension Body {
         self.init(str.bytes)
     }
 
-    public init<S: Sequence where S.Iterator.Element == Byte>(_ s: S) {
+    public init<S: Sequence>(_ s: S) where S.Iterator.Element == Byte {
         self = .data(s.array)
     }
 }

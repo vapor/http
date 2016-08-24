@@ -1,7 +1,7 @@
 import Transport
 
 public protocol ServerProtocol: Program {
-    func start(responder: Responder, errors: ServerErrorHandler) throws
+    func start(responder: Responder, errors: @escaping ServerErrorHandler) throws
 }
 
 extension ServerProtocol {
@@ -10,7 +10,7 @@ extension ServerProtocol {
         port: Int? = nil,
         securityLayer: SecurityLayer = .none,
         responder: Responder,
-        errors: ServerErrorHandler
+        errors: @escaping ServerErrorHandler
     ) throws {
         let server = try make(host: host, port: port, securityLayer: securityLayer)
         let responder = responder
