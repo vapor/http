@@ -1,5 +1,5 @@
 import PackageDescription
-
+let providers: [SystemPackageProvider] = [ .Apt("uuid-dev") ]
 let dependencies: [Package.Dependency] = [
     //Websockets
     .Package(url: "https://github.com/vapor/tls.git", Version(0,0,0)),
@@ -13,6 +13,7 @@ let dependencies: [Package.Dependency] = [
 
 let package = Package(
     name: "Engine",
+    providers: providers,
     targets: [
         Target(
             name: "URI"
