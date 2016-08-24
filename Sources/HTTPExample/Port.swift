@@ -2,11 +2,7 @@ import Foundation
 
 extension ProcessInfo {
     static func arguments() -> [String] {
-        #if os(Linux)
-            return ProcessInfo.processInfo().arguments
-        #else
-            return ProcessInfo.processInfo.arguments
-        #endif
+        return ProcessInfo.processInfo.arguments
     }
 }
 

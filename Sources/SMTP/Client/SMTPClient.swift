@@ -116,7 +116,7 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     }
 
     @discardableResult
-    internal func negotiateSession(using credentials: SMTPCredentials, handler: @noescape (SMTPClient) throws -> Void) throws -> (code: Int, greeting: String) {
+    internal func negotiateSession(using credentials: SMTPCredentials, handler: (SMTPClient) throws -> Void) throws -> (code: Int, greeting: String) {
         try initializeSession(using: credentials)
         try handler(self)
         return try quit()

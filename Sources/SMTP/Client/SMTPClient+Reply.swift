@@ -54,7 +54,7 @@ extension SMTPClient {
 }
 
 extension String {
-    private var int: Int? {
+    fileprivate var int: Int? {
         return Int(self)
     }
 }

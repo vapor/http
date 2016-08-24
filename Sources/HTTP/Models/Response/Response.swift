@@ -63,8 +63,8 @@ extension Response {
         Creates a Response with a body of Bytes.
     */
     public convenience init<
-        S: Sequence where S.Iterator.Element == Byte
-    >(version: Version = Version(major: 1, minor: 1), status: Status = .ok, headers: [HeaderKey: String] = [:], body: S) {
+        S: Sequence>(version: Version = Version(major: 1, minor: 1), status: Status = .ok, headers: [HeaderKey: String] = [:], body: S) where S.Iterator.Element == Byte
+    {
         let body = Body(body)
         self.init(version: version, status: status, headers: headers, body: body)
     }
@@ -83,6 +83,6 @@ extension Response {
         body: BodyRepresentable
     ) {
         let body = body.makeBody()
-        self.init(version: version, status: status, headers: headers, body: body)
+        self.init(version: version, status: status, headers: headers, body: body, peerAddress: nil)
     }
 }
