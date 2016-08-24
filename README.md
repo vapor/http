@@ -164,7 +164,7 @@ We pride ourselves on providing a diverse and welcoming community. Join your fel
 
 Vapor has been tested on OS X 10.11, Ubuntu 14.04, and Ubuntu 15.10.
 
-Our homepage [http://qutheory.io](http://qutheory.io) is currently running using Vapor on DigitalOcean.
+Our homepage [http://vapor.codes](http://vapor.codes) is currently running using Vapor on DigitalOcean.
 
 ## 👥 Authors
 
