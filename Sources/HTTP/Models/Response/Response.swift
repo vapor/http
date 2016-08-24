@@ -83,6 +83,6 @@ extension Response {
         body: BodyRepresentable
     ) {
         let body = body.makeBody()
-        self.init(version: version, status: status, headers: headers, body: body)
+        self.init(version: version, status: status, headers: headers, body: body, peerAddress: nil)
     }
 }
