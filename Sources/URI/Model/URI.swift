@@ -70,3 +70,14 @@ extension URI {
         }
     }
 }
+
+extension URI.UserInfo: CustomStringConvertible {
+    public var description: String {
+        var d = ""
+        d += username
+        if let info = info {
+            d += ":\(info)"
+        }
+        return d
+    }
+}
