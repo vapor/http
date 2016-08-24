@@ -1,4 +1,4 @@
-import COpenSSL
+// import COpenSSL
 import Core
 import Foundation
 
@@ -29,9 +29,12 @@ extension WebSocket {
          the |Sec-WebSocket-Accept| header field.
     */
     public static func exchange(requestKey: String) -> String {
+        /*
         var data = requestKey.bytes.trimmed([.space]).array + hashKey.bytes
         var digest = Bytes(repeating: 0, count: Int(SHA_DIGEST_LENGTH))
         SHA1(&data, data.count, &digest)
         return digest.base64String
+        */
+        fatalError()
     }
 }
