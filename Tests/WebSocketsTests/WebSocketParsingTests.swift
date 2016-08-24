@@ -329,7 +329,7 @@ class WebSocketKeyTests: XCTestCase {
     */
     func testExchangeKey() throws {
         let requestKey = "dGhlIHNhbXBsZSBub25jZQ=="
-        let acceptKey = try WebSocket.exchange(requestKey: requestKey)
+        let acceptKey = WebSocket.exchange(requestKey: requestKey)
         XCTAssert(acceptKey == "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=")
     }
 }

@@ -1,4 +1,5 @@
 import COpenSSL
+import Core
 import Foundation
 
 extension WebSocket {
@@ -27,35 +28,11 @@ extension WebSocket {
          "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=".  This value would then be echoed in
          the |Sec-WebSocket-Accept| header field.
     */
-    public static func exchange(requestKey: String) throws -> String {
-        /*
-         char data[] = "Hello, world!";
-         size_t length = sizeof(data);
-
-         unsigned char hash[SHA_DIGEST_LENGTH];
-         SHA1(data, length, hash);
- */
+    public static func exchange(requestKey: String) -> String {
         var data = requestKey.bytes.trimmed([.space]).array + hashKey.bytes
-        var digestLength = Bytes(repeating: 0, count: SHA1_DIGEST_LENGTH)
-        var result = SHA1(&data, data.count, &digestLength)
-        /*
-        let combination = requestKey.bytes.trimmed([.space]).string + hashKey
-        print(combination)
-        let result = try SHA1.hash(combination.bytes) 
-        //let sha = try SHA1.hash(combination)
-        print(result.hexString)
-        print([0xb3, 0x7a, 0x4f, 0x2c, 0xc0, 0x62, 0x4f, 0x16, 0x90, 0xf6, 0x46, 0x06, 0xcf, 0x38, 0x59, 0x45, 0xb2, 0xbe, 0xc4, 0xea].hexString)
-
-        let data = "hunter2"
-        let hexSha1Data = try SHA1.hash(data.bytes).hexString // data.sha1().hexString
-        print(hexSha1Data)
-        //        XCTAssertEqual(hexSha1Data.lowercased(), "f3bbbd66a63d4bf1747940578ec3d0103530e21d")
-        // print(sha.bytes.base64String)
-        //let shaBytes = try SHA1.hash(combination).hexString.bytes.base64String
-
-        // SHA1
-        // let hashed = shaBytes.base64String
- */
-        return "" //sha.base64String
+        let SHA_DIGEST_LENGTH = 20
+        var digest = Bytes(repeating: 0, count: SHA_DIGEST_LENGTH)
+        SHA1(&data, data.count, &digest)
+        return digest.base64String
     }
 }

@@ -2,7 +2,7 @@ import PackageDescription
 
 let dependencies: [Package.Dependency] = [
     //Websockets
-    .Package(url: "https://github.com/vapor/tls.git", majorVersion: 0),
+    .Package(url: "https://github.com/vapor/tls.git", Version(0,0,0)),
 
     //Sockets, used by the built in HTTP server
     .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 12),

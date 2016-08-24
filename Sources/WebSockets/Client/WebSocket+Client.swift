@@ -55,7 +55,7 @@ extension WebSocket {
         guard response.headers.upgrade == "websocket" else { throw FormatError.missingUpgradeHeader }
         guard case .switchingProtocols = response.status else { throw FormatError.invalidOrUnsupportedStatus }
         guard let accept = response.headers.secWebSocketAccept else { throw FormatError.missingSecAcceptHeader }
-        let expected = try WebSocket.exchange(requestKey: requestKey)
+        let expected = WebSocket.exchange(requestKey: requestKey)
         guard accept == expected else { throw FormatError.invalidSecAcceptHeader }
 
         let ws = WebSocket(client.stream, mode: .client)
