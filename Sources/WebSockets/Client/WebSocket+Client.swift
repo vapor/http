@@ -43,7 +43,7 @@ extension WebSocket {
 
         let client = try client.make(scheme: uri.scheme, host: uri.host, port: uri.port)
         // manually requesting to preserve queries that might be in URI easily
-        let request = Request(
+        let request = try Request(
             method: .get,
             uri: uri,
             headers: headers

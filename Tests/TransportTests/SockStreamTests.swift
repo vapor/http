@@ -18,10 +18,9 @@ class SockStreamTests: XCTestCase {
 
     func testTCPInternetSocket() throws {
         // from SocksExampleTCPClient
-        do {
         let stream = try TCPProgramStream(host: "google.com", port: 80)
         let sock = stream.stream
-        try sock.setTimeout(10)
+        //try sock.setTimeout(10)
         try sock.connect()
         try sock.send("GET /\r\n\r\n".bytes)
         try sock.flush()
@@ -29,11 +28,22 @@ class SockStreamTests: XCTestCase {
         try sock.close()
 
         // Receiving the raw google homepage
-        print("REceived: \(received.string)")
-            XCTAssert(received.string.contains("<title>Google</title>"))
+        XCTAssert(received.string.contains("<title>Google</title>"))
+    }
+
+    func testDirect() throws {
+        let address = InternetAddress(hostname: "google.com", port: 80)
+
+        do {
+            let socket = try TCPInternetSocket(address: address)
+            try socket.connect()
+            try socket.send(data: "GET /\r\n\r\n".toBytes())
+            let received = try socket.recv()
+            let str = try received.toString()
+            try socket.close()
+            XCTAssert(str.contains("<title>Google</title>"))
         } catch {
-            print("E: \(error)")
-            XCTFail("E: \(error)")
+            XCTFail("Error: \(error)")
         }
     }
 
@@ -136,3 +146,54 @@ class SockStreamTests: XCTestCase {
         #endif
     }
 }
+
+// import XCTest
+// @testable import VaporTLS
+
+class TLSStreamTests: XCTestCase {
+    static var allTests = [
+        ("testSend", testSend)
+    ]
+
+    func testSend() {
+        do {
+            let clientStream = try TCPClientStream(host: "api.spotify.com", port: 443, securityLayer: .tls).connect()
+            let uri = "/v1/search?type=artist&q=hannah%20diamond"
+            try clientStream.send("GET \(uri) HTTP/1.1\r\nHost: api.spotify.com\r\n\r\n".bytes)
+            let response = try clientStream.receive(max: 2048).string
+
+            XCTAssert(response.contains("spotify:artist:3sXErEOw7EmO6Sj7EgjHdU"))
+        } catch {
+            XCTFail("Could not send: \(error)")
+        }
+    }
+}
+
+extension Sequence where Iterator.Element == UInt8 {
+    /**
+     Converts a slice of bytes to
+     string. Courtesy of Socks by @Czechboy0
+     */
+    public var string: String {
+        var utf = UTF8()
+        var gen = makeIterator()
+        var str = String()
+        while true {
+            switch utf.decode(&gen) {
+            case .emptyInput:
+                return str
+            case .error:
+                break
+            case .scalarValue(let unicodeScalar):
+                str.append(String(unicodeScalar))
+            }
+        }
+    }
+}
+
+extension String {
+    var bytes: [UInt8] {
+        return Array(utf8)
+    }
+}
+

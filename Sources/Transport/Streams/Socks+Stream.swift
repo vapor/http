@@ -2,7 +2,6 @@ import Core
 import SocksCore
 
 extension TCPInternetSocket: Stream {
-    
     public var peerAddress: String {
         let address = self.address
         guard let addressFamily = try? address.addressFamily() else {
@@ -67,19 +66,19 @@ public class TCPProgramStream: ProgramStream {
     }
 }
 
+import TLS
+
 public final class TCPClientStream: TCPProgramStream, ClientStream  {
     public func connect() throws -> Stream {
-        if securityLayer == .tls {
-            #if !os(Linux)
-                print("Making TLS call over Foundation APIs. This will break on Linux. Visit https://github.com/qutheory/vapor-tls")
-                let foundation = try FoundationStream(host: host, port: port, securityLayer: securityLayer)
-                return try foundation.connect()
-            #else
-                throw ProgramStreamError.unsupportedSecurityLayer
-            #endif
-        }
         try stream.connect()
-        return stream
+        switch securityLayer {
+        case .none:
+            return stream
+        case .tls:
+            let secure = try stream.makeSecret(mode: .client)
+            try secure.connect()
+            return secure
+        }
     }
 }
 
@@ -92,6 +91,65 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
     }
 
     public func accept() throws -> Stream {
-        return try stream.accept()
+        let next = try stream.accept()
+        switch securityLayer {
+        case .none:
+            return next
+        case .tls:
+            return try next.makeSecret(mode: .server)
+        }
+    }
+}
+
+import TLS
+import SocksCore
+import libc
+
+/*
+ Incomplete conformance of SSL.Socket. Will be updating with more thorough support
+ */
+extension TLS.Socket: Stream {
+    public var peerAddress: String {
+        return ""
+    }
+
+    public func setTimeout(_ timeout: Double) throws {
+        try setTimeout(Int(timeout))
+    }
+
+    public func flush() throws {
+        // no flush, send immediately flushes
+    }
+}
+
+extension RawSocket {
+    /**
+     Creates a new SSL Context and Secure Socket.
+     - parameter mode: Client or Server
+     - parameter certificates: SSL Certificates for the Server, use .none for Client
+     */
+    public func makeSecret(
+        mode: TLS.Mode = .client,
+        certificates: TLS.Certificates = .none
+        ) throws -> TLS.Socket {
+        let context = try TLS.Context(
+            mode: mode,
+            certificates: certificates
+        )
+
+        return try TLS.Socket(
+            context: context,
+            descriptor: descriptor
+        )
+    }
+
+    /**
+     Creates a Secure Socket from the SSL Context provided.
+     */
+    public func makeSecret(context: TLS.Context) throws -> TLS.Socket {
+        return try TLS.Socket(
+            context: context,
+            descriptor: descriptor
+        )
     }
 }

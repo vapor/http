@@ -1,3 +1,4 @@
+import Core
 import URI
 
 public final class Request: Message {
@@ -9,7 +10,7 @@ public final class Request: Message {
 
     public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: Body = .data([])) throws {
         let uri = try URI(uri)
-        self.init(method: method, uri: uri, version: version, headers: headers, body: body)
+        try self.init(method: method, uri: uri, version: version, headers: headers, body: body)
     }
 
     public init(method: Method,
@@ -17,7 +18,7 @@ public final class Request: Message {
                 version: Version = Version(major: 1, minor: 1),
                 headers: [HeaderKey: String] = [:],
                 body: Body = .data([]),
-                peerAddress: String? = nil) {
+                peerAddress: String? = nil) throws {
         var headers = headers
         headers.appendHost(for: uri)
 
@@ -29,10 +30,12 @@ public final class Request: Message {
         // status-line = HTTP-version SP status-code SP reason-phrase CRL
         var path = uri.path
         if let q = uri.query, !q.isEmpty {
-            path += "?\(q)"
+            let encoded = try percentEncoded(q.bytes).string
+            path += "?\(encoded)"
         }
         if let f = uri.fragment, !f.isEmpty {
-            path += "#\(f)"
+            let encoded = try percentEncoded(f.bytes).string
+            path += "#\(encoded)"
         }
         // Prefix w/ `/` to properly indicate that this we're not using absolute URI.
         // Absolute URIs are deprecated and MUST NOT be generated. (they should be parsed for robustness)
@@ -70,7 +73,7 @@ public final class Request: Message {
         uri.scheme = uri.scheme.isEmpty ? "http" : uri.scheme
         let version = try Version.makeParsed(with: httpVersionSlice)
 
-        self.init(method: method, uri: uri, version: version, headers: headers, body: body, peerAddress: peerAddress)
+        try self.init(method: method, uri: uri, version: version, headers: headers, body: body, peerAddress: peerAddress)
     }
 }
 

@@ -25,7 +25,7 @@ extension ClientProtocol {
         uri.append(query: query)
 
         let body = body.makeBody()
-        let request = Request(method: method, uri: uri, headers: headers, body: body)
+        let request = try Request(method: method, uri: uri, headers: headers, body: body)
         return try respond(to: request)
     }
 
@@ -72,7 +72,7 @@ extension ClientProtocol {
     ) throws -> Response {
         var uri = try URI(uri)
         uri.append(query: query)
-        let request = Request(method: method, uri: uri, headers: headers, body: body)
+        let request = try Request(method: method, uri: uri, headers: headers, body: body)
         return try respond(to: request)
     }
 
