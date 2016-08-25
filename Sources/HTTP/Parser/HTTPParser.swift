@@ -209,7 +209,7 @@ public final class Parser<MessageType: Message>: TransferParser {
                     .trimmed([.horizontalTab, .space])
                     .string
 
-                if let existing = headers[field] {
+                if field == "Set-Cookie", let existing = headers[field] {
                     // Should only apply to Set-Cookie, other headers shouldn't have multiple values
                     headers[field] = existing + "\r\n\(field): " + value
                 } else {
