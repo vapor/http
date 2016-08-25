@@ -8,17 +8,25 @@ public final class Request: Message {
     public var uri: URI
     public let version: Version
 
-    public convenience init(method: Method, uri: String, version: Version = Version(major: 1, minor: 1), headers: [HeaderKey: String] = [:], body: Body = .data([])) throws {
+    public convenience init(
+        method: Method,
+        uri: String,
+        version: Version = Version(major: 1, minor: 1),
+        headers: [HeaderKey: String] = [:],
+        body: Body = .data([])
+    ) throws {
         let uri = try URI(uri)
         try self.init(method: method, uri: uri, version: version, headers: headers, body: body)
     }
 
-    public init(method: Method,
-                uri: URI,
-                version: Version = Version(major: 1, minor: 1),
-                headers: [HeaderKey: String] = [:],
-                body: Body = .data([]),
-                peerAddress: String? = nil) throws {
+    public init(
+        method: Method,
+        uri: URI,
+        version: Version = Version(major: 1, minor: 1),
+        headers: [HeaderKey: String] = [:],
+        body: Body = .data([]),
+        peerAddress: PeerAddress? = nil
+    ) throws {
         var headers = headers
         headers.appendHost(for: uri)
 
@@ -48,7 +56,7 @@ public final class Request: Message {
         super.init(startLine: requestLine, headers: headers, body: body, peerAddress: peerAddress)
     }
 
-    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: [HeaderKey: String], body: Body, peerAddress: String?) throws {
+    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: [HeaderKey: String], body: Body, peerAddress: PeerAddress?) throws {
         /**
             https://tools.ietf.org/html/rfc2616#section-5.1
 

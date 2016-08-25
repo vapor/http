@@ -15,7 +15,7 @@ public final class Response: Message {
         status: Status = .ok,
         headers: [HeaderKey: String] = [:],
         body: Body = .data([]),
-        peerAddress: String? = nil
+        peerAddress: PeerAddress? = nil
     ) {
         self.version = version
         self.status = status
@@ -29,7 +29,7 @@ public final class Response: Message {
         startLineComponents: (BytesSlice, BytesSlice, BytesSlice),
         headers: [HeaderKey: String],
         body: Body,
-        peerAddress: String?
+        peerAddress: PeerAddress?
     ) throws {
         let (httpVersionSlice, statusCodeSlice, reasonPhrase) = startLineComponents
         let version = try Version.makeParsed(with: httpVersionSlice)
