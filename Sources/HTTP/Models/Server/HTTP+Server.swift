@@ -6,6 +6,8 @@
 
 import Transport
 
+public typealias BasicServer = Server<TCPServerStream, Parser<Request>, Serializer<Response>>
+
 public final class Server<
     ServerStreamType: ServerStream,
     Parser: TransferParser,

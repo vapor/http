@@ -68,10 +68,11 @@ extension ClientProtocol {
         _ uri: String,
         headers: [HeaderKey: String] = [:],
         query: [String: CustomStringConvertible],
-        body: Body = []
+        body: BodyRepresentable = Body.data([])
     ) throws -> Response {
         var uri = try URI(uri)
         uri.append(query: query)
+        let body = body.makeBody()
         let request = try Request(method: method, uri: uri, headers: headers, body: body)
         return try respond(to: request)
     }
@@ -80,7 +81,7 @@ extension ClientProtocol {
         _ uri: String,
         headers: [HeaderKey: String] = [:],
         query: [String: CustomStringConvertible] = [:],
-        body: Body = []
+        body: BodyRepresentable = Body.data([])
     ) throws -> Response {
         return try request(.get, uri, headers: headers, query: query, body: body)
     }
@@ -89,7 +90,7 @@ extension ClientProtocol {
         _ uri: String,
         headers: [HeaderKey: String] = [:],
         query: [String: CustomStringConvertible] = [:],
-        body: Body = []
+        body: BodyRepresentable = Body.data([])
     ) throws -> Response {
         return try request(.post, uri, headers: headers, query: query, body: body)
     }
@@ -98,7 +99,7 @@ extension ClientProtocol {
         _ uri: String,
         headers: [HeaderKey: String] = [:],
         query: [String: CustomStringConvertible] = [:],
-        body: Body = []
+        body: BodyRepresentable = Body.data([])
     ) throws -> Response {
         return try request(.put, uri, headers: headers, query: query, body: body)
     }
@@ -107,7 +108,7 @@ extension ClientProtocol {
         _ uri: String,
         headers: [HeaderKey: String] = [:],
         query: [String: CustomStringConvertible] = [:],
-        body: Body = []
+        body: BodyRepresentable = Body.data([])
     ) throws -> Response {
         return try request(.patch, uri, headers: headers, query: query, body: body)
     }
@@ -116,7 +117,7 @@ extension ClientProtocol {
         _ uri: String,
         headers: [HeaderKey: String] = [:],
         query: [String: CustomStringConvertible] = [:],
-        body: Body = []
+        body: BodyRepresentable = Body.data([])
     ) throws -> Response {
         return try request(.delete, uri, headers: headers, query: query, body: body)
     }

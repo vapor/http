@@ -8,13 +8,18 @@ public enum ClientError: Swift.Error {
     case userInfoNotAllowedOnHTTP
 }
 
+public typealias BasicClient = Client<TCPClientStream, Serializer<Request>, Parser<Response>>
+
 public final class Client<
     ClientStreamType: ClientStream,
-    Parser: TransferParser,
-    Serializer: TransferSerializer>
+    SerializerType: TransferSerializer,
+    ParserType: TransferParser>
     : ClientProtocol
-    where Parser.MessageType == Response, Serializer.MessageType == Request
+    where ParserType.MessageType == Response, SerializerType.MessageType == Request
 {
+    public typealias Serializer = SerializerType
+    public typealias Parser = ParserType
+
     public let scheme: String
     public let host: String
     public let port: Int
@@ -49,10 +54,10 @@ public final class Client<
         */
         request.headers["Host"] = host
 
-        let serializer = Serializer(stream: buffer)
+        let serializer = SerializerType(stream: buffer)
         try serializer.serialize(request)
 
-        let parser = Parser(stream: buffer)
+        let parser = ParserType(stream: buffer)
         let response = try parser.parse()
 
         try buffer.flush()
