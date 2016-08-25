@@ -86,13 +86,25 @@ public final class Parser<MessageType: Message>: TransferParser {
         let startLineComponents = try parseStartLine()
         let headers = try parseHeaders()
         let body = try parseBody(with: headers)
+        let peerAddress = parsePeerAddress(headers: headers)
         let message = try MessageType(
             startLineComponents: startLineComponents,
             headers: headers,
             body: body,
-            peerAddress: stream.peerAddress
+            peerAddress: peerAddress
         )
         return message
+    }
+    
+    private func parsePeerAddress(headers: [HeaderKey: String]) -> PeerAddress {
+        let forwarded = headers["Forwarded"]
+        let xForwardedFor = headers["X-Forwarded-For"]
+        let streamAddress = stream.peerAddress
+        return PeerAddress(
+            forwarded: forwarded,
+            xForwardedFor: xForwardedFor,
+            stream: streamAddress
+        )
     }
 
     /**

@@ -17,7 +17,7 @@ public final class Request: Message {
                 version: Version = Version(major: 1, minor: 1),
                 headers: [HeaderKey: String] = [:],
                 body: Body = .data([]),
-                peerAddress: String? = nil) {
+                peerAddress: PeerAddress? = nil) {
         var headers = headers
         headers.appendHost(for: uri)
 
@@ -45,7 +45,7 @@ public final class Request: Message {
         super.init(startLine: requestLine, headers: headers, body: body, peerAddress: peerAddress)
     }
 
-    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: [HeaderKey: String], body: Body, peerAddress: String?) throws {
+    public convenience required init(startLineComponents: (BytesSlice, BytesSlice, BytesSlice), headers: [HeaderKey: String], body: Body, peerAddress: PeerAddress?) throws {
         /**
             https://tools.ietf.org/html/rfc2616#section-5.1
 
