@@ -5,7 +5,7 @@ let dependencies: [Package.Dependency] = [
     .Package(url: "https://github.com/vapor/crypto.git", majorVersion: 0, minor: 2),
 
     // Secure Sockets
-    .Package(url: "https://github.com/vapor/tls.git", Version(0,0,0)),
+    .Package(url: "https://github.com/vapor/tls.git", majorVersion: 0, minor: 6),
 
     // Sockets, used by the built in HTTP server
     .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 12),
