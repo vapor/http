@@ -337,7 +337,7 @@ extension WebSocket.Frame {
 
             Cypher is same for masking and unmasking
         */
-        func hash<S: Sequence where S.Iterator.Element == Byte>(_ input: S) -> [Byte] {
+        func hash<S: Sequence>(_ input: S) -> [Byte] where S.Iterator.Element == Byte {
             switch self {
             case .none:
                 return Array(input)

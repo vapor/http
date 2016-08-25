@@ -106,8 +106,8 @@ import SocksCore
 import libc
 
 /*
- Incomplete conformance of SSL.Socket. Will be updating with more thorough support
- */
+    Incomplete conformance of SSL.Socket. Will be updating with more thorough support
+*/
 extension TLS.Socket: Stream {
     public var peerAddress: String {
         return ""
@@ -124,14 +124,14 @@ extension TLS.Socket: Stream {
 
 extension RawSocket {
     /**
-     Creates a new SSL Context and Secure Socket.
-     - parameter mode: Client or Server
-     - parameter certificates: SSL Certificates for the Server, use .none for Client
+        Creates a new SSL Context and Secure Socket.
+        - parameter mode: Client or Server
+        - parameter certificates: SSL Certificates for the Server, use .none for Client
      */
     public func makeSecret(
         mode: TLS.Mode = .client,
         certificates: TLS.Certificates = .none
-        ) throws -> TLS.Socket {
+    ) throws -> TLS.Socket {
         let context = try TLS.Context(
             mode: mode,
             certificates: certificates
@@ -144,8 +144,8 @@ extension RawSocket {
     }
 
     /**
-     Creates a Secure Socket from the SSL Context provided.
-     */
+        Creates a Secure Socket from the SSL Context provided.
+    */
     public func makeSecret(context: TLS.Context) throws -> TLS.Socket {
         return try TLS.Socket(
             context: context,
