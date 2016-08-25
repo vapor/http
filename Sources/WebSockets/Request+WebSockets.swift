@@ -27,7 +27,7 @@ extension Request {
         var responseHeaders: [HeaderKey: String] = [:]
         responseHeaders.connection = "Upgrade"
         responseHeaders.upgrade = "websocket"
-        responseHeaders.secWebSocketAccept = WebSocket.exchange(requestKey: requestKey)
+        responseHeaders.secWebSocketAccept = try WebSocket.exchange(requestKey: requestKey)
         responseHeaders.secWebSocketVersion = version
 
         if let passedProtocols = headers.secWebProtocol {
