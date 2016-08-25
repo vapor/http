@@ -1,7 +1,10 @@
 import PackageDescription
 
 let dependencies: [Package.Dependency] = [
-    //Websockets
+    //Crypto
+    .Package(url: "https://github.com/vapor/crypto.git", majorVersion: 0, minor: 2),
+
+    //Secure Sockets
     .Package(url: "https://github.com/vapor/TLS.git", Version(0,0,0)),
 
     //Sockets, used by the built in HTTP server

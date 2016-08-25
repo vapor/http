@@ -36,7 +36,7 @@ public enum Method {
 }
 
 extension Method {
-    init(_ rawValue: String) {
+    public init(_ rawValue: String) {
         let method = rawValue.uppercased()
         switch method {
         case "DELETE":
