@@ -169,32 +169,3 @@ class TLSStreamTests: XCTestCase {
         }
     }
 }
-
-extension Sequence where Iterator.Element == UInt8 {
-    /**
-     Converts a slice of bytes to
-     string. Courtesy of Socks by @Czechboy0
-     */
-    public var string: String {
-        var utf = UTF8()
-        var gen = makeIterator()
-        var str = String()
-        while true {
-            switch utf.decode(&gen) {
-            case .emptyInput:
-                return str
-            case .error:
-                break
-            case .scalarValue(let unicodeScalar):
-                str.append(String(unicodeScalar))
-            }
-        }
-    }
-}
-
-extension String {
-    var bytes: [UInt8] {
-        return Array(utf8)
-    }
-}
-
