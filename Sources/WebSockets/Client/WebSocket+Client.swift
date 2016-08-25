@@ -5,24 +5,24 @@ import URI
 import HTTP
 
 extension WebSocket {
-    public static func background(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
+    public static func background(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
         let uri = try URI(uri)
         try background(to: uri, using: client, protocols: protocols, onConnect: onConnect)
     }
 
-    public static func background(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
+    public static func background(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
         _ = try Core.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
             _ = try? connect(to: uri, using: client, protocols: protocols, onConnect: onConnect)
         }
     }
 
-    public static func connect(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
+    public static func connect(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
         let uri = try URI(uri)
         try connect(to: uri, using: client, protocols: protocols, onConnect: onConnect)
     }
 
-    public static func connect(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream>.self, protocols: [String]? = nil, onConnect: (WebSocket) throws -> Void) throws {
+    public static func connect(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
         guard !uri.host.isEmpty else { throw WebSocket.FormatError.invalidURI }
 
         let requestKey = WebSocket.makeRequestKey()
@@ -43,7 +43,7 @@ extension WebSocket {
 
         let client = try client.make(scheme: uri.scheme, host: uri.host, port: uri.port)
         // manually requesting to preserve queries that might be in URI easily
-        let request = Request(
+        let request = try Request(
             method: .get,
             uri: uri,
             headers: headers

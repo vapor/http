@@ -13,10 +13,10 @@
             be passed to multiple threads and called when appropriate
         */
         public static func async(
-            timingOut timeout: DispatchTime = .distantFuture,
-            _ handler: (Promise<ResponseRepresentable>) throws -> Void
+            timeout: Double = 999_999_999,
+            _ handler: @escaping (Portal<ResponseRepresentable>) throws -> Void
         ) throws -> ResponseRepresentable {
-            return try Promise.async(timingOut: timeout, handler)
+            return try Portal.open(timeout: timeout, handler)
         }
     }
 #endif

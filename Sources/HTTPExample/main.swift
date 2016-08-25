@@ -2,7 +2,7 @@ import HTTP
 import Transport
 
 func client() throws {
-    let response = try Client<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
+    let response = try Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://pokeapi.co/api/v2/pokemon/")
     print(response)
 }
 

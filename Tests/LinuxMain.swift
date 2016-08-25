@@ -1,16 +1,17 @@
 #if os(Linux)
 
 import XCTest
-@testable import TransportTestSuite
-@testable import URITestSuite
-@testable import HTTPTestSuite
-@testable import WebSocketsTestSuite
-@testable import SMTPTestSuite
+@testable import TransportTests
+@testable import URITests
+@testable import HTTPTests
+@testable import WebSocketsTests
+@testable import SMTPTests
 
 XCTMain([
     // TransportTestSuite
     testCase(SockStreamTests.allTests),
     testCase(StreamBufferTests.allTests),
+    testCase(TLSStreamTests.allTests),
 
     // URITestSuite
     testCase(URISerializationTests.allTests),

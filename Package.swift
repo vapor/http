@@ -1,14 +1,17 @@
 import PackageDescription
 
 let dependencies: [Package.Dependency] = [
-    //Websockets
-    .Package(url: "https://github.com/CryptoKitten/SHA1.git", majorVersion: 0, minor: 10),
+    //Crypto
+    .Package(url: "https://github.com/vapor/crypto.git", majorVersion: 0, minor: 2),
+
+    //Secure Sockets
+    .Package(url: "https://github.com/vapor/TLS.git", Version(0,0,0)),
 
     //Sockets, used by the built in HTTP server
-    .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 10),
+    .Package(url: "https://github.com/czechboy0/Socks.git", majorVersion: 0, minor: 12),
 
     //CoreComponents
-    .Package(url: "https://github.com/vapor/core.git", majorVersion: 0, minor: 3),
+    .Package(url: "https://github.com/vapor/core.git", majorVersion: 0, minor: 4),
 ]
 
 let package = Package(

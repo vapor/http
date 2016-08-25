@@ -116,7 +116,7 @@ extension SMTPClient {
 }
 
 extension Email {
-    private func makeDataHeaders() -> [String: String] {
+    fileprivate func makeDataHeaders() -> [String: String] {
         var dataHeaders: [String : String] = [:]
         dataHeaders["Date"] = date.smtpFormatted
         dataHeaders["Message-Id"] = id
@@ -132,7 +132,7 @@ extension Email {
 }
 
 extension EmailAddress {
-    private var smtpLongFormatted: String {
+    fileprivate var smtpLongFormatted: String {
         var formatted = ""
 
         if let name = self.name {
@@ -145,7 +145,7 @@ extension EmailAddress {
 }
 
 extension Sequence where Iterator.Element == EmailAddress {
-    private var smtpLongFormatted: String {
+    fileprivate var smtpLongFormatted: String {
         return self.map { $0.smtpLongFormatted } .joined(separator: ", ")
     }
 }

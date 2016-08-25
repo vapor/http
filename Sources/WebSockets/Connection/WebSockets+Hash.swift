@@ -1,5 +1,5 @@
-import SHA1
-import CryptoEssentials
+import CLibreSSL
+import Core
 import Foundation
 
 extension WebSocket {
@@ -29,9 +29,10 @@ extension WebSocket {
          the |Sec-WebSocket-Accept| header field.
     */
     public static func exchange(requestKey: String) -> String {
-        let combination = requestKey.bytes.trimmed([.space]).string + hashKey
-        let shaBytes = SHA1.calculate(combination)
-        let hashed = shaBytes.base64
+        var combination = requestKey.bytes.trimmed([.space]).array + hashKey.bytes
+        var digest = Bytes(repeating: 0, count: Int(SHA_DIGEST_LENGTH))
+        SHA1(&combination, combination.count, &digest)
+        let hashed = digest.base64String
         return hashed
     }
 }

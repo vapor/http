@@ -8,7 +8,7 @@ extension Response {
 
         https://en.wikipedia.org/wiki/Chunked_transfer_encoding
     */
-    public convenience init(status: Status = .ok, headers: [HeaderKey: String] = [:], chunked closure: ((ChunkStream) throws -> Void)) {
+    public convenience init(status: Status = .ok, headers: [HeaderKey: String] = [:], chunked closure: @escaping ((ChunkStream) throws -> Void)) {
         self.init(status: status, headers: headers, body: .chunked(closure))
     }
 }
