@@ -12,7 +12,7 @@ class SockStreamTests: XCTestCase {
         ("testTCPServer", testTCPServer),
         ("testSecurityLayerStrings", testSecurityLayerStrings),
         ("testFoundationStream", testFoundationStream),
-        ("testFoundationThrows", testFoundationThrows),
+        //("testFoundationThrows", testFoundationThrows),
         ("testFoundationEventCode", testFoundationEventCode)
     ]
 
@@ -28,7 +28,7 @@ class SockStreamTests: XCTestCase {
         try sock.close()
 
         // Receiving the raw google homepage
-        XCTAssert(received.string.contains("<title>Google</title>"))
+        XCTAssert(received.string.contains("Search the world's information"))
     }
 
     func testDirect() throws {
@@ -41,7 +41,8 @@ class SockStreamTests: XCTestCase {
             let received = try socket.recv()
             let str = try received.toString()
             try socket.close()
-            XCTAssert(str.contains("<title>Google</title>"))
+
+            XCTAssert(str.contains("Search the world's information"))
         } catch {
             XCTFail("Error: \(error)")
         }
@@ -110,11 +111,11 @@ class SockStreamTests: XCTestCase {
 
             XCTAssert(connection.closed)
             // Receiving the raw google homepage
-            XCTAssert(received.string.contains("<title>Google</title>"))
+            XCTAssert(received.string.contains("Search the world's information"))
         #endif
     }
 
-    func testFoundationThrows() throws {
+    /*func testFoundationThrows() throws {
         #if !os(Linux)
             // will default to underlying FoundationStream for TLS.
             let clientStream = try FoundationStream(host: "nothere", port: 9999)
@@ -132,7 +133,7 @@ class SockStreamTests: XCTestCase {
                 XCTFail("Foundation stream should throw on send not valid")
             } catch {}
         #endif
-    }
+    }*/
 
     func testFoundationEventCode() throws {
         #if !os(Linux)
