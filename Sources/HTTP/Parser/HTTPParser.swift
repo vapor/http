@@ -100,9 +100,11 @@ public final class Parser<MessageType: Message>: TransferParser {
         let forwarded = headers["Forwarded"]
         let xForwardedFor = headers["X-Forwarded-For"]
         let streamAddress = stream.peerAddress
-        return PeerAddress(forwarded: forwarded,
-                           xForwardedFor: xForwardedFor,
-                           stream: streamAddress)
+        return PeerAddress(
+            forwarded: forwarded,
+            xForwardedFor: xForwardedFor,
+            stream: streamAddress
+        )
     }
 
     /**
