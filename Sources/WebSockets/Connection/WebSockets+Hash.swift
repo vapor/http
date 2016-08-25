@@ -1,10 +1,10 @@
-import CLibreSSL
+import SHA1
 import Core
 import Foundation
 
 extension WebSocket {
     // UUID defined here: https://tools.ietf.org/html/rfc6455#section-1.3
-    private static let hashKey = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+    private static let hashKey = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".bytes
 
     /*
          For this header field, the server has to take the value (as present
@@ -28,11 +28,8 @@ extension WebSocket {
          "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=".  This value would then be echoed in
          the |Sec-WebSocket-Accept| header field.
     */
-    public static func exchange(requestKey: String) -> String {
-        var combination = requestKey.bytes.trimmed([.space]).array + hashKey.bytes
-        var digest = Bytes(repeating: 0, count: Int(SHA_DIGEST_LENGTH))
-        SHA1(&combination, combination.count, &digest)
-        let hashed = digest.base64String
-        return hashed
+    public static func exchange(requestKey: String) throws -> String {
+        let combination = requestKey.bytes.trimmed([.space]).array + hashKey
+        return try SHA1.hash(combination).base64String
     }
 }
