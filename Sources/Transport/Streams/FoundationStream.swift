@@ -84,7 +84,7 @@
         // MARK: Connect
 
         public func connect() throws -> Stream {
-            if securityLayer == .tls {
+            if case .tls(_) = securityLayer {
                 upgradeSSL()
             }
             input.open()

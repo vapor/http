@@ -1,3 +1,5 @@
+@_exported import struct TLS.TLSConfig
+
 public enum ProgramStreamError: Error {
     /**
         Visit https://github.com/qutheory/vapor-tls
@@ -20,13 +22,27 @@ extension ProgramStream {
 }
 
 public enum SecurityLayer {
-    case none, tls
+    case none
+    case tls(TLSConfig)
+}
+
+extension SecurityLayer: Equatable {
+    public static func ==(lhs: SecurityLayer, rhs: SecurityLayer) -> Bool {
+        switch (lhs, rhs) {
+        case (.none, .none):
+            return true
+        case (.tls(_), .tls(_)):
+            return true
+        default:
+            return false
+        }
+    }
 }
 
 extension String {
     public var securityLayer: SecurityLayer {
         if self == "https" || self == "wss" {
-            return .tls
+            return .tls(TLSConfig())
         }
 
         return .none

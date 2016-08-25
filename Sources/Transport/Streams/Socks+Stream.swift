@@ -74,8 +74,8 @@ public final class TCPClientStream: TCPProgramStream, ClientStream  {
         switch securityLayer {
         case .none:
             return stream
-        case .tls:
-            let secure = try stream.makeSecret(mode: .client)
+        case .tls(let config):
+            let secure = try stream.makeSecret(mode: .client, config: config)
             try secure.stream.connect(servername: host)
             return secure
         }
@@ -119,11 +119,13 @@ public final class TLSSocket<Socket: SocksCore.TCPInternetSocket> {
     public convenience init(
         mode: TLS.Mode,
         socket: Socket,
+        config: TLSConfig,
         certificates: TLS.Certificates = .none
     ) throws {
         let stream = try TLS.Stream(
             mode: mode,
             socket: socket.descriptor,
+            config: config,
             certificates: certificates
         )
         self.init(stream: stream, socket: socket)
@@ -173,11 +175,13 @@ extension TCPInternetSocket {
      */
     public func makeSecret(
         mode: TLS.Mode = .client,
+        config: TLSConfig = TLSConfig(),
         certificates: TLS.Certificates = .none
     ) throws -> TLSSocket<TCPInternetSocket> {
         return try TLSSocket(
             mode: mode,
             socket: self,
+            config: config,
             certificates: certificates
         )
     }
