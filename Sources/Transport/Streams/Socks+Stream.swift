@@ -76,7 +76,7 @@ public final class TCPClientStream: TCPProgramStream, ClientStream  {
             return stream
         case .tls:
             let secure = try stream.makeSecret(mode: .client)
-            try secure.connect()
+            try secure.stream.connect(servername: host)
             return secure
         }
     }
@@ -96,7 +96,9 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
         case .none:
             return next
         case .tls:
-            return try next.makeSecret(mode: .server)
+            let secure = try next.makeSecret(mode: .server)
+            try secure.stream.accept()
+            return secure
         }
     }
 }
@@ -105,24 +107,65 @@ import TLS
 import SocksCore
 import libc
 
-/*
-    Incomplete conformance of SSL.Socket. Will be updating with more thorough support
-*/
-extension TLS.Socket: Stream {
-    public var peerAddress: String {
-        return ""
+public final class TLSSocket<Socket: SocksCore.TCPInternetSocket> {
+    public let stream: TLS.Stream
+    public let socket: Socket
+
+    public init(stream: TLS.Stream, socket: Socket) {
+        self.stream = stream
+        self.socket = socket
     }
 
-    public func setTimeout(_ timeout: Double) throws {
-        try setTimeout(Int(timeout))
-    }
-
-    public func flush() throws {
-        // no flush, send immediately flushes
+    public convenience init(
+        mode: TLS.Mode,
+        socket: Socket,
+        certificates: TLS.Certificates = .none
+    ) throws {
+        let stream = try TLS.Stream(
+            mode: mode,
+            socket: socket.descriptor,
+            certificates: certificates
+        )
+        self.init(stream: stream, socket: socket)
     }
 }
 
-extension RawSocket {
+/**
+    Conform TLS Stream + Underlying socket
+    to a TLS Socket.
+*/
+extension TLSSocket: Stream {
+    public func close() throws {
+        try stream.close()
+        try socket.close()
+    }
+
+    public var closed: Bool {
+        return socket.closed
+    }
+
+    public var peerAddress: String {
+        return socket.peerAddress
+    }
+
+    public func setTimeout(_ timeout: Double) throws {
+        try socket.setTimeout(timeout)
+    }
+
+    public func send(_ bytes: Bytes) throws {
+        try stream.send(bytes)
+    }
+
+    public func receive(max: Int) throws -> Bytes {
+        return try stream.receive(max: max)
+    }
+
+    public func flush() throws {
+        try socket.flush()
+    }
+}
+
+extension TCPInternetSocket {
     /**
         Creates a new SSL Context and Secure Socket.
         - parameter mode: Client or Server
@@ -131,25 +174,11 @@ extension RawSocket {
     public func makeSecret(
         mode: TLS.Mode = .client,
         certificates: TLS.Certificates = .none
-    ) throws -> TLS.Socket {
-        let context = try TLS.Context(
+    ) throws -> TLSSocket<TCPInternetSocket> {
+        return try TLSSocket(
             mode: mode,
+            socket: self,
             certificates: certificates
-        )
-
-        return try TLS.Socket(
-            context: context,
-            descriptor: descriptor
-        )
-    }
-
-    /**
-        Creates a Secure Socket from the SSL Context provided.
-    */
-    public func makeSecret(context: TLS.Context) throws -> TLS.Socket {
-        return try TLS.Socket(
-            context: context,
-            descriptor: descriptor
         )
     }
 }
