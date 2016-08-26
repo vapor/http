@@ -1,12 +1,14 @@
 import XCTest
 @testable import HTTP
+import URI
 
 class HTTPRequestTests: XCTestCase {
     static var allTests = [
         ("testParse", testParse),
         ("testParseEdgecase", testParseEdgecase),
         ("testParseXForwardedFor", testParseXForwardedFor),
-        ("testParseForwarded", testParseForwarded)
+        ("testParseForwarded", testParseForwarded),
+        ("testURLEncoding", testURLEncoding)
     ]
 
     func testParse() {
@@ -113,5 +115,18 @@ class HTTPRequestTests: XCTestCase {
         } catch {
             XCTFail("\(error)")
         }
+    }
+    
+    func testURLEncoding() throws {
+        // TODO: Make this test actually cover all edge cases. Different parts of the URL
+        // have different character sets:
+        // Refer to:
+        // http://stackoverflow.com/a/24552028/1784384
+        // https://tools.ietf.org/html/rfc3986#section-2.1
+        
+        let uri = "https://test.com/?hithere%7Chi"
+        let request = try Request(method: .get, uri: uri)
+        
+        XCTAssertEqual(request.startLine, "GET /?hithere%7Chi HTTP/1.1")
     }
 }
