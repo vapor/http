@@ -84,8 +84,8 @@
         // MARK: Connect
 
         public func connect() throws -> Stream {
-            if case .tls(_) = securityLayer {
-                upgradeSSL()
+            if case .tls(let config) = securityLayer {
+                upgradeSSL(config: config)
             }
             input.open()
             output.open()
@@ -100,14 +100,15 @@
     }
 
     extension FoundationStream {
-        public func upgradeSSL() {
-            [input, output].forEach { stream in stream.upgradeSSL() }
+        public func upgradeSSL(config: TLS.Config) {
+            [input, output].forEach { stream in stream.upgradeSSL(config: config) }
         }
     }
 
     extension Foundation.Stream {
         @discardableResult
-        func upgradeSSL() -> Bool {
+        func upgradeSSL(config: TLS.Config) -> Bool {
+            //TODO: apply TLS.Config's properties to the stream
             return setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL.rawValue,
                                forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)
         }
