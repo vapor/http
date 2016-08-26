@@ -12,7 +12,7 @@ extension Program {
     public static func make(
         host: String? = nil,
         port: Int? = nil,
-        securityLayer: SecurityLayer = .tls(TLSConfig())
+        securityLayer: SecurityLayer = .defaultTLS()
     ) throws -> Self {
         let host = host ?? "0.0.0.0"
         let port = port ?? securityLayer.port()
@@ -21,7 +21,6 @@ extension Program {
 }
 
 extension SecurityLayer {
-    
     func port() -> Int {
         switch self {
         case .none:

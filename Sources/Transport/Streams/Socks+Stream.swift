@@ -119,14 +119,12 @@ public final class TLSSocket<Socket: SocksCore.TCPInternetSocket> {
     public convenience init(
         mode: TLS.Mode,
         socket: Socket,
-        config: TLSConfig,
-        certificates: TLS.Certificates = .none
+        config: TLS.Config
     ) throws {
         let stream = try TLS.Stream(
             mode: mode,
             socket: socket.descriptor,
-            config: config,
-            certificates: certificates
+            config: config
         )
         self.init(stream: stream, socket: socket)
     }
@@ -175,14 +173,12 @@ extension TCPInternetSocket {
      */
     public func makeSecret(
         mode: TLS.Mode = .client,
-        config: TLSConfig = TLSConfig(),
-        certificates: TLS.Certificates = .none
+        config: TLS.Config = Config()
     ) throws -> TLSSocket<TCPInternetSocket> {
         return try TLSSocket(
             mode: mode,
             socket: self,
-            config: config,
-            certificates: certificates
+            config: config
         )
     }
 }

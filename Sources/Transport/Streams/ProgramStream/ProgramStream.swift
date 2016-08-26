@@ -1,4 +1,4 @@
-@_exported import struct TLS.TLSConfig
+@_exported import struct TLS.Config
 
 public enum ProgramStreamError: Error {
     /**
@@ -23,7 +23,11 @@ extension ProgramStream {
 
 public enum SecurityLayer {
     case none
-    case tls(TLSConfig)
+    case tls(TLS.Config)
+    
+    public static func defaultTLS() -> SecurityLayer {
+        return .tls(TLS.Config())
+    }
 }
 
 extension SecurityLayer: Equatable {
@@ -42,7 +46,7 @@ extension SecurityLayer: Equatable {
 extension String {
     public var securityLayer: SecurityLayer {
         if self == "https" || self == "wss" {
-            return .tls(TLSConfig())
+            return .defaultTLS()
         }
 
         return .none
