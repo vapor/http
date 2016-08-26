@@ -118,7 +118,7 @@ class HTTPRequestTests: XCTestCase {
     }
     
     func testURLEncoding() throws {
-        // Make this test actually cover all edge cases. Different parts of the URL
+        // TODO: Make this test actually cover all edge cases. Different parts of the URL
         // have different character sets:
         // Refer to:
         // http://stackoverflow.com/a/24552028/1784384
