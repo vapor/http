@@ -38,12 +38,12 @@ public final class Request: Message {
         // status-line = HTTP-version SP status-code SP reason-phrase CRL
         var path = uri.path
         if let q = uri.query, !q.isEmpty {
-            let encoded = try percentEncoded(q.bytes).string
-            path += "?\(encoded)"
+            let encoded = q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
+            path += "?\(encoded ?? "")"
         }
         if let f = uri.fragment, !f.isEmpty {
-            let encoded = try percentEncoded(f.bytes).string
-            path += "#\(encoded)"
+            let encoded = f.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)
+            path += "#\(encoded ?? "")"
         }
         // Prefix w/ `/` to properly indicate that this we're not using absolute URI.
         // Absolute URIs are deprecated and MUST NOT be generated. (they should be parsed for robustness)
