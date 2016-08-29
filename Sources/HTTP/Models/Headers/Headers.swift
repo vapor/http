@@ -24,7 +24,7 @@ extension KeyAccessible where Key == HeaderKey, Value == String {
 public struct HeaderKey: Hashable, CustomStringConvertible {
     public let key: String
     public init(_ key: String) {
-        self.key = key.capitalized
+        self.key = key
     }
 }
 
@@ -38,12 +38,12 @@ extension HeaderKey: Equatable {}
 
 extension HeaderKey {
     public var hashValue: Int {
-        return key.hashValue
+        return key.lowercased().hashValue
     }
 }
 
 public func ==(lhs: HeaderKey, rhs: HeaderKey) -> Bool {
-    return lhs.key == rhs.key
+    return lhs.key.lowercased() == rhs.key.lowercased()
 }
 
 extension HeaderKey: ExpressibleByStringLiteral {
