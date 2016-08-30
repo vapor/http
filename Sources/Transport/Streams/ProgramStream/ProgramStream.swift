@@ -1,4 +1,4 @@
-@_exported import struct TLS.Config
+@_exported import class TLS.Config
 
 public enum ProgramStreamError: Error {
     /**
@@ -27,19 +27,6 @@ public enum SecurityLayer {
     
     public static func defaultTLS() -> SecurityLayer {
         return .tls(TLS.Config())
-    }
-}
-
-extension SecurityLayer: Equatable {
-    public static func ==(lhs: SecurityLayer, rhs: SecurityLayer) -> Bool {
-        switch (lhs, rhs) {
-        case (.none, .none):
-            return true
-        case (.tls(_), .tls(_)):
-            return true
-        default:
-            return false
-        }
     }
 }
 
