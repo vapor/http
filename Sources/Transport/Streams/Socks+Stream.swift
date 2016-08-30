@@ -136,3 +136,16 @@ extension TLS.Socket: Stream {
         return socket.peerAddress
     }
 }
+
+extension SecurityLayer: Equatable {
+    public static func ==(lhs: SecurityLayer, rhs: SecurityLayer) -> Bool {
+        switch (lhs, rhs) {
+        case (.none, .none):
+            return true
+        case (.none, .tls), (.tls, .none):
+            return false
+        case (.tls(_), .tls(_)):
+            return true
+        }
+    }
+}
