@@ -68,15 +68,27 @@ public final class Server<
         let parser = Parser(stream: stream)
         let serializer = Serializer(stream: stream)
 
+        defer {
+            try? stream.close()
+        }
+
         var keepAlive = false
         repeat {
-            let request = try parser.parse()
+            let request: Request
+            do {
+                request = try parser.parse()
+            } catch ParserError.streamEmpty {
+                // if stream is empty, it's time to
+                // close the connection
+                break
+            } catch {
+                throw error
+            }
+
             keepAlive = request.keepAlive
             let response = try responder.respond(to: request)
             try serializer.serialize(response)
             try response.onComplete?(stream)
         } while keepAlive && !stream.closed
-
-        try stream.close()
     }
 }
