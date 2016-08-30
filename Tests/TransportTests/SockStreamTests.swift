@@ -83,9 +83,9 @@ class SockStreamTests: XCTestCase {
 
     func testSecurityLayerStrings() {
         let schemes: [(String, SecurityLayer)] = [
-            ("https", .tls),
+            ("https", .tls(nil)),
             ("http", .none),
-            ("wss", .tls),
+            ("wss", .tls(nil)),
             ("ws", .none)
         ]
 
@@ -97,7 +97,7 @@ class SockStreamTests: XCTestCase {
     func testFoundationStream() throws {
         #if !os(Linux)
             // will default to underlying FoundationStream for TLS.
-            let clientStream = try FoundationStream(host: "google.com", port: 443, securityLayer: .tls)
+            let clientStream = try FoundationStream(host: "google.com", port: 443, securityLayer: .tls(nil))
             let connection = try clientStream.connect()
             XCTAssert(!connection.closed)
             do {
@@ -138,7 +138,7 @@ class SockStreamTests: XCTestCase {
     func testFoundationEventCode() throws {
         #if !os(Linux)
             // will default to underlying FoundationStream for TLS.
-            let clientStream = try FoundationStream(host: "google.com", port: 443, securityLayer: .tls)
+            let clientStream = try FoundationStream(host: "google.com", port: 443, securityLayer: .tls(nil))
             let connection = try clientStream.connect()
             XCTAssertFalse(connection.closed)
             // Force Foundation.Stream delegate
@@ -150,15 +150,21 @@ class SockStreamTests: XCTestCase {
 
 // import XCTest
 // @testable import VaporTLS
+import TLS
 
 class TLSStreamTests: XCTestCase {
     static var allTests = [
         ("testSend", testSend)
     ]
 
-    func testSend() {
+    func testSend() throws {
+        let config = try Config(
+            context: try Context(mode: .client),
+            verifyCertificates: false
+        )
+
         do {
-            let clientStream = try TCPClientStream(host: "api.spotify.com", port: 443, securityLayer: .tls).connect()
+            let clientStream = try TCPClientStream(host: "api.spotify.com", port: 443, securityLayer: .tls(config)).connect()
             let uri = "/v1/search?type=artist&q=hannah%20diamond"
             try clientStream.send("GET \(uri) HTTP/1.1\r\nHost: api.spotify.com\r\n\r\n".bytes)
             let response = try clientStream.receive(max: 2048).string

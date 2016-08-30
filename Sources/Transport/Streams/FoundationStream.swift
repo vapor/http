@@ -100,14 +100,14 @@
     }
 
     extension FoundationStream {
-        public func upgradeSSL(config: TLS.Config) {
+        public func upgradeSSL(config: TLS.Config?) {
             [input, output].forEach { stream in stream.upgradeSSL(config: config) }
         }
     }
 
     extension Foundation.Stream {
         @discardableResult
-        func upgradeSSL(config: TLS.Config) -> Bool {
+        func upgradeSSL(config: TLS.Config?) -> Bool {
             //TODO: apply TLS.Config's properties to the stream
             return setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL.rawValue,
                                forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)
