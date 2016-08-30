@@ -26,19 +26,6 @@ public enum SecurityLayer {
     case tls(TLS.Config?)
 }
 
-extension SecurityLayer: Equatable {
-    public static func ==(lhs: SecurityLayer, rhs: SecurityLayer) -> Bool {
-        switch (lhs, rhs) {
-        case (.none, .none):
-            return true
-        case (.tls(_), .tls(_)):
-            return true
-        default:
-            return false
-        }
-    }
-}
-
 extension String {
     public var securityLayer: SecurityLayer {
         if self == "https" || self == "wss" {
