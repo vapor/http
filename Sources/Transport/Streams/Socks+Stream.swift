@@ -70,13 +70,21 @@ import TLS
 
 public final class TCPClientStream: TCPProgramStream, ClientStream  {
     public func connect() throws -> Stream {
-        try stream.connect()
         switch securityLayer {
         case .none:
+            try stream.connect()
             return stream
-        case .tls:
-            let secure = try stream.makeSecret(mode: .client)
-            try secure.stream.connect(servername: host)
+        case .tls(let provided):
+            let config: Config
+            if let c = provided {
+                config = c
+            } else {
+                let context = try Context(mode: .client)
+                config = try Config(context: context)
+            }
+
+            let secure = try TLS.Socket(config: config, socket: stream)
+            try secure.connect(servername: host)
             return secure
         }
     }
@@ -91,94 +99,50 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
     }
 
     public func accept() throws -> Stream {
-        let next = try stream.accept()
+
         switch securityLayer {
         case .none:
-            return next
-        case .tls:
-            let secure = try next.makeSecret(mode: .server)
-            try secure.stream.accept()
+            return try stream.accept()
+        case .tls(let provided):
+            let config: Config
+            if let c = provided {
+                config = c
+            } else {
+                let context = try Context(mode: .server)
+                config = try Config(context: context)
+            }
+
+            let secure = try TLS.Socket(config: config, socket: stream)
+            try secure.accept()
             return secure
         }
     }
 }
 
-import TLS
-import SocksCore
-import libc
-
-public final class TLSSocket<Socket: SocksCore.TCPInternetSocket> {
-    public let stream: TLS.Stream
-    public let socket: Socket
-
-    public init(stream: TLS.Stream, socket: Socket) {
-        self.stream = stream
-        self.socket = socket
-    }
-
-    public convenience init(
-        mode: TLS.Mode,
-        socket: Socket,
-        certificates: TLS.Certificates = .none
-    ) throws {
-        let stream = try TLS.Stream(
-            mode: mode,
-            socket: socket.descriptor,
-            certificates: certificates
-        )
-        self.init(stream: stream, socket: socket)
-    }
-}
-
-/**
-    Conform TLS Stream + Underlying socket
-    to a TLS Socket.
-*/
-extension TLSSocket: Stream {
-    public func close() throws {
-        try stream.close()
-        try socket.close()
+extension TLS.Socket: Stream {
+    public func setTimeout(_ timeout: Double) throws {
+        try socket.setTimeout(timeout)
     }
 
     public var closed: Bool {
         return socket.closed
     }
 
-    public var peerAddress: String {
-        return socket.peerAddress
-    }
-
-    public func setTimeout(_ timeout: Double) throws {
-        try socket.setTimeout(timeout)
-    }
-
-    public func send(_ bytes: Bytes) throws {
-        try stream.send(bytes)
-    }
-
-    public func receive(max: Int) throws -> Bytes {
-        return try stream.receive(max: max)
-    }
-
     public func flush() throws {
         try socket.flush()
     }
+
+    public var peerAddress: String {
+        return socket.peerAddress
+    }
 }
 
-extension TCPInternetSocket {
-    /**
-        Creates a new SSL Context and Secure Socket.
-        - parameter mode: Client or Server
-        - parameter certificates: SSL Certificates for the Server, use .none for Client
-     */
-    public func makeSecret(
-        mode: TLS.Mode = .client,
-        certificates: TLS.Certificates = .none
-    ) throws -> TLSSocket<TCPInternetSocket> {
-        return try TLSSocket(
-            mode: mode,
-            socket: self,
-            certificates: certificates
-        )
+extension SecurityLayer {
+    public var isSecure: Bool {
+        guard case .tls = self else {
+            return false
+        }
+
+        return true
     }
 }

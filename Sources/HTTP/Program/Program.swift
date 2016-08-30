@@ -12,11 +12,22 @@ extension Program {
     public static func make(
         host: String? = nil,
         port: Int? = nil,
-        securityLayer: SecurityLayer = .tls
+        securityLayer: SecurityLayer = .tls(nil)
     ) throws -> Self {
         let host = host ?? "0.0.0.0"
-        let port = port ?? (securityLayer == .tls ? 443 : 80)
+        let port = port ?? securityLayer.port()
         return try Self(host: host, port: port, securityLayer: securityLayer)
+    }
+}
+
+extension SecurityLayer {
+    func port() -> Int {
+        switch self {
+        case .none:
+            return 80
+        case .tls(_):
+            return 443
+        }
     }
 }
 

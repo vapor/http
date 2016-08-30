@@ -1,3 +1,5 @@
+@_exported import class TLS.Config
+
 public enum ProgramStreamError: Error {
     /**
         Visit https://github.com/qutheory/vapor-tls
@@ -20,13 +22,14 @@ extension ProgramStream {
 }
 
 public enum SecurityLayer {
-    case none, tls
+    case none
+    case tls(TLS.Config?)
 }
 
 extension String {
     public var securityLayer: SecurityLayer {
         if self == "https" || self == "wss" {
-            return .tls
+            return .tls(nil)
         }
 
         return .none
