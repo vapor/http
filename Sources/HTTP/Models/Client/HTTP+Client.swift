@@ -71,7 +71,7 @@ public final class Client<
         }
 
         if request.uri.scheme.isEmpty {
-            guard request.uri.scheme.securityLayer == securityLayer else { throw ClientError.invalidRequestScheme }
+            guard request.uri.scheme.securityLayer.isSecure == securityLayer.isSecure else { throw ClientError.invalidRequestScheme }
         }
 
         if let requestPort = request.uri.port {

@@ -137,15 +137,12 @@ extension TLS.Socket: Stream {
     }
 }
 
-extension SecurityLayer: Equatable {
-    public static func ==(lhs: SecurityLayer, rhs: SecurityLayer) -> Bool {
-        switch (lhs, rhs) {
-        case (.none, .none):
-            return true
-        case (.none, .tls), (.tls, .none):
+extension SecurityLayer {
+    public var isSecure: Bool {
+        guard case .tls = self else {
             return false
-        case (.tls(_), .tls(_)):
-            return true
         }
+
+        return true
     }
 }

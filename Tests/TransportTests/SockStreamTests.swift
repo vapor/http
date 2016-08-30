@@ -90,7 +90,7 @@ class SockStreamTests: XCTestCase {
         ]
 
         schemes.forEach { scheme, securityLayer in
-            XCTAssert(scheme.securityLayer == securityLayer)
+            XCTAssert(scheme.securityLayer.isSecure == securityLayer.isSecure)
         }
     }
 
