@@ -72,9 +72,7 @@ public var defaultClientConfig: () throws -> TLS.Config = {
     let context = try Context(mode: .client)
     return try Config(
         context: context,
-        certificates: .none,
-        verifyHost: true,
-        verifyCertificates: false
+        certificates: .mozilla
     )
 }
 
@@ -100,7 +98,10 @@ public final class TCPClientStream: TCPProgramStream, ClientStream  {
 
 public var defaultServerConfig: () throws -> TLS.Config = {
     let context = try Context(mode: .server)
-    return try Config(context: context)
+    return try Config(
+        context: context,
+        certificates: .mozilla
+    )
 }
 
 public final class TCPServerStream: TCPProgramStream, ServerStream {
