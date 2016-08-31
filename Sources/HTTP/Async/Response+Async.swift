@@ -13,4 +13,3 @@ extension Response {
         return try Portal.open(timeout: timeout, handler)
     }
 }
-

@@ -68,6 +68,11 @@ public class TCPProgramStream: ProgramStream {
 
 import TLS
 
+public var defaultClientConfig: TLS.Config = try! Config(
+    context: Context(mode: .client),
+    verifyCertificates: false
+)
+
 public final class TCPClientStream: TCPProgramStream, ClientStream  {
     public func connect() throws -> Stream {
         switch securityLayer {
@@ -79,8 +84,7 @@ public final class TCPClientStream: TCPProgramStream, ClientStream  {
             if let c = provided {
                 config = c
             } else {
-                let context = try Context(mode: .client)
-                config = try Config(context: context)
+                config = defaultClientConfig
             }
 
             let secure = try TLS.Socket(config: config, socket: stream)
