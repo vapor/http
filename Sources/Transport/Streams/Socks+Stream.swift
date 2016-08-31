@@ -102,11 +102,8 @@ public var defaultServerConfig: () throws -> TLS.Config = {
     )
 }
 
-import Foundation
-
 public final class TCPServerStream: TCPProgramStream, ServerStream {
     public required init(host: String, port: Int, securityLayer: SecurityLayer) throws {
-        JSONSerialization.json
         try super.init(host: host, port: port, securityLayer: securityLayer)
 
         try stream.bind()
