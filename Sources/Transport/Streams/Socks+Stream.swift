@@ -68,6 +68,16 @@ public class TCPProgramStream: ProgramStream {
 
 import TLS
 
+public var defaultClientConfig: () throws -> TLS.Config = {
+    let context = try Context(mode: .client)
+    return try Config(
+        context: context,
+        certificates: .none,
+        verifyHost: true,
+        verifyCertificates: false
+    )
+}
+
 public final class TCPClientStream: TCPProgramStream, ClientStream  {
     public func connect() throws -> Stream {
         switch securityLayer {
@@ -79,15 +89,18 @@ public final class TCPClientStream: TCPProgramStream, ClientStream  {
             if let c = provided {
                 config = c
             } else {
-                let context = try Context(mode: .client)
-                config = try Config(context: context)
+                config = try defaultClientConfig()
             }
-
             let secure = try TLS.Socket(config: config, socket: stream)
             try secure.connect(servername: host)
             return secure
         }
     }
+}
+
+public var defaultServerConfig: () throws -> TLS.Config = {
+    let context = try Context(mode: .server)
+    return try Config(context: context)
 }
 
 public final class TCPServerStream: TCPProgramStream, ServerStream {
@@ -99,7 +112,6 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
     }
 
     public func accept() throws -> Stream {
-
         switch securityLayer {
         case .none:
             return try stream.accept()
@@ -108,8 +120,7 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
             if let c = provided {
                 config = c
             } else {
-                let context = try Context(mode: .server)
-                config = try Config(context: context)
+                config = try defaultServerConfig()
             }
 
             let secure = try TLS.Socket(config: config, socket: stream)
@@ -142,7 +153,7 @@ extension SecurityLayer {
         guard case .tls = self else {
             return false
         }
-
+        
         return true
     }
 }
