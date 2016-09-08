@@ -19,6 +19,7 @@ XCTMain([
     // HTTPTestSuite
     testCase(HTTPBodyTests.allTests),
     testCase(HTTPHeadersTests.allTests),
+    testCase(HTTPMiddlewareTests.allTests),
     testCase(HTTPParsingTests.allTests),
     testCase(HTTPRequestTests.allTests),
     testCase(HTTPResponseTests.allTests),
