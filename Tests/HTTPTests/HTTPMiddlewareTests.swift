@@ -25,7 +25,7 @@ class HTTPMiddlewareTests: XCTestCase {
 
     func testClientDefault() throws {
         let foo = FooMiddleware()
-        BasicClient.middleware = [foo]
+        BasicClient.defaultMiddleware = [foo]
 
         let response = try BasicClient.get("http://httpbin.org/headers")
 

@@ -1,7 +1,7 @@
 import URI
 import Transport
 
-var defaultMiddleware: [String: [Middleware]] = [:]
+private var _defaultMiddlewareStorage: [String: [Middleware]] = [:]
 
 public protocol Program {
     var host: String { get }
@@ -9,15 +9,15 @@ public protocol Program {
     var securityLayer: SecurityLayer { get }
     var middleware: [Middleware] { get }
     init(host: String, port: Int, securityLayer: SecurityLayer, middleware: [Middleware]) throws
-    static var middleware: [Middleware] { get set }
+    static var defaultMiddleware: [Middleware] { get set }
 }
 
 extension Program {
-    public static var middleware: [Middleware] {
+    public static var defaultMiddleware: [Middleware] {
         get {
             let name = "\(type(of: Self.self))"
-            guard let middleware = defaultMiddleware[name] else {
-                defaultMiddleware[name] = []
+            guard let middleware = _defaultMiddlewareStorage[name] else {
+                _defaultMiddlewareStorage[name] = []
                 return []
             }
 
@@ -26,7 +26,7 @@ extension Program {
 
         set {
             let name = "\(type(of: Self.self))"
-            defaultMiddleware[name] = newValue
+            _defaultMiddlewareStorage[name] = newValue
         }
     }
 }
@@ -40,7 +40,7 @@ extension Program {
     ) throws -> Self {
         let host = host ?? "0.0.0.0"
         let port = port ?? securityLayer.port()
-        return try Self(host: host, port: port, securityLayer: securityLayer, middleware: Self.middleware + middleware)
+        return try Self(host: host, port: port, securityLayer: securityLayer, middleware: Self.defaultMiddleware + middleware)
     }
 }
 
