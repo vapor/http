@@ -13,9 +13,9 @@ Send emails.
 
 ## 🌏 Current Environment
 
-| Vapor |     Xcode    |    Swift    |
+| Engine |     Xcode    |    Swift    |
 |:-----:|:------------:|:-----------:|
-|0.14.x |8.0 Beta **2**|3.0-PREVIEW-2|
+|0.8.x |8.0 GM|DEVELOPMENT-SNAPSHOT-2016-09-06-a|
 
 You can run the following script to verify your environment is correct.
 
