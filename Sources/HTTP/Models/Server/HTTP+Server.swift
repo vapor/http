@@ -5,6 +5,9 @@
 #endif
 
 import Transport
+import Dispatch
+
+private let queue = DispatchQueue.global(qos: .userInteractive)
 
 public typealias BasicServer = Server<TCPServerStream, Parser<Request>, Serializer<Response>>
 
@@ -47,16 +50,13 @@ public final class Server<
                 continue
             }
 
-            do {
-                _ = try background {
-                    do {
-                        try self.respond(stream: stream, responder: responder)
-                    } catch {
-                        errors(.dispatch(error))
-                    }
+            queue.async {
+                do {
+                    try self.respond(stream: stream, responder: responder)
+                } catch {
+                    errors(.dispatch(error))
                 }
-            } catch {
-                errors(.dispatch(error))
+
             }
         }
     }
