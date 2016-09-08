@@ -25,7 +25,7 @@ extension ClientProtocol {
             host: host,
             port: port,
             securityLayer: securityLayer,
-            middleware: Self.middleware + middleware
+            middleware: middleware
         )
     }
 }
