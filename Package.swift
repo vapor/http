@@ -2,13 +2,13 @@ import PackageDescription
 
 let dependencies: [Package.Dependency] = [
     // Crypto
-    .Package(url: "https://github.com/vapor/crypto.git", majorVersion: 0, minor: 2),
+    .Package(url: "https://github.com/vapor/crypto.git", majorVersion: 0, minor: 3),
 
     // Secure Sockets
-    .Package(url: "https://github.com/vapor/tls.git", majorVersion: 0, minor: 7),
+    .Package(url: "https://github.com/vapor/tls.git", majorVersion: 0, minor: 8),
 
     // CoreComponents
-    .Package(url: "https://github.com/vapor/core.git", majorVersion: 0, minor: 4),
+    .Package(url: "https://github.com/vapor/core.git", majorVersion: 0, minor: 5),
 ]
 
 let package = Package(
@@ -37,7 +37,8 @@ let package = Package(
             dependencies: [
                 "Transport"
             ]
-        ),
+        )
+        /*
         Target(
             name: "HTTPExample",
             dependencies: [
@@ -56,9 +57,13 @@ let package = Package(
                 "SMTP", "Transport"
             ]
         )
+        */
     ],
     dependencies: dependencies,
     exclude: [
-        "Resources"
+        "Resources",
+        "Sources/HTTPExample",
+        "Sources/WebSocketsExample",
+        "Sources/SMTPExample",
     ]
 )
