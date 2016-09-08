@@ -37,7 +37,8 @@ let package = Package(
             dependencies: [
                 "Transport"
             ]
-        ),
+        )
+        /*
         Target(
             name: "HTTPExample",
             dependencies: [
@@ -56,9 +57,13 @@ let package = Package(
                 "SMTP", "Transport"
             ]
         )
+        */
     ],
     dependencies: dependencies,
     exclude: [
-        "Resources"
+        "Resources",
+        "Sources/HTTPExample",
+        "Sources/WebSocketsExample",
+        "Sources/SMTPExample",
     ]
 )
