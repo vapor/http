@@ -36,7 +36,7 @@ public final class Server<
         self.host = host
         self.port = port
         self.securityLayer = securityLayer
-        self.middleware = middleware
+        self.middleware = type(of: self).defaultMiddleware + middleware
 
         do {
             server = try ServerStreamType(host: host, port: port, securityLayer: securityLayer)

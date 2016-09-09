@@ -41,7 +41,7 @@ public final class Client<
         self.host = host
         self.port = port
         self.securityLayer = securityLayer
-        self.middleware = middleware
+        self.middleware = type(of: self).defaultMiddleware + middleware
 
         let client = try ClientStreamType(host: host, port: port, securityLayer: securityLayer)
         let stream = try client.connect()
@@ -72,7 +72,7 @@ public final class Client<
         }
 
         // add middleware
-        responder = middleware.chain(to: handler)
+        responder = self.middleware.chain(to: handler)
     }
 
     public func respond(to request: Request) throws -> Response {

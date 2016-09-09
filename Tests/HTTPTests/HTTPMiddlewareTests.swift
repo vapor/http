@@ -28,7 +28,7 @@ class HTTPMiddlewareTests: XCTestCase {
         BasicClient.defaultMiddleware = [foo]
 
         let response = try BasicClient.get("http://httpbin.org/headers")
-
+        print(response)
         // test to make sure http bin saw the
         // header the middleware added
         XCTAssert(response.body.bytes?.string.contains("Foo") == true)
@@ -72,6 +72,7 @@ class HTTPMiddlewareTests: XCTestCase {
 class FooMiddleware: Middleware {
     init() {}
     func respond(to request: Request, chainingTo next: Responder) throws -> Response {
+        print("FOO CALLED")
         request.headers["foo"] = "bar"
         let response = try next.respond(to: request)
         response.headers["bar"] = "baz"

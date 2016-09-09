@@ -40,7 +40,7 @@ extension Program {
     ) throws -> Self {
         let host = host ?? "0.0.0.0"
         let port = port ?? securityLayer.port()
-        return try Self(host: host, port: port, securityLayer: securityLayer, middleware: Self.defaultMiddleware + middleware)
+        return try Self(host: host, port: port, securityLayer: securityLayer, middleware: middleware)
     }
 }
 
