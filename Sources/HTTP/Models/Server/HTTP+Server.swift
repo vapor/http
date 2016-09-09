@@ -25,11 +25,18 @@ public final class Server<
     public let host: String
     public let port: Int
     public let securityLayer: SecurityLayer
+    public let middleware: [Middleware]
 
-    public init(host: String = "0.0.0.0", port: Int = 8080, securityLayer: SecurityLayer = .none) throws {
+    public init(
+        host: String = "0.0.0.0",
+        port: Int = 8080,
+        securityLayer: SecurityLayer = .none,
+        middleware: [Middleware] = []
+    ) throws {
         self.host = host
         self.port = port
         self.securityLayer = securityLayer
+        self.middleware = type(of: self).defaultMiddleware + middleware
 
         do {
             server = try ServerStreamType(host: host, port: port, securityLayer: securityLayer)
@@ -39,6 +46,9 @@ public final class Server<
     }
 
     public func start(responder: Responder, errors: @escaping ServerErrorHandler) throws {
+        // add middleware
+        let responder = middleware.chain(to: responder)
+
         // no throwing inside of the loop
         while true {
             let stream: Stream
