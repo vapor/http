@@ -2,7 +2,7 @@ import PackageDescription
 
 let dependencies: [Package.Dependency] = [
     // Crypto
-    .Package(url: "https://github.com/vapor/crypto.git", majorVersion: 0, minor: 3),
+    .Package(url: "https://github.com/vapor/crypto.git", majorVersion: 0, minor: 4),
 
     // Secure Sockets
     .Package(url: "https://github.com/vapor/tls.git", majorVersion: 0, minor: 8),
