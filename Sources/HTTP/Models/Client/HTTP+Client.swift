@@ -10,6 +10,8 @@ public enum ClientError: Swift.Error {
 
 public typealias BasicClient = Client<TCPClientStream, Serializer<Request>, Parser<Response>>
 
+let VERSION = "0.9.0"
+
 public final class Client<
     ClientStreamType: ClientStream,
     SerializerType: TransferSerializer,
@@ -58,6 +60,7 @@ public final class Client<
                 field with an empty field-value.
             */
             request.headers["Host"] = host
+            request.headers["User-Agent"] = "App (Swift) VaporEngine/\(VERSION)"
 
             let buffer = StreamBuffer(stream)
             let serializer = SerializerType(stream: buffer)
