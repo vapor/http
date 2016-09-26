@@ -40,4 +40,26 @@ class URIModificationTests: XCTestCase {
         uri = uri.deletingLastPathComponent()
         XCTAssertEqual(uri.path, "")
     }
+    
+    func testRemovingPath() {
+        var uri = try! URI("https://vapor.github.io/documentation/foo/bar/baz")
+        uri = uri.removingPath()
+        XCTAssertEqual(uri.path, "")
+        uri = uri.removingPath()
+        XCTAssertEqual(uri.path, "")
+    }
+    
+    func testLastPathComponent() {
+        var uri = try! URI("https://vapor.github.io/documentation/foo/bar/baz")
+        XCTAssertEqual(uri.lastPathComponent, "baz")
+        uri = uri.deletingLastPathComponent()
+        XCTAssertEqual(uri.lastPathComponent, "bar")
+        uri = uri.deletingLastPathComponent()
+        XCTAssertEqual(uri.lastPathComponent, "foo")
+        uri = uri.deletingLastPathComponent()
+        XCTAssertEqual(uri.lastPathComponent, "documentation")
+        uri = uri.deletingLastPathComponent()
+        XCTAssertEqual(uri.lastPathComponent, nil)
+        
+    }
 }
