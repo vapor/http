@@ -16,7 +16,7 @@ extension URI {
         return components
     }
     
-    /// Returns a new URI with the provided path, keeping the rest the same.
+    /// Returns a new URI with the provided path.
     private func withPath(_ path: String) -> URI {
         return URI(scheme: scheme,
                    userInfo: userInfo,
@@ -27,7 +27,8 @@ extension URI {
                    fragment: fragment)
     }
     
-    /// The last path component of the URL, if there is a path
+    /// The last path component of the URL, if there is a path.
+    /// Otherwise returns `nil`.
     var lastPathComponent: String? {
         return pathComponents.last
     }
@@ -51,6 +52,8 @@ extension URI {
         return withPath(components.joined(separator: "/"))
     }
     
+    /// Constructs a new URI by removing the last path component.
+    /// If the path is empty, the result is the same URI.
     public func deletingLastPathComponent() -> URI {
         if path.isEmpty { return self }
         var components = pathComponents
