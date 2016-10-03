@@ -6,6 +6,7 @@ class HTTPBodyTests: XCTestCase {
     static var allTests = [
         ("testBufferParse", testBufferParse),
         ("testChunkedParse", testChunkedParse),
+        ("testClientStreamUsage", testClientStreamUsage),
     ]
 
     func testBufferParse() throws {
