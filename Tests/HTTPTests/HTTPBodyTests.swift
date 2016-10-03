@@ -1,5 +1,6 @@
 import XCTest
 @testable import HTTP
+import Transport
 
 class HTTPBodyTests: XCTestCase {
     static var allTests = [
@@ -43,6 +44,35 @@ class HTTPBodyTests: XCTestCase {
                 XCTAssertEqual(data.string, expected)
             default:
                 XCTFail("Body not buffer")
+            }
+        } catch {
+            XCTFail("\(error)")
+        }
+    }
+
+    func testClientStreamUsage() throws {
+        let server = try HTTP.Server<TCPServerStream, Parser<Request>, Serializer<Response>>(host: "0.0.0.0", port: 8637, securityLayer: .none)
+
+        struct HelloResponder: HTTP.Responder {
+            func respond(to request: Request) throws -> Response {
+                return Response(body: "Hello".bytes)
+            }
+        }
+
+        try background {
+            try! server.start(responder: HelloResponder(), errors: { err in
+                XCTFail("\(err)")
+            })
+        }
+
+        let factor = 1000 * 1000
+        let microseconds = 1 * Double(factor)
+        usleep(useconds_t(microseconds))
+
+        do {
+            for _ in 0..<16384 {
+                let res = try HTTP.Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://0.0.0.0:8637/")
+                XCTAssertEqual(res.body.bytes ?? [], "Hello".bytes)
             }
         } catch {
             XCTFail("\(error)")
