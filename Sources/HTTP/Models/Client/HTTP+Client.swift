@@ -77,6 +77,10 @@ public final class Client<
         // add middleware
         responder = self.middleware.chain(to: handler)
     }
+    
+    deinit {
+        try? stream.close()
+    }
 
     public func respond(to request: Request) throws -> Response {
         try assertValid(request)
