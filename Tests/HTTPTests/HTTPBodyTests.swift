@@ -1,6 +1,7 @@
 import XCTest
 @testable import HTTP
 import Transport
+import libc
 
 class HTTPBodyTests: XCTestCase {
     static var allTests = [
