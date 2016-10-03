@@ -72,7 +72,7 @@ class HTTPBodyTests: XCTestCase {
         usleep(useconds_t(microseconds))
 
         do {
-            for _ in 0..<16384 {
+            for _ in 0..<8192 {
                 let res = try HTTP.Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://0.0.0.0:8637/")
                 XCTAssertEqual(res.body.bytes ?? [], "Hello".bytes)
             }
