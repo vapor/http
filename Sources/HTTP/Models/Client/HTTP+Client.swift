@@ -79,7 +79,7 @@ public final class Client<
     }
     
     deinit {
-        //try? stream.close()
+        try? stream.close()
     }
 
     public func respond(to request: Request) throws -> Response {
