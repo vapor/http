@@ -51,8 +51,8 @@ extension WebSocket {
         let response = try client.respond(to: request)
 
         // Don't need to check version in server response
-        guard response.headers.connection == "Upgrade" else { throw FormatError.missingConnectionHeader }
-        guard response.headers.upgrade == "websocket" else { throw FormatError.missingUpgradeHeader }
+        guard response.headers.connection?.lowercased() == "upgrade" else { throw FormatError.missingConnectionHeader }
+        guard response.headers.upgrade?.lowercased() == "websocket" else { throw FormatError.missingUpgradeHeader }
         guard case .switchingProtocols = response.status else { throw FormatError.invalidOrUnsupportedStatus }
         guard let accept = response.headers.secWebSocketAccept else { throw FormatError.missingSecAcceptHeader }
         let expected = try WebSocket.exchange(requestKey: requestKey)
