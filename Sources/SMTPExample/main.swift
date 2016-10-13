@@ -58,6 +58,7 @@ func complexEmail(from: EmailAddressRepresentable, to: EmailAddressRepresentable
      
      Gmail Username & Password
      LIMIT: Personal accounts have limits of about 100 emails a day.
+     Currently the user is required to change their settings for their Gmail account to "Allow for less secure apps".
      
      Example:
 
