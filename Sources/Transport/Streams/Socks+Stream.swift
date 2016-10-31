@@ -24,7 +24,8 @@ extension TCPInternetSocket: Stream {
     }
 
     public func setTimeout(_ timeout: Double) throws {
-        sendingTimeout = timeval(seconds: timeout)
+        let sendingTimeout = timeval(seconds: timeout)
+        try setSendingTimeout(sendingTimeout)
     }
 
     public func send(_ bytes: Bytes) throws {
@@ -71,7 +72,7 @@ import TLS
 public var defaultClientConfig: () throws -> TLS.Config = {
     return try Config(
         mode: .client,
-        certificates: .mozilla
+        certificates: .defaults
     )
 }
 
@@ -98,7 +99,7 @@ public final class TCPClientStream: TCPProgramStream, ClientStream  {
 public var defaultServerConfig: () throws -> TLS.Config = {
     return try Config(
         mode: .server,
-        certificates: .mozilla
+        certificates: .defaults
     )
 }
 
