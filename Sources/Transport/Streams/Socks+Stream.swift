@@ -26,6 +26,7 @@ extension TCPInternetSocket: Stream {
     public func setTimeout(_ timeout: Double) throws {
         let sendingTimeout = timeval(seconds: timeout)
         try setSendingTimeout(sendingTimeout)
+        try setReceivingTimeout(sendingTimeout)
     }
 
     public func send(_ bytes: Bytes) throws {
