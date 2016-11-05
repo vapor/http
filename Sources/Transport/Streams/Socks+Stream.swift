@@ -1,5 +1,6 @@
 import Core
 import SocksCore
+import Dispatch
 
 extension TCPInternetSocket: Stream {
     public var peerAddress: String {
@@ -129,6 +130,14 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
             return secure
         }
     }
+
+    public func startWatching(on queue:DispatchQueue, handler:@escaping ()->()) throws {
+        try stream.startWatching(on: queue, handler: handler)
+    }
+    
+    public func stopWatching() throws {
+        try stream.stopWatching()
+    }
 }
 
 extension TLS.Socket: Stream {
@@ -146,6 +155,16 @@ extension TLS.Socket: Stream {
 
     public var peerAddress: String {
         return currSocket?.peerAddress ?? socket.peerAddress
+    }
+
+    public func startWatching(on queue: DispatchQueue, handler: @escaping () -> ()) throws {
+        let actualSocket = currSocket ?? socket
+        try actualSocket.startWatching(on: queue, handler: handler)
+    }
+    
+    public func stopWatching() {
+        let actualSocket = currSocket ?? socket
+        actualSocket.stopWatching()
     }
 }
 

@@ -11,10 +11,11 @@ extension ServerProtocol {
         securityLayer: SecurityLayer = .none,
         responder: Responder,
         errors: @escaping ServerErrorHandler
-    ) throws {
+    ) throws -> Self {
         let server = try make(host: host, port: port, securityLayer: securityLayer)
         let responder = responder
         let errors = errors
         try server.start(responder: responder, errors: errors)
+        return server
     }
 }
