@@ -136,7 +136,7 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
     }
     
     public func stopWatching() throws {
-        try stream.stopWatching()
+        stream.stopWatching()
     }
 }
 

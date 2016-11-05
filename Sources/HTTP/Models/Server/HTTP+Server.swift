@@ -69,8 +69,6 @@ public final class Server<
         let serializer = Serializer(stream: stream)
 
         try stream.startWatching(on: queue) {
-            [weak self] in
-            guard let welf = self else { return }
             do {
                 let request = try parser.parse()
                 let response = try responder.respond(to: request)
