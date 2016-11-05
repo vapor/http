@@ -1,5 +1,6 @@
 import Core
 import Transport
+import Dispatch
 @testable import SMTP
 
 let username = "user"
@@ -30,6 +31,10 @@ private let SMTPReplies: [String: String] = [
 ]
 
 final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
+
+    enum Error: Swift.Error {
+        case notSupported
+    }
 
     public var peerAddress: String {
         return "\(host):\(port)"
@@ -101,5 +106,13 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
     
     func connect() throws -> Transport.Stream {
         return self
+    }
+
+    func startWatching(on queue: DispatchQueue, handler: @escaping () -> ()) throws {
+        throw Error.notSupported
+    }
+    
+    func stopWatching() throws {
+        throw Error.notSupported
     }
 }
