@@ -54,7 +54,8 @@ public final class Server<
             guard let welf = self else { return }
             do {
                 let stream = try welf.server.accept()
-                try welf.respond(stream: stream, responder: responder, errors: errors)
+                let bufferedStream = StreamBuffer(stream)
+                try welf.respond(stream: bufferedStream, responder: responder, errors: errors)
             } catch {
                 errors(.accept(error))
             }
@@ -62,13 +63,13 @@ public final class Server<
     }
 
     private func respond(stream: Stream, responder: Responder, errors: @escaping ServerErrorHandler) throws {
-        let stream = StreamBuffer(stream)
-        try stream.setTimeout(30)
-
         let parser = Parser(stream: stream)
         let serializer = Serializer(stream: stream)
 
+        // await data on `stream`
         try stream.startWatching(on: queue) {
+            // stream, parser and serializer are retained by the closure.
+            // when the stream is closed, watching stops and the closure is released.
             do {
                 let request = try parser.parse()
                 let response = try responder.respond(to: request)
@@ -78,8 +79,6 @@ public final class Server<
                     try stream.close()
                 }
             } catch ParserError.streamEmpty {
-                // if stream is empty, it's time to
-                // close the connection
                 try? stream.close()
             } catch {
                 errors(.respond(error))
