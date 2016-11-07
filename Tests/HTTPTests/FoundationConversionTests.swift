@@ -1,5 +1,7 @@
 import XCTest
 import URI
+import Foundation
+
 @testable import HTTP
 
 class HTTPConversionTests: XCTestCase {
