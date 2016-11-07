@@ -10,7 +10,7 @@ import Core
 */
 class FauxStream: Transport.Stream {
     func setTimeout(_ timeout: Double) throws {
-        fatalError("\(#function) not implemented")
+        print("Faux stream does not support setting timeout. It is a dummy class to allow URLSession to work")
     }
 
     var closed: Bool {
@@ -31,11 +31,11 @@ class FauxStream: Transport.Stream {
     }
 
     func receive(max: Int) throws -> Bytes {
-        fatalError("\(#function) not implemented")
+        fatalError("Faux stream does not support receiving. It is a dummy class to allow URLSession to work")
     }
 
     func receive() throws -> Byte? {
-        fatalError("\(#function) not implemented")
+        fatalError("Faux stream does not support receiving. It is a dummy class to allow URLSession to work")
     }
 
     var peerAddress: String {
@@ -62,7 +62,7 @@ public final class FoundationClient: ClientProtocol {
         port: Int = 80,
         securityLayer: SecurityLayer = .none,
         middleware: [Middleware] = []
-        ) throws {
+    ) throws {
         self.scheme = scheme
         self.host = host
         self.port = port
