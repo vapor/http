@@ -3,6 +3,14 @@ import URI
 @testable import HTTP
 
 class HTTPConversionTests: XCTestCase {
+    static let allTests = [
+        ("testUriToUrlConversion", testUriToUrlConversion),
+        ("testUrlToUriConversion", testUrlToUriConversion),
+        ("testRequestToUrlRequestConversion", testRequestToUrlRequestConversion),
+        ("testUrlRequestToRequestConversion", testUrlRequestToRequestConversion),
+        ("testFoundationClient", testFoundationClient),
+    ]
+
     func testUriToUrlConversion() throws {
         let expectation = "https://google.com:443/search?foo=bar#frag"
         let uri = try URI(expectation)
@@ -35,5 +43,63 @@ class HTTPConversionTests: XCTestCase {
 
         XCTAssertEqual(url.absoluteString, expectation)
         XCTAssertEqual(uri.description, expectation)
+    }
+
+    func testRequestToUrlRequestConversion() throws {
+        let body = Body("hello".bytes)
+        let request = try Request(method: .get, uri: "http://google.com:80", headers: ["foo": "bar"], body: body)
+        let urlRequest = try request.makeFoundationRequest()
+
+        XCTAssertEqual(try request.uri.makeFoundationURL(), urlRequest.url)
+
+        var requestHeaders = [String: String]()
+        request.headers.forEach { key, val in requestHeaders[key.description] = val }
+        XCTAssertEqual(requestHeaders, urlRequest.allHTTPHeaderFields ?? [:])
+
+        let foundationBody = try urlRequest.httpBody?.makeBytes()
+        XCTAssertNotNil(foundationBody)
+        let requestBody = request.body.bytes
+        XCTAssertNotNil(requestBody)
+
+        XCTAssertEqual(foundationBody ?? [], requestBody ?? [])
+    }
+
+    func testUrlRequestToRequestConversion() throws {
+        let uri = try URI("http://google.com:80")
+        let url = try uri.makeFoundationURL()
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.addValue("bar", forHTTPHeaderField: "foo")
+        urlRequest.httpBody = Data(bytes: "hello".bytes)
+
+        let request = try urlRequest.makeRequest()
+
+        XCTAssertEqual(try request.uri.makeFoundationURL(), urlRequest.url)
+
+        let foundationBody = try urlRequest.httpBody?.makeBytes()
+        XCTAssertNotNil(foundationBody)
+        let requestBody = request.body.bytes
+        XCTAssertNotNil(requestBody)
+
+        XCTAssertEqual(foundationBody ?? [], requestBody ?? [])
+    }
+
+    func testFoundationClient() throws {
+        let response = try FoundationClient.get("https://httpbin.org/html")
+
+        let expectation = "Herman Melville - Moby-Dick"
+        let contained = response.body.bytes?.string.contains(expectation) ?? false
+        XCTAssertTrue(contained)
+
+        var headersExpectation: [HeaderKey: String] = [:]
+        headersExpectation["access-control-allow-credentials"] = "true"
+        headersExpectation["Content-Type"] = "text/html; charset=utf-8"
+        headersExpectation["Content-Length"] = "3741"
+        headersExpectation["Server"] = "nginx"
+        headersExpectation["Access-Control-Allow-Origin"] = "*"
+        headersExpectation.forEach { key, expectedValue in
+            let found = response.headers[key]
+            XCTAssertEqual(found, expectedValue)
+        }
     }
 }

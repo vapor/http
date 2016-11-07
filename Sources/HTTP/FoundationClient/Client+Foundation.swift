@@ -1,6 +1,8 @@
 import Transport
 import Foundation
 import URI
+import Core
+
 //public enum ClientError: Swift.Error {
 //    case invalidRequestHost
 //    case invalidRequestScheme
@@ -17,19 +19,20 @@ class FauxStream: Transport.Stream {
     }
 
     var closed: Bool {
-        fatalError("\(#function) not implemented")
+        print("\(#function) not implemented")
+        return false
     }
 
     func close() throws {
-        fatalError("\(#function) not implemented")
+        print("\(#function) not implemented")
     }
 
     func send(_ bytes: Bytes) throws {
-        fatalError("\(#function) not implemented")
+        print("\(#function) not implemented")
     }
 
     func flush() throws {
-        fatalError("\(#function) not implemented")
+        print("\(#function) not implemented")
     }
 
     func receive(max: Int) throws -> Bytes {
@@ -46,19 +49,14 @@ class FauxStream: Transport.Stream {
     /// E.g. a IPv4 stream will have the concatination of the IP address
     /// and port: "10.0.0.130:63394"
     var peerAddress: String {
-        fatalError("\(#function) not implemented")
+        return "\(#function) not implemented"
     }
 }
 
-extension Request {
-//    func makeFoundationRequest() throws -> URLRequest {
-//        let urlReq = URLRequest(url: <#T##URL#>)
-//
-//        return urlReq
-//    }
-}
-
 public final class FoundationClient: ClientProtocol {
+    enum ResponderError: Error {
+        case clientDeallocated
+    }
 
     public let scheme: String
     public let host: String
@@ -85,34 +83,25 @@ public final class FoundationClient: ClientProtocol {
         self.securityLayer = securityLayer
         self.middleware = type(of: self).defaultMiddleware + middleware
 
-//        let client = try ClientStreamType(host: host, port: port, securityLayer: securityLayer)
-//        let stream = try client.connect()
-//        self.stream = stream
-
+        let session = URLSession(configuration: .default)
         let handler = Request.Handler { request in
-            /*
-             A client MUST send a Host header field in all HTTP/1.1 request
-             messages.  If the target URI includes an authority component, then a
-             client MUST send a field-value for Host that is identical to that
-             authority component, excluding any userinfo subcomponent and its "@"
-             delimiter (Section 2.7.1).  If the authority component is missing or
-             undefined for the target URI, then a client MUST send a Host header
-             field with an empty field-value.
-             */
-            request.headers["Host"] = host
-            request.headers["User-Agent"] = "App (Swift) VaporEngine/\(VERSION)"
+            return try Portal.open { portal in
+                let foundationRequest = try request.makeFoundationRequest()
+                let task = session.dataTask(with: foundationRequest) { data, urlResponse, error in
+                    if let error = error {
+                        portal.close(with: error)
+                        return
+                    }
 
-//            let buffer = StreamBuffer(stream)
-//            let serializer = SerializerType(stream: buffer)
-//            try serializer.serialize(request)
-//
-//            let parser = ParserType(stream: buffer)
-//            let response = try parser.parse()
-//
-//            try buffer.flush()
-
-//            return response
-            fatalError("\(#file):\(#line)")
+                    do {
+                        let response = try Response(urlResponse: urlResponse, data: data)
+                        portal.close(with: response)
+                    } catch {
+                        portal.close(with: error)
+                    }
+                }
+                task.resume()
+            }
         }
 
         // add middleware
@@ -125,8 +114,6 @@ public final class FoundationClient: ClientProtocol {
 
     public func respond(to request: Request) throws -> Response {
         try assertValid(request)
-        guard !stream.closed else { throw ClientError.unableToConnect }
-
         return try responder.respond(to: request)
     }
 
