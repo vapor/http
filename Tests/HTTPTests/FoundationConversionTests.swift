@@ -4,7 +4,7 @@ import Foundation
 
 @testable import HTTP
 
-class HTTPConversionTests: XCTestCase {
+class FoundationConversionTests: XCTestCase {
     static let allTests = [
         ("testUriToUrlConversion", testUriToUrlConversion),
         ("testUrlToUriConversion", testUrlToUriConversion),
