@@ -1,8 +1,6 @@
 import URI
 import Foundation
 
-
-
 extension Response {
     enum ConversionError: Error {
         case invalidResponseType

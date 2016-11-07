@@ -88,8 +88,10 @@ public final class Client<
 
         return try responder.respond(to: request)
     }
+}
 
-    private func assertValid(_ request: Request) throws {
+extension ClientProtocol {
+    internal func assertValid(_ request: Request) throws {
         if request.uri.host.isEmpty {
             guard request.uri.host == host else {
                 throw ClientError.invalidRequestHost
@@ -108,10 +110,10 @@ public final class Client<
 
         guard request.uri.userInfo == nil else {
             /*
-                 Userinfo (i.e., username and password) are now disallowed in HTTP and
-                 HTTPS URIs, because of security issues related to their transmission
-                 on the wire.  (Section 2.7.1)
-            */
+             Userinfo (i.e., username and password) are now disallowed in HTTP and
+             HTTPS URIs, because of security issues related to their transmission
+             on the wire.  (Section 2.7.1)
+             */
             throw ClientError.userInfoNotAllowedOnHTTP
         }
     }
