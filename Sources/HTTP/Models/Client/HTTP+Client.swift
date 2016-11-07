@@ -88,8 +88,10 @@ public final class Client<
 
         return try responder.respond(to: request)
     }
+}
 
-    private func assertValid(_ request: Request) throws {
+extension ClientProtocol {
+    internal func assertValid(_ request: Request) throws {
         if request.uri.host.isEmpty {
             guard request.uri.host == host else {
                 throw ClientError.invalidRequestHost

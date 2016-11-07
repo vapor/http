@@ -24,6 +24,7 @@ XCTMain([
     testCase(HTTPRequestTests.allTests),
     testCase(HTTPResponseTests.allTests),
     testCase(HTTPVersionTests.allTests),
+    testCase(FoundationConversionTests.allTests),
 
     // WebSocketsTestSuite
     testCase(WebSocketSerializationTests.allTests),
