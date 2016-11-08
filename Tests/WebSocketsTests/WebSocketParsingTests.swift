@@ -336,10 +336,6 @@ class WebSocketKeyTests: XCTestCase {
 
 final class TestStream: Transport.Stream {
     
-    enum Error: Swift.Error {
-        case notSupported
-    }
-
     var peerAddress: String = "1.2.3.4:5678"
 
     var closed: Bool
@@ -386,13 +382,5 @@ final class TestStream: Transport.Stream {
         buffer.removeFirst(max)
         
         return Bytes(data)
-    }
-
-    func startWatching(on queue: DispatchQueue, handler: @escaping () -> ()) throws {
-        throw Error.notSupported
-    }
-    
-    func stopWatching() throws {
-        throw Error.notSupported
     }
 }

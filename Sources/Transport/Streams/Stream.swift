@@ -1,4 +1,5 @@
 import Core
+import Dispatch
 
 public enum StreamError: Error {
     case unsupported
@@ -26,6 +27,16 @@ public protocol Stream: class, Watchable {
     /// E.g. a IPv4 stream will have the concatination of the IP address
     /// and port: "10.0.0.130:63394"
     var peerAddress: String { get }
+}
+
+extension Stream {
+    public func startWatching(on queue: DispatchQueue, handler: @escaping () -> ()) throws {
+        throw StreamError.unsupported
+    }
+    
+    public func stopWatching() throws {
+        throw StreamError.unsupported
+    }
 }
 
 extension Stream {

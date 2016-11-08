@@ -1,7 +1,6 @@
 #if !os(Linux)
     import Core
     import Foundation
-    import Dispatch
 
     public class FoundationStream: NSObject, Stream, ClientStream, Foundation.StreamDelegate {
         
@@ -98,14 +97,6 @@
 
         public func stream(_ aStream: Foundation.Stream, handle eventCode: Foundation.Stream.Event) {
             if eventCode.contains(.endEncountered) { _ = try? close() }
-        }
-
-        public func startWatching(on queue: DispatchQueue, handler: @escaping () -> ()) throws {
-            throw Error.notSupported
-        }
-
-        public func stopWatching() throws {
-            throw Error.notSupported
         }
     }
 
