@@ -3,7 +3,6 @@ import XCTest
 
 import Core
 import Transport
-import Dispatch
 
 class StreamBufferTests: XCTestCase {
     static let allTests = [

@@ -1,6 +1,5 @@
 import Core
 import Transport
-import Dispatch
 @testable import SMTP
 
 let username = "user"
