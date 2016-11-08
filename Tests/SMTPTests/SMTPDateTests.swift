@@ -21,10 +21,14 @@ class SMTPDateTests: XCTestCase {
     ]
 
     func testSMTPDate() {
-        let date = Date(timeIntervalSince1970: 0)
+        // Create date from components to ensure it's January 1st 1970 00:00:00 in the _local_ calendar (because that's what this test expects)
+        var dateComponents = DateComponents()
+        dateComponents.year = 1970
+        let date = Calendar.current.date(from: dateComponents)!
+
         let smtpFormatted = date.smtpFormatted
-        XCTAssert(smtpFormatted.hasPrefix("Wed, 31 Dec 1969 "))
-        let suffix = smtpFormatted.components(separatedBy: "Wed, 31 Dec 1969 ").last ?? ""
+        XCTAssert(smtpFormatted.hasPrefix("Thu, 1 Jan 1970 00:00:00 "))
+        let suffix = smtpFormatted.components(separatedBy: "Thu, 1 Jan 1970 ").last ?? ""
         let timeComps = suffix.components(separatedBy: " ")
         XCTAssert(timeComps.count == 2)
 
