@@ -18,31 +18,31 @@ class SockStreamTests: XCTestCase {
 
     func testTCPInternetSocket() throws {
         // from SocksExampleTCPClient
-        let stream = try TCPProgramStream(host: "google.com", port: 80)
+        let stream = try TCPProgramStream(host: "httpbin.org", port: 80)
         let sock = stream.stream
         //try sock.setTimeout(10)
         try sock.connect()
-        try sock.send("GET /\r\n\r\n".bytes)
+        try sock.send("GET /html\r\n\r\n".bytes)
         try sock.flush()
         let received = try sock.receive(max: 2048)
         try sock.close()
 
         // Receiving the raw google homepage
-        XCTAssert(received.string.contains("Search the world's information"))
+        XCTAssert(received.string.contains("Herman Melville - Moby-Dick"))
     }
 
     func testDirect() throws {
-        let address = InternetAddress(hostname: "google.com", port: 80)
+        let address = InternetAddress(hostname: "httpbin.org", port: 80)
 
         do {
             let socket = try TCPInternetSocket(address: address)
             try socket.connect()
-            try socket.send(data: "GET /\r\n\r\n".toBytes())
+            try socket.send(data: "GET /html\r\n\r\n".toBytes())
             let received = try socket.recv()
             let str = try received.toString()
             try socket.close()
 
-            XCTAssert(str.contains("Search the world's information"))
+            XCTAssert(str.contains("Herman Melville - Moby-Dick"))
         } catch {
             XCTFail("Error: \(error)")
         }
@@ -97,21 +97,21 @@ class SockStreamTests: XCTestCase {
     func testFoundationStream() throws {
         #if !os(Linux)
             // will default to underlying FoundationStream for TLS.
-            let clientStream = try FoundationStream(host: "google.com", port: 443, securityLayer: .tls(nil))
+            let clientStream = try FoundationStream(host: "httpbin.org", port: 443, securityLayer: .tls(nil))
             let connection = try clientStream.connect()
             XCTAssert(!connection.closed)
             do {
                 try connection.setTimeout(30)
                 XCTFail("Foundation stream should throw on timeout set")
             } catch {}
-            try connection.send("GET / \r\n\r\n".bytes)
+            try connection.send("GET /html\r\n\r\n".bytes)
             try connection.flush()
             let received = try connection.receive(max: 2048)
             try connection.close()
 
             XCTAssert(connection.closed)
             // Receiving the raw google homepage
-            XCTAssert(received.string.contains("Search the world's information"))
+            XCTAssert(received.string.contains("Herman Melville - Moby-Dick"))
         #endif
     }
 
