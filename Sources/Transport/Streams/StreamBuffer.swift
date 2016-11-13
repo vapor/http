@@ -1,4 +1,5 @@
 import Core
+import Dispatch
 
 /**
     Buffers receive and send calls to a Stream.
@@ -9,7 +10,7 @@ import Core
     Send calls are buffered until `flush()` is called.
 */
 public final class StreamBuffer: Stream {
-    
+
     public var peerAddress: String {
         return stream.peerAddress
     }
@@ -71,5 +72,13 @@ public final class StreamBuffer: Stream {
         try stream.send(sendBuffer)
         try stream.flush()
         sendBuffer = []
+    }
+    
+    public func startWatching(on queue: DispatchQueue, handler: @escaping () -> ()) throws {
+        try stream.startWatching(on: queue, handler: handler)
+    }
+    
+    public func stopWatching() throws {
+        try stream.stopWatching()
     }
 }
