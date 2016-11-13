@@ -34,3 +34,9 @@ extension ServerProtocol {
         return server
     }
 }
+
+extension ServerProtocol {
+    func startAsync(responder: Responder, errors: @escaping ServerErrorHandler) throws {
+        throw ServerError.notSupported
+    }
+}
