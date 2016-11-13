@@ -3,6 +3,7 @@ import XCTest
 
 import Core
 import SocksCore
+import Dispatch
 @testable import Transport
 
 class SockStreamTests: XCTestCase {
@@ -18,31 +19,31 @@ class SockStreamTests: XCTestCase {
 
     func testTCPInternetSocket() throws {
         // from SocksExampleTCPClient
-        let stream = try TCPProgramStream(host: "google.com", port: 80)
+        let stream = try TCPProgramStream(host: "httpbin.org", port: 80)
         let sock = stream.stream
         //try sock.setTimeout(10)
         try sock.connect()
-        try sock.send("GET /\r\n\r\n".bytes)
+        try sock.send("GET /html\r\n\r\n".bytes)
         try sock.flush()
         let received = try sock.receive(max: 2048)
         try sock.close()
 
         // Receiving the raw google homepage
-        XCTAssert(received.string.contains("Search the world's information"))
+        XCTAssert(received.string.contains("Herman Melville - Moby-Dick"))
     }
 
     func testDirect() throws {
-        let address = InternetAddress(hostname: "google.com", port: 80)
+        let address = InternetAddress(hostname: "httpbin.org", port: 80)
 
         do {
             let socket = try TCPInternetSocket(address: address)
             try socket.connect()
-            try socket.send(data: "GET /\r\n\r\n".toBytes())
+            try socket.send(data: "GET /html\r\n\r\n".toBytes())
             let received = try socket.recv()
             let str = try received.toString()
             try socket.close()
 
-            XCTAssert(str.contains("Search the world's information"))
+            XCTAssert(str.contains("Herman Melville - Moby-Dick"))
         } catch {
             XCTFail("Error: \(error)")
         }
@@ -62,6 +63,56 @@ class SockStreamTests: XCTestCase {
             _ = try sock.receive(max: 2048)
             XCTFail("should throw -- not connected")
         } catch {}
+    }
+
+    func testTCPServerStreamNonblocking() throws {
+        let host = "0.0.0.0"
+        let data = "Hello, World!".bytes
+        let backgroundQueue = DispatchQueue.global(qos: .background)
+        let serverStream = try TCPServerStream(host: host, port: 0)
+        let group = DispatchGroup()
+        group.enter()
+        try serverStream.startWatching(on: backgroundQueue) {
+            do {
+                let client = try serverStream.accept()
+                try client.startWatching(on: backgroundQueue) {
+                    do {
+                        let receivedData = try client.receive(max: 2048)
+                        XCTAssertEqual(receivedData, data)
+                        try client.send(data)
+                        group.leave()
+                    } catch {
+                        XCTFail("Error: \(error)")
+                    }
+                }
+            } catch {
+                XCTFail("Error: \(error)")
+            }
+        }
+        let automaticallyAssignedServerAddress = try serverStream.stream.localAddress()
+        let hostingPort = automaticallyAssignedServerAddress.port
+        
+        let clientStream = try TCPClientStream(host: host, port: Int(hostingPort)).connect()
+        group.enter()
+        try clientStream.startWatching(on: backgroundQueue) {
+            do {
+                let receivedData = try clientStream.receive(max: 2048)
+                XCTAssertEqual(receivedData, data)
+                group.leave()
+            } catch {
+                XCTFail("Error: \(error)")
+            }
+        }
+        try clientStream.send(data)
+        
+        
+        let result = group.wait(timeout: .now() + .seconds(100))
+        try serverStream.stopWatching()
+        try clientStream.stopWatching()
+        guard result == DispatchTimeoutResult.success else {
+            XCTFail("Test timed out waiting")
+            return
+        }
     }
 
     func testTCPServer() throws {
@@ -97,21 +148,21 @@ class SockStreamTests: XCTestCase {
     func testFoundationStream() throws {
         #if !os(Linux)
             // will default to underlying FoundationStream for TLS.
-            let clientStream = try FoundationStream(host: "google.com", port: 443, securityLayer: .tls(nil))
+            let clientStream = try FoundationStream(host: "httpbin.org", port: 443, securityLayer: .tls(nil))
             let connection = try clientStream.connect()
             XCTAssert(!connection.closed)
             do {
                 try connection.setTimeout(30)
                 XCTFail("Foundation stream should throw on timeout set")
             } catch {}
-            try connection.send("GET / \r\n\r\n".bytes)
+            try connection.send("GET /html\r\n\r\n".bytes)
             try connection.flush()
             let received = try connection.receive(max: 2048)
             try connection.close()
 
             XCTAssert(connection.closed)
             // Receiving the raw google homepage
-            XCTAssert(received.string.contains("Search the world's information"))
+            XCTAssert(received.string.contains("Herman Melville - Moby-Dick"))
         #endif
     }
 
