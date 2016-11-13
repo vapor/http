@@ -67,6 +67,33 @@ class HTTPMiddlewareTests: XCTestCase {
         // added headers to the response
         XCTAssertEqual(response.headers["bar"], "baz")
     }
+
+    func testServerAsync() throws {
+        let foo = FooMiddleware()
+        
+        // create a basic server that returns
+        // request headers
+        let server = try BasicServer(host: "0.0.0.0", port: 8080, securityLayer: .none, middleware: [foo])
+        let responder = Request.Handler({ request in
+            return request.headers.description.makeResponse()
+        })
+        
+        // start the server asynchronously
+        try server.startAsync(responder: responder, errors: { error in })
+        
+        // create a basic client and query the server
+        let client = try BasicClient(scheme: "http", host: "0.0.0.0", port: 8080, securityLayer: .none, middleware: [])
+        let response = try client.request(.get, path: "/foo")
+        
+        // test to make sure basic server saw the
+        // header the middleware added
+        XCTAssert(response.body.bytes?.string.contains("foo") == true)
+        XCTAssert(response.body.bytes?.string.contains("bar") == true)
+        
+        // test to make sure the middleware
+        // added headers to the response
+        XCTAssertEqual(response.headers["bar"], "baz")
+    }
 }
 
 class FooMiddleware: Middleware {
