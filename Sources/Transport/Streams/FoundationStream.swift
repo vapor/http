@@ -14,7 +14,6 @@
             case unableToCompleteWriteOperation
             case unableToConnectToHost
             case unableToUpgradeToSSL
-            case notSupported
         }
 
         public func setTimeout(_ timeout: Double) throws {
