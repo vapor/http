@@ -13,7 +13,7 @@ extension ServerProtocol {
         securityLayer: SecurityLayer = .none,
         responder: Responder,
         errors: @escaping ServerErrorHandler
-        ) throws {
+    ) throws {
         let server = try make(host: host, port: port, securityLayer: securityLayer)
         let responder = responder
         let errors = errors
@@ -26,7 +26,7 @@ extension ServerProtocol {
         securityLayer: SecurityLayer = .none,
         responder: Responder,
         errors: @escaping ServerErrorHandler
-        ) throws -> Self {
+    ) throws -> Self {
         let server = try make(host: host, port: port, securityLayer: securityLayer)
         let responder = responder
         let errors = errors
