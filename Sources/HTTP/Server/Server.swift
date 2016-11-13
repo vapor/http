@@ -35,8 +35,12 @@ extension ServerProtocol {
     }
 }
 
+public enum NotSupported: Swift.Error {
+    case unimplemented(String)
+}
+
 extension ServerProtocol {
     public func startAsync(responder: Responder, errors: @escaping ServerErrorHandler) throws {
-        throw ServerError.notSupported
+        throw ServerError.respond(NotSupported.unimplemented(#function))
     }
 }
