@@ -80,4 +80,31 @@ class HTTPBodyTests: XCTestCase {
             XCTFail("\(error)")
         }
     }
+
+    func testClientStreamUsageAsync() throws {
+        let server = try HTTP.Server<TCPServerStream, Parser<Request>, Serializer<Response>>(host: "0.0.0.0", port: 8637, securityLayer: .none)
+        
+        struct HelloResponder: HTTP.Responder {
+            func respond(to request: Request) throws -> Response {
+                return Response(body: "Hello".bytes)
+            }
+        }
+        
+        try server.startAsync(responder: HelloResponder(), errors: { err in
+            XCTFail("\(err)")
+        })
+        
+        let factor = 1000 * 1000
+        let microseconds = 1 * Double(factor)
+        usleep(useconds_t(microseconds))
+        
+        do {
+            for _ in 0..<8192 {
+                let res = try HTTP.Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://0.0.0.0:8637/")
+                XCTAssertEqual(res.body.bytes ?? [], "Hello".bytes)
+            }
+        } catch {
+            XCTFail("\(error)")
+        }
+    }
 }
