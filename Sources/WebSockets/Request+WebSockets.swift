@@ -15,7 +15,7 @@ extension Request {
         guard headers.upgrade == "websocket" else {
             throw WebSocket.FormatError.missingUpgradeHeader
         }
-        guard headers.connection?.range(of: "Upgrade") != nil else {
+        guard headers.connection?.range(of: "upgrade", options: .caseInsensitive) != nil else {
             throw WebSocket.FormatError.missingConnectionHeader
         }
 
