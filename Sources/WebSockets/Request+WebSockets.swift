@@ -15,7 +15,7 @@ extension Request {
         guard headers.upgrade?.caseInsensitiveCompare("websocket") == .orderedSame else {
             throw WebSocket.FormatError.missingUpgradeHeader
         }
-        guard headers.connection?.range(of: "upgrade", options: .caseInsensitive) != nil else {
+        guard headers.connection?.caseInsensitiveCompare("upgrade") == .orderedSame else {
             throw WebSocket.FormatError.missingConnectionHeader
         }
 
