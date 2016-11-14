@@ -12,10 +12,10 @@ extension Request {
         guard let requestKey = headers.secWebSocketKey else {
             throw WebSocket.FormatError.missingSecKeyHeader
         }
-        guard headers.upgrade?.caseInsensitiveCompare("websocket") == .orderedSame else {
+        guard headers.upgrade?.lowercased() == "websocket" else {
             throw WebSocket.FormatError.missingUpgradeHeader
         }
-        guard headers.connection?.caseInsensitiveCompare("upgrade") == .orderedSame else {
+        guard headers.connection?.lowercased() == "upgrade" else {
             throw WebSocket.FormatError.missingConnectionHeader
         }
 
