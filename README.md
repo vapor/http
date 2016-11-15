@@ -9,11 +9,15 @@
 
 Engine is a collection of low level transport protocols implemented in pure Swift intended for use in server side and client side applications. It is used as the core transport layer in [Vapor](https://github.com/qutheory/github).
 
-## Linux Ready
+## 🐧 Linux Ready
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
 
-## Quick Start
+## 📦 Examples
+
+Check out the HTTP, SMTP, and WebSockets examples in `Sources/`. You can clone this repository and run them on your computer.
+
+## 📘 Overview
 
 ### HTTP.Client
 
@@ -118,7 +122,7 @@ try client.send(email, using: credentials)
 
 > Emails using the Gmail client are blocked by default unless you enable access for less-secure apps in your Gmail account settings: https://support.google.com/accounts/answer/6010255?hl=en-GB
 
-## Architecture
+## 🏛 Architecture
 
 ### HTTP.Server
 
