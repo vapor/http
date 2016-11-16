@@ -49,6 +49,7 @@ extension DateFormatter {
     */
     static func makeSMTPFormatter() -> DateFormatter {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en-US")
         formatter.dateFormat = "EEE, d MMM yyyy HH:mm:ss ZZZ"
         return formatter
     }

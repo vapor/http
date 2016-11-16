@@ -6,5 +6,4 @@ public enum ServerError: Swift.Error {
     case respond(Swift.Error)
     case dispatch(Swift.Error)
     case unknown(Swift.Error)
-    case notSupported
 }
