@@ -9,7 +9,7 @@ import Dispatch
  
     Send calls are buffered until `flush()` is called.
 */
-public final class StreamBuffer: Stream {
+public final class StreamBuffer: Stream, Equatable {
 
     public var peerAddress: String {
         return stream.peerAddress
@@ -80,5 +80,9 @@ public final class StreamBuffer: Stream {
     
     public func stopWatching() throws {
         try stream.stopWatching()
+    }
+    
+    public static func ==(lhs: StreamBuffer, rhs: StreamBuffer) -> Bool {
+        return lhs === rhs
     }
 }
