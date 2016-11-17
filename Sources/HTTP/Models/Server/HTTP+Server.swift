@@ -46,7 +46,7 @@ public final class Server<
     }
 
     deinit {
-        for stream in streams {
+        streams.forEach { stream in
             try? stream.close()
         }
     }

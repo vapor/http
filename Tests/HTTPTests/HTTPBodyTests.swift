@@ -2,12 +2,14 @@ import XCTest
 @testable import HTTP
 import Transport
 import libc
+import SocksCore
 
 class HTTPBodyTests: XCTestCase {
     static var allTests = [
         ("testBufferParse", testBufferParse),
         ("testChunkedParse", testChunkedParse),
         ("testClientStreamUsage", testClientStreamUsage),
+//        ("testReleasingServer", testReleasingServer),
     ]
 
     func testBufferParse() throws {
@@ -111,4 +113,61 @@ class HTTPBodyTests: XCTestCase {
             XCTFail("\(error)")
         }
     }
+    
+    
+//    /**
+//      Tests if `Server` is properly deallocated and its sockets closed
+//      Not enabled because testing sometimes fails because sockets are not forcibly closed (shutdown?)
+//    */
+//    func testReleasingServer() throws {
+//        typealias ServerType = HTTP.Server<TCPServerStream, Parser<Request>, Serializer<Response>>
+//        let port = 8642
+//        let socket = try TCPClientStream(host: "0.0.0.0", port: port).stream
+//        var server:ServerType? = try ServerType(host: "0.0.0.0", port: port, securityLayer: .none)
+//
+//        struct HelloResponder: HTTP.Responder {
+//            func respond(to request: Request) throws -> Response {
+//                return Response(body: "Hello".bytes)
+//            }
+//        }
+//        
+//        try server?.startAsync(responder: HelloResponder(), errors: { err in
+//            XCTFail("\(err)")
+//        })
+//        
+//        let res = try HTTP.Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://0.0.0.0:\(port)/")
+//        XCTAssertEqual(res.body.bytes ?? [], "Hello".bytes)
+//        
+//        _ = try socket.connect()
+//        
+//        try socket.send("Hello")
+//
+//        weak var weakServer = server
+//        server = nil
+//        // `Server` should be released
+//        XCTAssertNil(weakServer)
+//        
+//        // existing connections should be unable to send data
+//        do {
+//            try socket.send("Hello again")
+//            XCTFail("Expected to throw")
+//        } catch let error as StreamError {
+//            guard case StreamError.send(_, let socksError as SocksError) = error, case ErrorReason.sendFailedToSendAllBytes = socksError.type else {
+//                XCTFail("Unexpected Error: \(error)")
+//                return
+//            }
+//        }
+//        try socket.close()
+//        
+//        // new connections should fail
+//        do {
+//            _ = try HTTP.Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://0.0.0.0:\(port)/")
+//            XCTFail("Expected to throw")
+//        } catch let error as SocksError {
+//            guard case ErrorReason.connectFailed = error.type else {
+//                XCTFail("Unexpected SocksError: \(error)")
+//                return
+//            }
+//        }
+//    }
 }

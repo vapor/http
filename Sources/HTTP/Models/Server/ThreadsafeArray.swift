@@ -1,16 +1,14 @@
 import Dispatch
 
-internal class ThreadsafeArray<T:Equatable> : Sequence {
+internal class ThreadsafeArray<T:Equatable> {
     typealias ArrayType = Array<T>
     private var elements = ArrayType()
     private let queue = DispatchQueue(label: "codes.vapor.threadsafearray", attributes: .concurrent)
     
-    public func makeIterator() -> ArrayType.Iterator {
-        var iterator: ArrayType.Iterator!
-        queue.sync {
-            iterator = elements.makeIterator()
+    public func forEach(_ body: (T) throws -> Void) rethrows {
+        try queue.sync {
+            try elements.forEach(body)
         }
-        return iterator
     }
     
     public func append(_ element: T) {
