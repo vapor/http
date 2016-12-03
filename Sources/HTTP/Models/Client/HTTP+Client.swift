@@ -28,9 +28,9 @@ public final class Client<
     public let securityLayer: SecurityLayer
     public let middleware: [Middleware]
 
-    public let stream: Stream
+    public private(set) var stream: Stream
 
-    private let responder: Responder
+    public private(set) var responder: Responder!
 
     public init(
         scheme: String,
@@ -46,10 +46,10 @@ public final class Client<
         self.middleware = type(of: self).defaultMiddleware + middleware
 
         let client = try ClientStreamType(host: host, port: port, securityLayer: securityLayer)
-        let stream = try client.connect()
+        var stream = try client.connect()
         self.stream = stream
 
-        let handler = Request.Handler { request in
+        let handler = Request.Handler { [weak self] request in
             /*
                 A client MUST send a Host header field in all HTTP/1.1 request
                 messages.  If the target URI includes an authority component, then a
@@ -61,17 +61,34 @@ public final class Client<
             */
             request.headers["Host"] = host
             request.headers["User-Agent"] = "App (Swift) VaporEngine/\(VERSION)"
-
-            let buffer = StreamBuffer(stream)
-            let serializer = SerializerType(stream: buffer)
-            try serializer.serialize(request)
-
-            let parser = ParserType(stream: buffer)
-            let response = try parser.parse()
-
-            try buffer.flush()
-
-            return response
+            
+            let performRequest = { () -> Response in
+                let buffer = StreamBuffer(stream)
+                let serializer = SerializerType(stream: buffer)
+                try serializer.serialize(request)
+                
+                let parser = ParserType(stream: buffer)
+                let response = try parser.parse()
+                
+                try buffer.flush()
+                
+                return response
+            }
+            
+            do {
+                return try performRequest()
+            }
+            catch ParserError.streamEmpty {
+                // Try once more with a new connection
+                let client = try ClientStreamType(host: host, port: port, securityLayer: securityLayer)
+                stream = try client.connect()
+                self?.stream = stream
+                
+                return try performRequest()
+            }
+            catch {
+                throw error
+            }
         }
 
         // add middleware
