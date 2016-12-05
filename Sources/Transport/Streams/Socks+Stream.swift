@@ -113,6 +113,10 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
         try stream.listen(queueLimit: 4096)
     }
 
+    deinit {
+        try? stream.close()
+    }
+
     public func accept() throws -> Stream {
         switch securityLayer {
         case .none:
