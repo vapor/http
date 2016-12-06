@@ -7,8 +7,6 @@
 import Transport
 import Dispatch
 
-private let queue = DispatchQueue.global(qos: .userInteractive)
-
 public typealias BasicServer = Server<TCPServerStream, Parser<Request>, Serializer<Response>>
 
 public final class Server<
@@ -21,6 +19,8 @@ public final class Server<
  {
 
     let server: ServerStreamType
+    private let queue = DispatchQueue(label: "codes.vapor.server", qos: .userInteractive, attributes: .concurrent)
+    private let streams = ThreadsafeArray<StreamBuffer>()
 
     public let host: String
     public let port: Int
@@ -42,6 +42,12 @@ public final class Server<
             server = try ServerStreamType(host: host, port: port, securityLayer: securityLayer)
         } catch {
             throw ServerError.bind(host: host, port:port, error)
+        }
+    }
+
+    deinit {
+        streams.forEach { stream in
+            try? stream.close()
         }
     }
 
@@ -112,19 +118,20 @@ public final class Server<
             do {
                 let stream = try welf.server.accept()
                 let bufferedStream = StreamBuffer(stream)
+                welf.streams.append(bufferedStream)
                 try welf.respondAsync(stream: bufferedStream, responder: responder, errors: errors)
             } catch {
                 errors(.accept(error))
             }
         }
     }
-    
-    private func respondAsync(stream: Stream, responder: Responder, errors: @escaping ServerErrorHandler) throws {
+
+    private func respondAsync(stream: StreamBuffer, responder: Responder, errors: @escaping ServerErrorHandler) throws {
         let parser = Parser(stream: stream)
         let serializer = Serializer(stream: stream)
         
         // await data on `stream`
-        try stream.startWatching(on: queue) {
+        try stream.startWatching(on: queue) { [weak self] in
             // stream, parser and serializer are retained by the closure.
             // when the stream is closed, watching stops and the closure is released.
             do {
@@ -133,14 +140,21 @@ public final class Server<
                 try serializer.serialize(response)
                 try response.onComplete?(stream)
                 if !request.keepAlive {
+                    self?.streams.remove(stream)
                     try stream.close()
                 }
             } catch ParserError.streamEmpty {
+                self?.streams.remove(stream)
+                try? stream.close()
+            } catch is StreamError {
+                // if there's a problem with the stream, there's no point in keeping it open.
+                // reporting the error is not necessary here; there are various legitimate
+                // reasons for socket connections to be broken.
+                self?.streams.remove(stream)
                 try? stream.close()
             } catch {
                 errors(.respond(error))
             }
         }
     }
-
 }
