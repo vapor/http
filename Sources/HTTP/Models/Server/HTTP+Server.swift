@@ -146,12 +146,13 @@ public final class Server<
             } catch ParserError.streamEmpty {
                 self?.streams.remove(stream)
                 try? stream.close()
-            } catch is StreamError {
+            } catch let error where error is StreamError {
                 // if there's a problem with the stream, there's no point in keeping it open.
-                // reporting the error is not necessary here; there are various legitimate
-                // reasons for socket connections to be broken.
                 self?.streams.remove(stream)
                 try? stream.close()
+                // reporting the error is not strictly necessary here (there are  legitimate
+                // reasons for socket connections to be broken), but helpful for debugging.
+                errors(.respond(error))
             } catch {
                 errors(.respond(error))
             }
