@@ -13,6 +13,9 @@ public final class FrameParser {
     }
 
     public func acceptFrame() throws -> WebSocket.Frame {
+        // convert the stream back to blocking
+        try stream.stopWatching()
+
         let (fin, rsv1, rsv2, rsv3, opCode) = try extractByteZero()
         let (isMasked, payloadLengthInfo) = try extractByteOne()
 
