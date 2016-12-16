@@ -54,18 +54,26 @@ class StreamBufferTests: XCTestCase {
     }
 
     func testStreamBufferFlushes() throws {
-        try streamBuffer.send(1)
-        try streamBuffer.flush()
-        XCTAssert(testStream.flushedCount == 1, "should have flushed")
+        do {
+            try streamBuffer.send(1)
+            try streamBuffer.flush()
+            XCTAssert(testStream.flushedCount == 1, "should have flushed")
+        } catch {
+            XCTFail(error.localizedDescription)
+        }
     }
 
     func testStreamBufferMisc() throws {
-        try streamBuffer.close()
-        XCTAssert(testStream.closed, "stream buffer should close underlying stream")
-        XCTAssert(streamBuffer.closed, "stream buffer should reflect closed status of underlying stream")
+        do {
+            try streamBuffer.close()
+            XCTAssert(testStream.closed, "stream buffer should close underlying stream")
+            XCTAssert(streamBuffer.closed, "stream buffer should reflect closed status of underlying stream")
 
-        try streamBuffer.setTimeout(42)
-        XCTAssert(testStream.timeout == 42, "stream buffer should set underlying timeout")
+            try streamBuffer.setTimeout(42)
+            XCTAssert(testStream.timeout == 42, "stream buffer should set underlying timeout")
+        } catch {
+            XCTFail(error.localizedDescription)
+        }
     }
 }
 
