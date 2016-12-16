@@ -48,127 +48,127 @@ extension HeaderKey {
   // Common HTTP Header Request keys
   //
 
-  static public var Accept: HeaderKey {
+  static public var accept: HeaderKey {
     return HeaderKey("Accept")
   }
 
-  static public var AcceptCharset: HeaderKey {
+  static public var acceptCharset: HeaderKey {
     return HeaderKey("Accept-Charset")
   }
 
-  static public var AccepteEncoding: HeaderKey {
+  static public var acceptEncoding: HeaderKey {
     return HeaderKey("Accept-Encoding")
   }
 
-  static public var AcceptLanguage: HeaderKey {
+  static public var acceptLanguage: HeaderKey {
     return HeaderKey("Accept-Language")
   }
 
-  static public var Authorization: HeaderKey {
+  static public var authorization: HeaderKey {
     return HeaderKey("Authorization")
   }
 
-  static public var CacheControl: HeaderKey {
+  static public var cacheControl: HeaderKey {
     return HeaderKey("Cache-Control")
   }
 
-  static public var Connection: HeaderKey {
+  static public var connection: HeaderKey {
     return HeaderKey("Connection")
   }
 
-  static public var Cookie: HeaderKey {
+  static public var cookie: HeaderKey {
     return HeaderKey("Cookie")
   }
 
-  static public var ContentLength: HeaderKey {
+  static public var contentLength: HeaderKey {
     return HeaderKey("Content-Length")
   }
 
-  static public var ContentType: HeaderKey {
+  static public var contentType: HeaderKey {
     return HeaderKey("Content-Type")
   }
 
-  static public var Date: HeaderKey {
+  static public var date: HeaderKey {
     return HeaderKey("Date")
   }
 
-  static public var Expect: HeaderKey {
+  static public var expect: HeaderKey {
     return HeaderKey("Expect")
   }
 
-  static public var Forwarded: HeaderKey {
+  static public var forwarded: HeaderKey {
     return HeaderKey("Forwarded")
   }
 
-  static public var From: HeaderKey {
+  static public var from: HeaderKey {
     return HeaderKey("From")
   }
 
-  static public var Host: HeaderKey {
+  static public var host: HeaderKey {
     return HeaderKey("Host")
   }
 
-  static public var IfMatch: HeaderKey {
+  static public var ifMatch: HeaderKey {
     return HeaderKey("If-Match")
   }
 
-  static public var IfModifiedSince: HeaderKey {
+  static public var ifModifiedSince: HeaderKey {
     return HeaderKey("If-Modified-Since")
   }
 
-  static public var IfNoneMatch: HeaderKey {
+  static public var ifNoneMatch: HeaderKey {
     return HeaderKey("If-None-Match")
   }
 
-  static public var IfRange: HeaderKey {
+  static public var ifRange: HeaderKey {
     return HeaderKey("If-Range")
   }
 
-  static public var IfUnmodifiedSince: HeaderKey {
+  static public var ifUnmodifiedSince: HeaderKey {
     return HeaderKey("If-Unmodified-Since")
   }
 
-  static public var MaxForwards: HeaderKey {
+  static public var maxForwards: HeaderKey {
     return HeaderKey("Max-Forwards")
   }
 
-  static public var Origin: HeaderKey {
+  static public var origin: HeaderKey {
     return HeaderKey("Origin")
   }
 
-  static public var Pragma: HeaderKey {
+  static public var pragma: HeaderKey {
     return HeaderKey("Pragma")
   }
 
-  static public var ProxyAuthorization: HeaderKey {
+  static public var proxyAuthorization: HeaderKey {
     return HeaderKey("Proxy-Authorization")
   }
 
-  static public var Range: HeaderKey {
+  static public var range: HeaderKey {
     return HeaderKey("Range")
   }
 
-  static public var Referrer: HeaderKey {
+  static public var referrer: HeaderKey {
     return HeaderKey("Referer")
   }
 
-  static public var TE: HeaderKey {
+  static public var transferCodingExceptions: HeaderKey {
     return HeaderKey("TE")
   }
 
-  static public var UserAgent: HeaderKey {
+  static public var userAgent: HeaderKey {
     return HeaderKey("User-Agent")
   }
 
-  static public var Upgrade: HeaderKey {
+  static public var upgrade: HeaderKey {
     return HeaderKey("Upgrade")
   }
 
-  static public var Via: HeaderKey {
+  static public var via: HeaderKey {
     return HeaderKey("Via")
   }
 
-  static public var Warning: HeaderKey {
+  static public var warning: HeaderKey {
     return HeaderKey("Warning")
   }
 
@@ -176,107 +176,107 @@ extension HeaderKey {
   // Common HTTP Header Response keys
   //
 
-  static public var AcceptPatch: HeaderKey {
+  static public var acceptPatch: HeaderKey {
     return HeaderKey("Accept-Patch")
   }
 
-  static public var AcceptRanges: HeaderKey {
+  static public var acceptRanges: HeaderKey {
     return HeaderKey("Accept-Ranges")
   }
 
-  static public var Age: HeaderKey {
+  static public var age: HeaderKey {
     return HeaderKey("Age")
   }
 
-  static public var Allow: HeaderKey {
+  static public var allow: HeaderKey {
     return HeaderKey("Allow")
   }
 
-  static public var AlternativeServices: HeaderKey {
+  static public var alternativeServices: HeaderKey {
     return HeaderKey("Alt-Svc")
   }
 
-  static public var ContentDisposition: HeaderKey {
+  static public var contentDisposition: HeaderKey {
     return HeaderKey("Content-Disposition")
   }
 
-  static public var ContentEncoding: HeaderKey {
+  static public var contentEncoding: HeaderKey {
     return HeaderKey("Content-Encoding")
   }
 
-  static public var ContentLanguage: HeaderKey {
+  static public var contentLanguage: HeaderKey {
     return HeaderKey("Content-Language")
   }
 
-  static public var ContentLocation: HeaderKey {
+  static public var contentLocation: HeaderKey {
     return HeaderKey("Content-Location")
   }
 
-  static public var ContentRange: HeaderKey {
+  static public var contentRange: HeaderKey {
     return HeaderKey("Content-Range")
   }
 
-  static public var Etag: HeaderKey {
+  static public var etag: HeaderKey {
     return HeaderKey("Etag")
   }
 
-  static public var Expires: HeaderKey {
+  static public var expires: HeaderKey {
     return HeaderKey("Expires")
   }
 
-  static public var LastModified: HeaderKey {
+  static public var lastModified: HeaderKey {
     return HeaderKey("Last-Modified")
   }
 
-  static public var Link: HeaderKey {
+  static public var link: HeaderKey {
     return HeaderKey("Link")
   }
 
-  static public var Location: HeaderKey {
+  static public var location: HeaderKey {
     return HeaderKey("Location")
   }
 
-  static public var ProxyAuthenticate: HeaderKey {
+  static public var proxyAuthenticate: HeaderKey {
     return HeaderKey("Proxy-Authenticate")
   }
 
-  static public var PublicKeyPins: HeaderKey {
+  static public var publicKeyPins: HeaderKey {
     return HeaderKey("Public-Key-Pins")
   }
 
-  static public var RetryAfter: HeaderKey {
+  static public var retryAfter: HeaderKey {
     return HeaderKey("Retry-After")
   }
 
-  static public var Server: HeaderKey {
+  static public var server: HeaderKey {
     return HeaderKey("Server")
   }
 
-  static public var SetCookie: HeaderKey {
+  static public var setCookie: HeaderKey {
     return HeaderKey("Set-Cookie")
   }
 
-  static public var StrictTransportSecurity: HeaderKey {
+  static public var strictTransportSecurity: HeaderKey {
     return HeaderKey("Strict-Transport-Security")
   }
 
-  static public var Trailer: HeaderKey {
+  static public var trailer: HeaderKey {
     return HeaderKey("Trailer")
   }
 
-  static public var TransferEncoding: HeaderKey {
+  static public var transferEncoding: HeaderKey {
     return HeaderKey("Transfer-Encoding")
   }
 
-  static public var TrackingStatusValue: HeaderKey {
+  static public var trackingStatusValue: HeaderKey {
     return HeaderKey("TSV")
   }
 
-  static public var Vary: HeaderKey {
+  static public var vary: HeaderKey {
     return HeaderKey("Vary")
   }
 
-  static public var WWWAuthenticate: HeaderKey {
+  static public var wwwAuthenticate: HeaderKey {
     return HeaderKey("WWW-Authenticate")
   }
 }
