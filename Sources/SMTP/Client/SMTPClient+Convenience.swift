@@ -21,4 +21,14 @@ extension SMTPClient {
     public static func makeGmailClient() throws -> SMTPClient {
         return try SMTPClient(host: "smtp.gmail.com", port: 465, securityLayer: .tls(nil))
     }
+    
+    /*
+     https://mailgun.com/
+     
+     Credentials:
+     https://mailgun.com/app/domains
+     */
+    public static func makeMailgunClient() throws -> SMTPClient {
+        return try SMTPClient(host: "smtp.mailgun.org", port: 465, securityLayer: .tls(nil))
+    }
 }
