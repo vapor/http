@@ -152,7 +152,7 @@ public final class Server<
                 try? stream.close()
                 // reporting the error is not strictly necessary here (there are  legitimate
                 // reasons for socket connections to be broken), but helpful for debugging.
-                errors(.respond(error))
+                // errors(.respond(error))
             } catch {
                 errors(.respond(error))
             }
