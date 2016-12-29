@@ -115,11 +115,11 @@ extension WebSocket {
             do {
                 let frame = try parser.acceptFrame()
                 try received(frame)
-            } catch {
+            } catch { // IGNORE THIS error for now
                 // TODO: Throw for application to catch
                 // or pass logger
                 // Log.error("WebSocket Failed w/ error: \(error)")
-                try completeCloseHandshake(statusCode: nil, reason: nil, cleanly: false)
+                // try completeCloseHandshake(statusCode: nil, reason: nil, cleanly: false)
             }
         }
     }
@@ -242,7 +242,7 @@ extension WebSocket {
             payload += status.bytes()
         }
         if let reason = reason {
-            payload += reason.toBytes()
+            payload += reason.bytes
         }
 
         let header = Frame.Header(
