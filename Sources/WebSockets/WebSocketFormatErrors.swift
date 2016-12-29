@@ -1,3 +1,5 @@
+import HTTP
+
 extension WebSocket {
     public enum FormatError: Swift.Error {
         case missingSecKeyHeader
@@ -7,6 +9,6 @@ extension WebSocket {
         case missingConnectionHeader
         case invalidURI
         case invalidOrUnsupportedVersion
-        case invalidOrUnsupportedStatus
+        case invalidOrUnsupportedStatus(Status)
     }
 }

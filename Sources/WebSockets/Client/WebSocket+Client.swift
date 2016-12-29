@@ -4,10 +4,6 @@ import Transport
 import URI
 import HTTP
 
-public enum ResponseError: Swift.Error {
-    case status(Status)
-}
-
 extension WebSocket {
     public static func background(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
         let uri = try URI(uri)
@@ -54,7 +50,7 @@ extension WebSocket {
         )
         let response = try client.respond(to: request)
 
-        guard response.status == .switchingProtocols else { throw ResponseError.status(response.status) }
+        guard response.status == .switchingProtocols else { throw FormatError.invalidOrUnsupportedStatus(response.status) }
         // Don't need to check version in server response
         guard response.headers.connection?.lowercased() == "upgrade" else { throw FormatError.missingConnectionHeader }
         guard response.headers.upgrade?.lowercased() == "websocket" else { throw FormatError.missingUpgradeHeader }
