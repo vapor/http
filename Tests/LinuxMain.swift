@@ -29,6 +29,7 @@ XCTMain([
     // WebSocketsTestSuite
     testCase(WebSocketSerializationTests.allTests),
     testCase(WebSocketKeyTests.allTests),
+    testCase(WebSocketConnectTests.allTests),
 
     // SMTPTestSuite
     testCase(EmailAddressTests.allTests),

@@ -336,6 +336,12 @@ class WebSocketKeyTests: XCTestCase {
 
 class WebSocketConnectTests : XCTestCase {
 
+    static var allTests: [(String, (WebSocketKeyTests) -> () throws -> Void)] {
+        return [
+            ("testBackgroundConnect", testBackgroundConnect)
+        ]
+    }
+
    func testBackgroundConnect() throws {
       
 	let headers: [HeaderKey: String] = ["Authorized": "Bearer exampleBearer"]
