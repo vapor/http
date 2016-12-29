@@ -65,7 +65,8 @@ class SockStreamTests: XCTestCase {
         } catch {}
     }
 
-/*    func testTCPServerStreamNonblocking() throws {
+    func testTCPServerStreamNonblocking() throws {
+#if os(Linux)
         let host = "0.0.0.0"
         let data = "Hello, World!".bytes
         let backgroundQueue = DispatchQueue.global(qos: .background)
@@ -113,7 +114,9 @@ class SockStreamTests: XCTestCase {
             XCTFail("Test timed out waiting")
             return
         }
-    } */
+#endif
+    } 
+
 
     func testTCPServer() throws {
         let serverStream = try TCPServerStream(host: "0.0.0.0", port: 2653)
