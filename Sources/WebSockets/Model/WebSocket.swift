@@ -115,11 +115,13 @@ extension WebSocket {
             do {
                 let frame = try parser.acceptFrame()
                 try received(frame)
-            } catch {
+            } catch { 
                 // TODO: Throw for application to catch
                 // or pass logger
                 // Log.error("WebSocket Failed w/ error: \(error)")
-                try completeCloseHandshake(statusCode: nil, reason: nil, cleanly: false)
+		// It is wrong to close the socket on this error, so the following is commented out
+		// until the final answer about how to handle the exception is resolved
+                // try completeCloseHandshake(statusCode: nil, reason: nil, cleanly: false)
             }
         }
     }
@@ -187,7 +189,7 @@ extension WebSocket {
             statusCode = UInt16(statusCodeBytes)
             statusCodeData = statusCodeBytes
             // stringify remaining bytes -- if there are any
-            reason = statusCodeBytes.dropFirst(2).string
+            reason = payload.dropFirst(2).string
         }
 
         switch  state {
@@ -237,6 +239,14 @@ extension WebSocket {
         guard state == .open else { return }
         state = .closing
 
+        var payload: Bytes = []
+        if let status = statusCode {
+            payload += status.bytes()
+        }
+        if let reason = reason {
+            payload += reason.bytes
+        }
+
         let header = Frame.Header(
             fin: true,
             rsv1: false,
@@ -244,7 +254,7 @@ extension WebSocket {
             rsv3: false,
             opCode: .connectionClose,
             isMasked: mode.maskOutgoingMessages,
-            payloadLength: 0,
+            payloadLength: UInt64(payload.count),
             maskingKey: mode.makeKey()
         )
 
@@ -254,14 +264,6 @@ extension WebSocket {
             throw Error.invalidPingFormat
         }
         
-        var payload: Bytes = []
-        if let status = statusCode {
-            payload += status.bytes()
-        }
-        if let reason = reason {
-            payload += reason.toBytes()
-        }
-
         let msg = Frame(header: header, payload: payload)
         try send(msg)
     }
