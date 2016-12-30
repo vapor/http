@@ -334,6 +334,27 @@ class WebSocketKeyTests: XCTestCase {
     }
 }
 
+class WebSocketConnectTests : XCTestCase {
+
+    static var allTests: [(String, (WebSocketConnectTests) -> () throws -> Void)] {
+        return [
+            ("testBackgroundConnect", testBackgroundConnect)
+        ]
+    }
+ 
+   func testBackgroundConnect() throws {
+      
+	let headers: [HeaderKey: String] = ["Authorized": "Bearer exampleBearer"]
+	do {
+	   let client = try WebSocket.background(to:"ws:127.0.0.1", headers: headers) { (websocket: WebSocket) throws -> Void in
+                    XCTAssert(false, "No server, so this should fail to connect")
+		    }
+	} catch {
+	    XCTAssert(true, "Expected to throw an error when there is no server available")
+	}
+    }
+}
+
 final class TestStream: Transport.Stream {
     
     var peerAddress: String = "1.2.3.4:5678"
