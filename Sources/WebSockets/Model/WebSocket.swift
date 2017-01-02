@@ -115,8 +115,8 @@ extension WebSocket {
             do {
                 let frame = try parser.acceptFrame()
                 try received(frame)
-            } catch { 
-                // TODO: Throw for application to catch
+            } catch let error {
+                 print("Error in websocket.loop(): \(error)")// TODO: Throw for application to catch
                 // or pass logger
                 // Log.error("WebSocket Failed w/ error: \(error)")
 		// It is wrong to close the socket on this error, so the following is commented out
