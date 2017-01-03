@@ -115,13 +115,10 @@ extension WebSocket {
             do {
                 let frame = try parser.acceptFrame()
                 try received(frame)
-            } catch { 
-                // TODO: Throw for application to catch
-                // or pass logger
-                // Log.error("WebSocket Failed w/ error: \(error)")
-		// It is wrong to close the socket on this error, so the following is commented out
-		// until the final answer about how to handle the exception is resolved
-                // try completeCloseHandshake(statusCode: nil, reason: nil, cleanly: false)
+            } catch {
+                if
+                    case let StreamError.receive(_, recError as SocksError) = error, recError.number == 35  { continue }
+                try completeCloseHandshake(statusCode: nil, reason: nil, cleanly: false)
             }
         }
     }
