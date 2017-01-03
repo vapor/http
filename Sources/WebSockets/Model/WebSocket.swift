@@ -1,5 +1,6 @@
-import struct Core.Bytes
-import protocol Transport.Stream
+import Transport
+import Socks
+import SocksCore
 
 public final class WebSocket {
 
