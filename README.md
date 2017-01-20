@@ -102,6 +102,8 @@ try server.start(responder: MyResponder()) { error in
 
 ```Swift
 import SMTP
+import Foundation
+import Transport
 
 let credentials = SMTPCredentials(
     user: "server-admin-login",
