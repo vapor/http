@@ -3,7 +3,7 @@ import Foundation
 // Public extension so that this can be used anywhere to easily perform operations on the URI query
 //    ie: The LoginRedirectMiddleware and adding the cameFrom key/value to the URI
 public extension URI {
-    /** 
+    /**
      Adds a new query to the uri with the specified key/value
 
      - Parameters:
@@ -25,10 +25,56 @@ public extension URI {
         if (q.characters.count > 0) {
             q += "&\(newQuery)"
             query = q
-        // Otherwise, go ahead and make the query the new query
+            // Otherwise, go ahead and make the query the new query
         } else {
             query = newQuery
         }
+    }
+    
+    /**
+     Sets a new value for the query with the specified key
+
+     - Parameters:
+     - key: The query key
+     - value: The query value
+     */
+    mutating func editQuery(withKey key: String, newValue value: String? = nil) {
+        var editedQuery: String = key
+        // Escape the value and add it to the newQuery
+        if let value = value?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+            editedQuery += "=\(value)"
+        }
+        // Get the existing query. If it doesn't exist, just set the query
+        guard let q = query else {
+            query = editedQuery
+            return
+        }
+        var queryString = ""
+        // Iterate over the queries
+        for _query in q.components(separatedBy: "&") {
+            // Split the query into key/value
+            let components = _query.components(separatedBy: "=")
+            // Continue if there is no key for some reason (There should ALWAYS be a key, so I doubt this will ever happen)
+            guard let queryKey = components.first else {
+                continue
+            }
+            // If we have a query with specified key, change it to the editedQuery
+            if (queryKey == key) {
+                queryString += "\(editedQuery)&"
+            // Otherwise, just put it back in
+            } else {
+                queryString += "\(_query)&"
+            }
+        }
+        if (queryString.characters.count > 0) {
+            // If the last character is an ampersand, remove it
+            let lastChar = queryString.substring(from: queryString.index(before: queryString.endIndex))
+            if (lastChar == "&") {
+                queryString = queryString.substring(to: queryString.index(before: queryString.endIndex))
+            }
+        }
+        // Set the query
+        self.query = queryString
     }
 
     /**
@@ -55,10 +101,12 @@ public extension URI {
                 queryString += "\(_query)&"
             }
         }
-        // If the last character is an ampersand, remove it
-        let lastChar = queryString.substring(from: queryString.index(before: queryString.endIndex))
-        if (lastChar == "&") {
-            queryString = queryString.substring(to: queryString.index(before: queryString.endIndex))
+        if (queryString.characters.count > 0) {
+            // If the last character is an ampersand, remove it
+            let lastChar = queryString.substring(from: queryString.index(before: queryString.endIndex))
+            if (lastChar == "&") {
+                queryString = queryString.substring(to: queryString.index(before: queryString.endIndex))
+            }
         }
         // Set the query
         self.query = queryString
