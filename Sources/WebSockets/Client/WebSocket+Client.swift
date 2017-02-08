@@ -74,7 +74,7 @@ extension WebSocket {
         MUST be selected randomly for each connection.
     */
     static func makeRequestKey() -> String {
-        return makeRequestKeyBytes().base64String
+        return makeRequestKeyBytes().base64Encoded.string
     }
 
     private static func makeRequestKeyBytes() -> Bytes {

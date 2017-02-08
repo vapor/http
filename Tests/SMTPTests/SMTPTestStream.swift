@@ -7,17 +7,17 @@ let password = "****"
 let baduser = "bad-user"
 let badpass = "bad-pass"
 
-let plainLogin = "\0\(username)\0\(password)".bytes.base64String
+let plainLogin = "\0\(username)\0\(password)".bytes.base64Encoded.string
 
 let greeting = "220 smtp.gmail.com at your service"
 let ehloResponse = "250-smtp.sendgrid.net\r\n250-8BITMIME\r\n250-SIZE 31457280\r\n250-AUTH PLAIN LOGIN\r\n250 AUTH=PLAIN LOGIN"
 
 private let SMTPReplies: [String: String] = [
-    "AUTH LOGIN\r\n": "334 " + "Username:".bytes.base64String,
-    username.bytes.base64String + "\r\n": "334 " + "Password:".bytes.base64String,
-    password.bytes.base64String + "\r\n": "235 passed",
-    baduser.bytes.base64String + "\r\n": "500 invalid username",
-    badpass.bytes.base64String + "\r\n": "500 invalid password",
+    "AUTH LOGIN\r\n": "334 " + "Username:".bytes.base64Encoded.string,
+    username.bytes.base64Encoded.string + "\r\n": "334 " + "Password:".bytes.base64Encoded.string,
+    password.bytes.base64Encoded.string + "\r\n": "235 passed",
+    baduser.bytes.base64Encoded.string + "\r\n": "500 invalid username",
+    badpass.bytes.base64Encoded.string + "\r\n": "500 invalid password",
     "AUTH PLAIN " + plainLogin + "\r\n": "235 passed",
     "TEST LINE" + "\r\n": "042 ok",
     "EHLO localhost" + "\r\n": ehloResponse,
