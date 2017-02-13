@@ -30,6 +30,6 @@ extension WebSocket {
     */
     public static func exchange(requestKey: String) throws -> String {
         let combination = requestKey.bytes.trimmed([.space]).array + hashKey
-        return try Hash.make(.sha1, combination).base64String
+        return try Hash.make(.sha1, combination).base64Encoded.string
     }
 }
