@@ -5,29 +5,29 @@ import URI
 import HTTP
 
 extension WebSocket {
-    public static func background(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
+    public static func background(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
         let uri = try URI(uri)
-        try background(to: uri, using: client, protocols: protocols, onConnect: onConnect)
+        try background(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
     }
 
-    public static func background(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
+    public static func background(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
         _ = try Core.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
-            _ = try? connect(to: uri, using: client, protocols: protocols, onConnect: onConnect)
+            _ = try? connect(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
         }
     }
 
-    public static func connect(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
+    public static func connect(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
         let uri = try URI(uri)
-        try connect(to: uri, using: client, protocols: protocols, onConnect: onConnect)
+        try connect(to: uri, using: client, protocols: protocols, headers: headers,  onConnect: onConnect)
     }
 
-    public static func connect(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
+    public static func connect(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
         guard !uri.host.isEmpty else { throw WebSocket.FormatError.invalidURI }
 
         let requestKey = WebSocket.makeRequestKey()
 
-        var headers = [HeaderKey: String]()
+        var headers = headers ?? [HeaderKey:String]()
         headers.secWebSocketKey = requestKey
         headers.connection = "Upgrade"
         headers.upgrade = "websocket"
@@ -50,10 +50,10 @@ extension WebSocket {
         )
         let response = try client.respond(to: request)
 
+        guard response.status == .switchingProtocols else { throw FormatError.invalidOrUnsupportedStatus(response.status) }
         // Don't need to check version in server response
         guard response.headers.connection?.lowercased() == "upgrade" else { throw FormatError.missingConnectionHeader }
         guard response.headers.upgrade?.lowercased() == "websocket" else { throw FormatError.missingUpgradeHeader }
-        guard case .switchingProtocols = response.status else { throw FormatError.invalidOrUnsupportedStatus }
         guard let accept = response.headers.secWebSocketAccept else { throw FormatError.missingSecAcceptHeader }
         let expected = try WebSocket.exchange(requestKey: requestKey)
         guard accept == expected else { throw FormatError.invalidSecAcceptHeader }
@@ -74,7 +74,7 @@ extension WebSocket {
         MUST be selected randomly for each connection.
     */
     static func makeRequestKey() -> String {
-        return makeRequestKeyBytes().base64String
+        return makeRequestKeyBytes().base64Encoded.string
     }
 
     private static func makeRequestKeyBytes() -> Bytes {

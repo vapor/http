@@ -33,6 +33,9 @@ public struct URI {
     // https://tools.ietf.org/html/rfc3986#section-3.5
     public let fragment: String?
 
+    // the same as query but without pre-processing percent encoding during parse
+    public let rawQuery: String?
+
     /**
         Designated URI initializer
     */
@@ -43,6 +46,7 @@ public struct URI {
         port: Int? = nil,
         path: String = "",
         query: String? = nil,
+        rawQuery: String? = nil,
         fragment: String? = nil
         ) {
         let scheme = scheme.lowercased()
@@ -52,6 +56,7 @@ public struct URI {
         self.port = port ?? URI.defaultPorts[scheme]
         self.path = path
         self.query = query
+        self.rawQuery = rawQuery
         self.fragment = fragment
     }
 }

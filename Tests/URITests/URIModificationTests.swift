@@ -10,6 +10,13 @@ import XCTest
 @testable import URI
 
 class URIModificationTests: XCTestCase {
+    static let allTests = [
+        ("testAppendPathComponent", testAppendPathComponent),
+        ("testRemovePathComponent", testRemovePathComponent),
+        ("testRemovingPath", testRemovingPath),
+        ("testLastPathComponent", testLastPathComponent),
+    ]
+
     func testAppendPathComponent() {
         var uri = try! URI("https://vapor.github.io/documentation/")
         XCTAssertEqual(uri.path, "/documentation/")
@@ -26,6 +33,7 @@ class URIModificationTests: XCTestCase {
         uri = uri.appendingPathComponent("", isDirectory: false)
         XCTAssertEqual(uri.path, "/documentation/foo/bar/baz/fizz//")
     }
+
     func testRemovePathComponent() {
         var uri = try! URI("https://vapor.github.io/documentation/foo/bar/baz")
         XCTAssertEqual(uri.path, "/documentation/foo/bar/baz")

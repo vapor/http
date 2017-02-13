@@ -14,7 +14,9 @@ XCTMain([
     testCase(TLSStreamTests.allTests),
 
     // URITestSuite
+    testCase(URIModificationTests.allTests),
     testCase(URISerializationTests.allTests),
+    testCase(URIQueryTests.allTests),
 
     // HTTPTestSuite
     testCase(HTTPBodyTests.allTests),
@@ -29,6 +31,7 @@ XCTMain([
     // WebSocketsTestSuite
     testCase(WebSocketSerializationTests.allTests),
     testCase(WebSocketKeyTests.allTests),
+    testCase(WebSocketConnectTests.allTests),
 
     // SMTPTestSuite
     testCase(EmailAddressTests.allTests),

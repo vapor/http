@@ -87,6 +87,7 @@ class HTTPBodyTests: XCTestCase {
     }
 
     func testClientStreamUsageAsync() throws {
+#if os(Linux)
         let server = try HTTP.Server<TCPServerStream, Parser<Request>, Serializer<Response>>(host: "0.0.0.0", port: 0, securityLayer: .none)
         let assignedPort = try server.server.stream.localAddress().port
 
@@ -112,7 +113,8 @@ class HTTPBodyTests: XCTestCase {
         } catch {
             XCTFail("\(error)")
         }
-    }
+#endif
+    } 
     
     
 //    /**
