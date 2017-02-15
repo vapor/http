@@ -14,30 +14,20 @@ let dependencies: [Package.Dependency] = [
 let package = Package(
     name: "Engine",
     targets: [
-        Target(
-            name: "URI"
-        ),
-        Target(
-            name: "Transport"
-        ),
-        Target(
-            name: "HTTP",
-            dependencies: [
+        Target(name: "URI"),
+        Target(name: "Transport"),
+        Target(name: "Cookies", dependencies: [
+            "HTTP"
+        ]),
+        Target(name: "HTTP", dependencies: [
               "URI", "Transport"
-            ]
-        ),
-        Target(
-            name: "WebSockets",
-            dependencies: [
-                "HTTP", "URI", "Transport"
-            ]
-        ),
-        Target(
-            name: "SMTP",
-            dependencies: [
-                "Transport"
-            ]
-        )
+        ]),
+        Target(name: "WebSockets", dependencies: [
+            "HTTP", "URI", "Transport"
+        ]),
+        Target(name: "SMTP", dependencies: [
+            "Transport"
+        ])
         /*
         Target(
             name: "HTTPExample",
