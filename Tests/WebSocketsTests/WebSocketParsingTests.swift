@@ -303,19 +303,6 @@ class WebSocketSerializationTests: XCTestCase {
         let serialized = serializer.serialize()
 
         XCTAssertEqual(serialized, bytes, caller)
-
-        if serialized != bytes {
-            print(bytes.prefix(4))
-            print(serialized.prefix(4))
-//            print("\n\(serialized.string)\n\n!=\n\n\(bytes.string)\n\n")
-            print("")
-
-            zip(serialized, bytes).enumerated().forEach { idx, pair in
-                guard pair.0 != pair.1 else { return }
-                print("Mismatch [ \(idx) ] - \(pair.0) != \(pair.1)")
-                print("")
-            }
-        }
     }
 }
 
