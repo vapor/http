@@ -68,7 +68,7 @@ class SockStreamTests: XCTestCase {
     func testTCPServerStreamNonblocking() throws {
 #if os(Linux)
         let host = "0.0.0.0"
-        let data = "Hello, World!".bytes
+        let data = "Hello, World!".makeBytes()
         let backgroundQueue = DispatchQueue.global(qos: .background)
         let serverStream = try TCPServerStream(host: host, port: 0)
         let group = DispatchGroup()
@@ -178,7 +178,7 @@ class SockStreamTests: XCTestCase {
             try connection.send([])
 
             do {
-                try connection.send("hi".bytes)
+                try connection.send("hi".makeBytes())
                 XCTFail("Foundation stream should throw on send not valid")
             } catch {}
 
