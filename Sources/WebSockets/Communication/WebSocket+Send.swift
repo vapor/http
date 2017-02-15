@@ -25,7 +25,7 @@ private let PayloadSplitSize = Int(64_000)
 
 extension WebSocket {
     public func send(_ text: String) throws {
-        let payload = text.bytes
+        let payload = text.makeBytes()
         try send(opCode: .text, with: payload)
     }
 

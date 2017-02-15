@@ -213,7 +213,7 @@ class URISerializationTests: XCTestCase {
     func testBadDecode() {
         let invalid = "Hello%2World" // invalid percent incoding
         do {
-            _ = try invalid.bytes.percentDecodedString()
+            _ = try invalid.makeBytes().percentDecodedString()
             XCTFail("Should throw")
         } catch {}
     }
@@ -253,17 +253,17 @@ class URISerializationTests: XCTestCase {
         XCTAssert(username.isEmpty)
         XCTAssertNil(auth)
 
-        let (justName, noAuth) = try parser.parse(userInfo: "hello".bytes)
+        let (justName, noAuth) = try parser.parse(userInfo: "hello".makeBytes())
         XCTAssert(justName.string == "hello")
         XCTAssertNil(noAuth)
 
-        let (existingName, existingAuth) = try parser.parse(userInfo: "hello:world".bytes)
+        let (existingName, existingAuth) = try parser.parse(userInfo: "hello:world".makeBytes())
         XCTAssert(existingName.string == "hello")
         XCTAssert(existingAuth?.string == "world")
     }
 
     func testEmptyScheme() throws {
-        let parser = URIParser(bytes: "http".bytes)
+        let parser = URIParser(bytes: "http".makeBytes())
         let scheme = try parser.parseScheme()
         XCTAssert(scheme.string == "http")
     }

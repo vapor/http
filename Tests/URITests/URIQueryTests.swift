@@ -11,9 +11,5 @@ class URIQueryTests: XCTestCase {
         let uri = try URI("http://example.com?fizz=bu%3Dzz%2Bzz&aaa=bb%2Bccc%26dd")
         XCTAssertEqual(uri.query, "fizz=bu=zz+zz&aaa=bb+ccc&dd")
         XCTAssertEqual(uri.rawQuery, "fizz=bu%3Dzz%2Bzz&aaa=bb%2Bccc%26dd")
-
-        let url = URL(string: "http://vapor.com/api/users/P%2BXCW4asdfa%2FOljlkH90/image?size=small&color=blue")!
-        print(url.path)
-        print("")
     }
 }

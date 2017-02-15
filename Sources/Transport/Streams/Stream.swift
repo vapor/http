@@ -92,7 +92,7 @@ extension Stream {
     }
 
     public func send(_ string: String) throws {
-        try send(string.bytes)
+        try send(string.makeBytes())
     }
 }
 

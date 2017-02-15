@@ -235,7 +235,6 @@ class WebSocketSerializationTests: XCTestCase {
         // 256 as two UInt8
         let twoFiftySix: [Byte] = [0x01, 0x00]
         let headerBytes: [Byte] = [0x82, 0x7E] + twoFiftySix
-
         let input = headerBytes + randomBinary
         let test = TestStream()
         try test.send(input)
@@ -299,10 +298,24 @@ class WebSocketSerializationTests: XCTestCase {
         assertSerialized(msg, equals: input)
     }
 
-    private func assertSerialized(_ frame: WebSocket.Frame, equals bytes: [Byte]) {
+    private func assertSerialized(_ frame: WebSocket.Frame, equals bytes: [Byte], caller: String = #function) {
         let serializer = FrameSerializer(frame)
         let serialized = serializer.serialize()
-        XCTAssert(serialized == bytes)
+
+        XCTAssertEqual(serialized, bytes, caller)
+
+        if serialized != bytes {
+            print(bytes.prefix(4))
+            print(serialized.prefix(4))
+//            print("\n\(serialized.string)\n\n!=\n\n\(bytes.string)\n\n")
+            print("")
+
+            zip(serialized, bytes).enumerated().forEach { idx, pair in
+                guard pair.0 != pair.1 else { return }
+                print("Mismatch [ \(idx) ] - \(pair.0) != \(pair.1)")
+                print("")
+            }
+        }
     }
 }
 

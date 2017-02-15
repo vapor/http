@@ -24,8 +24,8 @@ extension URLRequest {
         guard let url = url else { throw ConversionError.missingURI }
         let uri = url.makeURI()
         guard let httpMethod = httpMethod else { throw ConversionError.missingMethod }
-        let method = Method(uppercased: httpMethod.bytes)
-        let bytes = try httpBody?.makeBytes()
+        let method = Method(uppercased: httpMethod.makeBytes())
+        let bytes = httpBody?.makeBytes()
 
         var headers: [HeaderKey: String] = [:]
         allHTTPHeaderFields?.forEach { key, value in
