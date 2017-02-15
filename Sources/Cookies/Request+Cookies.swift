@@ -9,7 +9,7 @@ extension Request {
                 let cookies: Cookies
 
                 do {
-                    cookies = try Cookies(string.bytes, for: .request)
+                    cookies = try Cookies(string.makeBytes(), for: .request)
                 } catch {
                     print("Could not parse cookies: \(error)")
                     cookies = Cookies()

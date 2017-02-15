@@ -82,6 +82,6 @@ extension Cookie {
     }
 
     public init(_ string: String) throws {
-        try self.init(string.bytes)
+        try self.init(string.makeBytes())
     }
 }

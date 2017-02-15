@@ -6,6 +6,6 @@ extension Cookie: BytesConvertible {
     }
 
     public func makeBytes() -> Bytes {
-        return serialize().bytes
+        return serialize().makeBytes()
     }
 }

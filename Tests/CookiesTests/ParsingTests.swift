@@ -16,7 +16,7 @@ class ParsingTests: XCTestCase {
     ]
 
     func testBytes() throws {
-        let cookie = try Cookie(bytes: "hi=42".bytes)
+        let cookie = try Cookie(bytes: "hi=42".makeBytes())
         XCTAssertEqual(cookie.name, "hi")
         XCTAssertEqual(cookie.value, "42")
     }
@@ -68,7 +68,7 @@ class ParsingTests: XCTestCase {
     }
 
     func testMultiple() throws {
-        let cookies = try Cookies(bytes: "life=42;leet=1337".bytes)
+        let cookies = try Cookies(bytes: "life=42;leet=1337".makeBytes())
         XCTAssertEqual(cookies.cookies.count, 2)
         let result = try cookies.makeBytes().string
         XCTAssert(result.contains("life=42"))

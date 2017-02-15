@@ -27,7 +27,7 @@ class HTTPTests: XCTestCase {
     }
 
     func testRequestSerialize() throws {
-        let cookies = try Cookies("life=42;leet=1337".bytes, for: .request)
+        let cookies = try Cookies("life=42;leet=1337".makeBytes(), for: .request)
         let request = Request()
         request.cookies = cookies
         XCTAssertEqual(request.headers["cookie"], "leet=1337; life=42")
