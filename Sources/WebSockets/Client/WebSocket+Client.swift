@@ -11,7 +11,7 @@ extension WebSocket {
     }
 
     public static func background(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
-        _ = try Core.background {
+        Core.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
             _ = try? connect(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
         }

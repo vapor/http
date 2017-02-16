@@ -81,11 +81,11 @@ public final class FrameSerializer {
             return [primaryByte] // lengths < 126 don't need additional bytes
         } else if header.payloadLength < UInt16.max.toUIntMax() {
             primaryByte |= 126 // 126 flags that 2 bytes are required
-            let lengthBytes = UInt16(header.payloadLength).bytes()
+            let lengthBytes = UInt16(header.payloadLength).makeBytes()
             return [primaryByte] + lengthBytes
         } else {
             primaryByte |= 127 // 127 flags that 8 bytes are requred
-            return [primaryByte] + header.payloadLength.bytes() // UInt64 == 8 bytes natively
+            return [primaryByte] + header.payloadLength.makeBytes() // UInt64 == 8 bytes natively
         }
     }
 

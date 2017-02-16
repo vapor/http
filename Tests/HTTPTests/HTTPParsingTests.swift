@@ -26,7 +26,7 @@ class HTTPParsingTests: XCTestCase {
         data += "\r\n"
         data += content
 
-        try! stream.send(data.bytes)
+        try! stream.send(data.makeBytes())
 
 
         do {

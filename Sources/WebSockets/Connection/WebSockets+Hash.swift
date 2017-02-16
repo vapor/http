@@ -4,7 +4,7 @@ import Foundation
 
 extension WebSocket {
     // UUID defined here: https://tools.ietf.org/html/rfc6455#section-1.3
-    private static let hashKey = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".bytes
+    private static let hashKey = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".makeBytes()
 
     /*
          For this header field, the server has to take the value (as present
@@ -29,7 +29,7 @@ extension WebSocket {
          the |Sec-WebSocket-Accept| header field.
     */
     public static func exchange(requestKey: String) throws -> String {
-        let combination = requestKey.bytes.trimmed([.space]).array + hashKey
+        let combination = requestKey.makeBytes().trimmed([.space]).array + hashKey
         return try Hash.make(.sha1, combination).base64Encoded.string
     }
 }

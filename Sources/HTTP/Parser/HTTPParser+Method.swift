@@ -1,12 +1,12 @@
-private let GET = "GET".bytes
-private let POST = "POST".bytes
-private let PUT = "PUT".bytes
-private let PATCH = "PATCH".bytes
-private let DELETE = "DELETE".bytes
-private let OPTIONS = "OPTIONS".bytes
-private let HEAD = "HEAD".bytes
-private let CONNECT = "CONNECT".bytes
-private let TRACE = "TRACE".bytes
+private let GET = "GET".makeBytes()
+private let POST = "POST".makeBytes()
+private let PUT = "PUT".makeBytes()
+private let PATCH = "PATCH".makeBytes()
+private let DELETE = "DELETE".makeBytes()
+private let OPTIONS = "OPTIONS".makeBytes()
+private let HEAD = "HEAD".makeBytes()
+private let CONNECT = "CONNECT".makeBytes()
+private let TRACE = "TRACE".makeBytes()
 
 extension Method {
     init(uppercased method: Bytes) {

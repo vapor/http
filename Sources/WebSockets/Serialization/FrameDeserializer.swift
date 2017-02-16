@@ -80,13 +80,13 @@ public final class FrameParser {
     */
     private func extractTwoBytePayloadLengthExtension() throws -> UInt64 {
         let two = try stream.receive(max: 2)
-        return UInt64(two)
+        return UInt64(bytes: two)
     }
 
 
     private func extractEightBytePayloadLengthExtension() throws -> UInt64 {
         let eight = try stream.receive(max: 8)
-        return UInt64(eight)
+        return UInt64(bytes: eight)
     }
 
     private func extractMaskingKey() throws -> WebSocket.Frame.MaskingKey {
