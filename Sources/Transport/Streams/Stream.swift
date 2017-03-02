@@ -31,11 +31,11 @@ public protocol Stream: class, Watchable {
 
 extension Stream {
     public func startWatching(on queue: DispatchQueue, handler: @escaping () -> ()) throws {
-        throw StreamError.unsupported
+        // do nothing
     }
     
     public func stopWatching() throws {
-        throw StreamError.unsupported
+        // do nothing
     }
 }
 
