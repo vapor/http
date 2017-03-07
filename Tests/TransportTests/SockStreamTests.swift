@@ -149,7 +149,6 @@ class SockStreamTests: XCTestCase {
     }
 
     func testFoundationStream() throws {
-        #if !os(Linux)
             // will default to underlying FoundationStream for TLS.
             let clientStream = try FoundationStream(host: "httpbin.org", port: 443, securityLayer: .tls(nil))
             let connection = try clientStream.connect()
@@ -166,28 +165,7 @@ class SockStreamTests: XCTestCase {
             XCTAssert(connection.isClosed)
             // Receiving the raw google homepage
             XCTAssert(received.string.contains("Herman Melville - Moby-Dick"))
-        #endif
     }
-
-    /*func testFoundationThrows() throws {
-        #if !os(Linux)
-            // will default to underlying FoundationStream for TLS.
-            let clientStream = try FoundationStream(host: "nothere", port: 9999)
-            let connection = try clientStream.connect()
-            // should skip empty buffer
-            try connection.send([])
-
-            do {
-                try connection.send("hi".makeBytes())
-                XCTFail("Foundation stream should throw on send not valid")
-            } catch {}
-
-            do {
-                _ = try connection.receive(max: 2048)
-                XCTFail("Foundation stream should throw on send not valid")
-            } catch {}
-        #endif
-    }*/
 
     func testFoundationEventCode() throws {
         #if !os(Linux)
