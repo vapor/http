@@ -77,7 +77,7 @@ public final class Serializer<MessageProtocol: Message>: TransferSerializer {
         */
         try headers.forEach { field, value in
             let headerLine = "\(field): \(value)"
-            try stream.send(headerLine.bytes)
+            try stream.send(headerLine.makeBytes())
             try stream.send(crlf)
         }
 

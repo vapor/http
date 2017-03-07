@@ -95,10 +95,6 @@ public final class FoundationClient: ClientProtocol {
         self.session = session
     }
 
-    deinit {
-        try? stream.close()
-    }
-
     public func respond(to request: Request) throws -> Response {
         try assertValid(request)
         return try responder.respond(to: request)

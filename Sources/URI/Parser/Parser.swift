@@ -26,7 +26,7 @@ public final class URIParser: StaticDataBuffer {
         If host exists, and scheme exists, use those
     */
     public init(bytes: Bytes, existingHost: String? = nil) {
-        self.existingHost = existingHost?.bytes
+        self.existingHost = existingHost?.makeBytes()
         super.init(bytes: bytes)
     }
 

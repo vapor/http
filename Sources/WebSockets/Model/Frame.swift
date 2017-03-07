@@ -363,7 +363,7 @@ extension WebSocket.Frame {
             #endif
             assert(type(of: key) == UInt32.self)
 
-            let bytes = key.bytes()
+            let bytes = key.makeBytes()
             return .key(zero: bytes[0], one: bytes[1], two: bytes[2], three: bytes[3])
         }
     }
