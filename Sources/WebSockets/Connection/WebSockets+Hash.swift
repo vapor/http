@@ -1,4 +1,4 @@
-import Hash
+import Crypto
 import Core
 import Foundation
 
