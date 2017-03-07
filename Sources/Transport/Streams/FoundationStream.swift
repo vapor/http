@@ -1,4 +1,4 @@
-#if !os(Linux)
+
     import Core
     import Foundation
 
@@ -124,4 +124,3 @@
             }
         }
     }
-#endif
