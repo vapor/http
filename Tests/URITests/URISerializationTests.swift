@@ -286,9 +286,9 @@ class URISerializationTests: XCTestCase {
         let testPass = uri.userInfo?.info ?? ""
         XCTAssert(testUsername == username, "\(input) -- expected username: \(username) got: \(testUsername)")
         XCTAssert(testPass == pass, "\(input) -- expected password: \(pass), got: \(testPass)")
-        XCTAssert(uri.port == port, "\(input) -- expected port: \(port) got: \(uri.port)")
+        XCTAssert(uri.port == port, "\(input) -- expected port: \(port ?? 0) got: \(uri.port ?? 0)")
         XCTAssert(uri.path == path, "\(input) -- expected path: \(path) got: \(uri.path)")
-        XCTAssert(uri.query == query, "\(input) -- expected query: \(query) got: \(uri.query)")
-        XCTAssert(uri.fragment == fragment, "\(input) -- expected fragment: \(fragment) got: \(fragment)")
+        XCTAssert(uri.query == query, "\(input) -- expected query: \(query ?? "<>") got: \(uri.query ?? "<>")")
+        XCTAssert(uri.fragment == fragment, "\(input) -- expected fragment: \(fragment ?? "<>") got: \(fragment ?? "<>")")
     }
 }

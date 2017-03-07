@@ -20,7 +20,7 @@
             throw StreamError.unsupported
         }
 
-        public var closed: Bool {
+        public var isClosed: Bool {
             return input.closed
                 || output.closed
         }

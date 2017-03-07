@@ -105,7 +105,7 @@ public final class Server<
             let response = try responder.respond(to: request)
             try serializer.serialize(response)
             try response.onComplete?(stream)
-        } while keepAlive && !stream.closed
+        } while keepAlive && !stream.isClosed
     }
 
     public func startAsync(responder: Responder, errors: @escaping ServerErrorHandler) throws {
