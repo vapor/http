@@ -10,7 +10,7 @@ extension Response {
     convenience init(urlResponse: URLResponse?, data: Data?) throws {
         guard let httpResponse = urlResponse as? HTTPURLResponse else { throw ConversionError.invalidResponseType }
 
-        let body = try data?.makeBytes() ?? []
+        let body = data?.makeBytes() ?? []
         var headers: [HeaderKey: String] = [:]
         httpResponse.allHeaderFields.forEach { key, value in
             headers["\(key)"] = "\(value)"

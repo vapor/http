@@ -146,6 +146,17 @@ class URISerializationTests: XCTestCase {
                      path: "",
                      query: "fred",
                      fragment: nil)
+
+        try makeSure(input: "http://pokeapi.co/api/v2",
+                     existingHost: "existing-pokeapi.co",
+                     equalsScheme: "http",
+                     host: "pokeapi.co",
+                     username: "",
+                     pass: "",
+                     port: 80,
+                     path: "/api/v2",
+                     query: nil,
+                     fragment: nil)
     }
 
     func testPercentEncodedInsideParsing() throws {
@@ -202,7 +213,7 @@ class URISerializationTests: XCTestCase {
     func testBadDecode() {
         let invalid = "Hello%2World" // invalid percent incoding
         do {
-            _ = try invalid.bytes.percentDecodedString()
+            _ = try invalid.makeBytes().percentDecodedString()
             XCTFail("Should throw")
         } catch {}
     }
@@ -242,22 +253,23 @@ class URISerializationTests: XCTestCase {
         XCTAssert(username.isEmpty)
         XCTAssertNil(auth)
 
-        let (justName, noAuth) = try parser.parse(userInfo: "hello".bytes)
+        let (justName, noAuth) = try parser.parse(userInfo: "hello".makeBytes())
         XCTAssert(justName.string == "hello")
         XCTAssertNil(noAuth)
 
-        let (existingName, existingAuth) = try parser.parse(userInfo: "hello:world".bytes)
+        let (existingName, existingAuth) = try parser.parse(userInfo: "hello:world".makeBytes())
         XCTAssert(existingName.string == "hello")
         XCTAssert(existingAuth?.string == "world")
     }
 
     func testEmptyScheme() throws {
-        let parser = URIParser(bytes: "http".bytes)
+        let parser = URIParser(bytes: "http".makeBytes())
         let scheme = try parser.parseScheme()
         XCTAssert(scheme.string == "http")
     }
 
     private func makeSure(input: String,
+                          existingHost: String? = nil,
                           equalsScheme scheme: String,
                           host: String,
                           username: String,
@@ -267,7 +279,7 @@ class URISerializationTests: XCTestCase {
                           query: String?,
                           fragment: String?) throws {
 
-        let uri = try URIParser.parse(bytes: input.utf8.array)
+        let uri = try URIParser.parse(bytes: input.utf8.array, existingHost: existingHost)
         XCTAssert(uri.scheme == scheme, "\(input) -- expected scheme: \(scheme) got: \(uri.scheme)")
         XCTAssert(uri.host == host, "\(input) -- expected host: \(host) got: \(uri.host)")
         let testUsername = uri.userInfo?.username ?? ""

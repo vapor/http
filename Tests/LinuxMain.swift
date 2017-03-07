@@ -6,17 +6,20 @@ import XCTest
 @testable import HTTPTests
 @testable import WebSocketsTests
 @testable import SMTPTests
+@testable import CookiesTests
 
 XCTMain([
-    // TransportTestSuite
+    // TransportTests
     testCase(SockStreamTests.allTests),
     testCase(StreamBufferTests.allTests),
     testCase(TLSStreamTests.allTests),
 
-    // URITestSuite
+    // URITests
+    testCase(URIModificationTests.allTests),
     testCase(URISerializationTests.allTests),
+    testCase(URIQueryTests.allTests),
 
-    // HTTPTestSuite
+    // HTTPTests
     testCase(HTTPBodyTests.allTests),
     testCase(HTTPHeadersTests.allTests),
     testCase(HTTPMiddlewareTests.allTests),
@@ -26,12 +29,12 @@ XCTMain([
     testCase(HTTPVersionTests.allTests),
     testCase(FoundationConversionTests.allTests),
 
-    // WebSocketsTestSuite
+    // WebSocketsTests
     testCase(WebSocketSerializationTests.allTests),
     testCase(WebSocketKeyTests.allTests),
     testCase(WebSocketConnectTests.allTests),
 
-    // SMTPTestSuite
+    // SMTPTests
     testCase(EmailAddressTests.allTests),
     testCase(EmailAttachmentTests.allTests),
     testCase(EmailBodyTests.allTests),
@@ -42,6 +45,13 @@ XCTMain([
     testCase(SMTPExtensionsTests.allTests),
     testCase(SMTPGreetingTests.allTests),
     testCase(SMTPUUIDTests.allTests),
+
+    // CookiesTests
+    testCase(CookiesTests.allTests),
+    testCase(CookieTests.allTests),
+    testCase(HTTPTests.allTests),
+    testCase(ParsingTests.allTests),
+    testCase(SerializingTests.allTests)
 ])
 
 #endif

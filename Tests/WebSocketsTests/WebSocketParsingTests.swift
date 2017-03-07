@@ -235,7 +235,6 @@ class WebSocketSerializationTests: XCTestCase {
         // 256 as two UInt8
         let twoFiftySix: [Byte] = [0x01, 0x00]
         let headerBytes: [Byte] = [0x82, 0x7E] + twoFiftySix
-
         let input = headerBytes + randomBinary
         let test = TestStream()
         try test.send(input)
@@ -299,10 +298,11 @@ class WebSocketSerializationTests: XCTestCase {
         assertSerialized(msg, equals: input)
     }
 
-    private func assertSerialized(_ frame: WebSocket.Frame, equals bytes: [Byte]) {
+    private func assertSerialized(_ frame: WebSocket.Frame, equals bytes: [Byte], caller: String = #function) {
         let serializer = FrameSerializer(frame)
         let serialized = serializer.serialize()
-        XCTAssert(serialized == bytes)
+
+        XCTAssertEqual(serialized, bytes, caller)
     }
 }
 
@@ -346,7 +346,7 @@ class WebSocketConnectTests : XCTestCase {
       
 	let headers: [HeaderKey: String] = ["Authorized": "Bearer exampleBearer"]
 	do {
-	   let client = try WebSocket.background(to:"ws:127.0.0.1", headers: headers) { (websocket: WebSocket) throws -> Void in
+        try WebSocket.background(to:"ws:127.0.0.1", headers: headers) { (websocket: WebSocket) throws -> Void in
                     XCTAssert(false, "No server, so this should fail to connect")
 		    }
 	} catch {

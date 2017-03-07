@@ -185,7 +185,7 @@ extension WebSocket {
             // if NOT empty, MUST be at least 2 byte UInt16 optionally followed by reason
             guard payload.count >= 2 else { throw FrameParserError.missingByte }
             let statusCodeBytes = payload[0...1].array
-            statusCode = UInt16(statusCodeBytes)
+            statusCode = UInt16(bytes: statusCodeBytes)
             statusCodeData = statusCodeBytes
             // stringify remaining bytes -- if there are any
             reason = payload.dropFirst(2).string
@@ -240,10 +240,10 @@ extension WebSocket {
 
         var payload: Bytes = []
         if let status = statusCode {
-            payload += status.bytes()
+            payload += status.makeBytes()
         }
         if let reason = reason {
-            payload += reason.bytes
+            payload += reason.makeBytes()
         }
 
         let header = Frame.Header(

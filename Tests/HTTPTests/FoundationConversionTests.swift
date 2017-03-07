@@ -48,7 +48,7 @@ class FoundationConversionTests: XCTestCase {
     }
 
     func testRequestToUrlRequestConversion() throws {
-        let body = Body("hello".bytes)
+        let body = Body("hello".makeBytes())
         let request = try Request(method: .get, uri: "http://google.com:80", headers: ["foo": "bar"], body: body)
         let urlRequest = try request.makeFoundationRequest()
 
@@ -58,7 +58,7 @@ class FoundationConversionTests: XCTestCase {
         request.headers.forEach { key, val in requestHeaders[key.description] = val }
         XCTAssertEqual(requestHeaders, urlRequest.allHTTPHeaderFields ?? [:])
 
-        let foundationBody = try urlRequest.httpBody?.makeBytes()
+        let foundationBody = urlRequest.httpBody?.makeBytes()
         XCTAssertNotNil(foundationBody)
         let requestBody = request.body.bytes
         XCTAssertNotNil(requestBody)
@@ -72,13 +72,13 @@ class FoundationConversionTests: XCTestCase {
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.addValue("bar", forHTTPHeaderField: "foo")
-        urlRequest.httpBody = Data(bytes: "hello".bytes)
+        urlRequest.httpBody = Data(bytes: "hello".makeBytes())
 
         let request = try urlRequest.makeRequest()
 
         XCTAssertEqual(try request.uri.makeFoundationURL(), urlRequest.url)
 
-        let foundationBody = try urlRequest.httpBody?.makeBytes()
+        let foundationBody = urlRequest.httpBody?.makeBytes()
         XCTAssertNotNil(foundationBody)
         let requestBody = request.body.bytes
         XCTAssertNotNil(requestBody)

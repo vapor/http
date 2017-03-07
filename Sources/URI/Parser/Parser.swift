@@ -26,7 +26,7 @@ public final class URIParser: StaticDataBuffer {
         If host exists, and scheme exists, use those
     */
     public init(bytes: Bytes, existingHost: String? = nil) {
-        self.existingHost = existingHost?.bytes
+        self.existingHost = existingHost?.makeBytes()
         super.init(bytes: bytes)
     }
 
@@ -65,6 +65,7 @@ public final class URIParser: StaticDataBuffer {
         let port = Int(portString)
         let path = try pathBytes.percentDecodedString()
         let query = try queryBytes?.percentDecodedString()
+        let rawQuery = queryBytes?.string
         let fragment = try fragmentBytes?.percentDecodedString()
         let uri = URI(
             scheme: scheme,
@@ -73,6 +74,7 @@ public final class URIParser: StaticDataBuffer {
             port: port,
             path: path,
             query: query,
+            rawQuery: rawQuery,
             fragment: fragment
         )
 

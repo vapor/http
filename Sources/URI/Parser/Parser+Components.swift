@@ -39,8 +39,7 @@ extension URIParser {
         authority   = [ userinfo "@" ] host [ ":" port ]
     */
     internal func parseAuthority() throws -> [Byte]? {
-        if let existingHost = existingHost { return existingHost.array }
-        guard try checkLeadingBuffer(matches: .forwardSlash, .forwardSlash) else { return nil }
+        guard try checkLeadingBuffer(matches: .forwardSlash, .forwardSlash) else { return existingHost?.array }
         try discardNext(2) // discard '//'
         return try collect(until: .forwardSlash, .questionMark, .numberSign)
     }

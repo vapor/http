@@ -51,7 +51,7 @@ class HTTPMiddlewareTests: XCTestCase {
         })
 
         // start the server in the background
-        try background {
+        background {
             try! server.start(responder: responder, errors: { error in })
         }
 
