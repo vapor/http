@@ -22,10 +22,10 @@ extension SMTPClient {
             guard
                 isLast
                 && code == 334
-                && reply.base64DecodedString.equals(caseInsensitive: "Username:")
+                && reply.makeBytes().base64Decoded.string.equals(caseInsensitive: "Username:")
                 // This means the command BEFORE failed
                 else { throw SMTPClientError.authorizationFailed(code: code, reply: reply) }
-            try transmit(line: credentials.user.bytes.base64String)
+            try transmit(line: credentials.user.makeBytes().base64Encoded.string)
         }
 
         func handlePass() throws {
@@ -33,10 +33,10 @@ extension SMTPClient {
             guard
                 isLast
                 && code == 334
-                && reply.base64DecodedString.equals(caseInsensitive: "Password:")
+                && reply.makeBytes().base64Decoded.string.equals(caseInsensitive: "Password:")
                 // If Username fails, we don't get password
                 else { throw SMTPClientError.invalidUsername(code: code, reply: reply) }
-            try transmit(line: credentials.pass.bytes.base64String)
+            try transmit(line: credentials.pass.makeBytes().base64Encoded.string)
         }
 
         try transmit(line: "AUTH LOGIN")
@@ -53,7 +53,7 @@ extension SMTPClient {
     }
 
     private func authorizePlain(_ credentials: SMTPCredentials) throws {
-        let plainAuth = "\0\(credentials.user)\0\(credentials.pass)".bytes.base64String
+        let plainAuth = "\0\(credentials.user)\0\(credentials.pass)".makeBytes().base64Encoded.string
         try transmit(line: "AUTH PLAIN \(plainAuth)")
         let (code, reply, isLast) = try acceptReplyLine()
         // 235 == authorization successful

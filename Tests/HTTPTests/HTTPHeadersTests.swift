@@ -53,7 +53,7 @@ class HTTPHeadersTests: XCTestCase {
     }
 
     func testValueTrimming() {
-        let value = " ferret\t".bytes.trimmed([.space, .horizontalTab]).string
+        let value = " ferret\t".makeBytes().trimmed([.space, .horizontalTab]).string
         XCTAssertEqual(value, "ferret")
     }
 

@@ -60,11 +60,11 @@ class HTTPBodyTests: XCTestCase {
 
         struct HelloResponder: HTTP.Responder {
             func respond(to request: Request) throws -> Response {
-                return Response(body: "Hello".bytes)
+                return Response(body: "Hello".makeBytes())
             }
         }
 
-        try background {
+        background {
             try! server.start(responder: HelloResponder(), errors: { err in
                 XCTFail("\(err)")
             })
@@ -77,7 +77,7 @@ class HTTPBodyTests: XCTestCase {
         do {
             for _ in 0..<8192 {
                 let res = try HTTP.Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://0.0.0.0:\(assignedPort)/")
-                XCTAssertEqual(res.body.bytes ?? [], "Hello".bytes)
+                XCTAssertEqual(res.body.bytes ?? [], "Hello".makeBytes())
             }
         } catch {
             XCTFail("\(error)")
@@ -87,12 +87,13 @@ class HTTPBodyTests: XCTestCase {
     }
 
     func testClientStreamUsageAsync() throws {
+#if os(Linux)
         let server = try HTTP.Server<TCPServerStream, Parser<Request>, Serializer<Response>>(host: "0.0.0.0", port: 0, securityLayer: .none)
         let assignedPort = try server.server.stream.localAddress().port
 
         struct HelloResponder: HTTP.Responder {
             func respond(to request: Request) throws -> Response {
-                return Response(body: "Hello".bytes)
+                return Response(body: "Hello".makeBytes())
             }
         }
         
@@ -107,12 +108,13 @@ class HTTPBodyTests: XCTestCase {
         do {
             for _ in 0..<8192 {
                 let res = try HTTP.Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://0.0.0.0:\(assignedPort)/")
-                XCTAssertEqual(res.body.bytes ?? [], "Hello".bytes)
+                XCTAssertEqual(res.body.bytes ?? [], "Hello".makeBytes())
             }
         } catch {
             XCTFail("\(error)")
         }
-    }
+#endif
+    } 
     
     
 //    /**
@@ -127,7 +129,7 @@ class HTTPBodyTests: XCTestCase {
 //
 //        struct HelloResponder: HTTP.Responder {
 //            func respond(to request: Request) throws -> Response {
-//                return Response(body: "Hello".bytes)
+//                return Response(body: "Hello".makeBytes())
 //            }
 //        }
 //        
@@ -136,7 +138,7 @@ class HTTPBodyTests: XCTestCase {
 //        })
 //        
 //        let res = try HTTP.Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://0.0.0.0:\(port)/")
-//        XCTAssertEqual(res.body.bytes ?? [], "Hello".bytes)
+//        XCTAssertEqual(res.body.bytes ?? [], "Hello".makeBytes())
 //        
 //        _ = try socket.connect()
 //        

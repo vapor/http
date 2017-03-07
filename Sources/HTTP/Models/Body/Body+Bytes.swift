@@ -10,7 +10,7 @@ extension Body {
 
 extension Body {
     public init(_ str: String) {
-        self.init(str.bytes)
+        self.init(str.makeBytes())
     }
 
     public init<S: Sequence>(_ s: S) where S.Iterator.Element == Byte {

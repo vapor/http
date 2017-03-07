@@ -23,7 +23,7 @@ class SockStreamTests: XCTestCase {
         let sock = stream.stream
         //try sock.setTimeout(10)
         try sock.connect()
-        try sock.send("GET /html\r\n\r\n".bytes)
+        try sock.send("GET /html\r\n\r\n".makeBytes())
         try sock.flush()
         let received = try sock.receive(max: 2048)
         try sock.close()
@@ -55,7 +55,7 @@ class SockStreamTests: XCTestCase {
         let sock = stream.stream
 
         do {
-            try sock.send("GET /\r\n\r\n".bytes)
+            try sock.send("GET /\r\n\r\n".makeBytes())
             XCTFail("should throw -- not connected")
         } catch {}
 
@@ -66,8 +66,9 @@ class SockStreamTests: XCTestCase {
     }
 
     func testTCPServerStreamNonblocking() throws {
+#if os(Linux)
         let host = "0.0.0.0"
-        let data = "Hello, World!".bytes
+        let data = "Hello, World!".makeBytes()
         let backgroundQueue = DispatchQueue.global(qos: .background)
         let serverStream = try TCPServerStream(host: host, port: 0)
         let group = DispatchGroup()
@@ -113,11 +114,13 @@ class SockStreamTests: XCTestCase {
             XCTFail("Test timed out waiting")
             return
         }
-    }
+#endif
+    } 
+
 
     func testTCPServer() throws {
         let serverStream = try TCPServerStream(host: "0.0.0.0", port: 2653)
-        _ = try background {
+        background {
             do {
                 let connection = try serverStream.accept()
                 let message = try connection.receive(max: 2048).string
@@ -129,7 +132,7 @@ class SockStreamTests: XCTestCase {
 
         let program = try TCPClientStream(host: "0.0.0.0", port: 2653)
         let sock = try program.connect()
-        try sock.send("Hello, World!".bytes)
+        try sock.send("Hello, World!".makeBytes())
     }
 
     func testSecurityLayerStrings() {
@@ -155,7 +158,7 @@ class SockStreamTests: XCTestCase {
                 try connection.setTimeout(30)
                 XCTFail("Foundation stream should throw on timeout set")
             } catch {}
-            try connection.send("GET /html\r\n\r\n".bytes)
+            try connection.send("GET /html\r\n\r\n".makeBytes())
             try connection.flush()
             let received = try connection.receive(max: 2048)
             try connection.close()
@@ -175,7 +178,7 @@ class SockStreamTests: XCTestCase {
             try connection.send([])
 
             do {
-                try connection.send("hi".bytes)
+                try connection.send("hi".makeBytes())
                 XCTFail("Foundation stream should throw on send not valid")
             } catch {}
 
@@ -217,7 +220,7 @@ class TLSStreamTests: XCTestCase {
         do {
             let clientStream = try TCPClientStream(host: "api.spotify.com", port: 443, securityLayer: .tls(config)).connect()
             let uri = "/v1/search?type=artist&q=hannah%20diamond"
-            try clientStream.send("GET \(uri) HTTP/1.1\r\nHost: api.spotify.com\r\n\r\n".bytes)
+            try clientStream.send("GET \(uri) HTTP/1.1\r\nHost: api.spotify.com\r\nAccept: */*\r\n\r\n".makeBytes())
             let response = try clientStream.receive(max: 2048).string
 
             XCTAssert(response.contains("spotify:artist:3sXErEOw7EmO6Sj7EgjHdU"))
