@@ -1,7 +1,7 @@
 import struct Core.Bytes
 import Transport
 import Socks
-import SocksCore
+import Socks
 
 public final class WebSocket {
 

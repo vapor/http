@@ -13,7 +13,7 @@ public final class Server<
     ServerStreamType: ServerStream,
     Parser: TransferParser,
     Serializer: TransferSerializer>: ServerProtocol
-    where
+where
     Parser.MessageType == Request,
     Serializer.MessageType == Response
  {
@@ -106,56 +106,5 @@ public final class Server<
             try serializer.serialize(response)
             try response.onComplete?(stream)
         } while keepAlive && !stream.closed
-    }
-
-    public func startAsync(responder: Responder, errors: @escaping ServerErrorHandler) throws {
-        // add middleware
-        let responder = middleware.chain(to: responder)
-        
-        // await connection attempts on the server socket
-        try server.startWatching(on: queue) { [weak self] in
-            guard let welf = self else { return }
-            do {
-                let stream = try welf.server.accept()
-                let bufferedStream = StreamBuffer(stream)
-                welf.streams.append(bufferedStream)
-                try welf.respondAsync(stream: bufferedStream, responder: responder, errors: errors)
-            } catch {
-                errors(.accept(error))
-            }
-        }
-    }
-
-    private func respondAsync(stream: StreamBuffer, responder: Responder, errors: @escaping ServerErrorHandler) throws {
-        let parser = Parser(stream: stream)
-        let serializer = Serializer(stream: stream)
-        
-        // await data on `stream`
-        try stream.startWatching(on: queue) { [weak self] in
-            // stream, parser and serializer are retained by the closure.
-            // when the stream is closed, watching stops and the closure is released.
-            do {
-                let request = try parser.parse()
-                let response = try responder.respond(to: request)
-                try serializer.serialize(response)
-                try response.onComplete?(stream)
-                if !request.keepAlive {
-                    self?.streams.remove(stream)
-                    try stream.close()
-                }
-            } catch ParserError.streamEmpty {
-                self?.streams.remove(stream)
-                try? stream.close()
-            } catch let error where error is StreamError {
-                // if there's a problem with the stream, there's no point in keeping it open.
-                self?.streams.remove(stream)
-                try? stream.close()
-                // reporting the error is not strictly necessary here (there are  legitimate
-                // reasons for socket connections to be broken), but helpful for debugging.
-                errors(.respond(error))
-            } catch {
-                errors(.respond(error))
-            }
-        }
     }
 }

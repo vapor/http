@@ -8,7 +8,7 @@ public enum StreamError: Error {
     case custom(String)
 }
 
-public protocol Stream: class, Watchable {
+public protocol Stream: class {
     func setTimeout(_ timeout: Double) throws
 
     var closed: Bool { get }

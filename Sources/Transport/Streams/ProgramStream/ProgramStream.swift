@@ -1,10 +1,8 @@
-@_exported import class TLS.Config
+import TLS
 
 public enum ProgramStreamError: Error {
-    /**
-        Visit https://github.com/qutheory/vapor-tls
-        to learn about adding Transport Layer Security to Vapor.
-    */
+    /// Visit https://github.com/qutheory/vapor-tls
+    /// to learn about adding Transport Layer Security to Vapor.
     case unsupportedSecurityLayer
 }
 
@@ -23,7 +21,7 @@ extension ProgramStream {
 
 public enum SecurityLayer {
     case none
-    case tls(TLS.Config?)
+    case tls(TLS.Context?)
 }
 
 extension String {
