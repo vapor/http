@@ -168,15 +168,13 @@ class SockStreamTests: XCTestCase {
     }
 
     func testFoundationEventCode() throws {
-        #if !os(Linux)
-            // will default to underlying FoundationStream for TLS.
-            let clientStream = try FoundationStream(host: "google.com", port: 443, securityLayer: .tls(nil))
-            let connection = try clientStream.connect()
-            XCTAssertFalse(connection.isClosed)
-            // Force Foundation.Stream delegate
-            clientStream.stream(clientStream.input, handle: .endEncountered)
-            XCTAssertTrue(connection.isClosed)
-        #endif
+        // will default to underlying FoundationStream for TLS.
+        let clientStream = try FoundationStream(host: "google.com", port: 443, securityLayer: .tls(nil))
+        let connection = try clientStream.connect()
+        XCTAssertFalse(connection.isClosed)
+        // Force Foundation.Stream delegate
+        clientStream.stream(clientStream.input, handle: .endEncountered)
+        XCTAssertTrue(connection.isClosed)
     }
 }
 
