@@ -1,5 +1,5 @@
 import Core
-import SocksCore
+import Socks
 import Dispatch
 
 extension TCPInternetSocket: Stream {
@@ -140,7 +140,7 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
     }
     
     public func stopWatching() throws {
-        stream.stopWatching()
+        try stream.stopWatching()
     }
 }
 
@@ -166,9 +166,9 @@ extension TLS.Socket: Stream {
         try actualSocket.startWatching(on: queue, handler: handler)
     }
     
-    public func stopWatching() {
+    public func stopWatching() throws {
         let actualSocket = currSocket ?? socket
-        actualSocket.stopWatching()
+        try actualSocket.stopWatching()
     }
 }
 

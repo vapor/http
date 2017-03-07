@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 
 import Core
-import SocksCore
+import Socks
 import Dispatch
 @testable import Transport
 

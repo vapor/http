@@ -2,7 +2,7 @@ import XCTest
 @testable import HTTP
 import Transport
 import libc
-import SocksCore
+import Socks
 
 class HTTPBodyTests: XCTestCase {
     static var allTests = [
