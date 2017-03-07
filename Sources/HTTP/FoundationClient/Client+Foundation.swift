@@ -13,7 +13,7 @@ class FauxStream: Transport.Stream {
         print("Faux stream does not support setting timeout. It is a dummy class to allow URLSession to work")
     }
 
-    var closed: Bool {
+    var isClosed: Bool {
         print("\(#function) not implemented")
         return false
     }

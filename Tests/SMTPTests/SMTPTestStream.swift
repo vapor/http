@@ -35,7 +35,7 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
         return "\(host):\(port)"
     }
 
-    var closed: Bool
+    var isClosed: Bool
     var buffer: Bytes
 
     let host: String
@@ -43,7 +43,7 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
     let securityLayer: SecurityLayer
 
     init(host: String, port: Int, securityLayer: SecurityLayer) {
-        closed = false
+        isClosed = false
         buffer = []
 
         self.host = host
@@ -56,13 +56,13 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
     }
 
     func close() throws {
-        if !closed {
-            closed = true
+        if !isClosed {
+            isClosed = true
         }
     }
 
     func send(_ bytes: Bytes) throws {
-        closed = false
+        isClosed = false
         if let response = SMTPReplies[bytes.string] {
             if bytes.string == "\r\n.\r\n" {
                 // email data terminator. overwrite buffer of dummy email

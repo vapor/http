@@ -110,9 +110,8 @@ public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
     }
 
     deinit {
-        if !stream.closed {
-            _ = try? stream.close()
-        }
+        guard !stream.isClosed else { return }
+        _ = try? stream.close()
     }
 
     @discardableResult
