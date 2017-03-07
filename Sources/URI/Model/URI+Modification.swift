@@ -36,7 +36,7 @@ extension URI {
         The last path component of the URL, if there is a path.
         Otherwise returns `nil`.
      */
-    var lastPathComponent: String? {
+    public var lastPathComponent: String? {
         return pathComponents.last
     }
     
