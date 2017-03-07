@@ -16,7 +16,7 @@ public final class Request: Message {
         body: Body = .data([])
     ) throws {
         let uri = try URI(uri)
-        try self.init(method: method, uri: uri, version: version, headers: headers, body: body)
+        self.init(method: method, uri: uri, version: version, headers: headers, body: body)
     }
 
     public init(
@@ -26,7 +26,7 @@ public final class Request: Message {
         headers: [HeaderKey: String] = [:],
         body: Body = .data([]),
         peerAddress: PeerAddress? = nil
-    ) throws {
+    ) {
         var headers = headers
         headers.appendHost(for: uri)
 
@@ -81,7 +81,7 @@ public final class Request: Message {
         uri.scheme = uri.scheme.isEmpty ? "http" : uri.scheme
         let version = try Version.makeParsed(with: httpVersionSlice)
 
-        try self.init(method: method, uri: uri, version: version, headers: headers, body: body, peerAddress: peerAddress)
+        self.init(method: method, uri: uri, version: version, headers: headers, body: body, peerAddress: peerAddress)
     }
 }
 
