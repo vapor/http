@@ -144,7 +144,7 @@ extension TLS.Socket: Stream {
     }
 
     public var peerAddress: String {
-        return currentSocket?.peerAddress ?? socket.peerAddress
+        return client?.peerAddress ?? socket.peerAddress
     }
 }
 
