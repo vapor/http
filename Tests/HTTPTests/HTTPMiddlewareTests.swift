@@ -70,35 +70,6 @@ class HTTPMiddlewareTests: XCTestCase {
 
         // WARNING: `server` will keep running in the background since there is no way to stop it. Its socket will continue to exist and the associated port will be in use until the xctest process exits.
     }
-
-    func testServerAsync() throws {
-        print("async temporarily disabled")
-//        let foo = FooMiddleware()
-//        
-//        // create a basic server that returns
-//        // request headers
-//        let server = try BasicServer(host: "0.0.0.0", port: 0, securityLayer: .none, middleware: [foo])
-//        let assignedPort = try server.server.stream.localAddress().port
-//        let responder = Request.Handler({ request in
-//            return request.headers.description.makeResponse()
-//        })
-//        
-//        // start the server asynchronously
-//        try server.startAsync(responder: responder, errors: { error in })
-//        
-//        // create a basic client and query the server
-//        let client = try BasicClient(scheme: "http", host: "0.0.0.0", port: Int(assignedPort), securityLayer: .none, middleware: [])
-//        let response = try client.request(.get, path: "/foo")
-//        
-//        // test to make sure basic server saw the
-//        // header the middleware added
-//        XCTAssert(response.body.bytes?.string.contains("foo") == true)
-//        XCTAssert(response.body.bytes?.string.contains("bar") == true)
-//        
-//        // test to make sure the middleware
-//        // added headers to the response
-//        XCTAssertEqual(response.headers["bar"], "baz")
-    }
 }
 
 class FooMiddleware: Middleware {

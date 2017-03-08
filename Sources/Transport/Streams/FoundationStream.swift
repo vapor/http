@@ -1,6 +1,7 @@
 #if !os(Linux)
     import Core
     import Foundation
+    import TLS
 
     public class FoundationStream: NSObject, Stream, ClientStream, Foundation.StreamDelegate {
         
@@ -21,8 +22,8 @@
         }
 
         public var isClosed: Bool {
-            return input.closed
-                || output.closed
+            return input.isClosed
+                || output.isClosed
         }
 
         public let host: String
@@ -84,8 +85,8 @@
         // MARK: Connect
 
         public func connect() throws -> Stream {
-            if case .tls(let config) = securityLayer {
-                upgradeSSL(config: config)
+            if case .tls(let context) = securityLayer {
+                upgradeSSL(context)
             }
             input.open()
             output.open()
@@ -100,14 +101,14 @@
     }
 
     extension FoundationStream {
-        public func upgradeSSL(config: TLS.Config?) {
-            [input, output].forEach { stream in stream.upgradeSSL(config: config) }
+        public func upgradeSSL(_ context: Context?) {
+            [input, output].forEach { stream in stream.upgradeSSL(context) }
         }
     }
 
     extension Foundation.Stream {
         @discardableResult
-        func upgradeSSL(config: TLS.Config?) -> Bool {
+        func upgradeSSL(_ context: Context?) -> Bool {
             //TODO: apply TLS.Config's properties to the stream
             return setProperty(Foundation.StreamSocketSecurityLevel.negotiatedSSL.rawValue,
                                forKey: Foundation.Stream.PropertyKey.socketSecurityLevelKey)
@@ -115,7 +116,7 @@
     }
 
     extension Foundation.Stream {
-        var closed: Bool {
+        var isClosed: Bool {
             switch streamStatus {
             case .notOpen, .closed:
                 return true

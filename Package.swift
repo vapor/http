@@ -5,7 +5,7 @@ let dependencies: [Package.Dependency] = [
     .Package(url: "https://github.com/vapor/crypto.git", Version(2,0,0, prereleaseIdentifiers: ["alpha"])),
 
     // Secure Sockets
-    .Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["alpha"])),
+    .Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["alpha"]))
 ]
 
 let package = Package(

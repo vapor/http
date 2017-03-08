@@ -10,14 +10,14 @@ public enum ClientError: Swift.Error {
 
 public typealias BasicClient = Client<TCPClientStream, Serializer<Request>, Parser<Response>>
 
-let VERSION = "0.9.0"
-
 public final class Client<
     ClientStreamType: ClientStream,
     SerializerType: TransferSerializer,
-    ParserType: TransferParser>
-    : ClientProtocol
-    where ParserType.MessageType == Response, SerializerType.MessageType == Request
+    ParserType: TransferParser
+>: ClientProtocol
+where
+    ParserType.MessageType == Response,
+    SerializerType.MessageType == Request
 {
     public typealias Serializer = SerializerType
     public typealias Parser = ParserType
@@ -50,17 +50,15 @@ public final class Client<
         self.stream = stream
 
         let handler = Request.Handler { request in
-            /*
-                A client MUST send a Host header field in all HTTP/1.1 request
-                messages.  If the target URI includes an authority component, then a
-                client MUST send a field-value for Host that is identical to that
-                authority component, excluding any userinfo subcomponent and its "@"
-                delimiter (Section 2.7.1).  If the authority component is missing or
-                undefined for the target URI, then a client MUST send a Host header
-                field with an empty field-value.
-            */
+            ///  client MUST send a Host header field in all HTTP/1.1 request
+            /// messages.  If the target URI includes an authority component, then a
+            /// client MUST send a field-value for Host that is identical to that
+            /// authority component, excluding any userinfo subcomponent and its "@"
+            /// delimiter (Section 2.7.1).  If the authority component is missing or
+            /// undefined for the target URI, then a client MUST send a Host header
+            /// field with an empty field-value.
             request.headers["Host"] = host
-            request.headers["User-Agent"] = "App (Swift) VaporEngine/\(VERSION)"
+            request.headers["User-Agent"] = userAgent
 
             let buffer = StreamBuffer(stream)
             let serializer = SerializerType(stream: buffer)
@@ -89,6 +87,10 @@ public final class Client<
         return try responder.respond(to: request)
     }
 }
+
+let VERSION = "2"
+public var userAgent = "App (Swift) VaporEngine/\(VERSION)"
+
 
 extension ClientProtocol {
     internal func assertValid(_ request: Request) throws {

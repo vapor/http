@@ -8,7 +8,7 @@ public enum StreamError: Error {
     case custom(String)
 }
 
-public protocol Stream: class, Watchable {
+public protocol Stream: class {
     func setTimeout(_ timeout: Double) throws
 
     var isClosed: Bool { get }
@@ -40,10 +40,8 @@ extension Stream {
 }
 
 extension Stream {
-	/**
-        Reads and filters non-valid ASCII characters
-        from the stream until a new line character is returned.
-    */
+	/// Reads and filters non-valid ASCII characters
+    /// from the stream until a new line character is returned.
     public func receiveLine() throws -> Bytes {
         var line: Bytes = []
 

@@ -65,59 +65,6 @@ class SockStreamTests: XCTestCase {
         } catch {}
     }
 
-    func testTCPServerStreamNonblocking() throws {
-#if os(Linux)
-        let host = "0.0.0.0"
-        let data = "Hello, World!".makeBytes()
-        let backgroundQueue = DispatchQueue.global(qos: .background)
-        let serverStream = try TCPServerStream(host: host, port: 0)
-        let group = DispatchGroup()
-        group.enter()
-        try serverStream.startWatching(on: backgroundQueue) {
-            do {
-                let client = try serverStream.accept()
-                try client.startWatching(on: backgroundQueue) {
-                    do {
-                        let receivedData = try client.receive(max: 2048)
-                        XCTAssertEqual(receivedData, data)
-                        try client.send(data)
-                        group.leave()
-                    } catch {
-                        XCTFail("Error: \(error)")
-                    }
-                }
-            } catch {
-                XCTFail("Error: \(error)")
-            }
-        }
-        let automaticallyAssignedServerAddress = try serverStream.stream.localAddress()
-        let hostingPort = automaticallyAssignedServerAddress.port
-        
-        let clientStream = try TCPClientStream(host: host, port: Int(hostingPort)).connect()
-        group.enter()
-        try clientStream.startWatching(on: backgroundQueue) {
-            do {
-                let receivedData = try clientStream.receive(max: 2048)
-                XCTAssertEqual(receivedData, data)
-                group.leave()
-            } catch {
-                XCTFail("Error: \(error)")
-            }
-        }
-        try clientStream.send(data)
-        
-        
-        let result = group.wait(timeout: .now() + .seconds(100))
-        try serverStream.stopWatching()
-        try clientStream.stopWatching()
-        guard result == DispatchTimeoutResult.success else {
-            XCTFail("Test timed out waiting")
-            return
-        }
-#endif
-    } 
-
-
     func testTCPServer() throws {
         let serverStream = try TCPServerStream(host: "0.0.0.0", port: 2653)
         background {
@@ -196,6 +143,7 @@ class SockStreamTests: XCTestCase {
             let connection = try clientStream.connect()
             XCTAssertFalse(connection.isClosed)
             // Force Foundation.Stream delegate
+
             clientStream.stream(clientStream.input, handle: .endEncountered)
             XCTAssertTrue(connection.isClosed)
         #endif
@@ -212,8 +160,8 @@ class TLSStreamTests: XCTestCase {
     ]
 
     func testSend() throws {
-        let config = try Config(
-            context: try Context(mode: .client),
+        let config = try Context(
+            .client,
             verifyCertificates: false
         )
 

@@ -71,11 +71,8 @@ public class TCPProgramStream: ProgramStream {
 
 import TLS
 
-public var defaultClientConfig: () throws -> TLS.Config = {
-    return try Config(
-        mode: .client,
-        certificates: .defaults
-    )
+public var defaultClientConfig: () throws -> TLS.Context = {
+    return try Context(.client, .defaults)
 }
 
 public final class TCPClientStream: TCPProgramStream, ClientStream  {
@@ -85,24 +82,21 @@ public final class TCPClientStream: TCPProgramStream, ClientStream  {
             try stream.connect()
             return stream
         case .tls(let provided):
-            let config: Config
+            let config: Context
             if let c = provided {
                 config = c
             } else {
                 config = try defaultClientConfig()
             }
-            let secure = try TLS.Socket(config: config, socket: stream)
+            let secure = try TLS.Socket(config, stream)
             try secure.connect(servername: host)
             return secure
         }
     }
 }
 
-public var defaultServerConfig: () throws -> TLS.Config = {
-    return try Config(
-        mode: .server,
-        certificates: .defaults
-    )
+public var defaultServerConfig: () throws -> TLS.Context = {
+    return try Context(.server, .defaults)
 }
 
 public final class TCPServerStream: TCPProgramStream, ServerStream {
@@ -122,25 +116,17 @@ public final class TCPServerStream: TCPProgramStream, ServerStream {
         case .none:
             return try stream.accept()
         case .tls(let provided):
-            let config: Config
+            let config: Context
             if let c = provided {
                 config = c
             } else {
                 config = try defaultServerConfig()
             }
 
-            let secure = try TLS.Socket(config: config, socket: stream)
+            let secure = try TLS.Socket(config, stream)
             try secure.accept()
             return secure
         }
-    }
-
-    public func startWatching(on queue:DispatchQueue, handler:@escaping ()->()) throws {
-        try stream.startWatching(on: queue, handler: handler)
-    }
-    
-    public func stopWatching() throws {
-        try stream.stopWatching()
     }
 }
 
@@ -158,17 +144,7 @@ extension TLS.Socket: Stream {
     }
 
     public var peerAddress: String {
-        return currSocket?.peerAddress ?? socket.peerAddress
-    }
-
-    public func startWatching(on queue: DispatchQueue, handler: @escaping () -> ()) throws {
-        let actualSocket = currSocket ?? socket
-        try actualSocket.startWatching(on: queue, handler: handler)
-    }
-    
-    public func stopWatching() throws {
-        let actualSocket = currSocket ?? socket
-        try actualSocket.stopWatching()
+        return client?.peerAddress ?? socket.peerAddress
     }
 }
 
