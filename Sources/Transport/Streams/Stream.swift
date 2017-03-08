@@ -11,7 +11,7 @@ public enum StreamError: Error {
 public protocol Stream: class {
     func setTimeout(_ timeout: Double) throws
 
-    var closed: Bool { get }
+    var isClosed: Bool { get }
     func close() throws
 
     func send(_ bytes: Bytes) throws

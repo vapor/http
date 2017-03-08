@@ -105,6 +105,6 @@ where
             let response = try responder.respond(to: request)
             try serializer.serialize(response)
             try response.onComplete?(stream)
-        } while keepAlive && !stream.closed
+        } while keepAlive && !stream.isClosed
     }
 }

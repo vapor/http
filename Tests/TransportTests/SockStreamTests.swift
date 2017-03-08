@@ -153,7 +153,7 @@ class SockStreamTests: XCTestCase {
             // will default to underlying FoundationStream for TLS.
             let clientStream = try FoundationStream(host: "httpbin.org", port: 443, securityLayer: .tls(nil))
             let connection = try clientStream.connect()
-            XCTAssert(!connection.closed)
+            XCTAssert(!connection.isClosed)
             do {
                 try connection.setTimeout(30)
                 XCTFail("Foundation stream should throw on timeout set")
@@ -163,7 +163,7 @@ class SockStreamTests: XCTestCase {
             let received = try connection.receive(max: 2048)
             try connection.close()
 
-            XCTAssert(connection.closed)
+            XCTAssert(connection.isClosed)
             // Receiving the raw google homepage
             XCTAssert(received.string.contains("Herman Melville - Moby-Dick"))
         #endif
@@ -194,10 +194,11 @@ class SockStreamTests: XCTestCase {
             // will default to underlying FoundationStream for TLS.
             let clientStream = try FoundationStream(host: "google.com", port: 443, securityLayer: .tls(nil))
             let connection = try clientStream.connect()
-            XCTAssertFalse(connection.closed)
+            XCTAssertFalse(connection.isClosed)
             // Force Foundation.Stream delegate
-            // clientStream.stream(clientStream.input, handle: .endEncountered)
-            // XCTAssertTrue(connection.closed)
+
+            clientStream.stream(clientStream.input, handle: .endEncountered)
+            XCTAssertTrue(connection.isClosed)
         #endif
     }
 }

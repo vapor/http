@@ -77,7 +77,7 @@ final class TestStream: Transport.Stream {
 
     public var peerAddress: String = "1.2.3.4:5678"
 
-    var closed: Bool
+    var isClosed: Bool
     var buffer: Bytes
     var timeout: Double = -1
     // number of times flush was called
@@ -88,18 +88,18 @@ final class TestStream: Transport.Stream {
     }
 
     init() {
-        closed = false
+        isClosed = false
         buffer = []
     }
 
     func close() throws {
-        if !closed {
-            closed = true
+        if !isClosed {
+            isClosed = true
         }
     }
 
     func send(_ bytes: Bytes) throws {
-        closed = false
+        isClosed = false
         buffer += bytes
     }
 

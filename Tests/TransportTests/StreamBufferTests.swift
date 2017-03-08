@@ -61,8 +61,8 @@ class StreamBufferTests: XCTestCase {
 
     func testStreamBufferMisc() throws {
         try streamBuffer.close()
-        XCTAssert(testStream.closed, "stream buffer should close underlying stream")
-        XCTAssert(streamBuffer.closed, "stream buffer should reflect closed status of underlying stream")
+        XCTAssert(testStream.isClosed, "stream buffer should close underlying stream")
+        XCTAssert(streamBuffer.isClosed, "stream buffer should reflect closed status of underlying stream")
 
         try streamBuffer.setTimeout(42)
         XCTAssert(testStream.timeout == 42, "stream buffer should set underlying timeout")
@@ -74,7 +74,7 @@ final class TestStream: Transport.Stream {
 
     var peerAddress: String = "1.2.3.4:5678"
 
-    var closed: Bool
+    var isClosed: Bool
     var buffer: Bytes
     var timeout: Double = -1
     // number of times flush was called
@@ -85,18 +85,18 @@ final class TestStream: Transport.Stream {
     }
 
     init() {
-        closed = false
+        isClosed = false
         buffer = []
     }
 
     func close() throws {
-        if !closed {
-            closed = true
+        if !isClosed {
+            isClosed = true
         }
     }
 
     func send(_ bytes: Bytes) throws {
-        closed = false
+        isClosed = false
         buffer += bytes
     }
 

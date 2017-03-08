@@ -359,7 +359,7 @@ final class TestStream: Transport.Stream {
     
     var peerAddress: String = "1.2.3.4:5678"
 
-    var closed: Bool
+    var isClosed: Bool
     var buffer: Bytes
 
     func setTimeout(_ timeout: Double) throws {
@@ -367,18 +367,18 @@ final class TestStream: Transport.Stream {
     }
 
     init() {
-        closed = false
+        isClosed = false
         buffer = []
     }
 
     func close() throws {
-        if !closed {
-            closed = true
+        if !isClosed {
+            isClosed = true
         }
     }
 
     func send(_ bytes: Bytes) throws {
-        closed = false
+        isClosed = false
         buffer += bytes
     }
 

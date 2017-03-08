@@ -84,7 +84,7 @@ public final class Client<
 
     public func respond(to request: Request) throws -> Response {
         try assertValid(request)
-        guard !stream.closed else { throw ClientError.unableToConnect }
+        guard !stream.isClosed else { throw ClientError.unableToConnect }
 
         return try responder.respond(to: request)
     }

@@ -1,7 +1,6 @@
 import struct Core.Bytes
 import Transport
 import Socks
-import Socks
 
 public final class WebSocket {
 
@@ -109,7 +108,7 @@ extension WebSocket {
         while state != .closed {
             // not a part of while logic, we need to separately acknowledge
             // that TCP closed w/o handshake
-            if stream.closed {
+            if stream.isClosed {
                 try completeCloseHandshake(statusCode: nil, reason: nil, cleanly: false)
                 break
             }

@@ -139,8 +139,8 @@ extension TLS.Socket: Stream {
         try socket.setTimeout(timeout)
     }
 
-    public var closed: Bool {
-        return socket.closed
+    public var isClosed: Bool {
+        return socket.isClosed
     }
 
     public func flush() throws {

@@ -33,6 +33,6 @@ extension URLRequest {
         }
 
         let body = bytes.flatMap { Body($0) } ?? Body([])
-        return try Request(method: method, uri: uri, headers: headers, body: body)
+        return Request(method: method, uri: uri, headers: headers, body: body)
     }
 }

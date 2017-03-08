@@ -21,8 +21,8 @@ public final class StreamBuffer: Stream, Equatable {
     private var receiveIterator: IndexingIterator<[Byte]>
     internal private(set) var sendBuffer: Bytes
 
-    public var closed: Bool {
-        return stream.closed
+    public var isClosed: Bool {
+        return stream.isClosed
     }
 
     public func setTimeout(_ timeout: Double) throws {
