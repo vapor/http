@@ -51,10 +51,6 @@ extension TCPInternetSocket: Stream {
         }
         return bytes
     }
-
-    public var closed: Bool {
-        return isClosed
-    }
 }
 
 public class TCPProgramStream: ProgramStream {

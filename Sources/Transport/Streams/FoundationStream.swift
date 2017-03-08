@@ -22,8 +22,8 @@
         }
 
         public var isClosed: Bool {
-            return input.closed
-                || output.closed
+            return input.isClosed
+                || output.isClosed
         }
 
         public let host: String
@@ -116,7 +116,7 @@
     }
 
     extension Foundation.Stream {
-        var closed: Bool {
+        var isClosed: Bool {
             switch streamStatus {
             case .notOpen, .closed:
                 return true
