@@ -38,9 +38,9 @@ class SockStreamTests: XCTestCase {
         do {
             let socket = try TCPInternetSocket(address: address)
             try socket.connect()
-            try socket.send(data: "GET /html\r\n\r\n".toBytes())
+            try socket.send(data: "GET /html\r\n\r\n".makeBytes())
             let received = try socket.recv()
-            let str = try received.toString()
+            let str = received.string
             try socket.close()
 
             XCTAssert(str.contains("Herman Melville - Moby-Dick"))

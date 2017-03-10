@@ -142,7 +142,7 @@ extension WebSocket {
         case .binary:
             try onBinary?((self, payload))
         case .text:
-            let text = try payload.toString()
+            let text = payload.string
             try onText?((self, text))
         case let .nonControlExtension(nc):
             try onNonControlExtension?((self, nc, payload))

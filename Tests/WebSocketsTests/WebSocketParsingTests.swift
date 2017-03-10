@@ -118,7 +118,7 @@ class WebSocketSerializationTests: XCTestCase {
         XCTAssert(msg.isFragmentHeader)
         XCTAssertFalse(msg.isControlFrame)
 
-        let str = try msg.payload.toString()
+        let str = msg.payload.string
         XCTAssert(str == "Hel")
 
         let header = msg.header
@@ -143,7 +143,7 @@ class WebSocketSerializationTests: XCTestCase {
         XCTAssert(msg.isFragmentFooter)
         XCTAssertFalse(msg.isControlFrame)
 
-        let str = try msg.payload.toString()
+        let str = msg.payload.string
         XCTAssert(str == "lo")
 
         let header = msg.header
@@ -176,7 +176,7 @@ class WebSocketSerializationTests: XCTestCase {
         XCTAssert(msg.isControlFrame)
 
         // is Hello, but message doesn't matter
-        let str = try msg.payload.toString()
+        let str = msg.payload.string
         XCTAssert(str == "Hello")
 
         let header = msg.header
@@ -203,7 +203,7 @@ class WebSocketSerializationTests: XCTestCase {
         XCTAssert(msg.isControlFrame)
 
         // is Hello, but message doesn't matter. Must match `ping` payload
-        let str = try msg.payload.toString()
+        let str = msg.payload.string
         XCTAssert(str == "Hello")
 
         let header = msg.header
