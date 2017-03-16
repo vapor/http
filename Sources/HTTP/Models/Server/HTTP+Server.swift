@@ -7,6 +7,8 @@
 import Transport
 import Dispatch
 
+public var defaultServerTimeout: Double = 30
+
 public typealias BasicServer = Server<TCPServerStream, Parser<Request>, Serializer<Response>>
 
 public final class Server<
@@ -79,7 +81,7 @@ public final class Server<
 
     private func respond(stream: Stream, responder: Responder) throws {
         let stream = StreamBuffer(stream)
-        try stream.setTimeout(30)
+        try stream.setTimeout(defaultServerTimeout)
 
         let parser = Parser(stream: stream)
         let serializer = Serializer(stream: stream)
