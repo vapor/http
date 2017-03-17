@@ -95,7 +95,7 @@ extension SMTPClient {
         try transmit(line: "Content-Type: \(contentType); charset=utf8")
         try transmit(line: "") // empty line
 
-        try stream.send(body.content)
+        try buffer.send(body.content)
         try transmit(line: "") // empty line
     }
 
@@ -110,7 +110,7 @@ extension SMTPClient {
              others do support 'BINARYMIME', but none in my tests seemed to, so in the interest
              of brevity and consistency, we're sacraficing a very small amount of performance
         */
-        try stream.send(attachment.body.base64Encoded)
+        try buffer.send(attachment.body.base64Encoded)
         try transmit(line: "") // empty line
     }
 }

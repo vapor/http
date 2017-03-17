@@ -1,6 +1,7 @@
 import Transport
 
-extension SMTPClient {
+
+extension SMTPClient where StreamType: BasicInternetInitializable {
     /*
          https://sendgrid.com/
 
@@ -8,7 +9,8 @@ extension SMTPClient {
          https://app.sendgrid.com/settings/credentials
     */
     public static func makeSendGridClient() throws -> SMTPClient {
-        return try SMTPClient(scheme: "smtps", hostname: "smtp.sendgrid.net", port: 465)
+        let stream = try StreamType(scheme: "smtps", hostname: "smtp.sendgrid.net", port: 465)
+        return try SMTPClient(stream)
     }
 
     /*
@@ -19,7 +21,8 @@ extension SMTPClient {
          pass: Your Gmail or Google Apps email password
     */
     public static func makeGmailClient() throws -> SMTPClient {
-        return try SMTPClient(scheme: "smtps", hostname: "smtp.gmail.com", port: 465)
+        let stream = try StreamType(scheme: "smtps", hostname: "smtp.gmail.com", port: 465)
+        return try SMTPClient(stream)
     }
     
     /*
@@ -29,6 +32,7 @@ extension SMTPClient {
      https://mailgun.com/app/domains
      */
     public static func makeMailgunClient() throws -> SMTPClient {
-        return try SMTPClient(scheme: "smtps", hostname: "smtp.mailgun.org", port: 465)
+        let stream = try StreamType(scheme: "smtps", hostname: "smtp.mailgun.org", port: 465)
+        return try SMTPClient(stream)
     }
 }

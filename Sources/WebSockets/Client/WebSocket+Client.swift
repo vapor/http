@@ -8,7 +8,7 @@ import HTTP
 extension WebSocket {
     public static func background<C: Client>(
         to uri: String,
-        using client: C.Type,
+        using client: C,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
@@ -21,7 +21,7 @@ extension WebSocket {
 
     public static func background<C: Client>(
         to uri: URI,
-        using client: C.Type,
+        using client: C,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
@@ -36,7 +36,7 @@ extension WebSocket {
 
     public static func connect<C: Client>(
         to uri: String,
-        using client: C.Type,
+        using client: C,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
@@ -49,7 +49,7 @@ extension WebSocket {
 
     public static func connect<C: Client>(
         to uri: URI,
-        using client: C.Type,
+        using client: C,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
@@ -73,8 +73,7 @@ extension WebSocket {
         if let protocols = protocols, !protocols.isEmpty {
             headers.secWebProtocol = protocols
         }
-
-        let client = try client.init(scheme: uri.scheme, hostname: uri.hostname, port: uri.port ?? 80)
+        
         // manually requesting to preserve queries that might be in URI easily
         let request = Request(
             method: .get,

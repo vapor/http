@@ -26,8 +26,8 @@ public final class BasicServer<
 >: Server where
     Parser.MessageType == Request,
     Serializer.MessageType == Response,
-    Parser.StreamType == StreamBuffer<StreamType>,
-    Serializer.StreamType == StreamBuffer<StreamType>
+    Parser.StreamType == StreamBuffer<StreamType.Client>,
+    Serializer.StreamType == StreamBuffer<StreamType.Client>
  {
     // public let middleware: [Middleware]
     public let stream: StreamType
@@ -44,8 +44,8 @@ public final class BasicServer<
         return stream.port
     }
 
-    public init(scheme: String, hostname: String, port: Port) throws {
-        stream = try StreamType(scheme: scheme, hostname: hostname, port: port)
+    public init(_ stream: StreamType) throws {
+        self.stream = stream
     }
 
     private let queue = DispatchQueue(
@@ -63,7 +63,7 @@ public final class BasicServer<
 
         // no throwing inside of the loop
         while true {
-            let client: StreamType
+            let client: StreamType.Client
 
             do {
                 client = try stream.accept()
@@ -83,7 +83,7 @@ public final class BasicServer<
         }
     }
 
-    private func respond(stream: StreamType, responder: Responder) throws {
+    private func respond(stream: StreamType.Client, responder: Responder) throws {
         let stream = StreamBuffer(stream)
         try stream.setTimeout(defaultServerTimeout)
 

@@ -55,7 +55,8 @@ class HTTPBodyTests: XCTestCase {
     }
 
     func testClientStreamUsage() throws {
-        let server = try TCPServer(scheme: "http", hostname: "0.0.0.0", port: 8942)
+        let serverSocket = try TCPInternetSocket(scheme: "http", hostname: "0.0.0.0", port: 8942)
+        let server = try TCPServer(serverSocket)
         // let assignedPort = try server.stream.localAddress().port
 
         struct HelloResponder: HTTP.Responder {
@@ -76,7 +77,9 @@ class HTTPBodyTests: XCTestCase {
 
         do {
             for _ in 0..<8192 {
-                let res = try TCPClient.request(.get, "http://0.0.0.0:\(8942)/")
+                let clientSocket = try TCPInternetSocket(scheme: "http", hostname: "0.0.0.0", port: 8942)
+                let res = try TCPClient(clientSocket)
+                    .respond(to: Request(method: .get, uri: "http://0.0.0.0:\(8942)/"))
                 XCTAssertEqual(res.body.bytes ?? [], "Hello".makeBytes())
             }
         } catch {

@@ -87,30 +87,39 @@ import Transport
 /**
     SMTPClient is designed to connect and transmit messages to SMTP Servers
 */
-public final class SMTPClient<ClientStreamType: ClientStream> {
-    public let scheme: String
-    public let hostname: String
-    public let port: Port
-    internal let stream: DuplexStream
+public final class SMTPClient<StreamType: ClientStream> {
+//    public let scheme: String
+//    public let hostname: String
+//    public let port: Port
+    public let stream: StreamType
+    internal let buffer: StreamBuffer<StreamType>
+
+    public var scheme: String {
+        return stream.scheme
+    }
+
+    public var hostname: String {
+        return stream.hostname
+    }
+
+    public var port: Port {
+        return stream.port
+    }
 
     /**
          Connect the client to given SMTP Server
          
             try SMTPClient(host: "smtp.gmail.com", port: 465, securityLayer: .tls)
     */
-    public init(scheme: String, hostname: String, port: Port) throws {
-        self.scheme = scheme
-        self.hostname = hostname
-        self.port = port
-
-        let client = try ClientStreamType(scheme: scheme, hostname: hostname, port: port)
+    public init(_ client: StreamType) throws {
         try client.connect()
-        self.stream = StreamBuffer(client)
+        self.stream = client
+        self.buffer = StreamBuffer(client)
     }
 
     deinit {
-        guard !stream.isClosed else { return }
-        _ = try? stream.close()
+        guard !buffer.isClosed else { return }
+        _ = try? buffer.close()
     }
 
     @discardableResult
@@ -218,5 +227,12 @@ public final class SMTPClient<ClientStreamType: ClientStream> {
         let (code, reply, isLast) = try acceptReplyLine()
         guard isLast && code == 221 else { throw SMTPClientError.quitFailed(code: code, reply: reply) }
         return (code, reply)
+    }
+}
+
+extension SMTPClient where StreamType: BasicInternetInitializable {
+    public convenience init(scheme: String, hostname: String, port: Port) throws {
+        let stream = try StreamType(scheme: scheme, hostname: hostname, port: port)
+        try self.init(stream)
     }
 }

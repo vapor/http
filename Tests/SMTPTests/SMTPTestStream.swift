@@ -29,7 +29,7 @@ private let SMTPReplies: [String: String] = [
     "\r\n.\r\n": "250 email done"
 ]
 
-final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
+final class SMTPTestStream: Transport.ClientStream, Transport.Stream, BasicInternetInitializable {
     var isClosed: Bool
     var buffer: Bytes
 

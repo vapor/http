@@ -49,10 +49,9 @@ public final class BasicClient<
         return stream.port
     }
 
-    public init(scheme: String, hostname: String, port: Port) throws {
-        stream = try StreamType(scheme: scheme, hostname: hostname, port: port)
+    public init(_ stream: StreamType) throws {
+        self.stream = stream
         try stream.connect()
-
     }
     
     deinit {
