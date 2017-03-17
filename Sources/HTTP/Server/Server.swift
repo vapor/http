@@ -1,6 +1,6 @@
 import Transport
 
-public protocol Server: Program {
+public protocol Server: InternetStream {
     func start(_ responder: Responder, errors: @escaping ServerErrorHandler) throws
 }
 
@@ -10,7 +10,7 @@ extension Server {
     }
 }
 
-extension Server where StreamType: InternetStream {
+extension Server {
     public static func start(
         scheme: String = "http",
         hostname: String = "0.0.0.0",

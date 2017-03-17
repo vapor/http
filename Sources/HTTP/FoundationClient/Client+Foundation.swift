@@ -3,23 +3,29 @@ import Foundation
 import URI
 import Core
 
-/// This is here because it's a protocol requirement that we can't change now.
-/// It allows us to satisfy Client goals and allow FoundationClient to function
-/// using URLSession
-public final class FoundationClientStream: InternetStream {
+public final class FoundationClient: Client {
     public let scheme: String
     public let hostname: String
     public let port: Transport.Port
     public let session: URLSession
+    /// public let middleware: [Middleware]
+    // private let responder: Responder
 
-    public init(scheme: String, hostname: String, port: Transport.Port) {
+    public init(
+        scheme: String,
+        hostname: String,
+        port: Transport.Port
+    ) {
         self.scheme = scheme
         self.hostname = hostname
         self.port = port
         self.session = URLSession(configuration: .default)
+        /// self.middleware = type(of: self).defaultMiddleware + middleware
     }
 
-    public func handle(_ request: Request) throws -> Response {
+    public func respond(to request: Request) throws -> Response {
+        try assertValid(request)
+
         return try Portal.open { portal in
             let foundationRequest = try request.makeFoundationRequest()
             let task = self.session.dataTask(with: foundationRequest) { data, urlResponse, error in
@@ -37,31 +43,5 @@ public final class FoundationClientStream: InternetStream {
             }
             task.resume()
         }
-    }
-}
-
-public final class FoundationClient: Client {
-    public let stream: FoundationClientStream
-    public let middleware: [Middleware]
-    private let responder: Responder
-
-    public init(
-        _ stream: FoundationClientStream,
-        _ middleware: [Middleware]
-    ) throws {
-        self.stream = stream
-        self.middleware = type(of: self).defaultMiddleware + middleware
-
-        let handler = Request.Handler { request in
-            return try stream.handle(request)
-        }
-
-        // add middleware
-        responder = self.middleware.chain(to: handler)
-    }
-
-    public func respond(to request: Request) throws -> Response {
-        try assertValid(request)
-        return try responder.respond(to: request)
     }
 }

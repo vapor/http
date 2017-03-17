@@ -1,9 +1,9 @@
 import URI
 import Transport
 
-public protocol Client: Program, Responder { }
+public protocol Client: InternetStream, Responder { }
 
-extension Client where StreamType: InternetStream {
+extension Client {
     public func request(
         _ method: Method,
         _ path: String,
@@ -12,9 +12,9 @@ extension Client where StreamType: InternetStream {
         body: BodyRepresentable = Body.data([])
     ) throws -> Response {
         var uri = URI(
-            scheme: stream.scheme,
-            hostname: stream.hostname,
-            port: stream.port,
+            scheme: scheme,
+            hostname: hostname,
+            port: port,
             path: path
         )
         uri.append(query: query)

@@ -10,7 +10,7 @@ class HTTPMiddlewareTests: XCTestCase {
 
     func testClient() throws {
         let foo = FooMiddleware()
-        let client = try TCPClient(scheme: "http", hostname: "httpbin.org", port: 80, [foo])
+        let client = try TCPClient(scheme: "http", hostname: "httpbin.org", port: 80)// , [foo])
         let response = try client.request(.get, "headers")
 
         // test to make sure http bin saw the 
@@ -25,7 +25,7 @@ class HTTPMiddlewareTests: XCTestCase {
 
     func testClientDefault() throws {
         let foo = FooMiddleware()
-        TCPClient.defaultMiddleware = [foo]
+        // TCPClient.defaultMiddleware = [foo]
 
         let response = try TCPClient.request(.get, "http://httpbin.org/headers")
         print(response)
@@ -44,7 +44,7 @@ class HTTPMiddlewareTests: XCTestCase {
 
         // create a basic server that returns
         // request headers
-        let server = try TCPServer(scheme: "https", hostname: "0.0.0.0", port: 8244, [foo])
+        let server = try TCPServer(scheme: "https", hostname: "0.0.0.0", port: 8244)// , [foo])
         // let assignedPort = try server.server.stream.localAddress().port
         let responder = Request.Handler({ request in
             return request.headers.description.makeResponse()
@@ -56,7 +56,7 @@ class HTTPMiddlewareTests: XCTestCase {
         }
 
         // create a basic client ot query the server
-        let client = try TCPClient(scheme: "http", hostname: "0.0.0.0", port: 8244, [])
+        let client = try TCPClient(scheme: "http", hostname: "0.0.0.0", port: 8244) // , [])
         let response = try client.request(.get, "/foo")
 
         // test to make sure basic server saw the

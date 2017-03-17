@@ -12,8 +12,8 @@ extension WebSocket {
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
-    ) throws
-        where C.StreamType: InternetStream & DuplexStream
+    )  throws
+        where C: DuplexStreamRepresentable
     {
         let uri = try URI(uri)
         try background(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
@@ -26,7 +26,7 @@ extension WebSocket {
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
     ) throws
-        where C.StreamType: InternetStream & DuplexStream
+        where C: DuplexStreamRepresentable
     {
         Core.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
@@ -41,7 +41,7 @@ extension WebSocket {
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
     ) throws
-        where C.StreamType: InternetStream & DuplexStream
+        where C: DuplexStreamRepresentable
     {
         let uri = try URI(uri)
         try connect(to: uri, using: client, protocols: protocols, headers: headers,  onConnect: onConnect)
@@ -54,7 +54,7 @@ extension WebSocket {
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
     ) throws
-        where C.StreamType: InternetStream & DuplexStream
+        where C: DuplexStreamRepresentable
     {
         guard !uri.hostname.isEmpty else { throw WebSocket.FormatError.invalidURI }
 
@@ -91,9 +91,19 @@ extension WebSocket {
         let expected = try WebSocket.exchange(requestKey: requestKey)
         guard accept == expected else { throw FormatError.invalidSecAcceptHeader }
 
-        let ws = WebSocket(client.stream, mode: .client)
+        let ws = WebSocket(client.makeDuplexStream(), mode: .client)
         try onConnect(ws)
         try ws.listen()
+    }
+}
+
+public protocol DuplexStreamRepresentable {
+    func makeDuplexStream() -> DuplexStream
+}
+
+extension BasicClient: DuplexStreamRepresentable {
+    public func makeDuplexStream() -> DuplexStream {
+        return stream as DuplexStream
     }
 }
 

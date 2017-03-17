@@ -20,47 +20,50 @@ public typealias TLSTCPServer = BasicServer<
 >
 
 public final class BasicServer<
-    ServerStreamType: ServerStream,
+    StreamType: ServerStream,
     Parser: TransferParser,
     Serializer: TransferSerializer
 >: Server where
     Parser.MessageType == Request,
     Serializer.MessageType == Response,
-    Parser.StreamType == StreamBuffer<ServerStreamType>,
-    Serializer.StreamType == StreamBuffer<ServerStreamType>
+    Parser.StreamType == StreamBuffer<StreamType>,
+    Serializer.StreamType == StreamBuffer<StreamType>
  {
-    public typealias StreamType = ServerStreamType
-
-    private let queue = DispatchQueue(label: "codes.vapor.server", qos: .userInteractive, attributes: .concurrent)
-    private let streams = ThreadsafeArray<StreamBuffer<StreamType>>()
-
-    public let middleware: [Middleware]
+    // public let middleware: [Middleware]
     public let stream: StreamType
 
-    public init(
-        _ stream: StreamType,
-        _ middleware: [Middleware] = []
-    ) throws {
-        self.stream = stream
-        self.middleware = type(of: self).defaultMiddleware + middleware
+    public var scheme: String {
+        return stream.scheme
     }
 
-    deinit {
-        streams.forEach { stream in
-            try? stream.close()
-        }
+    public var hostname: String {
+        return stream.hostname
     }
+
+    public var port: Port {
+        return stream.port
+    }
+
+    public init(scheme: String, hostname: String, port: Port) throws {
+        stream = try StreamType(scheme: scheme, hostname: hostname, port: port)
+    }
+
+    private let queue = DispatchQueue(
+        label: "codes.vapor.server",
+        qos: .userInteractive,
+        attributes: .concurrent
+    )
 
     public func start(_ responder: Responder, errors: @escaping ServerErrorHandler) throws {
         // add middleware
-        let responder = middleware.chain(to: responder)
+        // let responder = middleware.chain(to: responder)
 
         try stream.bind()
         try stream.listen(max: 4096)
 
         // no throwing inside of the loop
         while true {
-            let client: ServerStreamType
+            let client: StreamType
 
             do {
                 client = try stream.accept()
@@ -80,7 +83,7 @@ public final class BasicServer<
         }
     }
 
-    private func respond(stream: ServerStreamType, responder: Responder) throws {
+    private func respond(stream: StreamType, responder: Responder) throws {
         let stream = StreamBuffer(stream)
         try stream.setTimeout(defaultServerTimeout)
 

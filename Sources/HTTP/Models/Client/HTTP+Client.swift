@@ -25,60 +25,34 @@ public typealias TLSTCPClient = BasicClient<
 >
 
 public final class BasicClient<
-    ClientStreamType: ClientStream,
+    StreamType: ClientStream,
     Serializer: TransferSerializer,
     Parser: TransferParser
 >: Client where
     Parser.MessageType == Response,
     Serializer.MessageType == Request,
-    Parser.StreamType == StreamBuffer<ClientStreamType>,
-    Serializer.StreamType == StreamBuffer<ClientStreamType>
+    Parser.StreamType == StreamBuffer<StreamType>,
+    Serializer.StreamType == StreamBuffer<StreamType>
 {
-    public typealias StreamType = ClientStreamType
-
-    public let middleware: [Middleware]
+    // public let middleware: [Middleware]
     public let stream: StreamType
 
-    private let responder: Responder
+    public var scheme: String {
+        return stream.scheme
+    }
 
-    public init(
-        _ stream: StreamType,
-        _ middleware: [Middleware] = []
-    ) throws {
-        self.stream = stream
-        self.middleware = type(of: self).defaultMiddleware + middleware
+    public var hostname: String {
+        return stream.hostname
+    }
+
+    public var port: Port {
+        return stream.port
+    }
+
+    public init(scheme: String, hostname: String, port: Port) throws {
+        stream = try StreamType(scheme: scheme, hostname: hostname, port: port)
         try stream.connect()
 
-        let handler = Request.Handler { request in
-            ///  client MUST send a Host header field in all HTTP/1.1 request
-            /// messages.  If the target URI includes an authority component, then a
-            /// client MUST send a field-value for Host that is identical to that
-            /// authority component, excluding any userinfo subcomponent and its "@"
-            /// delimiter (Section 2.7.1).  If the authority component is missing or
-            /// undefined for the target URI, then a client MUST send a Host header
-            /// field with an empty field-value.
-            request.headers["Host"] = stream.hostname
-            request.headers["User-Agent"] = userAgent
-
-            let buffer = StreamBuffer<StreamType>(stream)
-            let serializer = Serializer(stream: buffer)
-            try serializer.serialize(request)
-
-            let parser = Parser(stream: buffer)
-            let response = try parser.parse()
-
-            response.peerAddress = parser.parsePeerAddress(
-                from: stream,
-                with: response.headers
-            )
-
-            try buffer.flush()
-
-            return response
-        }
-
-        // add middleware
-        responder = self.middleware.chain(to: handler)
     }
     
     deinit {
@@ -87,9 +61,35 @@ public final class BasicClient<
 
     public func respond(to request: Request) throws -> Response {
         try assertValid(request)
-        guard !stream.isClosed else { throw ClientError.unableToConnect }
+        guard !stream.isClosed else {
+            throw ClientError.unableToConnect
+        }
 
-        return try responder.respond(to: request)
+        ///  client MUST send a Host header field in all HTTP/1.1 request
+        /// messages.  If the target URI includes an authority component, then a
+        /// client MUST send a field-value for Host that is identical to that
+        /// authority component, excluding any userinfo subcomponent and its "@"
+        /// delimiter (Section 2.7.1).  If the authority component is missing or
+        /// undefined for the target URI, then a client MUST send a Host header
+        /// field with an empty field-value.
+        request.headers["Host"] = stream.hostname
+        request.headers["User-Agent"] = userAgent
+
+        let buffer = StreamBuffer<StreamType>(stream)
+        let serializer = Serializer(stream: buffer)
+        try serializer.serialize(request)
+
+        let parser = Parser(stream: buffer)
+        let response = try parser.parse()
+
+        response.peerAddress = parser.parsePeerAddress(
+            from: stream,
+            with: response.headers
+        )
+
+        try buffer.flush()
+
+        return response
     }
 }
 
@@ -97,22 +97,22 @@ let VERSION = "2"
 public var userAgent = "App (Swift) VaporEngine/\(VERSION)"
 
 
-extension Client where StreamType: InternetStream {
+extension Client {
     internal func assertValid(_ request: Request) throws {
         if request.uri.hostname.isEmpty {
-            guard request.uri.hostname == stream.hostname else {
+            guard request.uri.hostname == hostname else {
                 throw ClientError.invalidRequestHost
             }
         }
 
         if request.uri.scheme.isEmpty {
-            guard request.uri.scheme == stream.scheme else {
+            guard request.uri.scheme == scheme else {
                 throw ClientError.invalidRequestScheme
             }
         }
 
         if let requestPort = request.uri.port {
-            guard requestPort == stream.port else { throw ClientError.invalidRequestPort }
+            guard requestPort == port else { throw ClientError.invalidRequestPort }
         }
 
         guard request.uri.userInfo == nil else {
