@@ -229,10 +229,3 @@ public final class SMTPClient<StreamType: ClientStream> {
         return (code, reply)
     }
 }
-
-extension SMTPClient where StreamType: BasicInternetInitializable {
-    public convenience init(scheme: String, hostname: String, port: Port) throws {
-        let stream = try StreamType(scheme: scheme, hostname: hostname, port: port)
-        try self.init(stream)
-    }
-}
