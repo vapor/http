@@ -115,11 +115,9 @@ extension Client {
         }
 
         guard request.uri.userInfo == nil else {
-            /*
-                 Userinfo (i.e., username and password) are now disallowed in HTTP and
-                 HTTPS URIs, because of security issues related to their transmission
-                 on the wire.  (Section 2.7.1)
-            */
+            /// Userinfo (i.e., username and password) are now disallowed in HTTP and
+            /// HTTPS URIs, because of security issues related to their transmission
+            /// on the wire.  (Section 2.7.1)
             throw ClientError.userInfoNotAllowedOnHTTP
         }
     }

@@ -29,8 +29,8 @@ public final class BasicServer<
     Parser.StreamType == StreamBuffer<StreamType.Client>,
     Serializer.StreamType == StreamBuffer<StreamType.Client>
  {
-    // public let middleware: [Middleware]
     public let stream: StreamType
+    public let listenMax: Int
 
     public var scheme: String {
         return stream.scheme
@@ -44,8 +44,9 @@ public final class BasicServer<
         return stream.port
     }
 
-    public init(_ stream: StreamType) throws {
+    public init(_ stream: StreamType, listenMax: Int = 4096) throws {
         self.stream = stream
+        self.listenMax = listenMax
     }
 
     private let queue = DispatchQueue(
@@ -55,11 +56,8 @@ public final class BasicServer<
     )
 
     public func start(_ responder: Responder, errors: @escaping ServerErrorHandler) throws {
-        // add middleware
-        // let responder = middleware.chain(to: responder)
-
         try stream.bind()
-        try stream.listen(max: 4096)
+        try stream.listen(max: listenMax)
 
         // no throwing inside of the loop
         while true {

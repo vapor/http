@@ -88,9 +88,6 @@ import Transport
     SMTPClient is designed to connect and transmit messages to SMTP Servers
 */
 public final class SMTPClient<StreamType: ClientStream> {
-//    public let scheme: String
-//    public let hostname: String
-//    public let port: Port
     public let stream: StreamType
     internal let buffer: StreamBuffer<StreamType>
 
