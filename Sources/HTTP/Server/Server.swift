@@ -1,46 +1,26 @@
 import Transport
 
-public protocol ServerProtocol: Program {
-    func start(responder: Responder, errors: @escaping ServerErrorHandler) throws
-    func startAsync(responder: Responder, errors: @escaping ServerErrorHandler) throws
+public protocol Server: Program {
+    func start(_ responder: Responder, errors: @escaping ServerErrorHandler) throws
 }
 
-extension ServerProtocol {
+extension Server {
+    public func start(_ responder: Responder) throws {
+        try self.start(responder, errors: { _ in })
+    }
+}
 
+extension Server where StreamType: InternetStream {
     public static func start(
-        host: String? = nil,
-        port: Int? = nil,
-        securityLayer: SecurityLayer = .none,
+        scheme: String = "http",
+        hostname: String = "0.0.0.0",
+        port: Port = 8080,
         responder: Responder,
-        errors: @escaping ServerErrorHandler
+        errors: @escaping ServerErrorHandler = { _ in }
     ) throws {
-        let server = try make(host: host, port: port, securityLayer: securityLayer)
+        let server = try Self.init(scheme: scheme, hostname: hostname, port: port)
         let responder = responder
         let errors = errors
-        try server.start(responder: responder, errors: errors)
-    }
-
-    public static func startAsync(
-        host: String? = nil,
-        port: Int? = nil,
-        securityLayer: SecurityLayer = .none,
-        responder: Responder,
-        errors: @escaping ServerErrorHandler
-    ) throws -> Self {
-        let server = try make(host: host, port: port, securityLayer: securityLayer)
-        let responder = responder
-        let errors = errors
-        try server.startAsync(responder: responder, errors: errors)
-        return server
-    }
-}
-
-public enum NotSupported: Swift.Error {
-    case unimplemented(String)
-}
-
-extension ServerProtocol {
-    public func startAsync(responder: Responder, errors: @escaping ServerErrorHandler) throws {
-        throw ServerError.respond(NotSupported.unimplemented(#function))
+        try server.start(responder, errors: errors)
     }
 }

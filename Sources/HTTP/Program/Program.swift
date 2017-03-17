@@ -4,11 +4,10 @@ import Transport
 private var _defaultMiddlewareStorage: [String: [Middleware]] = [:]
 
 public protocol Program {
-    var host: String { get }
-    var port: Int { get }
-    var securityLayer: SecurityLayer { get }
+    associatedtype StreamType
+    var stream: StreamType { get }
     var middleware: [Middleware] { get }
-    init(host: String, port: Int, securityLayer: SecurityLayer, middleware: [Middleware]) throws
+    init(_ stream: StreamType, _ middleware: [Middleware]) throws
     static var defaultMiddleware: [Middleware] { get set }
 }
 
@@ -31,39 +30,26 @@ extension Program {
     }
 }
 
-extension Program {
-    public static func make(
-        host: String? = nil,
-        port: Int? = nil,
-        securityLayer: SecurityLayer = .tls(nil),
-        middleware: [Middleware] = []
-    ) throws -> Self {
-        let host = host ?? "0.0.0.0"
-        let port = port ?? securityLayer.port()
-        return try Self(host: host, port: port, securityLayer: securityLayer, middleware: middleware)
+extension Program where StreamType: InternetStream {
+    public init(
+        scheme: String = "http",
+        hostname: String = "0.0.0.0",
+        port: Port = 80,
+        _ middleware: [Middleware] = []
+    ) throws {
+        let stream = try StreamType(scheme: scheme, hostname: hostname, port: port)
+        try self.init(stream, middleware)
     }
 }
 
-extension SecurityLayer {
-    func port() -> Int {
-        switch self {
-        case .none:
-            return 80
-        case .tls(_):
-            return 443
-        }
+extension Stream where Self: InternetStream {
+    public var address: String {
+        return "\(hostname):\(port)"
     }
 }
 
-extension Program {
-    public static func make(
-        scheme: String? = nil,
-        host: String,
-        port: Int? = nil,
-        middleware: [Middleware] = []
-    ) throws -> Self {
-        let scheme = scheme ?? "https" // default to secure https connection
-        let port = port ?? URI.defaultPorts[scheme] ?? 80
-        return try Self(host: host, port: port, securityLayer: scheme.securityLayer, middleware: middleware)
+extension Stream where Self: Program, Self.StreamType: InternetStream {
+    public var address: String {
+        return "\(stream.hostname):\(stream.port)"
     }
 }

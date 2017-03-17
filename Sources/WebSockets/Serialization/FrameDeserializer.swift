@@ -1,14 +1,14 @@
 import Core
-import protocol Transport.Stream
+import Transport
 
 public enum FrameParserError: Swift.Error {
     case missingByte
 }
 
 public final class FrameParser {
-    private var stream: Stream
+    private var stream: ReadableStream // FIXME: generic
 
-    public init(stream: Stream) {
+    public init(stream: ReadableStream) {
         self.stream = stream
     }
 

@@ -65,7 +65,7 @@ class WebSocketSerializationTests: XCTestCase {
         let test = TestStream()
         try test.send(input)
         let msg = try FrameParser(stream: test).acceptFrame()
-        let str = msg.payload.string
+        let str = msg.payload.makeString()
         XCTAssert(str == "Hello")
 
         let header = msg.header
@@ -86,7 +86,7 @@ class WebSocketSerializationTests: XCTestCase {
         let test = TestStream()
         try test.send(input)
         let msg = try FrameParser(stream: test).acceptFrame()
-        let str = msg.payload.string
+        let str = msg.payload.makeString()
         XCTAssert(str == "Hello")
 
         let header = msg.header
@@ -118,7 +118,7 @@ class WebSocketSerializationTests: XCTestCase {
         XCTAssert(msg.isFragmentHeader)
         XCTAssertFalse(msg.isControlFrame)
 
-        let str = msg.payload.string
+        let str = msg.payload.makeString()
         XCTAssert(str == "Hel")
 
         let header = msg.header
@@ -143,7 +143,7 @@ class WebSocketSerializationTests: XCTestCase {
         XCTAssert(msg.isFragmentFooter)
         XCTAssertFalse(msg.isControlFrame)
 
-        let str = msg.payload.string
+        let str = msg.payload.makeString()
         XCTAssert(str == "lo")
 
         let header = msg.header
@@ -176,7 +176,7 @@ class WebSocketSerializationTests: XCTestCase {
         XCTAssert(msg.isControlFrame)
 
         // is Hello, but message doesn't matter
-        let str = msg.payload.string
+        let str = msg.payload.makeString()
         XCTAssert(str == "Hello")
 
         let header = msg.header
@@ -203,7 +203,7 @@ class WebSocketSerializationTests: XCTestCase {
         XCTAssert(msg.isControlFrame)
 
         // is Hello, but message doesn't matter. Must match `ping` payload
-        let str = msg.payload.string
+        let str = msg.payload.makeString()
         XCTAssert(str == "Hello")
 
         let header = msg.header
@@ -346,7 +346,7 @@ class WebSocketConnectTests : XCTestCase {
       
 	let headers: [HeaderKey: String] = ["Authorized": "Bearer exampleBearer"]
 	do {
-        try WebSocket.background(to:"ws:127.0.0.1", headers: headers) { (websocket: WebSocket) throws -> Void in
+        try WebSocket.background(to:"ws:127.0.0.1", using: TCPClient.self, headers: headers) { (websocket: WebSocket) throws -> Void in
                     XCTAssert(false, "No server, so this should fail to connect")
 		    }
 	} catch {
@@ -355,7 +355,7 @@ class WebSocketConnectTests : XCTestCase {
     }
 }
 
-final class TestStream: Transport.Stream {
+final class TestStream: DuplexStream {
     
     var peerAddress: String = "1.2.3.4:5678"
 

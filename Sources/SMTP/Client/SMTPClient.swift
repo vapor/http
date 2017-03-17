@@ -87,26 +87,25 @@ import Transport
 /**
     SMTPClient is designed to connect and transmit messages to SMTP Servers
 */
-public final class SMTPClient<ClientStreamType: ClientStream>: ProgramStream {
-    public let host: String
-    public let port: Int
-    public let securityLayer: SecurityLayer
-
-    internal let stream: Transport.Stream
+public final class SMTPClient<ClientStreamType: ClientStream> {
+    public let scheme: String
+    public let hostname: String
+    public let port: Port
+    internal let stream: DuplexStream
 
     /**
          Connect the client to given SMTP Server
          
             try SMTPClient(host: "smtp.gmail.com", port: 465, securityLayer: .tls)
     */
-    public init(host: String, port: Int, securityLayer: SecurityLayer) throws {
-        self.host = host
+    public init(scheme: String, hostname: String, port: Port) throws {
+        self.scheme = scheme
+        self.hostname = hostname
         self.port = port
-        self.securityLayer  = securityLayer
 
-        let client = try ClientStreamType(host: host, port: port, securityLayer: securityLayer)
-        let stream = try client.connect()
-        self.stream = StreamBuffer(stream)
+        let client = try ClientStreamType(scheme: scheme, hostname: hostname, port: port)
+        try client.connect()
+        self.stream = StreamBuffer(client)
     }
 
     deinit {

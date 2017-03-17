@@ -1,50 +1,48 @@
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin
-#endif
-
+import libc
 import Transport
 import Dispatch
+import Sockets
 
 public var defaultServerTimeout: Double = 30
 
-public typealias BasicServer = Server<TCPServerStream, Parser<Request>, Serializer<Response>>
+public typealias TCPServer = BasicServer<
+    TCPInternetSocket,
+    Parser<Request, StreamBuffer<TCPInternetSocket>>,
+    Serializer<Response, StreamBuffer<TCPInternetSocket>>
+>
 
-public final class Server<
+import TLS
+
+public typealias TLSTCPServer = BasicServer<
+    TLS.ServerSocket,
+    Parser<Request, StreamBuffer<TLS.ServerSocket>>,
+    Serializer<Response, StreamBuffer<TLS.ServerSocket>>
+>
+
+public final class BasicServer<
     ServerStreamType: ServerStream,
     Parser: TransferParser,
-    Serializer: TransferSerializer>: ServerProtocol
-where
+    Serializer: TransferSerializer
+>: Server where
     Parser.MessageType == Request,
-    Serializer.MessageType == Response
+    Serializer.MessageType == Response,
+    Parser.StreamType == StreamBuffer<ServerStreamType>,
+    Serializer.StreamType == StreamBuffer<ServerStreamType>
  {
+    public typealias StreamType = ServerStreamType
 
-    let server: ServerStreamType
     private let queue = DispatchQueue(label: "codes.vapor.server", qos: .userInteractive, attributes: .concurrent)
-    private let streams = ThreadsafeArray<StreamBuffer>()
+    private let streams = ThreadsafeArray<StreamBuffer<StreamType>>()
 
-    public let host: String
-    public let port: Int
-    public let securityLayer: SecurityLayer
     public let middleware: [Middleware]
+    public let stream: StreamType
 
     public init(
-        host: String = "0.0.0.0",
-        port: Int = 8080,
-        securityLayer: SecurityLayer = .none,
-        middleware: [Middleware] = []
+        _ stream: StreamType,
+        _ middleware: [Middleware] = []
     ) throws {
-        self.host = host
-        self.port = port
-        self.securityLayer = securityLayer
+        self.stream = stream
         self.middleware = type(of: self).defaultMiddleware + middleware
-
-        do {
-            server = try ServerStreamType(host: host, port: port, securityLayer: securityLayer)
-        } catch {
-            throw ServerError.bind(host: host, port:port, error)
-        }
     }
 
     deinit {
@@ -53,16 +51,19 @@ where
         }
     }
 
-    public func start(responder: Responder, errors: @escaping ServerErrorHandler) throws {
+    public func start(_ responder: Responder, errors: @escaping ServerErrorHandler) throws {
         // add middleware
         let responder = middleware.chain(to: responder)
 
+        try stream.bind()
+        try stream.listen(max: 4096)
+
         // no throwing inside of the loop
         while true {
-            let stream: Stream
+            let client: ServerStreamType
 
             do {
-                stream = try server.accept()
+                client = try stream.accept()
             } catch {
                 errors(.accept(error))
                 continue
@@ -70,7 +71,7 @@ where
 
             queue.async {
                 do {
-                    try self.respond(stream: stream, responder: responder)
+                    try self.respond(stream: client, responder: responder)
                 } catch {
                     errors(.dispatch(error))
                 }
@@ -79,7 +80,7 @@ where
         }
     }
 
-    private func respond(stream: Stream, responder: Responder) throws {
+    private func respond(stream: ServerStreamType, responder: Responder) throws {
         let stream = StreamBuffer(stream)
         try stream.setTimeout(defaultServerTimeout)
 
@@ -102,6 +103,11 @@ where
             } catch {
                 throw error
             }
+
+            request.peerAddress = parser.parsePeerAddress(
+                from: self.stream,
+                with: request.headers
+            )
 
             keepAlive = request.keepAlive
             let response = try responder.respond(to: request)

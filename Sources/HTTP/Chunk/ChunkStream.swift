@@ -11,10 +11,10 @@ import Transport
 ///
 /// https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 public class ChunkStream {
-    public let raw: Stream
+    public let raw: WriteableStream
     public var isClosed: Bool
 
-    public init(stream: Stream) {
+    public init(stream: WriteableStream) {
         self.raw = stream
         isClosed = false
     }

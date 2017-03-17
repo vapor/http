@@ -1,29 +1,62 @@
 import Core
 import Transport
+import Sockets
 
 import URI
 import HTTP
 
 extension WebSocket {
-    public static func background(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
+    public static func background<C: Client>(
+        to uri: String,
+        using client: C.Type,
+        protocols: [String]? = nil,
+        headers: [HeaderKey: String]? = nil,
+        onConnect: @escaping (WebSocket) throws -> Void
+    ) throws
+        where C.StreamType: InternetStream & DuplexStream
+    {
         let uri = try URI(uri)
         try background(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
     }
 
-    public static func background(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
+    public static func background<C: Client>(
+        to uri: URI,
+        using client: C.Type,
+        protocols: [String]? = nil,
+        headers: [HeaderKey: String]? = nil,
+        onConnect: @escaping (WebSocket) throws -> Void
+    ) throws
+        where C.StreamType: InternetStream & DuplexStream
+    {
         Core.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
             _ = try? connect(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
         }
     }
 
-    public static func connect(to uri: String, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
+    public static func connect<C: Client>(
+        to uri: String,
+        using client: C.Type,
+        protocols: [String]? = nil,
+        headers: [HeaderKey: String]? = nil,
+        onConnect: @escaping (WebSocket) throws -> Void
+    ) throws
+        where C.StreamType: InternetStream & DuplexStream
+    {
         let uri = try URI(uri)
         try connect(to: uri, using: client, protocols: protocols, headers: headers,  onConnect: onConnect)
     }
 
-    public static func connect(to uri: URI, using client: ClientProtocol.Type = Client<TCPClientStream, Serializer<Request>, Parser<Response>>.self, protocols: [String]? = nil, headers: [HeaderKey: String]? = nil, onConnect: @escaping (WebSocket) throws -> Void) throws {
-        guard !uri.host.isEmpty else { throw WebSocket.FormatError.invalidURI }
+    public static func connect<C: Client>(
+        to uri: URI,
+        using client: C.Type,
+        protocols: [String]? = nil,
+        headers: [HeaderKey: String]? = nil,
+        onConnect: @escaping (WebSocket) throws -> Void
+    ) throws
+        where C.StreamType: InternetStream & DuplexStream
+    {
+        guard !uri.hostname.isEmpty else { throw WebSocket.FormatError.invalidURI }
 
         let requestKey = WebSocket.makeRequestKey()
 
@@ -41,7 +74,7 @@ extension WebSocket {
             headers.secWebProtocol = protocols
         }
 
-        let client = try client.make(scheme: uri.scheme, host: uri.host, port: uri.port)
+        let client = try client.init(scheme: uri.scheme, hostname: uri.hostname, port: uri.port ?? 80)
         // manually requesting to preserve queries that might be in URI easily
         let request = Request(
             method: .get,
@@ -74,7 +107,7 @@ extension WebSocket {
         MUST be selected randomly for each connection.
     */
     static func makeRequestKey() -> String {
-        return makeRequestKeyBytes().base64Encoded.string
+        return makeRequestKeyBytes().base64Encoded.makeString()
     }
 
     private static func makeRequestKeyBytes() -> Bytes {

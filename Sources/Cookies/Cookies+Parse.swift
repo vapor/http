@@ -18,9 +18,9 @@ extension Cookies {
         let tokens: [String]
         switch method {
         case .request:
-            tokens = bytes.string.components(separatedBy: ";")
+            tokens = bytes.makeString().components(separatedBy: ";")
         case .response:
-            tokens = bytes.string.components(separatedBy: "\r\nSet-Cookie:")
+            tokens = bytes.makeString().components(separatedBy: "\r\nSet-Cookie:")
         }
 
         for token in tokens {

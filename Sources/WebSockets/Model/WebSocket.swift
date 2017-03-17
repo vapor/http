@@ -1,6 +1,6 @@
 import struct Core.Bytes
 import Transport
-import Socks
+import Sockets
 
 public final class WebSocket {
 
@@ -58,7 +58,7 @@ public final class WebSocket {
     public fileprivate(set) var state: State
 
     internal let mode: Mode
-    internal let stream: Stream
+    internal let stream: DuplexStream // FIXME: generic
 
     fileprivate let aggregator: FragmentAggregator?
 
@@ -68,7 +68,7 @@ public final class WebSocket {
          Aggregator should only be disabled in situations where the aggregator is customized. 
          Fragmented messages will only be delivered through `onFrame`
     */
-    public init(_ stream: Stream, mode: Mode, disableFragmentAggregation: Bool = false) {
+    public init(_ stream: DuplexStream, mode: Mode, disableFragmentAggregation: Bool = false) {
         self.mode = mode
         self.state = .open
         self.stream = stream
@@ -118,7 +118,7 @@ extension WebSocket {
                 try received(frame)
             } catch {
                 if
-                    case let StreamError.receive(_, recError as SocksError) = error, recError.number == 35  { continue }
+                    case let StreamError.receive(_, recError as SocketsError) = error, recError.number == 35  { continue }
                 try completeCloseHandshake(statusCode: nil, reason: nil, cleanly: false)
             }
         }
@@ -142,7 +142,7 @@ extension WebSocket {
         case .binary:
             try onBinary?((self, payload))
         case .text:
-            let text = payload.string
+            let text = payload.makeString()
             try onText?((self, text))
         case let .nonControlExtension(nc):
             try onNonControlExtension?((self, nc, payload))
@@ -187,7 +187,7 @@ extension WebSocket {
             statusCode = UInt16(bytes: statusCodeBytes)
             statusCodeData = statusCodeBytes
             // stringify remaining bytes -- if there are any
-            reason = payload.dropFirst(2).string
+            reason = payload.dropFirst(2).makeString()
         }
 
         switch  state {

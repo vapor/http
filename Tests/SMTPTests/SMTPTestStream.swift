@@ -7,17 +7,17 @@ let password = "****"
 let baduser = "bad-user"
 let badpass = "bad-pass"
 
-let plainLogin = "\0\(username)\0\(password)".makeBytes().base64Encoded.string
+let plainLogin = "\0\(username)\0\(password)".makeBytes().base64Encoded.makeString()
 
 let greeting = "220 smtp.gmail.com at your service"
 let ehloResponse = "250-smtp.sendgrid.net\r\n250-8BITMIME\r\n250-SIZE 31457280\r\n250-AUTH PLAIN LOGIN\r\n250 AUTH=PLAIN LOGIN"
 
 private let SMTPReplies: [String: String] = [
-    "AUTH LOGIN\r\n": "334 " + "Username:".makeBytes().base64Encoded.string,
-    username.makeBytes().base64Encoded.string + "\r\n": "334 " + "Password:".makeBytes().base64Encoded.string,
-    password.makeBytes().base64Encoded.string + "\r\n": "235 passed",
-    baduser.makeBytes().base64Encoded.string + "\r\n": "500 invalid username",
-    badpass.makeBytes().base64Encoded.string + "\r\n": "500 invalid password",
+    "AUTH LOGIN\r\n": "334 " + "Username:".makeBytes().base64Encoded.makeString(),
+    username.makeBytes().base64Encoded.makeString() + "\r\n": "334 " + "Password:".makeBytes().base64Encoded.makeString(),
+    password.makeBytes().base64Encoded.makeString() + "\r\n": "235 passed",
+    baduser.makeBytes().base64Encoded.makeString() + "\r\n": "500 invalid username",
+    badpass.makeBytes().base64Encoded.makeString() + "\r\n": "500 invalid password",
     "AUTH PLAIN " + plainLogin + "\r\n": "235 passed",
     "TEST LINE" + "\r\n": "042 ok",
     "EHLO localhost" + "\r\n": ehloResponse,
@@ -30,25 +30,20 @@ private let SMTPReplies: [String: String] = [
 ]
 
 final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
-
-    public var peerAddress: String {
-        return "\(host):\(port)"
-    }
-
     var isClosed: Bool
     var buffer: Bytes
 
-    let host: String
-    let port: Int
-    let securityLayer: SecurityLayer
+    let scheme: String
+    let hostname: String
+    let port: Port
 
-    init(host: String, port: Int, securityLayer: SecurityLayer) {
+    init(scheme: String, hostname: String, port: Port) {
         isClosed = false
         buffer = []
 
-        self.host = host
+        self.scheme = scheme
+        self.hostname = hostname
         self.port = port
-        self.securityLayer = securityLayer
     }
 
     func setTimeout(_ timeout: Double) throws {
@@ -63,8 +58,8 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
 
     func send(_ bytes: Bytes) throws {
         isClosed = false
-        if let response = SMTPReplies[bytes.string] {
-            if bytes.string == "\r\n.\r\n" {
+        if let response = SMTPReplies[bytes.makeString()] {
+            if bytes.makeString() == "\r\n.\r\n" {
                 // email data terminator. overwrite buffer of dummy email
                 buffer = response.makeBytes()
             } else {
@@ -99,7 +94,7 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
         return Bytes(data)
     }
     
-    func connect() throws -> Transport.Stream {
-        return self
+    func connect() throws {
+        
     }
 }

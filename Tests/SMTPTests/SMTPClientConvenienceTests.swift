@@ -17,23 +17,15 @@ class SMTPClientConvenienceTests: XCTestCase {
 
     func testGmail() throws {
         let gmail = try SMTPClient<SMTPTestStream>.makeGmailClient()
-        XCTAssert(gmail.host == "smtp.gmail.com")
-        XCTAssert(gmail.port == 465)
-        if case .tls = gmail.securityLayer {
-            //
-        } else {
-            XCTFail("Not TLS")
-        }
+        XCTAssertEqual(gmail.hostname, "smtp.gmail.com")
+        XCTAssertEqual(gmail.port, 465)
+        XCTAssertEqual(gmail.scheme, "smtps")
     }
 
     func testSendGrid() throws {
-        let gmail = try SMTPClient<SMTPTestStream>.makeSendGridClient()
-        XCTAssert(gmail.host == "smtp.sendgrid.net")
-        XCTAssert(gmail.port == 465)
-        if case .tls = gmail.securityLayer {
-            //
-        } else {
-            XCTFail("Not TLS")
-        }
+        let sendgrid = try SMTPClient<SMTPTestStream>.makeSendGridClient()
+        XCTAssertEqual(sendgrid.hostname, "smtp.sendgrid.net")
+        XCTAssertEqual(sendgrid.port, 465)
+        XCTAssertEqual(sendgrid.scheme, "smtps")
     }
 }

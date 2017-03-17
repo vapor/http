@@ -2,7 +2,7 @@ import XCTest
 @testable import HTTP
 import Transport
 import libc
-import Socks
+import Sockets
 
 class HTTPBodyTests: XCTestCase {
     static var allTests = [
@@ -18,11 +18,11 @@ class HTTPBodyTests: XCTestCase {
 
             let stream = TestStream()
             try stream.send(expected)
-            let body = try Parser<Request>(stream: stream).parseBody(with: ["content-length": expected.characters.count.description])
+            let body = try Parser<Request, TestStream>(stream: stream).parseBody(with: ["content-length": expected.characters.count.description])
 
             switch body {
             case .data(let data):
-                XCTAssertEqual(data.string, expected)
+                XCTAssertEqual(data.makeString(), expected)
             default:
                 XCTFail("Body not buffer")
             }
@@ -41,11 +41,11 @@ class HTTPBodyTests: XCTestCase {
             try chunkStream.send("hello worl")
             try chunkStream.send("d!")
 
-            let body = try Parser<Request>(stream: stream).parseBody(with: ["transfer-encoding": "chunked"])
+            let body = try Parser<Request, TestStream>(stream: stream).parseBody(with: ["transfer-encoding": "chunked"])
 
             switch body {
             case .data(let data):
-                XCTAssertEqual(data.string, expected)
+                XCTAssertEqual(data.makeString(), expected)
             default:
                 XCTFail("Body not buffer")
             }
@@ -55,8 +55,8 @@ class HTTPBodyTests: XCTestCase {
     }
 
     func testClientStreamUsage() throws {
-        let server = try HTTP.Server<TCPServerStream, Parser<Request>, Serializer<Response>>(host: "0.0.0.0", port: 0, securityLayer: .none)
-        let assignedPort = try server.server.stream.localAddress().port
+        let server = try TCPServer(scheme: "http", hostname: "0.0.0.0", port: 8942)
+        // let assignedPort = try server.stream.localAddress().port
 
         struct HelloResponder: HTTP.Responder {
             func respond(to request: Request) throws -> Response {
@@ -65,7 +65,7 @@ class HTTPBodyTests: XCTestCase {
         }
 
         background {
-            try! server.start(responder: HelloResponder(), errors: { err in
+            try! server.start(HelloResponder(), errors: { err in
                 XCTFail("\(err)")
             })
         }
@@ -76,7 +76,7 @@ class HTTPBodyTests: XCTestCase {
 
         do {
             for _ in 0..<8192 {
-                let res = try HTTP.Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://0.0.0.0:\(assignedPort)/")
+                let res = try TCPClient.request(.get, "http://0.0.0.0:\(8942)/")
                 XCTAssertEqual(res.body.bytes ?? [], "Hello".makeBytes())
             }
         } catch {

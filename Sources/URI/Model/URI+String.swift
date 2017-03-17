@@ -12,7 +12,7 @@ extension URI: CustomStringConvertible {
         var s = ""
         if !scheme.isEmpty { s += "\(scheme)://" }
         if let userInfo = userInfo { s += "\(userInfo)@" }
-        if !host.isEmpty { s += "\(host)" }
+        if !hostname.isEmpty { s += "\(hostname)" }
         if let port = port { s += ":\(port)" }
         if !path.isEmpty { s += path.begin(with: "/") }
         if let query = query { s += "?\(query)" }

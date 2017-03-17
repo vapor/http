@@ -23,9 +23,12 @@ class HTTPRequestTests: XCTestCase {
             try stream.sendLine()
             try stream.sendLine()
 
-            let request = try Parser<Request>(stream: stream).parse()
+            let parser = Parser<Request, TestStream>(stream: stream)
+            let request = try parser.parse()
+            request.peerAddress = parser.parsePeerAddress(from: stream, with: request.headers)
+
             XCTAssertEqual(request.method, Method.get)
-            XCTAssertEqual(request.uri.host, "qutheory.io")
+            XCTAssertEqual(request.uri.hostname, "qutheory.io")
             XCTAssertEqual(request.uri.defaultPort, 80)
             XCTAssertEqual(request.uri.path, "/plaintext")
             XCTAssertEqual(request.version.major, 1)
@@ -50,9 +53,9 @@ class HTTPRequestTests: XCTestCase {
             try stream.sendLine()
             try stream.sendLine()
 
-            let request = try Parser<Request>(stream: stream).parse()
+            let request = try Parser<Request, TestStream>(stream: stream).parse()
             XCTAssertEqual(request.method.description, "FOO")
-            XCTAssertEqual(request.uri.host, "qutheory.io")
+            XCTAssertEqual(request.uri.hostname, "qutheory.io")
             XCTAssertEqual(request.uri.port, 1337)
             XCTAssertEqual(request.uri.path, "/p_2")
             XCTAssertEqual(request.uri.fragment, "fragment")
@@ -79,8 +82,11 @@ class HTTPRequestTests: XCTestCase {
             try stream.send("X-Forwarded-For: 5.6.7.8")
             try stream.sendLine()
             try stream.sendLine()
-            
-            let request = try Parser<Request>(stream: stream).parse()
+
+            let parser = Parser<Request, TestStream>(stream: stream)
+            let request = try parser.parse()
+            request.peerAddress = parser.parsePeerAddress(from: stream, with: request.headers)
+
             XCTAssertEqual(request.method, Method.get)
             XCTAssertEqual(request.peerAddress?.address(), "5.6.7.8")
             XCTAssertEqual(request.peerAddress?.xForwardedFor, "5.6.7.8")
@@ -105,8 +111,11 @@ class HTTPRequestTests: XCTestCase {
             try stream.send("Forwarded: for=192.0.2.60; proto=http; by=203.0.113.43")
             try stream.sendLine()
             try stream.sendLine()
+
+            let parser = Parser<Request, TestStream>(stream: stream)
+            let request = try parser.parse()
+            request.peerAddress = parser.parsePeerAddress(from: stream, with: request.headers)
             
-            let request = try Parser<Request>(stream: stream).parse()
             XCTAssertEqual(request.method, Method.get)
             XCTAssertEqual(request.peerAddress?.address(), "for=192.0.2.60; proto=http; by=203.0.113.43")
             XCTAssertEqual(request.peerAddress?.forwarded, "for=192.0.2.60; proto=http; by=203.0.113.43")

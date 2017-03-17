@@ -5,46 +5,23 @@ let dependencies: [Package.Dependency] = [
     .Package(url: "https://github.com/vapor/crypto.git", Version(2,0,0, prereleaseIdentifiers: ["alpha"])),
 
     // Secure Sockets
-    .Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["alpha"]))
+    .Package(url: "https://github.com/vapor/tls.git", Version(0,0,0))// Version(2,0,0, prereleaseIdentifiers: ["alpha"]))
 ]
 
 let package = Package(
     name: "Engine",
     targets: [
         Target(name: "URI"),
-        Target(name: "Transport"),
         Target(name: "Cookies", dependencies: [
             "HTTP"
         ]),
         Target(name: "HTTP", dependencies: [
-              "URI", "Transport"
+            "URI"
         ]),
         Target(name: "WebSockets", dependencies: [
-            "HTTP", "URI", "Transport"
+            "HTTP", "URI"
         ]),
-        Target(name: "SMTP", dependencies: [
-            "Transport"
-        ])
-        /*
-        Target(
-            name: "HTTPExample",
-            dependencies: [
-                "HTTP"
-            ]
-        ),
-        Target(
-            name: "WebSocketsExample",
-            dependencies: [
-                "WebSockets", "HTTP", "Transport"
-            ]
-        ),
-        Target(
-            name: "SMTPExample",
-            dependencies: [
-                "SMTP", "Transport"
-            ]
-        )
-        */
+        Target(name: "SMTP")
     ],
     dependencies: dependencies,
     exclude: [

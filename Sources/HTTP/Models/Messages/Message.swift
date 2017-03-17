@@ -62,13 +62,13 @@ public class Message {
         startLineComponents: (BytesSlice, BytesSlice, BytesSlice),
         headers: [HeaderKey: String],
         body: Body,
-        peerAddress: PeerAddress?
+        peerAddress: PeerAddress? = nil
     ) throws {
-        var startLine = startLineComponents.0.string
+        var startLine = startLineComponents.0.makeString()
         startLine += " "
-        startLine += startLineComponents.1.string
+        startLine += startLineComponents.1.makeString()
         startLine += " "
-        startLine += startLineComponents.2.string
+        startLine += startLineComponents.2.makeString()
 
         self.init(startLine: startLine, headers: headers, body: body, peerAddress: peerAddress)
     }

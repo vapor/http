@@ -1,4 +1,5 @@
 import Transport
+import Sockets
 
 public enum ClientError: Swift.Error {
     case invalidRequestHost
@@ -6,48 +7,47 @@ public enum ClientError: Swift.Error {
     case invalidRequestPort
     case unableToConnect
     case userInfoNotAllowedOnHTTP
+    case missingHost
 }
 
-public typealias BasicClient = Client<TCPClientStream, Serializer<Request>, Parser<Response>>
+public typealias TCPClient = BasicClient<
+    TCPInternetSocket,
+    Serializer<Request, StreamBuffer<TCPInternetSocket>>,
+    Parser<Response, StreamBuffer<TCPInternetSocket>>
+>
 
-public final class Client<
+import TLS
+
+public typealias TLSTCPClient = BasicClient<
+    TLS.ClientSocket,
+    Serializer<Request, StreamBuffer<TLS.ClientSocket>>,
+    Parser<Response, StreamBuffer<TLS.ClientSocket>>
+>
+
+public final class BasicClient<
     ClientStreamType: ClientStream,
-    SerializerType: TransferSerializer,
-    ParserType: TransferParser
->: ClientProtocol
-where
-    ParserType.MessageType == Response,
-    SerializerType.MessageType == Request
+    Serializer: TransferSerializer,
+    Parser: TransferParser
+>: Client where
+    Parser.MessageType == Response,
+    Serializer.MessageType == Request,
+    Parser.StreamType == StreamBuffer<ClientStreamType>,
+    Serializer.StreamType == StreamBuffer<ClientStreamType>
 {
-    public typealias Serializer = SerializerType
-    public typealias Parser = ParserType
+    public typealias StreamType = ClientStreamType
 
-    public let scheme: String
-    public let host: String
-    public let port: Int
-    public let securityLayer: SecurityLayer
     public let middleware: [Middleware]
-
-    public let stream: Stream
+    public let stream: StreamType
 
     private let responder: Responder
 
     public init(
-        scheme: String,
-        host: String,
-        port: Int = 80,
-        securityLayer: SecurityLayer = .none,
-        middleware: [Middleware] = []
+        _ stream: StreamType,
+        _ middleware: [Middleware] = []
     ) throws {
-        self.scheme = scheme
-        self.host = host
-        self.port = port
-        self.securityLayer = securityLayer
-        self.middleware = type(of: self).defaultMiddleware + middleware
-
-        let client = try ClientStreamType(host: host, port: port, securityLayer: securityLayer)
-        let stream = try client.connect()
         self.stream = stream
+        self.middleware = type(of: self).defaultMiddleware + middleware
+        try stream.connect()
 
         let handler = Request.Handler { request in
             ///  client MUST send a Host header field in all HTTP/1.1 request
@@ -57,15 +57,20 @@ where
             /// delimiter (Section 2.7.1).  If the authority component is missing or
             /// undefined for the target URI, then a client MUST send a Host header
             /// field with an empty field-value.
-            request.headers["Host"] = host
+            request.headers["Host"] = stream.hostname
             request.headers["User-Agent"] = userAgent
 
-            let buffer = StreamBuffer(stream)
-            let serializer = SerializerType(stream: buffer)
+            let buffer = StreamBuffer<StreamType>(stream)
+            let serializer = Serializer(stream: buffer)
             try serializer.serialize(request)
 
-            let parser = ParserType(stream: buffer)
+            let parser = Parser(stream: buffer)
             let response = try parser.parse()
+
+            response.peerAddress = parser.parsePeerAddress(
+                from: stream,
+                with: response.headers
+            )
 
             try buffer.flush()
 
@@ -92,22 +97,22 @@ let VERSION = "2"
 public var userAgent = "App (Swift) VaporEngine/\(VERSION)"
 
 
-extension ClientProtocol {
+extension Client where StreamType: InternetStream {
     internal func assertValid(_ request: Request) throws {
-        if request.uri.host.isEmpty {
-            guard request.uri.host == host else {
+        if request.uri.hostname.isEmpty {
+            guard request.uri.hostname == stream.hostname else {
                 throw ClientError.invalidRequestHost
             }
         }
 
         if request.uri.scheme.isEmpty {
-            guard request.uri.scheme.securityLayer.isSecure == securityLayer.isSecure else {
+            guard request.uri.scheme == stream.scheme else {
                 throw ClientError.invalidRequestScheme
             }
         }
 
         if let requestPort = request.uri.port {
-            guard requestPort == port else { throw ClientError.invalidRequestPort }
+            guard requestPort == stream.port else { throw ClientError.invalidRequestPort }
         }
 
         guard request.uri.userInfo == nil else {

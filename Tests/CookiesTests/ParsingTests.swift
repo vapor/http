@@ -70,7 +70,7 @@ class ParsingTests: XCTestCase {
     func testMultiple() throws {
         let cookies = try Cookies(bytes: "life=42;leet=1337".makeBytes())
         XCTAssertEqual(cookies.cookies.count, 2)
-        let result = try cookies.makeBytes().string
+        let result = try cookies.makeBytes().makeString()
         XCTAssert(result.contains("life=42"))
         XCTAssert(result.contains("leet=1337"))
     }

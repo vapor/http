@@ -2,13 +2,12 @@ import Transport
 
 private let crlf: Bytes = [.carriageReturn, .newLine]
 
-public final class Serializer<MessageProtocol: Message>: TransferSerializer {
-    // TODO: Need?
-    public typealias MessageType = MessageProtocol
-
-    let stream: Stream
-
-    public init(stream: Stream) {
+public final class Serializer<
+    MessageType: Message,
+    StreamType: DuplexStream
+>: TransferSerializer {
+    let stream: StreamType
+    public init(stream: StreamType) {
         self.stream = stream
     }
 

@@ -11,8 +11,8 @@ extension URI {
         comps.scheme = scheme.isEmpty ? nil : scheme
         comps.user = userInfo?.username
         comps.password = userInfo?.info
-        comps.host = host.isEmpty ? nil : host
-        comps.port = port
+        comps.host = hostname.isEmpty ? nil : hostname
+        comps.port = port == nil ? nil : Int(port!)
         comps.path = path
         comps.query = query
         comps.fragment = fragment
@@ -29,8 +29,8 @@ extension URL {
         return URI(
             scheme: scheme ?? "",
             userInfo: userInfo,
-            host: host ?? "",
-            port: port,
+            hostname: host ?? "",
+            port: port?.port,
             path: path,
             query: query,
             fragment: fragment
