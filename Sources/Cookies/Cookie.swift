@@ -14,6 +14,12 @@ public struct Cookie {
     public var path: String?
     public var secure: Bool
     public var httpOnly: Bool
+    public var sameSite: SameSite?
+    
+    public enum SameSite {
+        case strict
+        case lax
+    }
 
     public init(
         name: String,
@@ -23,7 +29,8 @@ public struct Cookie {
         domain: String? = nil,
         path: String? = "/",
         secure: Bool = false,
-        httpOnly: Bool = false
+        httpOnly: Bool = false,
+        sameSite: SameSite? = nil
     ) {
         self.name = name
         self.value = value
@@ -33,6 +40,7 @@ public struct Cookie {
         self.path = path
         self.secure = secure
         self.httpOnly = httpOnly
+        self.sameSite = sameSite
     }
 }
 

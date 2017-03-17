@@ -9,6 +9,9 @@ class ParsingTests: XCTestCase {
         ("testExpires", testExpires),
         ("testHTTPOnly", testHTTPOnly),
         ("testSecure", testSecure),
+        ("testSameSiteDefault", testSameSiteDefault),
+        ("testSameSiteLax", testSameSiteLax),
+        ("testSameSiteStrict", testSameSiteStrict),
         ("testMaxAge", testMaxAge),
         ("testMaxAgeInvalid", testMaxAgeInvalid),
         ("testInvalid", testInvalid),
@@ -44,6 +47,21 @@ class ParsingTests: XCTestCase {
     func testSecure() throws {
         let cookie = try Cookie("cookie=1337; Secure")
         XCTAssertEqual(cookie.secure, true)
+    }
+    
+    func testSameSiteDefault() throws {
+        let cookie = try Cookie("cookie=1337; SameSite")
+        XCTAssertEqual(cookie.sameSite, Cookie.SameSite.strict)
+    }
+    
+    func testSameSiteLax() throws {
+        let cookie = try Cookie("cookie=1337; SameSite=Lax")
+        XCTAssertEqual(cookie.sameSite, Cookie.SameSite.lax)
+    }
+    
+    func testSameSiteStrict() throws {
+        let cookie = try Cookie("cookie=1337; SameSite=Strict")
+        XCTAssertEqual(cookie.sameSite, Cookie.SameSite.strict)
     }
 
     func testMaxAge() throws {
