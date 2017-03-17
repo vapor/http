@@ -17,7 +17,7 @@ class HTTPBodyTests: XCTestCase {
             let expected = "hello"
 
             let stream = TestStream()
-            try stream.send(expected)
+            try stream.write(expected)
             let body = try Parser<Request, TestStream>(stream: stream).parseBody(with: ["content-length": expected.characters.count.description])
 
             switch body {
@@ -38,8 +38,8 @@ class HTTPBodyTests: XCTestCase {
             let stream = TestStream()
             let chunkStream = ChunkStream(stream: stream)
 
-            try chunkStream.send("hello worl")
-            try chunkStream.send("d!")
+            try chunkStream.write("hello worl")
+            try chunkStream.write("d!")
 
             let body = try Parser<Request, TestStream>(stream: stream).parseBody(with: ["transfer-encoding": "chunked"])
 
@@ -145,7 +145,7 @@ class HTTPBodyTests: XCTestCase {
 //        
 //        _ = try socket.connect()
 //        
-//        try socket.send("Hello")
+//        try socket.write("Hello")
 //
 //        weak var weakServer = server
 //        server = nil
@@ -154,10 +154,10 @@ class HTTPBodyTests: XCTestCase {
 //        
 //        // existing connections should be unable to send data
 //        do {
-//            try socket.send("Hello again")
+//            try socket.write("Hello again")
 //            XCTFail("Expected to throw")
 //        } catch let error as StreamError {
-//            guard case StreamError.send(_, let socksError as SocksError) = error, case ErrorReason.sendFailedToSendAllBytes = socksError.type else {
+//            guard case StreamError.write(_, let socksError as SocksError) = error, case ErrorReason.sendFailedToSendAllBytes = socksError.type else {
 //                XCTFail("Unexpected Error: \(error)")
 //                return
 //            }

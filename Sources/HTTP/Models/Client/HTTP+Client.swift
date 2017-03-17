@@ -19,9 +19,9 @@ public typealias TCPClient = BasicClient<
 import TLS
 
 public typealias TLSTCPClient = BasicClient<
-    TLS.ClientSocket,
-    Serializer<Request, StreamBuffer<TLS.ClientSocket>>,
-    Parser<Response, StreamBuffer<TLS.ClientSocket>>
+    TLS.InternetSocket,
+    Serializer<Request, StreamBuffer<TLS.InternetSocket>>,
+    Parser<Response, StreamBuffer<TLS.InternetSocket>>
 >
 
 public final class BasicClient<

@@ -56,7 +56,7 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
         }
     }
 
-    func send(_ bytes: Bytes) throws {
+    func write(_ bytes: Bytes) throws {
         isClosed = false
         if let response = SMTPReplies[bytes.makeString()] {
             if bytes.makeString() == "\r\n.\r\n" {
@@ -75,7 +75,7 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
 
     }
 
-    func receive(max: Int) throws -> Bytes {
+    func read(max: Int) throws -> Bytes {
         if buffer.count == 0 {
             try close()
             return []

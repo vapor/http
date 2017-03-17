@@ -116,7 +116,7 @@ public final class Parser<
         security filters along the request chain.
     */
     func parseStartLine() throws -> (method: ArraySlice<Byte>, uri: ArraySlice<Byte>, httpVersion: ArraySlice<Byte>) {
-        let line = try stream.receiveLine()
+        let line = try stream.readLine()
         guard !line.isEmpty else { throw ParserError.streamEmpty }
 
         // Maximum 3 components(2 splits) so reason phrase can have spaces within it
@@ -134,7 +134,7 @@ public final class Parser<
         var lastField: String? = nil
 
         while true {
-            let line = try stream.receiveLine()
+            let line = try stream.readLine()
             guard !line.isEmpty else { break }
 
             if line[0].isWhitespace {
@@ -238,7 +238,7 @@ public final class Parser<
         let body: Bytes
 
         if let contentLength = headers["content-length"].flatMap({ Int($0) }) {
-            body = try stream.receive(max: contentLength)
+            body = try stream.read(max: contentLength)
         } else if
             let transferEncoding = headers["transfer-encoding"],
             transferEncoding.lowercased().hasSuffix("chunked") // chunked MUST be last component
@@ -256,7 +256,7 @@ public final class Parser<
             var buffer: Bytes = []
 
             while true {
-                let lengthData = try stream.receiveLine()
+                let lengthData = try stream.readLine()
 
                 // size must be sent
                 guard lengthData.count > 0 else {
@@ -269,7 +269,7 @@ public final class Parser<
                 }
 
 
-                let content = try stream.receive(max: length + Byte.crlf.count)
+                let content = try stream.read(max: length + Byte.crlf.count)
                 buffer += content[0 ..< content.count - Byte.crlf.count]
             }
 

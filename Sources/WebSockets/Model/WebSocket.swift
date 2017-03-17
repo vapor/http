@@ -117,8 +117,9 @@ extension WebSocket {
                 let frame = try parser.acceptFrame()
                 try received(frame)
             } catch {
-                if
-                    case let StreamError.receive(_, recError as SocketsError) = error, recError.number == 35  { continue }
+                if let recError = error as? SocketsError, recError.number == 35  {
+                    continue
+                }
                 try completeCloseHandshake(statusCode: nil, reason: nil, cleanly: false)
             }
         }

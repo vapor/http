@@ -13,8 +13,8 @@ public final class Serializer<
 
     public func serialize(_ message: MessageType) throws {
         let startLine = message.startLine
-        try stream.send(startLine)
-        try stream.send(crlf)
+        try stream.write(startLine)
+        try stream.write(crlf)
 
         var headers = message.headers
         headers.appendMetadata(for: message.body)
@@ -76,19 +76,19 @@ public final class Serializer<
         */
         try headers.forEach { field, value in
             let headerLine = "\(field): \(value)"
-            try stream.send(headerLine.makeBytes())
-            try stream.send(crlf)
+            try stream.write(headerLine.makeBytes())
+            try stream.write(crlf)
         }
 
         // trailing CRLF to end header section
-        try stream.send(crlf)
+        try stream.write(crlf)
     }
 
     private func serialize(_ body: Body) throws {
         switch body {
         case .data(let buffer):
             guard !buffer.isEmpty else { return }
-            try stream.send(buffer)
+            try stream.write(buffer)
         case .chunked(let closure):
             let chunkStream = ChunkStream(stream: stream)
             try closure(chunkStream)

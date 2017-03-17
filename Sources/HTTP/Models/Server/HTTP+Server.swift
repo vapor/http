@@ -14,9 +14,9 @@ public typealias TCPServer = BasicServer<
 import TLS
 
 public typealias TLSTCPServer = BasicServer<
-    TLS.ServerSocket,
-    Parser<Request, StreamBuffer<TLS.ServerSocket>>,
-    Serializer<Response, StreamBuffer<TLS.ServerSocket>>
+    TLS.InternetSocket,
+    Parser<Request, StreamBuffer<TLS.InternetSocket>>,
+    Serializer<Response, StreamBuffer<TLS.InternetSocket>>
 >
 
 public final class BasicServer<

@@ -26,7 +26,7 @@ class HTTPParsingTests: XCTestCase {
         data += "\r\n"
         data += content
 
-        try! stream.send(data.makeBytes())
+        try! stream.write(data.makeBytes())
 
 
         do {
@@ -50,7 +50,7 @@ class HTTPParsingTests: XCTestCase {
                 "Content-Type": "text/plain"
             ],
             chunked: { stream in
-                try stream.send("Hello, world")
+                try stream.write("Hello, world")
                 try stream.close()
             }
         )
@@ -63,7 +63,7 @@ class HTTPParsingTests: XCTestCase {
             XCTFail("Could not serialize response: \(error)")
         }
 
-        let data = try! stream.receive(max: 2048)
+        let data = try! stream.read(max: 2048)
 
         XCTAssert(data.makeString().contains("HTTP/1.1 420 Enhance Your Calm"))
         XCTAssert(data.makeString().contains("Content-Type: text/plain"))
@@ -111,7 +111,7 @@ final class TestStream: InternetStream, DuplexStream {
         }
     }
 
-    func send(_ bytes: Bytes) throws {
+    func write(_ bytes: Bytes) throws {
         isClosed = false
         buffer += bytes
     }
@@ -120,7 +120,7 @@ final class TestStream: InternetStream, DuplexStream {
         flushedCount += 1
     }
 
-    func receive(max: Int) throws -> Bytes {
+    func read(max: Int) throws -> Bytes {
         if buffer.count == 0 {
             try close()
             return []
