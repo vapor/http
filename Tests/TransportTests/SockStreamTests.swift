@@ -23,13 +23,14 @@ class SockStreamTests: XCTestCase {
         let sock = stream.stream
         //try sock.setTimeout(10)
         try sock.connect()
-        try sock.send("GET /html\r\n\r\n".makeBytes())
+        try sock.send("GET /html HTTP/1.1\r\n")
+        try sock.send("Host: httpbin.org\r\n\r\n")
         try sock.flush()
         let received = try sock.receive(max: 2048)
         try sock.close()
 
         // Receiving the raw google homepage
-        XCTAssert(received.string.contains("Herman Melville - Moby-Dick"))
+        XCTAssert(received.makeString().contains("Herman Melville - Moby-Dick"))
     }
 
     func testDirect() throws {
@@ -38,9 +39,10 @@ class SockStreamTests: XCTestCase {
         do {
             let socket = try TCPInternetSocket(address: address)
             try socket.connect()
-            try socket.send(data: "GET /html\r\n\r\n".makeBytes())
+            try socket.send("GET /html HTTP/1.1\r\n")
+            try socket.send("Host: httpbin.org\r\n\r\n")
             let received = try socket.recv()
-            let str = received.string
+            let str = received.makeString()
             try socket.close()
 
             XCTAssert(str.contains("Herman Melville - Moby-Dick"))
@@ -105,7 +107,8 @@ class SockStreamTests: XCTestCase {
                 try connection.setTimeout(30)
                 XCTFail("Foundation stream should throw on timeout set")
             } catch {}
-            try connection.send("GET /html\r\n\r\n".makeBytes())
+            try connection.send("GET /html HTTP/1.1\r\n")
+            try connection.send("Host: httpbin.org\r\n\r\n")
             try connection.flush()
             let received = try connection.receive(max: 2048)
             try connection.close()
