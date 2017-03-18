@@ -6,7 +6,7 @@ internal struct SMTPGreeting {
         let split = line
             .makeBytes()
             .split(separator: .space, maxSplits: 1)
-            .map { $0.string }
+            .map { $0.makeString() }
         guard split.count >= 1 else { throw Error.missingDomain }
         domain = split[0]
         greeting = split[safe: 1] ?? ""

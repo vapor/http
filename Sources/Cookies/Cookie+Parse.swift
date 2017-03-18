@@ -35,11 +35,11 @@ extension Cookie {
 
             // cookies could be sent with space after
             // the semicolon so we should trim
-            let key = Array(cookieTokens[0]).trimmed([.space]).string
+            let key = Array(cookieTokens[0]).trimmed([.space]).makeString()
 
             let val: String
             if cookieTokens.count == 2 {
-                val = cookieTokens[1].string
+                val = cookieTokens[1].makeString()
             } else {
                 val = ""
             }

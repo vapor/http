@@ -2,20 +2,19 @@ import Transport
 
 private let crlf: Bytes = [.carriageReturn, .newLine]
 
-public final class Serializer<MessageProtocol: Message>: TransferSerializer {
-    // TODO: Need?
-    public typealias MessageType = MessageProtocol
-
-    let stream: Stream
-
-    public init(stream: Stream) {
+public final class Serializer<
+    MessageType: Message,
+    StreamType: DuplexStream
+>: TransferSerializer {
+    let stream: StreamType
+    public init(stream: StreamType) {
         self.stream = stream
     }
 
     public func serialize(_ message: MessageType) throws {
         let startLine = message.startLine
-        try stream.send(startLine)
-        try stream.send(crlf)
+        try stream.write(startLine)
+        try stream.write(crlf)
 
         var headers = message.headers
         headers.appendMetadata(for: message.body)
@@ -77,19 +76,19 @@ public final class Serializer<MessageProtocol: Message>: TransferSerializer {
         */
         try headers.forEach { field, value in
             let headerLine = "\(field): \(value)"
-            try stream.send(headerLine.makeBytes())
-            try stream.send(crlf)
+            try stream.write(headerLine.makeBytes())
+            try stream.write(crlf)
         }
 
         // trailing CRLF to end header section
-        try stream.send(crlf)
+        try stream.write(crlf)
     }
 
     private func serialize(_ body: Body) throws {
         switch body {
         case .data(let buffer):
             guard !buffer.isEmpty else { return }
-            try stream.send(buffer)
+            try stream.write(buffer)
         case .chunked(let closure):
             let chunkStream = ChunkStream(stream: stream)
             try closure(chunkStream)

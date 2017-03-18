@@ -1,3 +1,5 @@
+import Transport
+
 /*
      https://tools.ietf.org/html/rfc3986#section-3
  
@@ -20,9 +22,9 @@ public struct URI {
     // https://tools.ietf.org/html/rfc3986#section-3.2.1
     public let userInfo: UserInfo?
     // https://tools.ietf.org/html/rfc3986#section-3.2.2
-    public let host: String
+    public let hostname: String
     // https://tools.ietf.org/html/rfc3986#section-3.2.3
-    public var port: Int?
+    public var port: Port?
 
     // https://tools.ietf.org/html/rfc3986#section-3.3
     public let path: String
@@ -42,17 +44,17 @@ public struct URI {
     public init(
         scheme: String = "",
         userInfo: UserInfo? = nil,
-        host: String,
-        port: Int? = nil,
+        hostname: String,
+        port: Port? = nil,
         path: String = "",
         query: String? = nil,
         rawQuery: String? = nil,
         fragment: String? = nil
-        ) {
+    ) {
         let scheme = scheme.lowercased()
         self.scheme = scheme
         self.userInfo = userInfo
-        self.host = host.lowercased()
+        self.hostname = hostname.lowercased()
         self.port = port ?? URI.defaultPorts[scheme]
         self.path = path
         self.query = query

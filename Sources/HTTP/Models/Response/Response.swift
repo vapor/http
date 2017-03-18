@@ -8,7 +8,7 @@ public final class Response: Message {
 
     // MARK: Post Serialization
 
-    public var onComplete: ((Stream) throws -> Void)?
+    public var onComplete: ((DuplexStream) throws -> Void)? // FIXME: generic
 
     public init(
         version: Version = Version(major: 1, minor: 1),
@@ -33,10 +33,10 @@ public final class Response: Message {
     ) throws {
         let (httpVersionSlice, statusCodeSlice, reasonPhrase) = startLineComponents
         let version = try Version.makeParsed(with: httpVersionSlice)
-        guard let statusCode = Int(statusCodeSlice.string) else {
+        guard let statusCode = Int(statusCodeSlice.makeString()) else {
             throw MessageError.invalidStartLine
         }
-        let status = Status(statusCode: statusCode, reasonPhrase: reasonPhrase.string)
+        let status = Status(statusCode: statusCode, reasonPhrase: reasonPhrase.makeString())
 
         self.init(version: version, status: status, headers: headers, body: body, peerAddress: peerAddress)
     }

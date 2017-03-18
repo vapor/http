@@ -1,7 +1,6 @@
 #if os(Linux)
 
 import XCTest
-@testable import TransportTests
 @testable import URITests
 @testable import HTTPTests
 @testable import WebSocketsTests
@@ -9,11 +8,6 @@ import XCTest
 @testable import CookiesTests
 
 XCTMain([
-    // TransportTests
-    testCase(SockStreamTests.allTests),
-    testCase(StreamBufferTests.allTests),
-    testCase(TLSStreamTests.allTests),
-
     // URITests
     testCase(URIModificationTests.allTests),
     testCase(URISerializationTests.allTests),
@@ -22,7 +16,6 @@ XCTMain([
     // HTTPTests
     testCase(HTTPBodyTests.allTests),
     testCase(HTTPHeadersTests.allTests),
-    testCase(HTTPMiddlewareTests.allTests),
     testCase(HTTPParsingTests.allTests),
     testCase(HTTPRequestTests.allTests),
     testCase(HTTPResponseTests.allTests),
@@ -38,7 +31,6 @@ XCTMain([
     testCase(EmailAddressTests.allTests),
     testCase(EmailAttachmentTests.allTests),
     testCase(EmailBodyTests.allTests),
-    testCase(SMTPClientConvenienceTests.allTests),
     testCase(SMTPClientErrorTests.allTests),
     testCase(SMTPClientTests.allTests),
     testCase(SMTPCredentialsTests.allTests),

@@ -1,68 +1,70 @@
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin
-#endif
-
+import libc
 import Transport
 import Dispatch
+import Sockets
+import TLS
 
 public var defaultServerTimeout: Double = 30
 
-public typealias BasicServer = Server<TCPServerStream, Parser<Request>, Serializer<Response>>
+public typealias TCPServer = BasicServer<
+    TCPInternetSocket,
+    Parser<Request, StreamBuffer<TCPInternetSocket>>,
+    Serializer<Response, StreamBuffer<TCPInternetSocket>>
+>
 
-public final class Server<
-    ServerStreamType: ServerStream,
+
+public typealias TLSServer = BasicServer<
+    TLS.InternetSocket,
+    Parser<Request, StreamBuffer<TLS.InternetSocket>>,
+    Serializer<Response, StreamBuffer<TLS.InternetSocket>>
+>
+
+public final class BasicServer<
+    StreamType: ServerStream,
     Parser: TransferParser,
-    Serializer: TransferSerializer>: ServerProtocol
-where
+    Serializer: TransferSerializer
+>: Server where
     Parser.MessageType == Request,
-    Serializer.MessageType == Response
+    Serializer.MessageType == Response,
+    Parser.StreamType == StreamBuffer<StreamType.Client>,
+    Serializer.StreamType == StreamBuffer<StreamType.Client>
  {
+    public let stream: StreamType
+    public let listenMax: Int
 
-    let server: ServerStreamType
-    private let queue = DispatchQueue(label: "codes.vapor.server", qos: .userInteractive, attributes: .concurrent)
-    private let streams = ThreadsafeArray<StreamBuffer>()
-
-    public let host: String
-    public let port: Int
-    public let securityLayer: SecurityLayer
-    public let middleware: [Middleware]
-
-    public init(
-        host: String = "0.0.0.0",
-        port: Int = 8080,
-        securityLayer: SecurityLayer = .none,
-        middleware: [Middleware] = []
-    ) throws {
-        self.host = host
-        self.port = port
-        self.securityLayer = securityLayer
-        self.middleware = type(of: self).defaultMiddleware + middleware
-
-        do {
-            server = try ServerStreamType(host: host, port: port, securityLayer: securityLayer)
-        } catch {
-            throw ServerError.bind(host: host, port:port, error)
-        }
+    public var scheme: String {
+        return stream.scheme
     }
 
-    deinit {
-        streams.forEach { stream in
-            try? stream.close()
-        }
+    public var hostname: String {
+        return stream.hostname
     }
 
-    public func start(responder: Responder, errors: @escaping ServerErrorHandler) throws {
-        // add middleware
-        let responder = middleware.chain(to: responder)
+    public var port: Port {
+        return stream.port
+    }
+
+    public init(_ stream: StreamType, listenMax: Int = 4096) throws {
+        self.stream = stream
+        self.listenMax = listenMax
+    }
+
+    private let queue = DispatchQueue(
+        label: "codes.vapor.server",
+        qos: .userInteractive,
+        attributes: .concurrent
+    )
+
+    public func start(_ responder: Responder, errors: @escaping ServerErrorHandler) throws {
+        try stream.bind()
+        try stream.listen(max: listenMax)
 
         // no throwing inside of the loop
         while true {
-            let stream: Stream
+            let client: StreamType.Client
 
             do {
-                stream = try server.accept()
+                client = try stream.accept()
             } catch {
                 errors(.accept(error))
                 continue
@@ -70,7 +72,7 @@ where
 
             queue.async {
                 do {
-                    try self.respond(stream: stream, responder: responder)
+                    try self.respond(stream: client, responder: responder)
                 } catch {
                     errors(.dispatch(error))
                 }
@@ -79,7 +81,7 @@ where
         }
     }
 
-    private func respond(stream: Stream, responder: Responder) throws {
+    private func respond(stream: StreamType.Client, responder: Responder) throws {
         let stream = StreamBuffer(stream)
         try stream.setTimeout(defaultServerTimeout)
 
@@ -102,6 +104,11 @@ where
             } catch {
                 throw error
             }
+
+            request.peerAddress = parser.parsePeerAddress(
+                from: self.stream,
+                with: request.headers
+            )
 
             keepAlive = request.keepAlive
             let response = try responder.respond(to: request)

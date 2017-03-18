@@ -6,6 +6,7 @@ extension Sequence where Iterator.Element == Byte {
         guard let decoded = makeString().removingPercentEncoding else {
             throw URIParser.Error.invalidPercentEncoding
         }
+
         return decoded
     }
 }

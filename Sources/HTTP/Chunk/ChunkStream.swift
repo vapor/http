@@ -11,31 +11,31 @@ import Transport
 ///
 /// https://en.wikipedia.org/wiki/Chunked_transfer_encoding
 public class ChunkStream {
-    public let raw: Stream
+    public let raw: WriteableStream
     public var isClosed: Bool
 
-    public init(stream: Stream) {
+    public init(stream: WriteableStream) {
         self.raw = stream
         isClosed = false
     }
 
-    public func send(_ int: Int) throws {
-        try send("\(int)")
+    public func write(_ int: Int) throws {
+        try write("\(int)")
     }
 
-    public func send(_ string: String) throws {
-        try send(string.makeBytes())
+    public func write(_ string: String) throws {
+        try write(string.makeBytes())
     }
 
-    public func send(_ bytes: Bytes) throws {
-        try send(bytes, timingOut: 0)
+    public func write(_ bytes: Bytes) throws {
+        try write(bytes, timingOut: 0)
     }
 
-    public func send(_ bytes: Bytes, timingOut deadline: Double) throws {
+    public func write(_ bytes: Bytes, timingOut deadline: Double) throws {
         var buffer = "\(bytes.count.hex)\r\n".makeBytes()
         buffer += bytes
         buffer += "\r\n".makeBytes()
-        try raw.send(buffer)
+        try raw.write(buffer)
     }
 
     public func flush(timingOut deadline: Double) throws {
@@ -43,7 +43,7 @@ public class ChunkStream {
     }
 
     public func close() throws {
-        try raw.send("0\r\n\r\n") // stream should close by client
+        try raw.write("0\r\n\r\n") // stream should close by client
         isClosed = true
     }
 }
