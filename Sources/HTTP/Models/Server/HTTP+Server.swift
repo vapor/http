@@ -26,8 +26,8 @@ public final class BasicServer<
 >: Server where
     Parser.MessageType == Request,
     Serializer.MessageType == Response,
-    Parser.StreamType == StreamBuffer<StreamType.ClientStream>,
-    Serializer.StreamType == StreamBuffer<StreamType.ClientStream>
+    Parser.StreamType == StreamBuffer<StreamType.Client>,
+    Serializer.StreamType == StreamBuffer<StreamType.Client>
  {
     public let stream: StreamType
     public let listenMax: Int
@@ -61,7 +61,7 @@ public final class BasicServer<
 
         // no throwing inside of the loop
         while true {
-            let client: StreamType.ClientStream
+            let client: StreamType.Client
 
             do {
                 client = try stream.accept()
@@ -81,7 +81,7 @@ public final class BasicServer<
         }
     }
 
-    private func respond(stream: StreamType.ClientStream, responder: Responder) throws {
+    private func respond(stream: StreamType.Client, responder: Responder) throws {
         let stream = StreamBuffer(stream)
         try stream.setTimeout(defaultServerTimeout)
 
