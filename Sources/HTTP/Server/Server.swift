@@ -6,6 +6,8 @@ public protocol Server: InternetStream {
 
 extension Server {
     public func start(_ responder: Responder) throws {
-        try self.start(responder, errors: { _ in })
+        try start(responder) { error in
+            print("Server error: \(error)")
+        }
     }
 }

@@ -8,8 +8,7 @@ class HTTPBodyTests: XCTestCase {
     static var allTests = [
         ("testBufferParse", testBufferParse),
         ("testChunkedParse", testChunkedParse),
-        ("testClientStreamUsage", testClientStreamUsage),
-//        ("testReleasingServer", testReleasingServer),
+        ("testClientStreamUsage", testClientStreamUsage)
     ]
 
     func testBufferParse() throws {
@@ -57,7 +56,6 @@ class HTTPBodyTests: XCTestCase {
     func testClientStreamUsage() throws {
         let serverSocket = try TCPInternetSocket(scheme: "http", hostname: "0.0.0.0", port: 8942)
         let server = try TCPServer(serverSocket)
-        // let assignedPort = try server.stream.localAddress().port
 
         struct HelloResponder: HTTP.Responder {
             func respond(to request: Request) throws -> Response {

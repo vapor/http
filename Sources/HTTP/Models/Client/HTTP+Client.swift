@@ -105,7 +105,7 @@ extension Client {
         }
 
         if request.uri.scheme.isEmpty {
-            guard request.uri.scheme == scheme else {
+            guard request.uri.scheme.isSecure == scheme.isSecure else {
                 throw ClientError.invalidRequestScheme
             }
         }

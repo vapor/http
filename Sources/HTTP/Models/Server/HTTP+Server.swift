@@ -2,6 +2,7 @@ import libc
 import Transport
 import Dispatch
 import Sockets
+import TLS
 
 public var defaultServerTimeout: Double = 30
 
@@ -11,9 +12,8 @@ public typealias TCPServer = BasicServer<
     Serializer<Response, StreamBuffer<TCPInternetSocket>>
 >
 
-import TLS
 
-public typealias TLSTCPServer = BasicServer<
+public typealias TLSServer = BasicServer<
     TLS.InternetSocket,
     Parser<Request, StreamBuffer<TLS.InternetSocket>>,
     Serializer<Response, StreamBuffer<TLS.InternetSocket>>
@@ -26,8 +26,8 @@ public final class BasicServer<
 >: Server where
     Parser.MessageType == Request,
     Serializer.MessageType == Response,
-    Parser.StreamType == StreamBuffer<StreamType.Client>,
-    Serializer.StreamType == StreamBuffer<StreamType.Client>
+    Parser.StreamType == StreamBuffer<StreamType.ClientStream>,
+    Serializer.StreamType == StreamBuffer<StreamType.ClientStream>
  {
     public let stream: StreamType
     public let listenMax: Int
@@ -61,7 +61,7 @@ public final class BasicServer<
 
         // no throwing inside of the loop
         while true {
-            let client: StreamType.Client
+            let client: StreamType.ClientStream
 
             do {
                 client = try stream.accept()
@@ -81,7 +81,7 @@ public final class BasicServer<
         }
     }
 
-    private func respond(stream: StreamType.Client, responder: Responder) throws {
+    private func respond(stream: StreamType.ClientStream, responder: Responder) throws {
         let stream = StreamBuffer(stream)
         try stream.setTimeout(defaultServerTimeout)
 

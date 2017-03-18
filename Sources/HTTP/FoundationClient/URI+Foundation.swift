@@ -12,7 +12,7 @@ extension URI {
         comps.user = userInfo?.username
         comps.password = userInfo?.info
         comps.host = hostname.isEmpty ? nil : hostname
-        comps.port = port == nil ? nil : Int(port!)
+        comps.port = port.flatMap(Int.init)
         comps.path = path
         comps.query = query
         comps.fragment = fragment

@@ -3,14 +3,15 @@ import Foundation
 import URI
 import Core
 
+/// client based on Foundation.URLRequest
+/// and Foundation.URLSession
 public final class FoundationClient: Client {
     public let scheme: String
     public let hostname: String
     public let port: Transport.Port
     public let session: URLSession
-    /// public let middleware: [Middleware]
-    // private let responder: Responder
 
+    /// create a new foundation client
     public init(
         scheme: String,
         hostname: String,
@@ -20,9 +21,9 @@ public final class FoundationClient: Client {
         self.hostname = hostname
         self.port = port
         self.session = URLSession(configuration: .default)
-        /// self.middleware = type(of: self).defaultMiddleware + middleware
     }
 
+    /// responds to the request using URLResponse
     public func respond(to request: Request) throws -> Response {
         try assertValid(request)
 
