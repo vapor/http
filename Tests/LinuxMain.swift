@@ -16,7 +16,6 @@ XCTMain([
     // HTTPTests
     testCase(HTTPBodyTests.allTests),
     testCase(HTTPHeadersTests.allTests),
-    testCase(HTTPMiddlewareTests.allTests),
     testCase(HTTPParsingTests.allTests),
     testCase(HTTPRequestTests.allTests),
     testCase(HTTPResponseTests.allTests),
@@ -32,7 +31,6 @@ XCTMain([
     testCase(EmailAddressTests.allTests),
     testCase(EmailAttachmentTests.allTests),
     testCase(EmailBodyTests.allTests),
-    testCase(SMTPClientConvenienceTests.allTests),
     testCase(SMTPClientErrorTests.allTests),
     testCase(SMTPClientTests.allTests),
     testCase(SMTPCredentialsTests.allTests),
