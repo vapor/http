@@ -14,6 +14,9 @@ class CookieTests: XCTestCase {
         ("testInit_setsSecureCorrectly", testInit_setsSecureCorrectly),
         ("testInit_defaultsToNonHTTPOnly", testInit_defaultsToNonHTTPOnly),
         ("testInit_setsHTTPOnlyCorrectly", testInit_setsHTTPOnlyCorrectly),
+        ("testInit_defaultToNoSameSite", testInit_defaultToNoSameSite),
+        ("testInit_setsSameSiteCorrectlyStrict", testInit_setsSameSiteCorrectlyStrict),
+        ("testInit_setsSameSiteCorrectlyLax", testInit_setsSameSiteCorrectlyLax),
         ("testHashValue_usesNamesHash", testHashValue_usesNamesHash),
         ("testEquality_reliesSolelyOnName", testEquality_reliesSolelyOnName),
         ("testSerialize_producesExpectedOutput", testSerialize_producesExpectedOutput)
@@ -68,6 +71,21 @@ class CookieTests: XCTestCase {
         let subject = Cookie(name: "Foo", value: "Bar", httpOnly: true)
         XCTAssertTrue(subject.httpOnly)
     }
+    
+    func testInit_defaultToNoSameSite() {
+        let subject = Cookie(name: "Foo", value: "Bar")
+        XCTAssertNil(subject.sameSite)
+    }
+    
+    func testInit_setsSameSiteCorrectlyStrict() {
+        let subject = Cookie(name: "Foo", value: "Bar", sameSite: .strict)
+        XCTAssertEqual(subject.sameSite, Cookie.SameSite.strict)
+    }
+    
+    func testInit_setsSameSiteCorrectlyLax() {
+        let subject = Cookie(name: "Foo", value: "Bar", sameSite: .lax)
+        XCTAssertEqual(subject.sameSite, Cookie.SameSite.lax)
+    }
 
     func testHashValue_usesNamesHash() {
         let subject = Cookie(name: "Foo", value: "Bar")
@@ -98,5 +116,9 @@ class CookieTests: XCTestCase {
         XCTAssertEqual(subject.serialize(), "Foo=Bar; Expires=Wed, 20 Jul 2016 09:00:15 GMT; Max-Age=600; Domain=vapor.qutheory.io; Path=/bar/food/yum; Secure")
         subject.httpOnly = true
         XCTAssertEqual(subject.serialize(), "Foo=Bar; Expires=Wed, 20 Jul 2016 09:00:15 GMT; Max-Age=600; Domain=vapor.qutheory.io; Path=/bar/food/yum; Secure; HttpOnly")
+        subject.sameSite = .lax
+        XCTAssertEqual(subject.serialize(), "Foo=Bar; Expires=Wed, 20 Jul 2016 09:00:15 GMT; Max-Age=600; Domain=vapor.qutheory.io; Path=/bar/food/yum; Secure; HttpOnly; SameSite=Lax")
+        subject.sameSite = .strict
+        XCTAssertEqual(subject.serialize(), "Foo=Bar; Expires=Wed, 20 Jul 2016 09:00:15 GMT; Max-Age=600; Domain=vapor.qutheory.io; Path=/bar/food/yum; Secure; HttpOnly; SameSite=Strict")
     }
 }
