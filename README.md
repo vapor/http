@@ -22,6 +22,7 @@ Check out the HTTP, SMTP, and WebSockets examples in `Sources/`. You can clone t
 - HTTP (client/server)
 - WebSocket (client/server)
 - SMTP (client)
+- URI Parser
 
 ## 🏛 Architecture
 
