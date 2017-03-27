@@ -1,11 +1,13 @@
 import PackageDescription
 
+let beta = Version(2,0,0, prereleaseIdentifiers: ["beta"])
+
 let dependencies: [Package.Dependency] = [
     // Crypto
-    .Package(url: "https://github.com/vapor/crypto.git", Version(2,0,0, prereleaseIdentifiers: ["alpha"])),
+    .Package(url: "https://github.com/vapor/crypto.git", beta),
 
     // Secure Sockets
-    .Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["alpha"]))
+    .Package(url: "https://github.com/vapor/tls.git", beta),
 ]
 
 let package = Package(
