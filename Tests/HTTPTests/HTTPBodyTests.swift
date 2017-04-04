@@ -5,11 +5,6 @@ import libc
 import Sockets
 
 class HTTPBodyTests: XCTestCase {
-    static var allTests = [
-        ("testBufferParse", testBufferParse),
-        ("testChunkedParse", testChunkedParse),
-        ("testClientStreamUsage", testClientStreamUsage)
-    ]
 
     func testBufferParse() throws {
         do {
@@ -86,4 +81,19 @@ class HTTPBodyTests: XCTestCase {
         
         // WARNING: `server` will keep running in the background since there is no way to stop it. Its socket will continue to exist and the associated port will be in use until the xctest process exits.
     }
+    
+    func testBigBody() throws {
+        let httpbin = try TCPInternetSocket(scheme: "http", hostname: "httpbin.org", port: 80)
+        let client = try TCPClient(httpbin)
+        let req = try Request(method: .get, uri: "http://httpbin.org/bytes/8192")
+        let res = try client.respond(to: req)
+        XCTAssertEqual(res.body.bytes?.count, 8192)
+        try httpbin.close()
+    }
+    
+    static var allTests = [
+        ("testBufferParse", testBufferParse),
+        ("testChunkedParse", testChunkedParse),
+        ("testClientStreamUsage", testClientStreamUsage)
+    ]
 }
