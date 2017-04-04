@@ -83,17 +83,12 @@ class HTTPBodyTests: XCTestCase {
     }
     
     func testBigBody() throws {
-        do {
         let httpbin = try TCPInternetSocket(scheme: "http", hostname: "httpbin.org", port: 80)
         let client = try TCPClient(httpbin)
         let req = try Request(method: .get, uri: "http://httpbin.org/bytes/8192")
         let res = try client.respond(to: req)
         XCTAssertEqual(res.body.bytes?.count, 8192)
         try httpbin.close()
-            
-        } catch {
-            XCTFail("\(error)")
-        }
     }
     
     static var allTests = [
