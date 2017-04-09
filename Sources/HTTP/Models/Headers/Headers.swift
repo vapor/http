@@ -28,7 +28,7 @@ public struct HeaderKey {
     }
 }
 
-extension HeaderKey: CustomDebugStringConvertible {
+extension HeaderKey: CustomStringConvertible {
     public var description: String {
         return key
     }
