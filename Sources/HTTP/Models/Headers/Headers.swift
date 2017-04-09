@@ -38,9 +38,7 @@ extension HeaderKey: Hashable {
     public var hashValue: Int {
         return key.lowercased().hashValue
     }
-}
 
-extension HeaderKey: Equatable {
     static public func ==(lhs: HeaderKey, rhs: HeaderKey) -> Bool {
         return lhs.key.lowercased() == rhs.key.lowercased()
     }
