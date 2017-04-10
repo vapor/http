@@ -64,7 +64,7 @@ public final class BasicClient<
             throw ClientError.unableToConnect
         }
 
-        ///  client MUST send a Host header field in all HTTP/1.1 request
+        /// client MUST send a Host header field in all HTTP/1.1 request
         /// messages.  If the target URI includes an authority component, then a
         /// client MUST send a field-value for Host that is identical to that
         /// authority component, excluding any userinfo subcomponent and its "@"
