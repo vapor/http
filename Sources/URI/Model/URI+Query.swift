@@ -22,7 +22,7 @@ public extension URI {
             return
         }
         // If there are already keys/values in the query, append an ampersand and then the new query
-        if (q.characters.count > 0) {
+        if (!q.isEmpty) {
             q += "&\(newQuery)"
             query = q
             // Otherwise, go ahead and make the query the new query
@@ -66,7 +66,7 @@ public extension URI {
                 queryString += "\(_query)&"
             }
         }
-        if (queryString.characters.count > 0) {
+        if (!queryString.isEmpty) {
             // If the last character is an ampersand, remove it
             let lastChar = queryString.substring(from: queryString.index(before: queryString.endIndex))
             if (lastChar == "&") {
@@ -101,7 +101,7 @@ public extension URI {
                 queryString += "\(_query)&"
             }
         }
-        if (queryString.characters.count > 0) {
+        if (!queryString.isEmpty) {
             // If the last character is an ampersand, remove it
             let lastChar = queryString.substring(from: queryString.index(before: queryString.endIndex))
             if (lastChar == "&") {
