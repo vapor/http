@@ -30,7 +30,7 @@ extension Method {
         case TRACE:
             self = .trace
         default:
-            self = .other(method: method.string)
+            self = .other(method: method.makeString())
         }
     }
 }

@@ -26,11 +26,11 @@ class HTTPParsingTests: XCTestCase {
         data += "\r\n"
         data += content
 
-        try! stream.send(data.makeBytes())
+        try! stream.write(data.makeBytes())
 
 
         do {
-            let request = try Parser<Request>(stream: stream).parse()
+            let request = try Parser<Request, TestStream>(stream: stream).parse()
 
             //MARK: Verify Request
             XCTAssert(request.method == Method.post, "Incorrect method \(request.method)")
@@ -50,34 +50,47 @@ class HTTPParsingTests: XCTestCase {
                 "Content-Type": "text/plain"
             ],
             chunked: { stream in
-                try stream.send("Hello, world")
+                try stream.write("Hello, world")
                 try stream.close()
             }
         )
 
         let stream = TestStream()
-        let serializer = Serializer<Response>(stream: stream)
+        let serializer = Serializer<Response, TestStream>(stream: stream)
         do {
             try serializer.serialize(response)
         } catch {
             XCTFail("Could not serialize response: \(error)")
         }
 
-        let data = try! stream.receive(max: 2048)
+        let data = try! stream.read(max: 2048)
 
-        XCTAssert(data.string.contains("HTTP/1.1 420 Enhance Your Calm"))
-        XCTAssert(data.string.contains("Content-Type: text/plain"))
-        XCTAssert(data.string.contains("Test: 123"))
-        XCTAssert(data.string.contains("Transfer-Encoding: chunked"))
-        XCTAssert(data.string.contains("\r\n\r\nC\r\nHello, world\r\n0\r\n\r\n"))
+        XCTAssert(data.makeString().contains("HTTP/1.1 420 Enhance Your Calm"))
+        XCTAssert(data.makeString().contains("Content-Type: text/plain"))
+        XCTAssert(data.makeString().contains("Test: 123"))
+        XCTAssert(data.makeString().contains("Transfer-Encoding: chunked"))
+        XCTAssert(data.makeString().contains("\r\n\r\nC\r\nHello, world\r\n0\r\n\r\n"))
     }
 }
 
-final class TestStream: Transport.Stream {
+final class TestStream: InternetStream, DuplexStream {
+    var hostname: String {
+        return "1.2.3.4"
+    }
 
-    public var peerAddress: String = "1.2.3.4:5678"
+    var port: Transport.Port {
+        return 5678
+    }
 
-    var closed: Bool
+    var scheme: String {
+        return "https"
+    }
+
+    convenience init(scheme: String, hostname: String, port: Transport.Port) throws {
+        self.init()
+    }
+
+    var isClosed: Bool
     var buffer: Bytes
     var timeout: Double = -1
     // number of times flush was called
@@ -88,18 +101,18 @@ final class TestStream: Transport.Stream {
     }
 
     init() {
-        closed = false
+        isClosed = false
         buffer = []
     }
 
     func close() throws {
-        if !closed {
-            closed = true
+        if !isClosed {
+            isClosed = true
         }
     }
 
-    func send(_ bytes: Bytes) throws {
-        closed = false
+    func write(_ bytes: Bytes) throws {
+        isClosed = false
         buffer += bytes
     }
 
@@ -107,7 +120,7 @@ final class TestStream: Transport.Stream {
         flushedCount += 1
     }
 
-    func receive(max: Int) throws -> Bytes {
+    func read(max: Int) throws -> Bytes {
         if buffer.count == 0 {
             try close()
             return []

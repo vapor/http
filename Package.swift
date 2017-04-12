@@ -1,50 +1,29 @@
 import PackageDescription
 
+let beta = Version(2,0,0, prereleaseIdentifiers: ["beta"])
+
 let dependencies: [Package.Dependency] = [
     // Crypto
-    .Package(url: "https://github.com/vapor/crypto.git", Version(2,0,0, prereleaseIdentifiers: ["alpha"])),
+    .Package(url: "https://github.com/vapor/crypto.git", beta),
 
     // Secure Sockets
-    .Package(url: "https://github.com/vapor/tls.git", Version(2,0,0, prereleaseIdentifiers: ["alpha"])),
+    .Package(url: "https://github.com/vapor/tls.git", beta),
 ]
 
 let package = Package(
     name: "Engine",
     targets: [
         Target(name: "URI"),
-        Target(name: "Transport"),
         Target(name: "Cookies", dependencies: [
             "HTTP"
         ]),
         Target(name: "HTTP", dependencies: [
-              "URI", "Transport"
+            "URI"
         ]),
         Target(name: "WebSockets", dependencies: [
-            "HTTP", "URI", "Transport"
+            "HTTP", "URI"
         ]),
-        Target(name: "SMTP", dependencies: [
-            "Transport"
-        ])
-        /*
-        Target(
-            name: "HTTPExample",
-            dependencies: [
-                "HTTP"
-            ]
-        ),
-        Target(
-            name: "WebSocketsExample",
-            dependencies: [
-                "WebSockets", "HTTP", "Transport"
-            ]
-        ),
-        Target(
-            name: "SMTPExample",
-            dependencies: [
-                "SMTP", "Transport"
-            ]
-        )
-        */
+        Target(name: "SMTP")
     ],
     dependencies: dependencies,
     exclude: [

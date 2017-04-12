@@ -18,18 +18,18 @@ extension URI {
         return components
     }
     
-    /**
-        Returns a new URI with the provided path.
-     */
+    /// Returns a new URI with the provided path.
     private func withPath(_ path: String) -> URI {
-        return URI(scheme: scheme,
-                   userInfo: userInfo,
-                   host: host,
-                   port: port,
-                   path: path,
-                   query: query,
-                   rawQuery: rawQuery,
-                   fragment: fragment)
+        return URI(
+            scheme: scheme,
+            userInfo: userInfo,
+            hostname: hostname,
+            port: port,
+            path: path,
+            query: query,
+            rawQuery: rawQuery,
+            fragment: fragment
+        )
     }
     
     /**

@@ -9,7 +9,6 @@
 import XCTest
 
 import Core
-import HTTP
 @testable import SMTP
 
 class SMTPClientTests: XCTestCase {
@@ -29,7 +28,7 @@ class SMTPClientTests: XCTestCase {
     func testGreeting() throws {
         let client = try makeTestClient()
         // load buffer
-        try client.stream.send(greeting.makeBytes(), flushing: true)
+        try client.stream.write(greeting.makeBytes(), flushing: true)
         let (code, reply) = try client.acceptGreeting()
         XCTAssert(code == 220)
         XCTAssert(reply.domain == "smtp.gmail.com")
@@ -40,21 +39,21 @@ class SMTPClientTests: XCTestCase {
     func testInitializing()throws  {
         let client = try makeTestClient()
         // load buffer
-        try client.stream.send(ehloResponse.makeBytes(), flushing: true)
+        try client.stream.write(ehloResponse.makeBytes(), flushing: true)
         let (code, reply) = try client.acceptReply()
         XCTAssert(code == 250)
         XCTAssert(reply == ["smtp.sendgrid.net", "8BITMIME", "SIZE 31457280", "AUTH PLAIN LOGIN", "AUTH=PLAIN LOGIN"])
     }
 
     func testAuthorizeLogin() throws {
-        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        let client = try makeTestClient()
         let credentials = SMTPCredentials(user: username, pass: password)
         let extensions = [try EHLOExtension("AUTH LOGIN PLAIN")]
         try client.authorize(extensions: extensions, using: credentials)
     }
 
     func testAuthorizeLoginBadUser() throws {
-        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        let client = try makeTestClient()
         let credentials = SMTPCredentials(user: baduser, pass: password)
         let extensions = [try EHLOExtension("AUTH LOGIN PLAIN")]
         do {
@@ -66,7 +65,7 @@ class SMTPClientTests: XCTestCase {
     }
 
     func testAuthorizeLoginBadPass() throws {
-        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        let client = try makeTestClient()
         let credentials = SMTPCredentials(user: username, pass: badpass)
         let extensions = [try EHLOExtension("AUTH LOGIN PLAIN")]
         do {
@@ -78,19 +77,19 @@ class SMTPClientTests: XCTestCase {
     }
 
     func testAuthorizePlain() throws {
-        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        let client = try makeTestClient()
         let credentials = SMTPCredentials(user: username, pass: password)
         let extensions = [try EHLOExtension("AUTH PLAIN")] // Only plain, LOGIN overrides
         try client.authorize(extensions: extensions, using: credentials)
     }
 
     func testReplyLine() throws {
-        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        let client = try makeTestClient()
         try client.transmit(line: "TEST LINE", expectingReplyCode: 42)
     }
 
     func testReplyLineFail() throws {
-        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
+        let client = try makeTestClient()
         do {
             try client.transmit(line: "TEST LINE", expectingReplyCode: 100)
             XCTFail("should throw error")
@@ -100,15 +99,15 @@ class SMTPClientTests: XCTestCase {
     }
 
     func testInitialize() throws {
-        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
-        try client.stream.send("220 smtp.mysite.io welcome\r\n".makeBytes(), flushing: true)
+        let client = try makeTestClient()
+        try client.stream.write("220 smtp.mysite.io welcome\r\n".makeBytes(), flushing: true)
         let creds = SMTPCredentials(user: username, pass: password)
         try client.initializeSession(using: creds)
     }
 
     func testSendEmail() throws {
-        let client = try SMTPClient<SMTPTestStream>(host: "smtp.host.com", port: 25, securityLayer: .none)
-        try client.stream.send("220 smtp.mysite.io welcome\r\n".makeBytes(), flushing: true)
+        let client = try makeTestClient()
+        try client.stream.write("220 smtp.mysite.io welcome\r\n".makeBytes(), flushing: true)
         let creds = SMTPCredentials(user: username, pass: password)
 
         let email = Email(from: "from@email.com",
@@ -124,8 +123,7 @@ class SMTPClientTests: XCTestCase {
     }
 
     private func makeTestClient() throws -> SMTPClient<SMTPTestStream> {
-        return try SMTPClient<SMTPTestStream>(host: "smtp.host.com",
-                                              port: 25,
-                                              securityLayer: .none)
+        let stream = SMTPTestStream(scheme: "smtp", hostname: "smtp.host.com", port: 25)
+        return try SMTPClient(stream)
     }
 }

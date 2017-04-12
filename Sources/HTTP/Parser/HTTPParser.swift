@@ -73,12 +73,15 @@ public enum ParserError: Swift.Error {
     case invalidVersion
 }
 
-public final class Parser<MessageType: Message>: TransferParser {
-    public typealias Error = ParserError
 
-    let stream: Stream
 
-    public init(stream: Stream) {
+public final class Parser<
+    MessageType: Message,
+    StreamType: DuplexStream
+>: TransferParser {
+    let stream: StreamType
+
+    public init(stream: StreamType) {
         self.stream = stream
     }
 
@@ -86,25 +89,12 @@ public final class Parser<MessageType: Message>: TransferParser {
         let startLineComponents = try parseStartLine()
         let headers = try parseHeaders()
         let body = try parseBody(with: headers)
-        let peerAddress = parsePeerAddress(headers: headers)
         let message = try MessageType(
             startLineComponents: startLineComponents,
             headers: headers,
-            body: body,
-            peerAddress: peerAddress
+            body: body
         )
         return message
-    }
-    
-    private func parsePeerAddress(headers: [HeaderKey: String]) -> PeerAddress {
-        let forwarded = headers["Forwarded"]
-        let xForwardedFor = headers["X-Forwarded-For"]
-        let streamAddress = stream.peerAddress
-        return PeerAddress(
-            forwarded: forwarded,
-            xForwardedFor: xForwardedFor,
-            stream: streamAddress
-        )
     }
 
     /**
@@ -126,13 +116,13 @@ public final class Parser<MessageType: Message>: TransferParser {
         security filters along the request chain.
     */
     func parseStartLine() throws -> (method: ArraySlice<Byte>, uri: ArraySlice<Byte>, httpVersion: ArraySlice<Byte>) {
-        let line = try stream.receiveLine()
-        guard !line.isEmpty else { throw Error.streamEmpty }
+        let line = try stream.readLine()
+        guard !line.isEmpty else { throw ParserError.streamEmpty }
 
         // Maximum 3 components(2 splits) so reason phrase can have spaces within it
         let comps = line.split(separator: .space, maxSplits: 2, omittingEmptySubsequences: true)
         guard comps.count == 3 else {
-            throw Error.invalidStartLine
+            throw ParserError.invalidStartLine
         }
 
         return (comps[0], comps[1], comps[2])
@@ -144,7 +134,7 @@ public final class Parser<MessageType: Message>: TransferParser {
         var lastField: String? = nil
 
         while true {
-            let line = try stream.receiveLine()
+            let line = try stream.readLine()
             guard !line.isEmpty else { break }
 
             if line[0].isWhitespace {
@@ -167,7 +157,7 @@ public final class Parser<MessageType: Message>: TransferParser {
                         such whitespace in a response might be ignored by some clients or
                         cause others to cease parsing.
                     */
-                    throw Error.invalidRequest
+                    throw ParserError.invalidRequest
                 }
 
                 /*
@@ -184,7 +174,7 @@ public final class Parser<MessageType: Message>: TransferParser {
                 */
                 let value = line
                     .trimmed([.horizontalTab, .space])
-                    .string
+                    .makeString()
                 headers[lastField]?.append(value)
             } else {
                 /*
@@ -215,11 +205,11 @@ public final class Parser<MessageType: Message>: TransferParser {
                     whitespace between a header field-name and colon with a response code
                     of 400 (Bad Request).
                 */
-                guard comps[0].last?.isWhitespace == false else { throw Error.invalidKeyWhitespace }
-                let field = comps[0].string
+                guard comps[0].last?.isWhitespace == false else { throw ParserError.invalidKeyWhitespace }
+                let field = comps[0].makeString()
                 let value = comps[1].array
                     .trimmed([.horizontalTab, .space])
-                    .string
+                    .makeString()
 
                 if field == "Set-Cookie", let existing = headers[field] {
                     // Should only apply to Set-Cookie, other headers shouldn't have multiple values
@@ -248,7 +238,7 @@ public final class Parser<MessageType: Message>: TransferParser {
         let body: Bytes
 
         if let contentLength = headers["content-length"].flatMap({ Int($0) }) {
-            body = try stream.receive(max: contentLength)
+            body = try stream.read(max: contentLength)
         } else if
             let transferEncoding = headers["transfer-encoding"],
             transferEncoding.lowercased().hasSuffix("chunked") // chunked MUST be last component
@@ -266,7 +256,7 @@ public final class Parser<MessageType: Message>: TransferParser {
             var buffer: Bytes = []
 
             while true {
-                let lengthData = try stream.receiveLine()
+                let lengthData = try stream.readLine()
 
                 // size must be sent
                 guard lengthData.count > 0 else {
@@ -279,7 +269,7 @@ public final class Parser<MessageType: Message>: TransferParser {
                 }
 
 
-                let content = try stream.receive(max: length + Byte.crlf.count)
+                let content = try stream.read(max: length + Byte.crlf.count)
                 buffer += content[0 ..< content.count - Byte.crlf.count]
             }
 
@@ -288,5 +278,23 @@ public final class Parser<MessageType: Message>: TransferParser {
             body = []
         }
         return .data(body)
+    }
+}
+
+extension TransferParser {
+    func parsePeerAddress<Stream: InternetStream>(
+        from stream: Stream,
+        with headers: [HeaderKey: String]
+    ) -> PeerAddress {
+        let forwarded = headers["Forwarded"]
+        let xForwardedFor = headers["X-Forwarded-For"]
+
+        let streamAddress = "\(stream.hostname):\(stream.port)"
+
+        return PeerAddress(
+            forwarded: forwarded,
+            xForwardedFor: xForwardedFor,
+            stream: streamAddress
+        )
     }
 }

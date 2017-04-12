@@ -21,8 +21,8 @@ class FoundationConversionTests: XCTestCase {
         XCTAssertEqual(uri.scheme, url.scheme)
         XCTAssertEqual(uri.userInfo?.username, url.user)
         XCTAssertEqual(uri.userInfo?.info, url.password)
-        XCTAssertEqual(uri.host, url.host)
-        XCTAssertEqual(uri.port, url.port)
+        XCTAssertEqual(uri.hostname, url.host)
+        XCTAssertEqual(uri.port, url.port?.port)
         XCTAssertEqual(uri.query, url.query)
         XCTAssertEqual(uri.fragment, url.fragment)
 
@@ -38,8 +38,8 @@ class FoundationConversionTests: XCTestCase {
         XCTAssertEqual(url.scheme, uri.scheme)
         XCTAssertEqual(url.user, uri.userInfo?.username)
         XCTAssertEqual(url.password, uri.userInfo?.info)
-        XCTAssertEqual(url.host, uri.host)
-        XCTAssertEqual(url.port, uri.port)
+        XCTAssertEqual(url.host, uri.hostname)
+        XCTAssertEqual(url.port, uri.port == nil ? nil : Int(uri.port!))
         XCTAssertEqual(url.query, uri.query)
         XCTAssertEqual(url.fragment, uri.fragment)
 
@@ -87,17 +87,18 @@ class FoundationConversionTests: XCTestCase {
     }
 
     func testFoundationClient() throws {
-        let response = try FoundationClient.get("https://httpbin.org/html")
+        let response = try FoundationClient(scheme: "https", hostname: "httpbin.org", port: 443)
+            .respond(to: Request(method: .get, uri: "https://httpbin.org/html"))
 
         let expectation = "Herman Melville - Moby-Dick"
-        let contained = response.body.bytes?.string.contains(expectation) ?? false
+        let contained = response.body.bytes?.makeString().contains(expectation) ?? false
         XCTAssertTrue(contained)
 
         var headersExpectation: [HeaderKey: String] = [:]
         headersExpectation["access-control-allow-credentials"] = "true"
         headersExpectation["Content-Type"] = "text/html; charset=utf-8"
         headersExpectation["Content-Length"] = "3741"
-        headersExpectation["Server"] = "nginx"
+        headersExpectation["Server"] = "gunicorn/19.7.1"
         headersExpectation["Access-Control-Allow-Origin"] = "*"
         headersExpectation.forEach { key, expectedValue in
             let found = response.headers[key]

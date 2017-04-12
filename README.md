@@ -11,7 +11,7 @@ Engine is a collection of low level transport protocols implemented in pure Swif
 
 ## 🐧 Linux Ready
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy)
+Runs everywhere Swift does.
 
 ## 📦 Examples
 
@@ -19,110 +19,10 @@ Check out the HTTP, SMTP, and WebSockets examples in `Sources/`. You can clone t
 
 ## 📘 Overview
 
-### HTTP.Client
-
-```Swift
-import HTTP
-
-let response = try Client<TCPClientStream>.get("http://pokeapi.co/api/v2/pokemon/")
-print(response)
-```
-
-### HTTP.Server
-
-```Swift
-import HTTP
-
-final class MyResponder: Responder {
-    func respond(to request: Request) throws -> Response {
-        let body = "Hello World".makeBody()
-        return Response(body: body)
-    }
-}
-
-let server = try Server<TCPServerStream, Parser<Request>, Serializer<Response>>(port: port)
-
-print("visit http://localhost:\(port)/")
-try server.start(responder: MyResponder()) { error in
-    print("Got error: \(error)")
-}
-```
-
-### WebSocket Client
-
-```Swift
-import Engine
-import WebSockets
-
-try WebSocket.connect(to: url) { ws in
-    print("Connected to \(url)")
-
-    ws.onText = { ws, text in
-        print("[event] - \(text)")
-    }
-
-    ws.onClose = { ws, _, _, _ in
-        print("\n[CLOSED]\n")
-    }
-}
-```
-
-### WebSocket Server
-
-```Swift
-import HTTP
-import WebSockets
-
-final class MyResponder: Responder {
-    func respond(to request: Request) throws -> Response {
-        return try request.upgradeToWebSocket { ws in
-            print("[ws connected]")
-
-            ws.onText = { ws, text in
-                print("[ws text] \(text)")
-                try ws.send("🎙 \(text)")
-            }
-
-            ws.onClose = { _, code, reason, clean in
-                print("[ws close] \(clean ? "clean" : "dirty") \(code?.description ?? "") \(reason ?? "")")
-            }
-        }
-    }
-}
-
-let server = try Server<TCPServerStream, Parser<Request>, Serializer<Response>>(port: port)
-
-print("Connect websocket to http://localhost:\(port)/")
-try server.start(responder: MyResponder()) { error in
-    print("Got server error: \(error)")
-}
-```
-
-### SMTP
-
-```Swift
-import SMTP
-import Foundation
-import Transport
-
-let credentials = SMTPCredentials(
-    user: "server-admin-login",
-    pass: "secret-server-password"
-)
-
-let from = EmailAddress(name: "Password Reset",
-                        address: "noreply@myapp.com")
-let to = "some-user@random.com"
-let email: Email = Email(from: from,
-                         to: to,
-                         subject: "Vapor SMTP - Simple",
-                         body: "Hello from Vapor SMTP 👋")
-
-let client = try SMTPClient<TCPClientStream>.makeGmailClient()
-try client.send(email, using: credentials)
-```
-
-> Emails using the Gmail client are blocked by default unless you enable access for less-secure apps in your Gmail account settings: https://support.google.com/accounts/answer/6010255?hl=en-GB
+- HTTP (client/server)
+- WebSocket (client/server)
+- SMTP (client)
+- URI Parser
 
 ## 🏛 Architecture
 

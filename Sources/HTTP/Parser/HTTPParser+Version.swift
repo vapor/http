@@ -10,7 +10,7 @@ extension Version {
 
         guard
             comps.count == 2
-            else { throw Parser.Error.invalidVersion }
+            else { throw ParserError.invalidVersion }
 
         let version = comps[1].split(
             separator: .period,
@@ -21,7 +21,7 @@ extension Version {
 
         func versionNumber(for index: Int) throws -> Int? {
             if version.count > index {
-                guard let major = version[index].decimalInt else { throw Parser.Error.invalidVersion }
+                guard let major = version[index].decimalInt else { throw ParserError.invalidVersion }
                 return major
             }
             return nil
@@ -29,7 +29,7 @@ extension Version {
 
         guard
             let major = try versionNumber(for: 0)
-            else { throw Parser.Error.invalidVersion }
+            else { throw ParserError.invalidVersion }
 
         guard
             let minor = try versionNumber(for: 1)

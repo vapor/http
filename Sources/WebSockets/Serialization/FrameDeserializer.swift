@@ -1,14 +1,14 @@
 import Core
-import protocol Transport.Stream
+import Transport
 
 public enum FrameParserError: Swift.Error {
     case missingByte
 }
 
 public final class FrameParser {
-    private var stream: Stream
+    private var stream: ReadableStream // FIXME: generic
 
-    public init(stream: Stream) {
+    public init(stream: ReadableStream) {
         self.stream = stream
     }
 
@@ -54,7 +54,7 @@ public final class FrameParser {
     // MARK: Private
     
     private func extractByteZero() throws -> (fin: Bool, rsv1: Bool, rsv2: Bool, rsv3: Bool, opCode: WebSocket.Frame.OpCode) {
-        guard let byteZero = try stream.receive() else {
+        guard let byteZero = try stream.readByte() else {
             throw FrameParserError.missingByte
         }
         let fin = byteZero.containsMask(.finFlag)
@@ -67,7 +67,7 @@ public final class FrameParser {
     }
 
     private func extractByteOne() throws -> (maskKeyIncluded: Bool, payloadLength: Byte) {
-        guard let byteOne = try stream.receive() else {
+        guard let byteOne = try stream.readByte() else {
             throw FrameParserError.missingByte
         }
         let maskKeyIncluded = byteOne.containsMask(.maskKeyIncludedFlag)
@@ -79,22 +79,22 @@ public final class FrameParser {
         Returns UInt64 to encompass highest possible length. Length will be UInt16
     */
     private func extractTwoBytePayloadLengthExtension() throws -> UInt64 {
-        let two = try stream.receive(max: 2)
+        let two = try stream.read(max: 2)
         return UInt64(bytes: two)
     }
 
 
     private func extractEightBytePayloadLengthExtension() throws -> UInt64 {
-        let eight = try stream.receive(max: 8)
+        let eight = try stream.read(max: 8)
         return UInt64(bytes: eight)
     }
 
     private func extractMaskingKey() throws -> WebSocket.Frame.MaskingKey {
         guard
-            let zero = try stream.receive(),
-            let one = try stream.receive(),
-            let two = try stream.receive(),
-            let three = try stream.receive()
+            let zero = try stream.readByte(),
+            let one = try stream.readByte(),
+            let two = try stream.readByte(),
+            let three = try stream.readByte()
             else { throw FrameParserError.missingByte }
 
         return .key(zero: zero, one: one, two: two, three: three)
@@ -104,7 +104,7 @@ public final class FrameParser {
         var count: UInt64 = 0
         var bytes: [UInt8] = []
 
-        while count < length, let next = try stream.receive() {
+        while count < length, let next = try stream.readByte() {
             bytes.append(next)
             count += 1
         }

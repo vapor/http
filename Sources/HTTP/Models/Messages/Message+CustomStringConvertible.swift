@@ -7,7 +7,7 @@ extension Message: CustomStringConvertible {
         d += ["- Headers:"]
         d += [headers.map { field, val in "\t\(field): \(val)" } .joined(separator: "\n")]
         d += ["- Body:"]
-        d += ["\t\(body.bytes?.string ?? "n/a")"]
+        d += ["\t\(body.bytes?.makeString() ?? "n/a")"]
 
         return d.joined(separator: "\n")
     }

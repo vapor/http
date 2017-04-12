@@ -1,4 +1,5 @@
 import Core
+import Transport
 
 public final class URIParser: StaticDataBuffer {
 
@@ -62,15 +63,15 @@ public final class URIParser: StaticDataBuffer {
         // port MUST convert to string, THEN to Int
         let host = try hostBytes.percentDecodedString()
         let portString = try portBytes?.percentDecodedString() ?? ""
-        let port = Int(portString)
+        let port = Port(portString)
         let path = try pathBytes.percentDecodedString()
         let query = try queryBytes?.percentDecodedString()
-        let rawQuery = queryBytes?.string
+        let rawQuery = queryBytes?.makeString()
         let fragment = try fragmentBytes?.percentDecodedString()
         let uri = URI(
             scheme: scheme,
             userInfo: userInfo,
-            host: host,
+            hostname: host,
             port: port,
             path: path,
             query: query,

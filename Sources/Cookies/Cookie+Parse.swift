@@ -25,6 +25,7 @@ extension Cookie {
         var path: String?
         var secure = false
         var httpOnly = false
+        var sameSite: Cookie.SameSite?
 
 
         // cookies are sent separated by semicolons
@@ -34,11 +35,11 @@ extension Cookie {
 
             // cookies could be sent with space after
             // the semicolon so we should trim
-            let key = Array(cookieTokens[0]).trimmed([.space]).string
+            let key = Array(cookieTokens[0]).trimmed([.space]).makeString()
 
             let val: String
             if cookieTokens.count == 2 {
-                val = cookieTokens[1].string
+                val = cookieTokens[1].makeString()
             } else {
                 val = ""
             }
@@ -56,6 +57,12 @@ extension Cookie {
                 secure = true
             case "max-age":
                 maxAge = Int(val) ?? 0
+            case "samesite":
+                if val.lowercased() == "lax" {
+                    sameSite = .lax
+                } else {
+                    sameSite = .strict
+                }
             default:
                 name = key
                 value = val
@@ -77,7 +84,8 @@ extension Cookie {
             domain: domain,
             path: path,
             secure: secure,
-            httpOnly: httpOnly
+            httpOnly: httpOnly,
+            sameSite: sameSite
         )
     }
 

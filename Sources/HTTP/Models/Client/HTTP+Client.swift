@@ -1,4 +1,5 @@
 import Transport
+import Sockets
 
 public enum ClientError: Swift.Error {
     case invalidRequestHost
@@ -6,76 +7,51 @@ public enum ClientError: Swift.Error {
     case invalidRequestPort
     case unableToConnect
     case userInfoNotAllowedOnHTTP
+    case missingHost
 }
 
-public typealias BasicClient = Client<TCPClientStream, Serializer<Request>, Parser<Response>>
+public typealias TCPClient = BasicClient<
+    TCPInternetSocket,
+    Serializer<Request, StreamBuffer<TCPInternetSocket>>,
+    Parser<Response, StreamBuffer<TCPInternetSocket>>
+>
 
-let VERSION = "0.9.0"
+import TLS
 
-public final class Client<
-    ClientStreamType: ClientStream,
-    SerializerType: TransferSerializer,
-    ParserType: TransferParser>
-    : ClientProtocol
-    where ParserType.MessageType == Response, SerializerType.MessageType == Request
+public typealias TLSClient = BasicClient<
+    TLS.InternetSocket,
+    Serializer<Request, StreamBuffer<TLS.InternetSocket>>,
+    Parser<Response, StreamBuffer<TLS.InternetSocket>>
+>
+
+public final class BasicClient<
+    StreamType: ClientStream,
+    Serializer: TransferSerializer,
+    Parser: TransferParser
+>: Client where
+    Parser.MessageType == Response,
+    Serializer.MessageType == Request,
+    Parser.StreamType == StreamBuffer<StreamType>,
+    Serializer.StreamType == StreamBuffer<StreamType>
 {
-    public typealias Serializer = SerializerType
-    public typealias Parser = ParserType
+    // public let middleware: [Middleware]
+    public let stream: StreamType
 
-    public let scheme: String
-    public let host: String
-    public let port: Int
-    public let securityLayer: SecurityLayer
-    public let middleware: [Middleware]
+    public var scheme: String {
+        return stream.scheme
+    }
 
-    public let stream: Stream
+    public var hostname: String {
+        return stream.hostname
+    }
 
-    private let responder: Responder
+    public var port: Port {
+        return stream.port
+    }
 
-    public init(
-        scheme: String,
-        host: String,
-        port: Int = 80,
-        securityLayer: SecurityLayer = .none,
-        middleware: [Middleware] = []
-    ) throws {
-        self.scheme = scheme
-        self.host = host
-        self.port = port
-        self.securityLayer = securityLayer
-        self.middleware = type(of: self).defaultMiddleware + middleware
-
-        let client = try ClientStreamType(host: host, port: port, securityLayer: securityLayer)
-        let stream = try client.connect()
+    public init(_ stream: StreamType) throws {
         self.stream = stream
-
-        let handler = Request.Handler { request in
-            /*
-                A client MUST send a Host header field in all HTTP/1.1 request
-                messages.  If the target URI includes an authority component, then a
-                client MUST send a field-value for Host that is identical to that
-                authority component, excluding any userinfo subcomponent and its "@"
-                delimiter (Section 2.7.1).  If the authority component is missing or
-                undefined for the target URI, then a client MUST send a Host header
-                field with an empty field-value.
-            */
-            request.headers["Host"] = host
-            request.headers["User-Agent"] = "App (Swift) VaporEngine/\(VERSION)"
-
-            let buffer = StreamBuffer(stream)
-            let serializer = SerializerType(stream: buffer)
-            try serializer.serialize(request)
-
-            let parser = ParserType(stream: buffer)
-            let response = try parser.parse()
-
-            try buffer.flush()
-
-            return response
-        }
-
-        // add middleware
-        responder = self.middleware.chain(to: handler)
+        try stream.connect()
     }
     
     deinit {
@@ -84,22 +60,52 @@ public final class Client<
 
     public func respond(to request: Request) throws -> Response {
         try assertValid(request)
-        guard !stream.closed else { throw ClientError.unableToConnect }
+        guard !stream.isClosed else {
+            throw ClientError.unableToConnect
+        }
 
-        return try responder.respond(to: request)
+        /// client MUST send a Host header field in all HTTP/1.1 request
+        /// messages.  If the target URI includes an authority component, then a
+        /// client MUST send a field-value for Host that is identical to that
+        /// authority component, excluding any userinfo subcomponent and its "@"
+        /// delimiter (Section 2.7.1).  If the authority component is missing or
+        /// undefined for the target URI, then a client MUST send a Host header
+        /// field with an empty field-value.
+        request.headers["Host"] = stream.hostname
+        request.headers["User-Agent"] = userAgent
+
+        let buffer = StreamBuffer<StreamType>(stream)
+        let serializer = Serializer(stream: buffer)
+        try serializer.serialize(request)
+
+        let parser = Parser(stream: buffer)
+        let response = try parser.parse()
+
+        response.peerAddress = parser.parsePeerAddress(
+            from: stream,
+            with: response.headers
+        )
+
+        try buffer.flush()
+
+        return response
     }
 }
 
-extension ClientProtocol {
+let VERSION = "2"
+public var userAgent = "App (Swift) VaporEngine/\(VERSION)"
+
+
+extension Client {
     internal func assertValid(_ request: Request) throws {
-        if request.uri.host.isEmpty {
-            guard request.uri.host == host else {
+        if request.uri.hostname.isEmpty {
+            guard request.uri.hostname == hostname else {
                 throw ClientError.invalidRequestHost
             }
         }
 
         if request.uri.scheme.isEmpty {
-            guard request.uri.scheme.securityLayer.isSecure == securityLayer.isSecure else {
+            guard request.uri.scheme.isSecure == scheme.isSecure else {
                 throw ClientError.invalidRequestScheme
             }
         }
@@ -109,11 +115,9 @@ extension ClientProtocol {
         }
 
         guard request.uri.userInfo == nil else {
-            /*
-                 Userinfo (i.e., username and password) are now disallowed in HTTP and
-                 HTTPS URIs, because of security issues related to their transmission
-                 on the wire.  (Section 2.7.1)
-            */
+            /// Userinfo (i.e., username and password) are now disallowed in HTTP and
+            /// HTTPS URIs, because of security issues related to their transmission
+            /// on the wire.  (Section 2.7.1)
             throw ClientError.userInfoNotAllowedOnHTTP
         }
     }

@@ -17,7 +17,7 @@ extension Cookies {
             }.joined(separator: "; ")
         case .response:
             return map { cookie in
-                return cookie.makeBytes().string
+                return cookie.makeBytes().makeString()
             }.joined(separator: "\r\nSet-Cookie: ")
         }
     }

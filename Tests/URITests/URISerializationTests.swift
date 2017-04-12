@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 import libc
+import Transport
 
 @testable import URI
 
@@ -204,7 +205,7 @@ class URISerializationTests: XCTestCase {
         let testString = "https://api.spotify.com/v1/search?q=beyonce&type=artist"
         let uri = try URI(testString)
         XCTAssert(uri.scheme == "https")
-        XCTAssert(uri.host == "api.spotify.com")
+        XCTAssert(uri.hostname == "api.spotify.com")
         XCTAssert(uri.port == 443)
         XCTAssert(uri.path == "/v1/search")
         XCTAssert(uri.query == "q=beyonce&type=artist")
@@ -230,7 +231,7 @@ class URISerializationTests: XCTestCase {
         let spaces = "http:// g o o g l e . c o m"
         let uri = try URI(spaces)
         XCTAssert(uri.scheme == "http")
-        XCTAssert(uri.host == "google.com")
+        XCTAssert(uri.hostname == "google.com")
     }
 
     func testAuthorityNil() throws {
@@ -254,18 +255,18 @@ class URISerializationTests: XCTestCase {
         XCTAssertNil(auth)
 
         let (justName, noAuth) = try parser.parse(userInfo: "hello".makeBytes())
-        XCTAssert(justName.string == "hello")
+        XCTAssert(justName.makeString() == "hello")
         XCTAssertNil(noAuth)
 
         let (existingName, existingAuth) = try parser.parse(userInfo: "hello:world".makeBytes())
-        XCTAssert(existingName.string == "hello")
-        XCTAssert(existingAuth?.string == "world")
+        XCTAssert(existingName.makeString() == "hello")
+        XCTAssert(existingAuth?.makeString() == "world")
     }
 
     func testEmptyScheme() throws {
         let parser = URIParser(bytes: "http".makeBytes())
         let scheme = try parser.parseScheme()
-        XCTAssert(scheme.string == "http")
+        XCTAssert(scheme.makeString() == "http")
     }
 
     private func makeSure(input: String,
@@ -274,21 +275,20 @@ class URISerializationTests: XCTestCase {
                           host: String,
                           username: String,
                           pass: String,
-                          port: Int?,
+                          port: Transport.Port?,
                           path: String,
                           query: String?,
                           fragment: String?) throws {
-
         let uri = try URIParser.parse(bytes: input.utf8.array, existingHost: existingHost)
         XCTAssert(uri.scheme == scheme, "\(input) -- expected scheme: \(scheme) got: \(uri.scheme)")
-        XCTAssert(uri.host == host, "\(input) -- expected host: \(host) got: \(uri.host)")
+        XCTAssert(uri.hostname == host, "\(input) -- expected host: \(host) got: \(uri.hostname)")
         let testUsername = uri.userInfo?.username ?? ""
         let testPass = uri.userInfo?.info ?? ""
         XCTAssert(testUsername == username, "\(input) -- expected username: \(username) got: \(testUsername)")
         XCTAssert(testPass == pass, "\(input) -- expected password: \(pass), got: \(testPass)")
-        XCTAssert(uri.port == port, "\(input) -- expected port: \(port) got: \(uri.port)")
+        XCTAssertEqual(uri.port, port, "\(input) -- expected port: \(port ?? 0) got: \(uri.port ?? 0)")
         XCTAssert(uri.path == path, "\(input) -- expected path: \(path) got: \(uri.path)")
-        XCTAssert(uri.query == query, "\(input) -- expected query: \(query) got: \(uri.query)")
-        XCTAssert(uri.fragment == fragment, "\(input) -- expected fragment: \(fragment) got: \(fragment)")
+        XCTAssert(uri.query == query, "\(input) -- expected query: \(query ?? "<>") got: \(uri.query ?? "<>")")
+        XCTAssert(uri.fragment == fragment, "\(input) -- expected fragment: \(fragment ?? "<>") got: \(fragment ?? "<>")")
     }
 }

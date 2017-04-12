@@ -31,6 +31,16 @@ extension Cookie {
             serialized += "; HttpOnly"
         }
         
+        if let sameSite = sameSite {
+            serialized += "; SameSite"
+            switch sameSite {
+            case .lax:
+                serialized += "=Lax"
+            default:
+                serialized += "=Strict"
+            }
+        }
+        
         return serialized
     }
 }
