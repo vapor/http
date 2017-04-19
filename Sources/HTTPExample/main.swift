@@ -1,6 +1,13 @@
 import HTTP
 import Transport
 
+import Dispatch
+
+let queue = DispatchQueue.global(qos: .background)
+queue.async {
+    print("I'm running in background")
+}
+
 func client() throws {
     let response = try Client<TCPClientStream, Serializer<Request>, Parser<Response>>.get("http://pokeapi.co/api/v2/pokemon/")
     print(response)
