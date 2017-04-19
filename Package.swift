@@ -33,3 +33,10 @@ let package = Package(
         "Sources/SMTPExample",
     ]
 )
+
+let engine = Product(name: "Engine", type: .Library(.Dynamic), modules: "Engine")
+products.append(engine)
+let webSockets = Product(name: "WebSockets", type: .Library(.Dynamic), modules: "WebSockets")
+products.append(webSockets)
+let smtp = Product(name: "SMTP", type: .Library(.Dynamic), modules: "SMTP")
+products.append(smtp)
