@@ -77,8 +77,9 @@ public final class Request: Message {
         */
         let (methodSlice, uriSlice, httpVersionSlice) = startLineComponents
         let method = Method(uppercased: methodSlice.uppercased)
-        var uri = try URIParser.parse(bytes: uriSlice.array, existingHost: headers["Host"])
-        uri.scheme = uri.scheme.isEmpty ? "http" : uri.scheme
+        //var uri = try URIParser.parse(bytes: uriSlice.array, existingHost: headers["Host"])
+        //uri.scheme = uri.scheme.isEmpty ? "http" : uri.scheme
+        let uri = URI(host: headers["Host"] ?? "0.0.0.0", path: uriSlice.string)
         let version = try Version.makeParsed(with: httpVersionSlice)
 
         self.init(method: method, uri: uri, version: version, headers: headers, body: body, peerAddress: peerAddress)
