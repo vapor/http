@@ -35,9 +35,7 @@ public struct URI {
     // https://tools.ietf.org/html/rfc3986#section-3.5
     public var fragment: String?
 
-    /**
-        Designated URI initializer
-    */
+    /// Creates a new URI
     public init(
         scheme: String = "",
         userInfo: UserInfo? = nil,
