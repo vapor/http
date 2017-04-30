@@ -73,7 +73,7 @@ class HTTPHeadersTests: XCTestCase {
 
             _ = try RequestParser<TestStream>(stream: stream).parse()
             XCTFail("Headers init should have thrown")
-        } catch ParserError.invalidRequest {
+        } catch ParserError.invalidMessage {
             //
         } catch {
             XCTFail("Wrong error: \(error)")
@@ -94,7 +94,7 @@ class HTTPHeadersTests: XCTestCase {
 
             _ = try RequestParser<TestStream>(stream: stream).parse()
             XCTFail("Headers init should have thrown")
-        } catch ParserError.invalidRequest {
+        } catch ParserError.invalidMessage {
             //
         } catch {
             XCTFail("Wrong error: \(error)")

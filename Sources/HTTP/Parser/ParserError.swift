@@ -1,6 +1,5 @@
-public enum ParserError: Swift.Error {
-    case noVersion
-    case noURI
-    case invalidRequest
+/// Errors that may be encountered while parsing
+public enum ParserError: Error {
+    case invalidMessage
     case streamEmpty
 }
