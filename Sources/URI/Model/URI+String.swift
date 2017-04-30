@@ -34,4 +34,10 @@ extension String {
             .replacingOccurrences(of: "+", with: " ")
             .removingPercentEncoding ?? ""
     }
+    
+    public var urlQueryPercentEncoded: String {
+        return self.addingPercentEncoding(
+            withAllowedCharacters: .urlQueryAllowed
+        ) ?? ""
+    }
 }

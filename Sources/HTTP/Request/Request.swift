@@ -45,32 +45,6 @@ extension Request {
 }
 
 extension Request {
-    /// Returns the percent decoded URI query
-    public var query: String? {
-        get {
-            guard let q = storage["percent-decoded-query"] as? String else {
-                guard let q = uri.query?.percentDecoded else {
-                    return nil
-                }
-                storage["percent-decoded-query"] = q
-                return q
-            }
-            return q
-        }
-        set {
-            storage["percent-decoded-query"] = newValue
-            
-            let encoded = newValue?
-                .addingPercentEncoding(
-                    withAllowedCharacters: .alphanumerics
-                ) ?? ""
-            
-            uri.query = encoded
-        }
-    }
-}
-
-extension Request {
     public struct Handler: Responder {
         public typealias Closure = (Request) throws -> Response
 
@@ -80,13 +54,11 @@ extension Request {
             self.closure = closure
         }
 
-        /**
-            Respond to a given request or throw if fails
-
-            - parameter request: request to respond to
-            - throws: an error if response fails
-            - returns: a response if possible
-        */
+        /// Respond to a given request or throw if fails
+        ///
+        /// - parameter request: request to respond to
+        /// - throws: an error if response fails
+        /// - returns: a response if possible
         public func respond(to request: Request) throws -> Response {
             return try closure(request)
         }
