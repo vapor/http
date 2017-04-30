@@ -87,11 +87,9 @@ public final class BasicServer<StreamType: ServerStream>: Server {
             } catch {
                 throw error
             }
-
-            request.peerAddress = parser.parsePeerAddress(
-                from: self.stream,
-                with: request.headers
-            )
+            
+            // set the stream for peer information
+            request.stream = stream
 
             keepAlive = request.keepAlive
             let response = try responder.respond(to: request)

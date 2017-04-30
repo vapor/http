@@ -7,7 +7,6 @@ public final class Request: Message {
     public var version: Version
     public var headers: [HeaderKey: String]
     public var body: Body
-    public var peerAddress: PeerAddress?
     public var storage: [String: Any]
     
     public init(

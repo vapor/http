@@ -9,7 +9,6 @@ public final class Response: Message {
     public var version: Version
     public var headers: [HeaderKey: String]
     public var body: Body
-    public var peerAddress: PeerAddress?
     public var storage: [String: Any]
     public var onComplete: ((DuplexStream) throws -> Void)?
     
@@ -17,14 +16,12 @@ public final class Response: Message {
         version: Version = Version(major: 1, minor: 1),
         status: Status,
         headers: [HeaderKey: String] = [:],
-        body: Body = .data([]),
-        peerAddress: PeerAddress? = nil
+        body: Body = .data([])
     ) {
         self.status = status
         self.version = version
         self.headers = headers
         self.body = body
-        self.peerAddress = peerAddress
         self.storage = [:]
         self.onComplete = nil
     }
@@ -56,7 +53,7 @@ extension Response {
         where S.Iterator.Element == Byte
     {
         let body = Body(body)
-        self.init(version: version, status: status, headers: headers, body: body, peerAddress: nil)
+        self.init(version: version, status: status, headers: headers, body: body)
     }
 }
 
@@ -73,7 +70,7 @@ extension Response {
         body: BodyRepresentable
     ) {
         let body = body.makeBody()
-        self.init(version: version, status: status, headers: headers, body: body, peerAddress: nil)
+        self.init(version: version, status: status, headers: headers, body: body)
         self.status = status
     }
 }

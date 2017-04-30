@@ -63,10 +63,8 @@ public final class BasicClient<StreamType: ClientStream>: Client {
         let parser = ResponseParser<StreamType>(stream: stream)
         let response = try parser.parse()
 
-        response.peerAddress = parser.parsePeerAddress(
-            from: stream,
-            with: response.headers
-        )
+        // set the stream for peer information
+        response.stream = stream
         
         return response
     }

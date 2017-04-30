@@ -88,6 +88,7 @@ public final class RequestParser<Stream: ReadableStream>: CHTTPParser {
             headers: results.headers,
             body: .data(results.body)
         )
+
         return request
     }
 }

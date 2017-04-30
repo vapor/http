@@ -182,24 +182,6 @@ extension CHTTPParser {
         // return the results of the parsing
         return results
     }
-
-    // parses a peer address from a given stream
-    // and headers
-    func parsePeerAddress<Stream: InternetStream>(
-        from stream: Stream,
-        with headers: [HeaderKey: String]
-    ) -> PeerAddress {
-        let forwarded = headers["Forwarded"]
-        let xForwardedFor = headers["X-Forwarded-For"]
-        
-        let streamAddress = "\(stream.hostname):\(stream.port)"
-        
-        return PeerAddress(
-            forwarded: forwarded,
-            xForwardedFor: xForwardedFor,
-            stream: streamAddress
-        )
-    }
 }
 
 // MARK: Utilities

@@ -25,7 +25,7 @@ class HTTPRequestTests: XCTestCase {
 
             let parser = RequestParser<TestStream>(stream: stream)
             let request = try parser.parse()
-            request.peerAddress = parser.parsePeerAddress(from: stream, with: request.headers)
+            request.stream = stream
 
             XCTAssertEqual(request.method, Method.get)
             XCTAssertEqual(request.uri.hostname, "qutheory.io")
@@ -33,7 +33,8 @@ class HTTPRequestTests: XCTestCase {
             XCTAssertEqual(request.uri.path, "/plaintext")
             XCTAssertEqual(request.version.major, 1)
             XCTAssertEqual(request.version.minor, 1)
-            XCTAssertEqual(request.peerAddress?.address(), "1.2.3.4:5678")
+            XCTAssertEqual(request.peerHostname, "1.2.3.4")
+            XCTAssertEqual(request.peerPort, 5678)
         } catch {
             XCTFail("\(error)")
         }
@@ -85,12 +86,10 @@ class HTTPRequestTests: XCTestCase {
 
             let parser = RequestParser<TestStream>(stream: stream)
             let request = try parser.parse()
-            request.peerAddress = parser.parsePeerAddress(from: stream, with: request.headers)
+            request.stream = stream
 
             XCTAssertEqual(request.method, Method.get)
-            XCTAssertEqual(request.peerAddress?.address(), "5.6.7.8")
-            XCTAssertEqual(request.peerAddress?.xForwardedFor, "5.6.7.8")
-            XCTAssertEqual(request.peerAddress?.stream, "1.2.3.4:5678")
+            XCTAssertEqual(request.peerHostname, "5.6.7.8")
         } catch {
             XCTFail("\(error)")
         }
@@ -114,13 +113,10 @@ class HTTPRequestTests: XCTestCase {
 
             let parser = RequestParser<TestStream>(stream: stream)
             let request = try parser.parse()
-            request.peerAddress = parser.parsePeerAddress(from: stream, with: request.headers)
+            request.stream = stream
             
             XCTAssertEqual(request.method, Method.get)
-            XCTAssertEqual(request.peerAddress?.address(), "for=192.0.2.60; proto=http; by=203.0.113.43")
-            XCTAssertEqual(request.peerAddress?.forwarded, "for=192.0.2.60; proto=http; by=203.0.113.43")
-            XCTAssertEqual(request.peerAddress?.xForwardedFor, "5.6.7.8")
-            XCTAssertEqual(request.peerAddress?.stream, "1.2.3.4:5678")
+            XCTAssertEqual(request.peerHostname, "192.0.2.60")
         } catch {
             XCTFail("\(error)")
         }
