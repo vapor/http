@@ -26,7 +26,7 @@ class HTTPParsingTests: XCTestCase {
         try buffer.writeLineEnd()
         try buffer.write("asdf!")
         
-        let parser = RequestParser<TestStream>(stream: buffer)
+        let parser = RequestParser<TestStream>(buffer)
         let request = try parser.parse()
         print(request)
     }
@@ -56,7 +56,7 @@ class HTTPParsingTests: XCTestCase {
 
 
         do {
-            let request = try RequestParser<TestStream>(stream: stream).parse()
+            let request = try RequestParser<TestStream>(stream).parse()
 
             //MARK: Verify Request
             XCTAssert(request.method == Method.post, "Incorrect method \(request.method)")
@@ -82,7 +82,7 @@ class HTTPParsingTests: XCTestCase {
         )
 
         let stream = TestStream()
-        let serializer = Serializer<TestStream>(stream: stream)
+        let serializer = ResponseSerializer<TestStream>(stream)
         do {
             try serializer.serialize(response)
         } catch {

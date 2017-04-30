@@ -161,12 +161,12 @@ extension CHTTPParser {
             
             // if EOF is reached, we do not need to continue parsing
             if bytesRead == 0 {
-                throw ParserError.streamEmpty
+                throw ParserError.streamClosed
             }
             
             // cast the buffer
             guard let pointer = buffer.makeCPointer() else {
-                throw ParserError.streamEmpty
+                throw ParserError.streamClosed
             }
             
             // call the CHTTP parser

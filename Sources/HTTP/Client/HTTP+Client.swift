@@ -57,10 +57,10 @@ public final class BasicClient<StreamType: ClientStream>: Client {
         request.headers["Host"] = stream.hostname
         request.headers["User-Agent"] = userAgent
 
-        let serializer = Serializer<StreamType>(stream: stream)
+        let serializer = RequestSerializer<StreamType>(stream)
         try serializer.serialize(request)
 
-        let parser = ResponseParser<StreamType>(stream: stream)
+        let parser = ResponseParser<StreamType>(stream)
         let response = try parser.parse()
 
         // set the stream for peer information

@@ -67,9 +67,8 @@ public final class BasicServer<StreamType: ServerStream>: Server {
     private func respond(stream: StreamType.Client, responder: Responder) throws {
         try stream.setTimeout(defaultServerTimeout)
 
-        let parser = RequestParser<StreamType.Client>(stream: stream)
-        // let buffer = StreamBuffer(stream)
-        let serializer = Serializer<StreamType.Client>(stream: stream)
+        let parser = RequestParser<StreamType.Client>(stream)
+        let serializer = ResponseSerializer<StreamType.Client>(stream)
 
         defer {
             try? stream.close()
@@ -80,9 +79,7 @@ public final class BasicServer<StreamType: ServerStream>: Server {
             let request: Request
             do {
                 request = try parser.parse()
-            } catch ParserError.streamEmpty {
-                // if stream is empty, it's time to
-                // close the connection
+            } catch ParserError.streamClosed {
                 break
             } catch {
                 throw error

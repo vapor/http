@@ -13,7 +13,7 @@ public final class RequestParser<Stream: ReadableStream>: CHTTPParser {
     var buffer: Bytes
     
     /// Creates a new Request parser.
-    public init(stream: Stream) {
+    public init(_ stream: Stream) {
         self.stream = stream
         self.parser = http_parser()
         self.settings = http_parser_settings()

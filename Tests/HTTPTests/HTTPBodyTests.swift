@@ -17,7 +17,7 @@ class HTTPBodyTests: XCTestCase {
             try stream.writeLineEnd()
             try stream.writeLineEnd()
             try stream.write(expected)
-            let req = try RequestParser<TestStream>(stream: stream).parse()
+            let req = try RequestParser<TestStream>(stream).parse()
 
             switch req.body {
             case .data(let data):
@@ -46,7 +46,7 @@ class HTTPBodyTests: XCTestCase {
             try chunkStream.write("d!")
             try chunkStream.close()
 
-            let req = try RequestParser<TestStream>(stream: stream).parse()
+            let req = try RequestParser<TestStream>(stream).parse()
 
             switch req.body {
             case .data(let data):
@@ -71,7 +71,7 @@ class HTTPBodyTests: XCTestCase {
 
         struct HelloResponder: HTTP.Responder {
             func respond(to request: Request) throws -> Response {
-                return Response(body: "Hello".makeBytes())
+                return Response(status: .ok, body: "Hello".makeBytes())
             }
         }
 
