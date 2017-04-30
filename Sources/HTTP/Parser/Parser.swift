@@ -22,6 +22,7 @@ internal protocol Parser: class {
     var stream: StreamType { get }
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
+    var buffer: Bytes { get set }
 }
 
 extension Parser {
@@ -144,17 +145,17 @@ extension Parser {
         }
         
         while !results.isComplete {
-            let data = try stream.read(max: 2048)
-            if data.count == 0 {
+            let bytesRead = try stream.read(max: buffer.capacity, into: &buffer)
+            if bytesRead == 0 {
                 throw ParserError.streamEmpty
             }
-            try data.withUnsafeBytes { rawPointer in
+            try buffer.withUnsafeBytes { rawPointer in
                 guard let pointer = rawPointer.baseAddress?.assumingMemoryBound(to: Int8.self) else {
                     return
                 }
                 
-                let parsedCount = http_parser_execute(&parser, &settings, pointer, data.count)
-                guard parsedCount == data.count else {
+                let parsedCount = http_parser_execute(&parser, &settings, pointer, bytesRead)
+                guard parsedCount == bytesRead else {
                     throw ParserError.invalidRequest
                 }
             }

@@ -389,22 +389,24 @@ final class TestStream: DuplexStream {
 
     }
 
-    func read(max: Int) throws -> Bytes {
-        if buffer.count == 0 {
+    func read(max: Int, into buffer: inout Bytes) throws -> Int {
+        if self.buffer.count == 0 {
             try close()
-            return []
+            return 0
         }
 
-        if max >= buffer.count {
+        if max >= self.buffer.count {
             try close()
-            let data = buffer
-            buffer = []
-            return data
+            let data = self.buffer
+            self.buffer = []
+            buffer = data
+            return data.count
         }
 
-        let data = buffer[0..<max]
-        buffer.removeFirst(max)
+        let data = self.buffer[0..<max].array
+        self.buffer.removeFirst(max)
         
-        return Bytes(data)
+        buffer = data
+        return data.count
     }
 }

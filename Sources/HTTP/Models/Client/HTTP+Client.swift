@@ -57,7 +57,6 @@ public final class BasicClient<StreamType: ClientStream>: Client {
         request.headers["Host"] = stream.hostname
         request.headers["User-Agent"] = userAgent
 
-        // let buffer = StreamBuffer<StreamType>(stream)
         let serializer = Serializer<StreamType>(stream: stream)
         try serializer.serialize(request)
 
@@ -68,10 +67,7 @@ public final class BasicClient<StreamType: ClientStream>: Client {
             from: stream,
             with: response.headers
         )
-
-        // try buffer.flush()
-
-        print("CLIENT DONE")
+        
         return response
     }
 }

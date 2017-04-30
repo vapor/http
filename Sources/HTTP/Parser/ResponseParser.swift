@@ -7,12 +7,15 @@ public final class ResponseParser<Stream: DuplexStream>: Parser {
     let stream: Stream
     var parser: http_parser
     var settings: http_parser_settings
+    var buffer: Bytes
     
     public init(stream: Stream) {
         self.stream = stream
         self.parser = http_parser()
         self.settings = http_parser_settings()
         http_parser_init(&parser, HTTP_RESPONSE)
+        self.buffer = Bytes()
+        self.buffer.reserveCapacity(2048)
     }
     
     

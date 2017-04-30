@@ -91,6 +91,7 @@ class HTTPParsingTests: XCTestCase {
 
         let data = try! stream.read(max: 2048)
 
+        print(data.makeString())
         XCTAssert(data.makeString().contains("HTTP/1.1 420 Enhance Your Calm"))
         XCTAssert(data.makeString().contains("Content-Type: text/plain"))
         XCTAssert(data.makeString().contains("Test: 123"))
@@ -146,22 +147,24 @@ final class TestStream: InternetStream, DuplexStream {
         flushedCount += 1
     }
 
-    func read(max: Int) throws -> Bytes {
-        if buffer.count == 0 {
+    func read(max: Int, into buffer: inout Bytes) throws -> Int {
+        if self.buffer.count == 0 {
             try close()
-            return []
-        }
-
-        if max >= buffer.count {
-            try close()
-            let data = buffer
             buffer = []
-            return data
+            return 0
         }
 
-        let data = buffer[0..<max]
-        buffer.removeFirst(max)
+        if max >= self.buffer.count {
+            try close()
+            buffer = self.buffer
+            self.buffer = []
+            return buffer.count
+        }
 
-        return Bytes(data)
+        let data = self.buffer[0..<max].array
+        self.buffer.removeFirst(max)
+
+        buffer = data
+        return buffer.count
     }
 }

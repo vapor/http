@@ -75,23 +75,25 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
 
     }
 
-    func read(max: Int) throws -> Bytes {
-        if buffer.count == 0 {
+    func read(max: Int, into buffer: inout Bytes) throws -> Int {
+        if self.buffer.count == 0 {
             try close()
-            return []
-        }
-
-        if max >= buffer.count {
-            try close()
-            let data = buffer
             buffer = []
-            return data
+            return 0
         }
 
-        let data = buffer[0..<max]
-        buffer.removeFirst(max)
+        if max >= self.buffer.count {
+            try close()
+            let data = self.buffer
+            self.buffer = []
+            buffer = data
+            return data.count
+        }
 
-        return Bytes(data)
+        let data = self.buffer[0..<max].array
+        self.buffer.removeFirst(max)
+        buffer = data
+        return data.count
     }
     
     func connect() throws {
