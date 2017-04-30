@@ -19,7 +19,6 @@ XCTMain([
     testCase(HTTPParsingTests.allTests),
     testCase(HTTPRequestTests.allTests),
     testCase(HTTPResponseTests.allTests),
-    testCase(HTTPVersionTests.allTests),
     testCase(FoundationConversionTests.allTests),
 
     // WebSocketsTests

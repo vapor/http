@@ -2,19 +2,75 @@ import Transport
 
 private let crlf: Bytes = [.carriageReturn, .newLine]
 
-public final class Serializer<
-    MessageType: Message,
-    StreamType: DuplexStream
->: TransferSerializer {
-    let stream: StreamType
+public final class Serializer<StreamType: DuplexStream> {
+    let stream: StreamBuffer<StreamType>
     public init(stream: StreamType) {
-        self.stream = stream
+        self.stream = StreamBuffer(stream)
+    }
+    
+    public func serialize(_ response: Response) throws {
+        try stream.write([.H, .T, .T, .P, .forwardSlash])
+        try stream.write(response.version.major.description)
+        if response.version.minor > 0 {
+            try stream.write(.period)
+            try stream.write(response.version.minor.description)
+        }
+        try stream.write(.space)
+        try stream.write(response.status.statusCode.description)
+        try stream.write(.space)
+        try stream.write(response.status.reasonPhrase.description)
+
+        try stream.write(crlf)
+        try serialize(response as Message)
+    }
+    
+    public func serialize(_ request: Request) throws {
+        let methodBytes: Bytes
+        switch request.method {
+        case .connect:
+            methodBytes = [.C, .O, .N, .N, .E, .C, .T]
+        case .delete:
+            methodBytes = [.D, .E, .L, .E, .T, .E]
+        case .get:
+            methodBytes = [.G, .E, .T]
+        case .head:
+            methodBytes = [.H, .E, .A, .D]
+        case .options:
+            methodBytes = [.O, .P, .T, .I, .O, .N, .S]
+        case .put:
+            methodBytes = [.P, .U, .T]
+        case .patch:
+            methodBytes = [.P, .A, .T, .C, .H]
+        case .post:
+            methodBytes = [.P, .O, .S, .T]
+        case .trace:
+            methodBytes = [.T, .R, .A, .C, .E]
+        case .other(let string):
+            methodBytes = string.makeBytes()
+        }
+        try stream.write(methodBytes)
+        try stream.write(.space)
+        try stream.write(request.uri.path)
+        if let query = request.uri.query {
+            try stream.write(.questionMark)
+            try stream.write(query)
+        }
+        try stream.write(.space)
+        
+        try stream.write([.H, .T, .T, .P, .forwardSlash])
+        try stream.write(request.version.major.description)
+        if request.version.minor > 0 {
+            try stream.write(.period)
+            try stream.write(request.version.minor.description)
+        }
+        
+        try stream.write(crlf)
+        try serialize(request as Message)
     }
 
-    public func serialize(_ message: MessageType) throws {
-        let startLine = message.startLine
-        try stream.write(startLine)
-        try stream.write(crlf)
+    private func serialize(_ message: Message) throws {
+        //let startLine = message.startLine
+        //try stream.write(startLine)
 
         var headers = message.headers
         headers.appendMetadata(for: message.body)

@@ -3,7 +3,7 @@ extension URI {
         Attempts to parse a given string as a URI
     */
     public init(_ str: String) throws {
-        self = try URIParser.parse(bytes: str.utf8.array)
+        self = URIParser.shared.parse(bytes: str.makeBytes())
     }
 }
 
@@ -25,5 +25,13 @@ extension String {
     fileprivate func begin(with expectation: String) -> String {
         if hasPrefix(expectation) { return self }
         return expectation + self
+    }
+}
+
+extension String {
+    public var percentDecoded: String {
+        return self
+            .replacingOccurrences(of: "+", with: " ")
+            .removingPercentEncoding ?? ""
     }
 }

@@ -9,6 +9,32 @@ class HTTPParsingTests: XCTestCase {
        ("testParser", testParser),
        ("testSerializer", testSerializer)
     ]
+    
+    
+    
+    
+    
+    func testYES() throws {
+        let buffer = TestStream()
+        
+        try buffer.write("GET https://user:password@google.com:8080/foobar?yo=hi#dude HTTP/1.2")
+        try buffer.writeLineEnd()
+        try buffer.write("Content-Length: 5")
+        try buffer.writeLineEnd()
+        try buffer.write("Content-Type: text/plain")
+        try buffer.writeLineEnd()
+        try buffer.writeLineEnd()
+        try buffer.write("asdf!")
+        
+        let parser = RequestParser<TestStream>(stream: buffer)
+        let request = try parser.parse()
+        print(request)
+    }
+    
+    
+    
+    
+    
 
     func testParser() {
         let stream = TestStream()
@@ -30,7 +56,7 @@ class HTTPParsingTests: XCTestCase {
 
 
         do {
-            let request = try Parser<Request, TestStream>(stream: stream).parse()
+            let request = try RequestParser<TestStream>(stream: stream).parse()
 
             //MARK: Verify Request
             XCTAssert(request.method == Method.post, "Incorrect method \(request.method)")
@@ -56,7 +82,7 @@ class HTTPParsingTests: XCTestCase {
         )
 
         let stream = TestStream()
-        let serializer = Serializer<Response, TestStream>(stream: stream)
+        let serializer = Serializer<TestStream>(stream: stream)
         do {
             try serializer.serialize(response)
         } catch {
