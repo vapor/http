@@ -3,6 +3,7 @@ import XCTest
 import Transport
 import libc
 import Sockets
+import Foundation
 
 class HTTPBodyTests: XCTestCase {
 
