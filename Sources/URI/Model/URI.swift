@@ -57,9 +57,7 @@ public struct URI {
 }
 
 extension URI {
-    /*
-         https://tools.ietf.org/html/rfc3986#section-3.2.1
-    */
+    /// https://tools.ietf.org/html/rfc3986#section-3.2.1
     public struct UserInfo {
         public let username: String
         public let info: String?

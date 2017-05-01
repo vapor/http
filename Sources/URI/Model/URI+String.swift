@@ -1,12 +1,3 @@
-extension URI {
-    /**
-        Attempts to parse a given string as a URI
-    */
-    public init(_ str: String) throws {
-        self = URIParser.shared.parse(bytes: str.makeBytes())
-    }
-}
-
 extension URI: CustomStringConvertible {
     public var description: String {
         var s = ""

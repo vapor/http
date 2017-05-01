@@ -73,6 +73,13 @@ extension URIParser {
     }
 }
 
+extension URI {
+    // Creates a new URI.
+    public init(_ bytes: BytesConvertible) throws {
+        self = try URIParser.shared.parse(bytes)
+    }
+}
+
 // MARK: Utilities
 
 extension Array where Iterator.Element == Byte {
