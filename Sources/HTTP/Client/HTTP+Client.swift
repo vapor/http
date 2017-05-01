@@ -10,30 +10,13 @@ public enum ClientError: Swift.Error {
     case missingHost
 }
 
-public typealias TCPClient = BasicClient<
-    TCPInternetSocket,
-    Serializer<Request, StreamBuffer<TCPInternetSocket>>,
-    Parser<Response, StreamBuffer<TCPInternetSocket>>
->
+public typealias TCPClient = BasicClient<TCPInternetSocket>
 
 import TLS
 
-public typealias TLSClient = BasicClient<
-    TLS.InternetSocket,
-    Serializer<Request, StreamBuffer<TLS.InternetSocket>>,
-    Parser<Response, StreamBuffer<TLS.InternetSocket>>
->
+public typealias TLSClient = BasicClient<TLS.InternetSocket>
 
-public final class BasicClient<
-    StreamType: ClientStream,
-    Serializer: TransferSerializer,
-    Parser: TransferParser
->: Client where
-    Parser.MessageType == Response,
-    Serializer.MessageType == Request,
-    Parser.StreamType == StreamBuffer<StreamType>,
-    Serializer.StreamType == StreamBuffer<StreamType>
-{
+public final class BasicClient<StreamType: ClientStream>: Client {
     // public let middleware: [Middleware]
     public let stream: StreamType
 
@@ -74,20 +57,15 @@ public final class BasicClient<
         request.headers["Host"] = stream.hostname
         request.headers["User-Agent"] = userAgent
 
-        let buffer = StreamBuffer<StreamType>(stream)
-        let serializer = Serializer(stream: buffer)
+        let serializer = RequestSerializer<StreamType>(stream)
         try serializer.serialize(request)
 
-        let parser = Parser(stream: buffer)
+        let parser = ResponseParser<StreamType>(stream)
         let response = try parser.parse()
 
-        response.peerAddress = parser.parsePeerAddress(
-            from: stream,
-            with: response.headers
-        )
-
-        try buffer.flush()
-
+        // set the stream for peer information
+        response.stream = stream
+        
         return response
     }
 }

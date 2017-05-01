@@ -89,7 +89,6 @@ import Transport
 */
 public final class SMTPClient<StreamType: ClientStream> {
     public let stream: StreamType
-    internal let buffer: StreamBuffer<StreamType>
 
     public var scheme: String {
         return stream.scheme
@@ -111,12 +110,11 @@ public final class SMTPClient<StreamType: ClientStream> {
     public init(_ client: StreamType) throws {
         try client.connect()
         self.stream = client
-        self.buffer = StreamBuffer(client)
     }
 
     deinit {
-        guard !buffer.isClosed else { return }
-        _ = try? buffer.close()
+        guard !stream.isClosed else { return }
+        _ = try? stream.close()
     }
 
     @discardableResult

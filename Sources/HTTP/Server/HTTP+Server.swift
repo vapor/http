@@ -6,29 +6,12 @@ import TLS
 
 public var defaultServerTimeout: Double = 30
 
-public typealias TCPServer = BasicServer<
-    TCPInternetSocket,
-    Parser<Request, StreamBuffer<TCPInternetSocket>>,
-    Serializer<Response, StreamBuffer<TCPInternetSocket>>
->
+public typealias TCPServer = BasicServer<TCPInternetSocket>
 
 
-public typealias TLSServer = BasicServer<
-    TLS.InternetSocket,
-    Parser<Request, StreamBuffer<TLS.InternetSocket>>,
-    Serializer<Response, StreamBuffer<TLS.InternetSocket>>
->
+public typealias TLSServer = BasicServer<TLS.InternetSocket>
 
-public final class BasicServer<
-    StreamType: ServerStream,
-    Parser: TransferParser,
-    Serializer: TransferSerializer
->: Server where
-    Parser.MessageType == Request,
-    Serializer.MessageType == Response,
-    Parser.StreamType == StreamBuffer<StreamType.Client>,
-    Serializer.StreamType == StreamBuffer<StreamType.Client>
- {
+public final class BasicServer<StreamType: ServerStream>: Server {
     public let stream: StreamType
     public let listenMax: Int
 
@@ -82,11 +65,10 @@ public final class BasicServer<
     }
 
     private func respond(stream: StreamType.Client, responder: Responder) throws {
-        let stream = StreamBuffer(stream)
         try stream.setTimeout(defaultServerTimeout)
 
-        let parser = Parser(stream: stream)
-        let serializer = Serializer(stream: stream)
+        let parser = RequestParser<StreamType.Client>(stream)
+        let serializer = ResponseSerializer<StreamType.Client>(stream)
 
         defer {
             try? stream.close()
@@ -97,18 +79,14 @@ public final class BasicServer<
             let request: Request
             do {
                 request = try parser.parse()
-            } catch ParserError.streamEmpty {
-                // if stream is empty, it's time to
-                // close the connection
+            } catch ParserError.streamClosed {
                 break
             } catch {
                 throw error
             }
-
-            request.peerAddress = parser.parsePeerAddress(
-                from: self.stream,
-                with: request.headers
-            )
+            
+            // set the stream for peer information
+            request.stream = stream
 
             keepAlive = request.keepAlive
             let response = try responder.respond(to: request)

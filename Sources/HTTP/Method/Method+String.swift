@@ -1,3 +1,5 @@
+import Core
+
 private let GET = "GET".makeBytes()
 private let POST = "POST".makeBytes()
 private let PUT = "PUT".makeBytes()

@@ -1,119 +1,119 @@
 import Core
 import Transport
+import CHTTP
 
-public final class URIParser: StaticDataBuffer {
-
-    public enum Error: Swift.Error {
-        case invalidPercentEncoding
-        case unsupportedURICharacter(Byte)
-    }
-
-    // If we have authority, we should also have scheme?
-    let existingHost: Bytes?
-
-    /**
-        The most common form of Request-URI is that used to identify a
-        resource on an origin server or gateway. In this case the absolute
-        path of the URI MUST be transmitted (see section 3.2.1, abs_path) as
-        the Request-URI, and the network location of the URI (authority) MUST
-        be transmitted in a Host header field. For example, a client wishing
-        to retrieve the resource above directly from the origin server would
-        create a TCP connection to port 80 of the host "www.w3.org" and send
-        the lines:
-
-        GET /pub/WWW/TheProject.html HTTP/1.1
-        Host: www.w3.org
-
-        If host exists, and scheme exists, use those
-    */
-    public init(bytes: Bytes, existingHost: String? = nil) {
-        self.existingHost = existingHost?.makeBytes()
-        super.init(bytes: bytes)
-    }
-
-    // MARK: Paser URI
-
-    /**
-        Main parsing function
-    */
-    internal func parse() throws -> URI {
-        let (schemeBytes, authorityBytes, pathBytes, queryBytes, fragmentBytes) = try parseComponents()
-        let (usernameBytes, infoBytes, hostBytes, portBytes) = try parse(authority: authorityBytes)
-
-        /*
-            ***** [WARNING] *****
-
-            do NOT attempt to percent decode before THIS point
-        */
-        let scheme = try schemeBytes.percentDecodedString()
-        let username = try usernameBytes?.percentDecodedString()
-        let info = try infoBytes?.percentDecodedString()
-
-        let userInfo: URI.UserInfo?
-        if let username = username, !username.isEmpty {
-            userInfo = URI.UserInfo(
-                username: username,
-                info: info
+/// Parses URIs from bytes.
+public final class URIParser {
+    /// Use a shared parser since URI parser doesn't
+    /// require special configuration
+    public static let shared = URIParser()
+    
+    /// Creates a new URI parser.
+    public init() {}
+    
+    /// Parses a URI from the supplied bytes.
+    public func parse(bytes: Bytes) -> URI {
+        // create url results struct
+        var url = http_parser_url()
+        http_parser_url_init(&url)
+        
+        // parse url
+        http_parser_parse_url(bytes.makeCBytes(), bytes.count, 0, &url)
+        
+        // fetch offsets from result
+        let (scheme, hostname, port, path, query, fragment, userinfo) = url.field_data
+        
+        // parse uri info
+        let info: URI.UserInfo?
+        if userinfo.len > 0, let bytes = bytes.bytes(for: userinfo) {
+            let parts = bytes.split(
+                separator: .colon,
+                maxSplits: 1,
+                omittingEmptySubsequences: false
             )
+            switch parts.count {
+            case 2:
+                info = URI.UserInfo(
+                    username: parts[0].makeString(),
+                    info: parts[1].makeString()
+                )
+            case 1:
+                info = URI.UserInfo(username: parts[0].makeString())
+            default:
+                info = nil
+            }
         } else {
-            userInfo = nil
+            info = nil
         }
-
-
-        // port MUST convert to string, THEN to Int
-        let host = try hostBytes.percentDecodedString()
-        let portString = try portBytes?.percentDecodedString() ?? ""
-        let port = Port(portString)
-        let path = try pathBytes.percentDecodedString()
-        let query = try queryBytes?.percentDecodedString()
-        let rawQuery = queryBytes?.makeString()
-        let fragment = try fragmentBytes?.percentDecodedString()
+        
+        // sets a port if one was supplied
+        // in the url bytes
+        let p: Port?
+        if let bytes = bytes.string(for: port) {
+            p = Port(bytes)
+        } else {
+            p = nil
+        }
+        
+        // create uri
         let uri = URI(
-            scheme: scheme,
-            userInfo: userInfo,
-            hostname: host,
-            port: port,
-            path: path,
-            query: query,
-            rawQuery: rawQuery,
-            fragment: fragment
+            scheme: bytes.string(for: scheme) ?? "",
+            userInfo: info,
+            hostname: bytes.string(for: hostname) ?? "",
+            port: p,
+            path: bytes.string(for: path) ?? "",
+            query: bytes.string(for: query),
+            fragment: bytes.string(for: fragment)
         )
-
         return uri
     }
+}
 
-    // MARK: Component Parse
+// MARK: Convenience
 
-    private func parseComponents() throws -> (
-        scheme: [Byte],
-        authority: [Byte],
-        path: [Byte],
-        query: [Byte]?,
-        fragment: [Byte]?
-    ) {
-        // ordered calls
-        let scheme = try parseScheme()
-        let authority = try parseAuthority() ?? []
-        let path = try parsePath()
-        let query = try parseQuery()
-        let fragment = try parseFragment()
-
-        return (
-            scheme,
-            authority,
-            path,
-            query,
-            fragment
-        )
+extension URIParser {
+    public func parse(_ bytes: BytesConvertible) throws -> URI {
+        return try parse(bytes: bytes.makeBytes())
     }
+}
 
-    /**
-        Filter out white space and throw on invalid characters
-    */
-    public override func next() throws -> Byte? {
-        guard let next = try super.next() else { return nil }
-        guard !next.isWhitespace else { return try self.next() }
-        guard next.isValidUriCharacter else { throw Error.unsupportedURICharacter(next) }
-        return next
+extension URI {
+    // Creates a new URI.
+    public init(_ bytes: BytesConvertible) throws {
+        self = try URIParser.shared.parse(bytes)
+    }
+}
+
+// MARK: Utilities
+
+extension Array where Iterator.Element == Byte {
+    /// Creates a C pointer from a Bytes array.
+    func makeCBytes() -> UnsafePointer<CChar>? {
+        return self.withUnsafeBytes { rawPointer in
+            return rawPointer.baseAddress?.assumingMemoryBound(to: CChar.self)
+        }
+    }
+    
+    /// Creates a string from the supplied field data offsets
+    func string(for data: http_parser_url_field_data) -> String? {
+        return bytes(for: data)?.makeString()
+    }
+    
+    /// Creates bytes from the supplied field data offset.
+    func bytes(for data: http_parser_url_field_data) -> Bytes? {
+        return bytes(from: data.off, length: data.len)
+    }
+    
+    /// Creates bytes from the supplied offset and length
+    func bytes(from: UInt16, length: UInt16) -> Bytes? {
+        return bytes(from: Int(from), length: Int(length))
+    }
+    
+    /// Creates bytes from the supplied offset and length
+    func bytes(from: Int, length: Int) -> Bytes? {
+        guard length > 0 else {
+            return nil
+        }
+        return self[from..<(from+length)].array
     }
 }

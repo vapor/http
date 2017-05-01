@@ -49,7 +49,7 @@ class FoundationConversionTests: XCTestCase {
 
     func testRequestToUrlRequestConversion() throws {
         let body = Body("hello".makeBytes())
-        let request = try Request(method: .get, uri: "http://google.com:80", headers: ["foo": "bar"], body: body)
+        let request = Request(method: .get, uri: "http://google.com:80", headers: ["foo": "bar"], body: body)
         let urlRequest = try request.makeFoundationRequest()
 
         XCTAssertEqual(try request.uri.makeFoundationURL(), urlRequest.url)

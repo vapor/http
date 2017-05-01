@@ -9,6 +9,32 @@ class HTTPParsingTests: XCTestCase {
        ("testParser", testParser),
        ("testSerializer", testSerializer)
     ]
+    
+    
+    
+    
+    
+    func testYES() throws {
+        let buffer = TestStream()
+        
+        try buffer.write("GET https://user:password@google.com:8080/foobar?yo=hi#dude HTTP/1.2")
+        try buffer.writeLineEnd()
+        try buffer.write("Content-Length: 5")
+        try buffer.writeLineEnd()
+        try buffer.write("Content-Type: text/plain")
+        try buffer.writeLineEnd()
+        try buffer.writeLineEnd()
+        try buffer.write("asdf!")
+        
+        let parser = RequestParser<TestStream>(buffer)
+        let request = try parser.parse()
+        print(request)
+    }
+    
+    
+    
+    
+    
 
     func testParser() {
         let stream = TestStream()
@@ -30,7 +56,7 @@ class HTTPParsingTests: XCTestCase {
 
 
         do {
-            let request = try Parser<Request, TestStream>(stream: stream).parse()
+            let request = try RequestParser<TestStream>(stream).parse()
 
             //MARK: Verify Request
             XCTAssert(request.method == Method.post, "Incorrect method \(request.method)")
@@ -56,7 +82,7 @@ class HTTPParsingTests: XCTestCase {
         )
 
         let stream = TestStream()
-        let serializer = Serializer<Response, TestStream>(stream: stream)
+        let serializer = ResponseSerializer<TestStream>(stream)
         do {
             try serializer.serialize(response)
         } catch {
@@ -65,6 +91,7 @@ class HTTPParsingTests: XCTestCase {
 
         let data = try! stream.read(max: 2048)
 
+        print(data.makeString())
         XCTAssert(data.makeString().contains("HTTP/1.1 420 Enhance Your Calm"))
         XCTAssert(data.makeString().contains("Content-Type: text/plain"))
         XCTAssert(data.makeString().contains("Test: 123"))
@@ -120,22 +147,24 @@ final class TestStream: InternetStream, DuplexStream {
         flushedCount += 1
     }
 
-    func read(max: Int) throws -> Bytes {
-        if buffer.count == 0 {
+    func read(max: Int, into buffer: inout Bytes) throws -> Int {
+        if self.buffer.count == 0 {
             try close()
-            return []
-        }
-
-        if max >= buffer.count {
-            try close()
-            let data = buffer
             buffer = []
-            return data
+            return 0
         }
 
-        let data = buffer[0..<max]
-        buffer.removeFirst(max)
+        if max >= self.buffer.count {
+            try close()
+            buffer = self.buffer
+            self.buffer = []
+            return buffer.count
+        }
 
-        return Bytes(data)
+        let data = self.buffer[0..<max].array
+        self.buffer.removeFirst(max)
+
+        buffer = data
+        return buffer.count
     }
 }

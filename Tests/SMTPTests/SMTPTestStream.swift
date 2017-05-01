@@ -31,7 +31,8 @@ private let SMTPReplies: [String: String] = [
 
 final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
     var isClosed: Bool
-    var buffer: Bytes
+    var writeBuffer: Bytes
+    var readBuffer: Bytes
 
     let scheme: String
     let hostname: String
@@ -39,7 +40,8 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
 
     init(scheme: String, hostname: String, port: Port) {
         isClosed = false
-        buffer = []
+        writeBuffer = []
+        readBuffer = []
 
         self.scheme = scheme
         self.hostname = hostname
@@ -58,40 +60,39 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
 
     func write(_ bytes: Bytes) throws {
         isClosed = false
-        if let response = SMTPReplies[bytes.makeString()] {
-            if bytes.makeString() == "\r\n.\r\n" {
-                // email data terminator. overwrite buffer of dummy email
-                buffer = response.makeBytes()
-            } else {
-                buffer += response.makeBytes()
-            }
-        } else {
-            // If reply not known, set to buffer
-            buffer += bytes
-        }
+        writeBuffer += bytes
     }
 
     func flush() throws {
-
+        if let response = SMTPReplies[writeBuffer.makeString()] {
+            readBuffer = response.makeBytes()
+        } else {
+            // If reply not known, set to buffer
+            readBuffer = writeBuffer
+        }
+        writeBuffer = []
     }
 
-    func read(max: Int) throws -> Bytes {
-        if buffer.count == 0 {
+    func read(max: Int, into buffer: inout Bytes) throws -> Int {
+        if readBuffer.count == 0 {
             try close()
-            return []
-        }
-
-        if max >= buffer.count {
-            try close()
-            let data = buffer
+            readBuffer = []
             buffer = []
-            return data
+            return 0
         }
 
-        let data = buffer[0..<max]
-        buffer.removeFirst(max)
+        if max >= readBuffer.count {
+            try close()
+            let data = readBuffer
+            readBuffer = []
+            buffer = data
+            return data.count
+        }
 
-        return Bytes(data)
+        let data = readBuffer[0..<max].array
+        readBuffer.removeFirst(max)
+        buffer = data
+        return data.count
     }
     
     func connect() throws {

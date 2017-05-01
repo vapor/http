@@ -20,27 +20,22 @@ public struct URI {
     public var scheme: String
 
     // https://tools.ietf.org/html/rfc3986#section-3.2.1
-    public let userInfo: UserInfo?
+    public var userInfo: UserInfo?
     // https://tools.ietf.org/html/rfc3986#section-3.2.2
-    public let hostname: String
+    public var hostname: String
     // https://tools.ietf.org/html/rfc3986#section-3.2.3
     public var port: Port?
 
     // https://tools.ietf.org/html/rfc3986#section-3.3
-    public let path: String
+    public var path: String
 
     // https://tools.ietf.org/html/rfc3986#section-3.4
     public var query: String?
 
     // https://tools.ietf.org/html/rfc3986#section-3.5
-    public let fragment: String?
+    public var fragment: String?
 
-    // the same as query but without pre-processing percent encoding during parse
-    public let rawQuery: String?
-
-    /**
-        Designated URI initializer
-    */
+    /// Creates a new URI
     public init(
         scheme: String = "",
         userInfo: UserInfo? = nil,
@@ -48,7 +43,6 @@ public struct URI {
         port: Port? = nil,
         path: String = "",
         query: String? = nil,
-        rawQuery: String? = nil,
         fragment: String? = nil
     ) {
         let scheme = scheme.lowercased()
@@ -58,15 +52,12 @@ public struct URI {
         self.port = port ?? URI.defaultPorts[scheme]
         self.path = path
         self.query = query
-        self.rawQuery = rawQuery
         self.fragment = fragment
     }
 }
 
 extension URI {
-    /*
-         https://tools.ietf.org/html/rfc3986#section-3.2.1
-    */
+    /// https://tools.ietf.org/html/rfc3986#section-3.2.1
     public struct UserInfo {
         public let username: String
         public let info: String?

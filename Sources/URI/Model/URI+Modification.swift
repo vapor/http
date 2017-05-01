@@ -27,7 +27,6 @@ extension URI {
             port: port,
             path: path,
             query: query,
-            rawQuery: rawQuery,
             fragment: fragment
         )
     }

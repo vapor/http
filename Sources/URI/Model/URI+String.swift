@@ -1,12 +1,3 @@
-extension URI {
-    /**
-        Attempts to parse a given string as a URI
-    */
-    public init(_ str: String) throws {
-        self = try URIParser.parse(bytes: str.utf8.array)
-    }
-}
-
 extension URI: CustomStringConvertible {
     public var description: String {
         var s = ""
@@ -25,5 +16,19 @@ extension String {
     fileprivate func begin(with expectation: String) -> String {
         if hasPrefix(expectation) { return self }
         return expectation + self
+    }
+}
+
+extension String {
+    public var percentDecoded: String {
+        return self
+            .replacingOccurrences(of: "+", with: " ")
+            .removingPercentEncoding ?? ""
+    }
+    
+    public var urlQueryPercentEncoded: String {
+        return self.addingPercentEncoding(
+            withAllowedCharacters: .urlQueryAllowed
+        ) ?? ""
     }
 }

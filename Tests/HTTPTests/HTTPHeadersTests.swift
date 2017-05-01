@@ -13,7 +13,8 @@ class HTTPHeadersTests: XCTestCase {
     func testParse() {
         do {
             let stream = TestStream()
-
+            try stream.write("GET / HTTP/1.1")
+            try stream.writeLineEnd()
             try stream.write("Accept: */*")
             try stream.writeLineEnd()
             try stream.write("Host: localhost:8080")
@@ -22,10 +23,10 @@ class HTTPHeadersTests: XCTestCase {
             try stream.writeLineEnd()
             try stream.writeLineEnd()
 
-            let headers = try Parser<Request, TestStream>(stream: stream).parseHeaders()
-            XCTAssertEqual(headers["accept"], "*/*")
-            XCTAssertEqual(headers["host"], "localhost:8080")
-            XCTAssertEqual(headers["content-type"], "application/json")
+            let req = try RequestParser<TestStream>(stream).parse()
+            XCTAssertEqual(req.headers["accept"], "*/*")
+            XCTAssertEqual(req.headers["host"], "localhost:8080")
+            XCTAssertEqual(req.headers["content-type"], "application/json")
         } catch {
             XCTFail("\(error)")
         }
@@ -34,7 +35,9 @@ class HTTPHeadersTests: XCTestCase {
     func testMultilineValue() {
         do {
             let stream = TestStream()
-
+            
+            try stream.write("GET /plaintext HTTP/1.1")
+            try stream.writeLineEnd()
             try stream.write("Accept: */*")
             try stream.writeLineEnd()
             try stream.write("Cookie: 1=1;")
@@ -45,8 +48,8 @@ class HTTPHeadersTests: XCTestCase {
             try stream.writeLineEnd()
             try stream.writeLineEnd()
 
-            let headers = try Parser<Request, TestStream>(stream: stream).parseHeaders()
-            XCTAssertEqual(headers["cookie"], "1=1;2=2;")
+            let req = try RequestParser<TestStream>(stream).parse()
+            XCTAssertEqual(req.headers["cookie"], "1=1; 2=2;")
         } catch {
             XCTFail("\(error)")
         }
@@ -68,9 +71,9 @@ class HTTPHeadersTests: XCTestCase {
             try stream.writeLineEnd()
             try stream.writeLineEnd()
 
-            _ = try Parser<Request, TestStream>(stream: stream).parseHeaders()
+            _ = try RequestParser<TestStream>(stream).parse()
             XCTFail("Headers init should have thrown")
-        } catch ParserError.invalidRequest {
+        } catch ParserError.invalidMessage {
             //
         } catch {
             XCTFail("Wrong error: \(error)")
@@ -80,6 +83,8 @@ class HTTPHeadersTests: XCTestCase {
     func testKeyWhitespaceError() {
         do {
             let stream = TestStream()
+            try stream.write("GET / HTTP/1.1")
+            try stream.writeLineEnd()
             try stream.write("Accept : */*")
             //                     ^ this is bad
             try stream.writeLineEnd()
@@ -87,9 +92,9 @@ class HTTPHeadersTests: XCTestCase {
             try stream.writeLineEnd()
             try stream.writeLineEnd()
 
-            _ = try Parser<Request, TestStream>(stream: stream).parseHeaders()
+            _ = try RequestParser<TestStream>(stream).parse()
             XCTFail("Headers init should have thrown")
-        } catch ParserError.invalidKeyWhitespace {
+        } catch ParserError.invalidMessage {
             //
         } catch {
             XCTFail("Wrong error: \(error)")

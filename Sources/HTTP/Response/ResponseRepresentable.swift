@@ -21,6 +21,10 @@ extension Response: ResponseRepresentable {
 ///Allows Swift Strings to be returned through closures
 extension Swift.String: ResponseRepresentable {
     public func makeResponse() -> Response {
-        return Response(headers: ["Content-Type": "text/plain; charset=utf-8"], body: self.makeBytes())
+        return Response(
+            status: .ok,
+            headers: ["Content-Type": "text/plain; charset=utf-8"],
+            body: self.makeBytes()
+        )
     }
 }
