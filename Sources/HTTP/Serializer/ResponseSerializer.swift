@@ -1,5 +1,10 @@
 import Transport
 
+// we have hardcoded HTTP/1.1 since that is all this parser supports.
+// an error will be thrown by the underlying serializer if different
+// version is attempted to be serialized.
+private let startLine: Bytes = [.H, .T, .T, .P, .forwardSlash, .one, .period, .one, .space]
+
 public final class ResponseSerializer<Stream: WriteableStream>: Serializer {
     typealias StreamType = Stream
     let stream: Stream
@@ -11,18 +16,21 @@ public final class ResponseSerializer<Stream: WriteableStream>: Serializer {
         let message = try serialize(response as Message)
         
         let reasonPhrase = response.status.reasonPhrase.makeBytes()
-        let length = 5 // HTTP/
-            + 8 // 1.1_xxx_
+        let length = 15 // 13 bytes for the following characters: HTTP/1.1_xxx_\r\n
             + reasonPhrase.count
-            + 2 // \r\n
             + message.count
         
         var buffer = Bytes()
         buffer.reserveCapacity(length)
         
-        buffer += [.H, .T, .T, .P, .forwardSlash, .one, .period, .one, .space]
-        buffer += response.status.statusCode.description.makeBytes()
-        buffer += [.space]
+        buffer += startLine
+        buffer += response
+            .status
+            .statusCode
+            .description
+            .makeBytes()
+        
+        buffer.append(.space)
         buffer += reasonPhrase
         buffer += Byte.crlf
         buffer += message

@@ -19,7 +19,7 @@ public final class ResponseParser<Stream: ReadableStream>: CHTTPParser {
         self.settings = http_parser_settings()
         http_parser_init(&parser, HTTP_RESPONSE)
         self.buffer = Bytes()
-        self.buffer.reserveCapacity(bufferSize)
+        self.buffer.reserveCapacity(ResponseParser.bufferSize)
     }
     
     /// Parses a Response from the stream.
@@ -47,7 +47,7 @@ public final class ResponseParser<Stream: ReadableStream>: CHTTPParser {
 
 private var _bufferSize = 2048
 extension ResponseParser {
-    public var bufferSize: Int {
+    public static var bufferSize: Int {
         get {
             return _bufferSize
         }

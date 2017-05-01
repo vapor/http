@@ -26,7 +26,11 @@ public final class URIParser {
         // parse uri info
         let info: URI.UserInfo?
         if userinfo.len > 0, let bytes = bytes.bytes(for: userinfo) {
-            let parts = bytes.split(separator: .colon, maxSplits: 1)
+            let parts = bytes.split(
+                separator: .colon,
+                maxSplits: 1,
+                omittingEmptySubsequences: false
+            )
             switch parts.count {
             case 2:
                 info = URI.UserInfo(

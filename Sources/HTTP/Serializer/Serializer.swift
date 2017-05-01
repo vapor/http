@@ -10,6 +10,10 @@ internal protocol Serializer {
 extension Serializer {
     /// Serializes an HTTP message to bytes.
     internal func serialize(_ message: Message) throws -> Bytes {
+        guard message.version.major == 1 && message.version.minor == 1 else {
+            throw SerializerError.invalidVersion
+        }
+        
         var length = 0
         
         switch message.body {
@@ -25,10 +29,12 @@ extension Serializer {
         for (key, value) in message.headers {
             let k = key.key.makeBytes()
             let v = value.makeBytes()
-            length += k.count + 2 + v.count + 2
+            length += k.count
+                + v.count
+                + 4 // 4 bytes for the ': ' and '\r\n'
             headerBytes.append((key: k, value: v))
         }
-        length += 2
+        length += 2 // 2 bytes for the final '\r\n\
         
         let bodyBytes: Bytes
         switch message.body {
