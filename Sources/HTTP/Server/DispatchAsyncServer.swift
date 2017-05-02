@@ -10,8 +10,10 @@ private var res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length
 class Queue {
     var queue: DispatchQueue
     var buffer: Bytes
+    var id: Int
     
-    init(_ queue: DispatchQueue, _ buffer: Bytes) {
+    init(id: Int, _ queue: DispatchQueue, _ buffer: Bytes) {
+        self.id = id
         self.queue = queue
         self.buffer = buffer
     }
@@ -26,10 +28,11 @@ public final class DispatchAsyncServer: Server {
     public init() {
         self.scheme = "http"
         self.hostname = "0.0.0.0"
-        self.port = 8123
+        self.port = 8080
         for i in 1...4 {
             print("Creating queue \(i)")
             let queue = Queue(
+                id: i,
                 DispatchQueue(label: "codes.vapor.server.worker.\(i)"),
                 Array<Byte>(repeating: 0, count: 4096)
             )
@@ -57,7 +60,7 @@ public final class DispatchAsyncServer: Server {
             guard let queue = self.queues.random else {
                 return
             }
-            // print("Accepted \(client) on worker \(i)")
+            print("Accepted \(client) on worker \(queue.id)")
             
             let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
             writes.append(write)
@@ -105,22 +108,6 @@ public final class DispatchAsyncServer: Server {
 
         }
         main.resume()
-        
-//        for i in 1...4 {
-//            self.queue.async {
-//                print("Starting worker \(i)")
-//                let queue = DispatchQueue(label: "codes.vapor.server.worker.\(i)", qos: .userInteractive)
-//                
-//                var readBuffer = Array<Byte>(repeating: 0, count: 4096)
-//                
-//                while true {
-//                    
-//                    
-//                }
-//                
-//                
-//            }
-//        }
         
         // infinite wait
         let group = DispatchGroup()
