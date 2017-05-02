@@ -55,8 +55,10 @@ public final class DispatchAsyncServer: Server {
         let main = DispatchSource.makeReadSource(fileDescriptor: listen.descriptor.raw, queue: queue)
         
         main.setEventHandler() {
+            print("Before accept")
             let client = accept(listen.descriptor.raw, nil, nil)
             guard let queue = self.queues.random else {
+                print("Could not find queue")
                 return
             }
             print("Accepted \(client) on worker \(queue.id)")
