@@ -14,7 +14,7 @@ public final class DispatchSyncServer: Server {
     public init() {
         self.scheme = "http"
         self.hostname = "0.0.0.0"
-        self.port = 8123
+        self.port = 8080
         //        for i in 1...8 {
         //            print("Creating queue \(i)")
         //            let queue = Queue(
