@@ -54,6 +54,14 @@ public final class DispatchAsyncServer: Server {
     public func run(_ listen: TCPInternetSocket) throws {
         let main = DispatchSource.makeReadSource(fileDescriptor: listen.descriptor.raw, queue: queue)
         
+        let rc = fcntl(listen.descriptor.raw, F_SETFL, O_NONBLOCK)
+        if (rc < 0)
+        {
+            perror("fcntl() failed");
+            close(listen.descriptor.raw);
+            exit(-1);
+        }
+        
         main.setEventHandler() {
             print("Before accept")
             defer {
