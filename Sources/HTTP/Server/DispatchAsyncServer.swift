@@ -16,6 +16,7 @@ class Queue {
     let serializer: BytesResponseSerializer
     let parser: RequestParser
     let responder: Responder
+    var writer: ResponseWriter?
     
     init(id: Int, _ responder: Responder) {
         self.id = id
@@ -24,6 +25,15 @@ class Queue {
         self.serializer = BytesResponseSerializer()
         self.parser = RequestParser()
         self.responder = responder
+        self.writer = BasicResponseWriter { response in
+            // FIXME: what if buffer is too small?
+            let length = try! self.serializer.serialize(response, into: &self.buffer)
+            let rc = send(self.client, &self.buffer, length, 0)
+            if (rc < 0) {
+                perror("  send() failed");
+                return
+            }
+        }
     }
     
     func onDataAvailable() throws {
@@ -51,18 +61,7 @@ class Queue {
             return
         }
         
-        let sender = BasicResponseWriter { response in
-            // FIXME: what if buffer is too small?
-            let length = try! self.serializer.serialize(response, into: &self.buffer)
-            rc = send(self.client, &self.buffer, length, 0)
-            if (rc < 0) {
-                perror("  send() failed");
-                return
-            }
-        }
-        
-        try responder.respond(to: request, with: sender)
-        
+        try responder.respond(to: request, with: writer!)
     }
 }
 
