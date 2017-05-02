@@ -56,6 +56,9 @@ public final class DispatchAsyncServer: Server {
         
         main.setEventHandler() {
             print("Before accept")
+            defer {
+                print("Accept done")
+            }
             let client = accept(listen.descriptor.raw, nil, nil)
             guard let queue = self.queues.random else {
                 print("Could not find queue")
