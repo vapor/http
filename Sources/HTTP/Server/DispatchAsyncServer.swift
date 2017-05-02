@@ -117,6 +117,7 @@ public final class DispatchAsyncServer: Server {
                 write.setCancelHandler {
                     print("Write \(client) cancelled")
                 }
+                write.resume()
                 
                 print("Read done")
             }
