@@ -1,7 +1,7 @@
 import HTTP 
 
-// let server = DispatchAsyncServer()
-let server = DispatchSyncServer()
+let server = DispatchAsyncServer()
+// let server = DispatchSyncServer()
 let responder = Request.Handler { req in
     return Response(status: .ok, body: "Hello world".makeBytes())
 }

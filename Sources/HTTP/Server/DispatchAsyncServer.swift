@@ -2,6 +2,7 @@ import Transport
 import libc
 import Sockets
 import Dispatch
+import Random
 
 private var res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n\r\nHello, world!".makeBytes()
 
@@ -53,7 +54,9 @@ public final class DispatchAsyncServer: Server {
         
         main.setEventHandler() {
             let client = accept(listen.descriptor.raw, nil, nil)
-            let (queue, i) = self.queues.random
+            guard let queue = self.queues.random else {
+                return
+            }
             // print("Accepted \(client) on worker \(i)")
             
             let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
@@ -123,12 +126,5 @@ public final class DispatchAsyncServer: Server {
         let group = DispatchGroup()
         group.enter()
         group.wait()
-    }
-}
-
-extension Array {
-    fileprivate var random: (Iterator.Element, Int) {
-        let randomIndex = Int(arc4random_uniform(UInt32(array.count)))
-        return (self[randomIndex], randomIndex)
     }
 }

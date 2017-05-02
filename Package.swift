@@ -8,6 +8,9 @@ let dependencies: [Package.Dependency] = [
 
     // Secure Sockets
     .Package(url: "https://github.com/vapor/tls.git", beta),
+    
+    // Random number generation
+    .Package(url: "https://github.com/vapor/random.git", beta),
 ]
 
 let package = Package(
