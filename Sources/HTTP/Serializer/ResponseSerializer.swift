@@ -48,3 +48,114 @@ public final class ResponseSerializer<Stream: WriteableStream>: Serializer {
         }
     }
 }
+
+public final class BytesResponseSerializer {
+    public init() {
+        state = .ready
+    }
+    
+    enum State {
+        case ready
+        case serializing(offset: Int)
+        case done
+    }
+    
+    var state: State
+    
+    public func serialize(_ response: Response, into buffer: inout Bytes) throws -> Int {
+        guard response.version.major == 1 && response.version.minor == 1 else {
+            throw SerializerError.invalidVersion
+        }
+        
+        var pointer = 0
+        
+        startLine.forEach { byte in
+            buffer[pointer] = byte
+            pointer += 1
+        }
+        
+        response.status.statusCode.description.makeBytes().forEach { byte in
+            buffer[pointer] = byte
+            pointer += 1
+        }
+        
+        buffer[pointer] = .space
+        pointer += 1
+        
+        response.status.reasonPhrase.makeBytes().forEach { byte in
+            buffer[pointer] = byte
+            pointer += 1
+        }
+        
+        buffer[pointer] = .carriageReturn
+        pointer += 1
+        
+        
+        buffer[pointer] = .newLine
+        pointer += 1
+        
+        switch response.body {
+        case .chunked(_):
+            response.headers[.contentLength] = nil
+            response.headers[.transferEncoding] = "chunked"
+        case .data(let bytes):
+            response.headers[.contentLength] = bytes.count.description
+            response.headers[.transferEncoding] = nil
+        }
+        
+        try serialize(response.headers, into: &buffer, pointer: &pointer)
+    
+        switch response.body {
+        case .chunked:
+            break
+            // FIXME:
+            // let chunkStream = ChunkStream(stream: stream)
+            // try closure(chunkStream)
+            // try stream.flush()
+        case .data(let bytes):
+            bytes.forEach { byte in
+                buffer[pointer] = byte
+                pointer += 1
+            }
+        }
+
+        return pointer
+    }
+    
+    /// Serializes an HTTP message to bytes.
+    internal func serialize(
+        _ headers: [HeaderKey: String],
+        into buffer: inout Bytes,
+        pointer: inout Int
+    ) throws {
+        for (key, value) in headers {
+            key.key.makeBytes().forEach { byte in
+                buffer[pointer] = byte
+                pointer += 1
+            }
+            
+            buffer[pointer] = .colon
+            pointer += 1
+            
+            buffer[pointer] = .space
+            pointer += 1
+            
+            value.makeBytes().forEach { byte in
+                buffer[pointer] = byte
+                pointer += 1
+            }
+            
+            buffer[pointer] = .carriageReturn
+            pointer += 1
+            
+            buffer[pointer] = .newLine
+            pointer += 1
+        }
+        buffer[pointer] = .carriageReturn
+        pointer += 1
+        
+        buffer[pointer] = .newLine
+        pointer += 1
+    }
+
+}

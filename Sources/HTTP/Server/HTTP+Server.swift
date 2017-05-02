@@ -67,7 +67,7 @@ public final class BasicServer<StreamType: ServerStream>: Server {
     private func respond(stream: StreamType.Client, responder: Responder) throws {
         try stream.setTimeout(defaultServerTimeout)
 
-        let parser = RequestParser<StreamType.Client>(stream)
+        let parser = RequestParser()
         let serializer = ResponseSerializer<StreamType.Client>(stream)
 
         defer {
@@ -78,7 +78,9 @@ public final class BasicServer<StreamType: ServerStream>: Server {
         repeat {
             let request: Request
             do {
-                request = try parser.parse()
+                // FIXME
+                var bytes = try stream.read(max: 2048)
+                request = try parser.parse(from: &bytes, length: bytes.count)!
             } catch ParserError.streamClosed {
                 break
             } catch {
@@ -89,7 +91,7 @@ public final class BasicServer<StreamType: ServerStream>: Server {
             request.stream = stream
 
             keepAlive = request.keepAlive
-            let response = try responder.respond(to: request)
+            let response = try responder.respondSync(to: request)
             try serializer.serialize(response)
             try response.onComplete?(stream)
         } while keepAlive && !stream.isClosed

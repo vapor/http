@@ -3,29 +3,25 @@ import CHTTP
 import URI
 
 /// Parses requests from a readable stream.
-public final class RequestParser<Stream: ReadableStream>: CHTTPParser {
+public final class RequestParser: CHTTPParser {
     // Internal variables to conform
     // to the C HTTP parser protocol.
-    typealias StreamType = Stream
-    let stream: Stream
     var parser: http_parser
     var settings: http_parser_settings
-    var buffer: Bytes
     
     /// Creates a new Request parser.
-    public init(_ stream: Stream) {
-        self.stream = stream
+    public init() {
         self.parser = http_parser()
         self.settings = http_parser_settings()
         http_parser_init(&parser, HTTP_REQUEST)
-        self.buffer = Bytes()
-        self.buffer.reserveCapacity(RequestParser.bufferSize)
     }
     
     /// Parses a Request from the stream.
-    public func parse() throws -> Request {
+    public func parse(from buffer: inout Bytes, length: Int) throws -> Request? {
         /// parse the message using the C HTTP parser.
-        let results = try parseMessage()
+        guard let results = try parseMessage(from: &buffer, length: length) else {
+            return nil
+        }
         
         /// switch on the C method type from the parser
         let method: Method

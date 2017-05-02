@@ -24,7 +24,9 @@ public final class ResponseParser<Stream: ReadableStream>: CHTTPParser {
     
     /// Parses a Response from the stream.
     public func parse() throws -> Response {
-        let results = try parseMessage()
+        // FIXME
+        var bytes = try stream.read(max: 2048)
+        let results = try parseMessage(from: &bytes, length: bytes.count)!
         
         let status = Status(statusCode: Int(parser.status_code))
         

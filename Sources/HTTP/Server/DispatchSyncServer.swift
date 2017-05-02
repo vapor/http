@@ -29,66 +29,24 @@ public final class DispatchSyncServer: Server {
     
     public func start(_ responder: Responder, errors: @escaping ServerErrorHandler) throws {
         let listen = try TCPInternetSocket(port: self.port)
-        
-        /*************************************************************/
-        /* Create an AF_INET stream socket to receive incoming       */
-        /* connections on                                            */
-        /*************************************************************/
-        //        listen_sd = socket(AF_INET, SOCK_STREAM, 0);
-        //        if (listen_sd < 0)
-        //        {
-        //            perror("socket() failed");
-        //            exit(-1);
-        //        }
-        
-        /*************************************************************/
-        /* Allow socket descriptor to be reuseable                   */
-        /*************************************************************/
-        //        rc = setsockopt(listen_sd, SOL_SOCKET,  SO_REUSEADDR, &on, socklen_t(MemoryLayout<Int>.stride)); // FIXME
-        //        if (rc < 0)
-        //        {
-        //            perror("setsockopt() failed");
-        //            close(listen_sd);
-        //            exit(-1);
-        //        }
-        
-        /*************************************************************/
-        /* Set socket to be nonblocking. All of the sockets for    */
-        /* the incoming connections will also be nonblocking since  */
-        /* they will inherit that state from the listening socket.   */
-        /*************************************************************/
-        
-        
-        /*************************************************************/
-        /* Bind the socket                                           */
-        /*************************************************************/
         try listen.bind()
-        
-        /*************************************************************/
-        /* Set the listen back log                                   */
-        /*************************************************************/
         try listen.listen(max: 32)
         
-        try self.run(listen)
-    }
-    
-    
-    public func run(_ listen: TCPInternetSocket) throws {
         while true {
             let client = accept(listen.descriptor.raw, nil, nil)
             
             queue.async {
                 while true {
-                    var readBuffer = Array<Byte>(repeating: 0, count: 4096)
                     
-                    var rc = recv(client, &readBuffer, readBuffer.capacity, 0)
+                    let serializer = BytesResponseSerializer()
+                    let parser = RequestParser()
+                    
+                    var buffer = Array<Byte>(repeating: 0, count: 4096)
+                    
+                    var rc = recv(client, &buffer, buffer.capacity, 0)
                     if (rc < 0)
                     {
-                        if (errno != EWOULDBLOCK)
-                        {
-                            perror("  recv() failed");
-                            return
-                        }
+                        perror("  recv() failed");
                     }
                     
                     
@@ -99,8 +57,16 @@ public final class DispatchSyncServer: Server {
                         break
                     }
                     
+                    guard let request = try! parser.parse(from: &buffer, length: rc) else {
+                        print("no request yet")
+                        return
+                    }
+    
+                    let response = try! responder.respondSync(to: request)
+                    let length = try! serializer.serialize(response, into: &buffer)
+                    
                     // print("Writing data to \(client)")
-                    rc = send(client, &res, res.count, 0)
+                    rc = send(client, &buffer, length, 0)
                     if (rc < 0)
                     {
                         perror("  send() failed");

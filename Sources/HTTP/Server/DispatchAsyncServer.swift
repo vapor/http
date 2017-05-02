@@ -4,24 +4,69 @@ import Sockets
 import Dispatch
 import Random
 
-private var res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 13\r\n\r\nHello, world!".makeBytes()
-
-
 class Queue {
     var queue: DispatchQueue
     var buffer: Bytes
     var id: Int
+    
+    var client: Int32 = 0
     var read: DispatchSourceRead?
     var write: DispatchSourceWrite?
     
-    init(id: Int, _ queue: DispatchQueue, _ buffer: Bytes) {
+    let serializer: BytesResponseSerializer
+    let parser: RequestParser
+    let responder: Responder
+    
+    init(id: Int, _ responder: Responder) {
         self.id = id
-        self.queue = queue
-        self.buffer = buffer
+        self.queue = DispatchQueue(label: "codes.vapor.server.worker.\(id)")
+        self.buffer = Bytes(repeating: 0, count: 4096)
+        self.serializer = BytesResponseSerializer()
+        self.parser = RequestParser()
+        self.responder = responder
+    }
+    
+    func onDataAvailable() throws {
+        var rc = recv(client, &buffer, buffer.capacity, 0)
+        
+        if (rc < 0) {
+            if (errno != EWOULDBLOCK)
+            {
+                perror("  recv() failed");
+                _ = libc.close(client)
+                read?.cancel()
+                return
+            }
+        }
+        
+        if (rc == 0) {
+            _ = libc.close(client)
+            read?.cancel()
+            return
+        }
+        
+        guard let request = try parser.parse(from: &buffer, length: rc) else {
+            print("no request yet")
+            // will try again when more data is available
+            return
+        }
+        
+        let sender = BasicResponseWriter { response in
+            // FIXME: what if buffer is too small?
+            let length = try! self.serializer.serialize(response, into: &self.buffer)
+            rc = send(self.client, &self.buffer, length, 0)
+            if (rc < 0) {
+                perror("  send() failed");
+                return
+            }
+        }
+        
+        try responder.respond(to: request, with: sender)
+        
     }
 }
 
-public final class DispatchAsyncServer: Server {
+public final class DispatchAsyncServer {
     public var scheme: String
     public var hostname: String
     public var port: Port
@@ -31,15 +76,6 @@ public final class DispatchAsyncServer: Server {
         self.scheme = "http"
         self.hostname = "0.0.0.0"
         self.port = 8080
-        for i in 1...4 {
-            print("Creating queue \(i)")
-            let queue = Queue(
-                id: i,
-                DispatchQueue(label: "codes.vapor.server.worker.\(i)"),
-                Array<Byte>(repeating: 0, count: 4096)
-            )
-            queues.append(queue)
-        }
     }
     
     var queue = DispatchQueue(label: "codes.vapor.server")
@@ -48,19 +84,18 @@ public final class DispatchAsyncServer: Server {
         let listen = try TCPInternetSocket(port: self.port)
         try listen.bind()
         try listen.listen(max: 100)
+    
+        for i in 1...4 {
+            print("Creating worker \(i)")
+            let queue = Queue(id: i, responder)
+            queues.append(queue)
+        }
+        
         try self.run(listen)
     }
     
     public func run(_ listen: TCPInternetSocket) throws {
         let main = DispatchSource.makeReadSource(fileDescriptor: listen.descriptor.raw, queue: queue)
-        
-        let rc = fcntl(listen.descriptor.raw, F_SETFL, O_NONBLOCK)
-        if (rc < 0)
-        {
-            perror("fcntl() failed");
-            close(listen.descriptor.raw);
-            exit(-1);
-        }
         
         main.setEventHandler() {
             let client = accept(listen.descriptor.raw, nil, nil)
@@ -68,88 +103,17 @@ public final class DispatchAsyncServer: Server {
                 print("Could not find queue")
                 return
             }
-            // print("Accepted \(client) on worker \(queue.id)")
-            
-//            func createWrite() {
-//                let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
-//                queue.write = write
-//                
-//                write.setEventHandler {
-//                    print("Writing data to \(client)")
-//                    let rc = send(client, &res, res.count, 0)
-//                    if (rc < 0)
-//                    {
-//                        perror("  send() failed");
-//                        return
-//                    }
-//                    print("Wrote \(rc)/\(res.count) bytes")
-//                    write.cancel()
-//                    
-//                    createRead()
-//                    print("Write done")
-//                }
-//                
-//                write.setCancelHandler {
-//                    print("Write \(client) cancelled")
-//                }
-//                
-//                write.resume()
-//            }
+            queue.client = client
 
-            func createRead() {
-                let read = DispatchSource.makeReadSource(fileDescriptor: client, queue: queue.queue)
-                queue.read = read
-                
-                read.setEventHandler {
-                    // print("Reading data from \(client)")
-                    var rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
-                    // print("Read \(rc) from \(client)")
-                    
-                    func close() {
-                        _ = libc.close(client)
-                        read.cancel()
-                    }
-                    
-                    if (rc < 0)
-                    {
-                        if (errno != EWOULDBLOCK)
-                        {
-                            perror("  recv() failed");
-                            close()
-                            return
-                        }
-                    }
-                    
-                    
-                    if (rc == 0)
-                    {
-                        // print("\(client) closed");
-                        close()
-                        return
-                    }
-                    
-                    rc = send(client, &res, res.count, 0)
-                    if (rc < 0)
-                    {
-                        perror("  send() failed");
-                        return
-                    }
-                    // print("Wrote \(rc)/\(res.count) bytes")
-                    // write.cancel()
-                    
-                    
-                    // createWrite()
-                    // print("Read done")
-                }
-                
-                read.setCancelHandler {
-                    // print("Read \(client) cancelled")
-                }
-                
-                read.resume()
+            let read = DispatchSource.makeReadSource(fileDescriptor: client, queue: queue.queue)
+            queue.read = read
+            
+            read.setEventHandler {
+                try! queue.onDataAvailable()
             }
             
-            createRead()
+            read.setCancelHandler {}
+            read.resume()
         }
         
         main.resume()

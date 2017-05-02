@@ -41,7 +41,7 @@ public final class BasicClient<StreamType: ClientStream>: Client {
         try? stream.close()
     }
 
-    public func respond(to request: Request) throws -> Response {
+    public func respond(to request: Request, with writer: ResponseWriter) throws {
         try assertValid(request)
         guard !stream.isClosed else {
             throw ClientError.unableToConnect
@@ -65,8 +65,7 @@ public final class BasicClient<StreamType: ClientStream>: Client {
 
         // set the stream for peer information
         response.stream = stream
-        
-        return response
+        try writer.write(response)
     }
 }
 

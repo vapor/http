@@ -4,17 +4,14 @@ import URI
 
 /// Internal CHTTP parser protocol
 internal protocol CHTTPParser: class {
-    associatedtype StreamType: ReadableStream
-    var stream: StreamType { get }
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
-    var buffer: Bytes { get set }
 }
 
 extension CHTTPParser {
     /// Parses a generic CHTTP message, filling the
     /// ParseResults object attached to the C praser.
-    internal func parseMessage() throws -> ParseResults {
+    internal func parseMessage(from buffer: inout Bytes, length: Int) throws -> ParseResults? {
         // create a new results object and set
         // a reference to it on the parser
         var results = ParseResults()
@@ -154,33 +151,27 @@ extension CHTTPParser {
             return 0
         }
         
-        // loops until the results are marked as completed
-        while !results.isComplete {
-            // read bytes from the stream into the buffer
-            let bytesRead = try stream.read(max: buffer.capacity, into: &buffer)
-            
-            // if EOF is reached, we do not need to continue parsing
-            if bytesRead == 0 {
-                throw ParserError.streamClosed
-            }
-            
-            // cast the buffer
-            guard let pointer = buffer.makeCPointer() else {
-                throw ParserError.streamClosed
-            }
-            
-            // call the CHTTP parser
-            let parsedCount = http_parser_execute(&parser, &settings, pointer, bytesRead)
-            
-            // if the parsed count does not equal the bytes passed
-            // to the parser, it is signaling an error
-            guard parsedCount == bytesRead else {
-                throw ParserError.invalidMessage
-            }
+        // cast the buffer
+        guard let pointer = buffer.makeCPointer() else {
+            throw ParserError.streamClosed
         }
         
-        // return the results of the parsing
-        return results
+        // call the CHTTP parser
+        let parsedCount = http_parser_execute(&parser, &settings, pointer, length)
+        
+        // if the parsed count does not equal the bytes passed
+        // to the parser, it is signaling an error
+        guard parsedCount == length else {
+            throw ParserError.invalidMessage
+        }
+        
+        // loops until the results are marked as completed
+        if results.isComplete {
+            // return the results of the parsing
+            return results
+        } else {
+            return nil
+        }
     }
 }
 
