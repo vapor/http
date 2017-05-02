@@ -18,13 +18,8 @@ let package = Package(
         Target(name: "Cookies", dependencies: ["HTTP"]),
         Target(name: "HTTP", dependencies: ["URI", "CHTTP"]),
         Target(name: "WebSockets", dependencies: ["HTTP", "URI"]),
-        Target(name: "SMTP")
+        Target(name: "SMTP"),
+        Target(name: "Performance", dependencies: ["HTTP"])
     ],
-    dependencies: dependencies,
-    exclude: [
-        "Resources",
-        "Sources/HTTPExample",
-        "Sources/WebSocketsExample",
-        "Sources/SMTPExample",
-    ]
+    dependencies: dependencies
 )

@@ -6,6 +6,18 @@ import Sockets
 import Dispatch
 
 class HTTPBodyTests: XCTestCase {
+    
+    
+    func testAsync() throws {
+        let server = AsyncServer()
+        let responder = Request.Handler { req in
+            return Response(status: .ok, body: "Hello world".makeBytes())
+        }
+        try server.start(responder) { error in
+            print(error)
+        }
+    }
+    
 
     func testBufferParse() throws {
         do {
