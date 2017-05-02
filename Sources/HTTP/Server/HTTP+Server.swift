@@ -27,7 +27,7 @@ public final class BasicServer<StreamType: ServerStream>: Server {
         return stream.port
     }
 
-    public init(_ stream: StreamType, listenMax: Int = 4096) throws {
+    public init(_ stream: StreamType, listenMax: Int = 128) throws {
         self.stream = stream
         self.listenMax = listenMax
     }

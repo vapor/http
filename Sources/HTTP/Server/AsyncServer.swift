@@ -4,7 +4,7 @@ import libc
 import Sockets
 import Dispatch
 
-public final class AsyncServer: Server {
+public final class FooAsyncServer: Server {
     public var scheme: String
     public var hostname: String
     public var port: Port

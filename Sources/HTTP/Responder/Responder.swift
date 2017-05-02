@@ -9,15 +9,14 @@ public protocol Responder {
 
 extension Responder {
     public func respondSync(to request: Request) throws -> Response {
-        let group = DispatchGroup()
-        group.enter()
+        let semaphore = DispatchSemaphore(value: 0)
         var res: Response!
         
         try respond(to: request) { response in
             res = response
-            group.leave()
+            semaphore.signal()
         }
-        group.wait()
+        semaphore.wait()
         
         return res
     }

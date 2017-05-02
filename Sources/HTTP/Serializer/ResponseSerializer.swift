@@ -111,9 +111,13 @@ public final class BytesResponseSerializer {
     
         do {
             try fill(startLine, into: &buffer)
-            try fill(response.status.statusCode.description.makeBytes(), into: &buffer)
+            try response.status.statusCode.description.utf8.forEach { byte in
+                try fill(byte, into: &buffer)
+            }
             try fill(.space, into: &buffer)
-            try fill(response.status.reasonPhrase.makeBytes(), into: &buffer)
+            try response.status.reasonPhrase.utf8.forEach { byte in
+                try fill(byte, into: &buffer)
+            }
             try fill(.carriageReturn, into: &buffer)
             try fill(.newLine, into: &buffer)
             
@@ -127,10 +131,14 @@ public final class BytesResponseSerializer {
             }
             
             for (key, value) in response.headers {
-                try fill(key.key.makeBytes(), into: &buffer)
+                try key.key.utf8.forEach { byte in
+                    try fill(byte, into: &buffer)
+                }
                 try fill(.colon, into: &buffer)
                 try fill(.space, into: &buffer)
-                try fill(value.makeBytes(), into: &buffer)
+                try value.utf8.forEach { byte in
+                    try fill(byte, into: &buffer)
+                }
                 try fill(.carriageReturn, into: &buffer)
                 try fill(.newLine, into: &buffer)
             }

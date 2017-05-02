@@ -1,24 +1,11 @@
 import HTTP
 
-let res = Response(status: .ok, body: "Hello, world!".makeBytes())
-
-var buffer = Bytes(repeating: 0, count: 2)
-let serializer = BytesResponseSerializer()
-
-var full: Bytes = []
-
-var length = 1
-while length > 0 {
-    length = try serializer.serialize(res, into: &buffer)
-    if length > 0 {
-        full += buffer
-    }
-}
-
-print(full.makeString())
-
-// let server = DispatchAsyncServer()
-let server = DispatchSyncServer()
+let server = AsyncServer(
+    scheme: "http",
+    hostname: "0.0.0.0",
+    port: 8080
+)
+// let server = DispatchSyncServer()
 
 let responder = BasicResponder { req, writer in
     let res = Response(status: .ok, body: "Hello world: \(req.uri.path)".makeBytes())
