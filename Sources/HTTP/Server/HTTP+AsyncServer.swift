@@ -27,22 +27,9 @@ class Worker {
         _ readQueue: DispatchSourceRead,
         _ client: TCPInternetSocket
     ) throws {
-        let rc = recv(client.descriptor.raw, &buffer, buffer.capacity, 0)
+        let read = try client.read(max: buffer.count, into: &buffer)
         
-        if (rc < 0) {
-            _ = libc.close(client.descriptor.raw)
-            readQueue.cancel()
-            return
-        }
-        
-        if (rc == 0) {
-            _ = libc.close(client.descriptor.raw)
-            readQueue.cancel()
-            return
-        }
-        
-        guard let request = try parser.parse(from: &buffer, length: rc) else {
-            print("no request yet")
+        guard let request = try parser.parse(from: &buffer, length: read) else {
             // will try again when more data is available
             return
         }
@@ -52,6 +39,7 @@ class Worker {
             while length > 0 {
                 length = try self.serializer.serialize(response, into: &self.buffer)
                 if length > 0 {
+                    // FIXME: send into buffer
                     let rc = send(client.descriptor.raw, &self.buffer, length, 0)
                     if (rc < 0) {
                         perror("  send() failed");
