@@ -79,9 +79,13 @@ public final class DispatchAsyncServer: Server {
                     }
                     new.suspend()
                 }
+
+                new.setCancelHandler {
+                    // print("Write \(client) cancelled") 
+                }
+
                 write = new
             }
-            write.resume()
             
             let read: DispatchSourceRead
             if let existing = reads[client] {
@@ -91,7 +95,9 @@ public final class DispatchAsyncServer: Server {
                 reads[client] = new
                 
                 new.setEventHandler {
+                    // print("Reading data from \(client)")
                     let rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
+                    // print("Read \(rc) from \(client)")
                     if (rc < 0)
                     {
                         if (errno != EWOULDBLOCK)
@@ -104,7 +110,8 @@ public final class DispatchAsyncServer: Server {
                     
                     if (rc == 0)
                     {
-                        // print("  Connection closed\n");
+                        print("\(client) closed");
+
                         new.cancel()
                         write.cancel()
                         reads[client] = nil
@@ -112,11 +119,12 @@ public final class DispatchAsyncServer: Server {
                         return
                     }
                     
+                    
                     write.resume()
                 }
                 
                 new.setCancelHandler {
-                    // print("cancel")
+                    // print("Read \(client) cancelled")
                 }
                 read = new
             }
