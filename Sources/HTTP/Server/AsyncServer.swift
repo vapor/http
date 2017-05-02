@@ -1,3 +1,4 @@
+#if os(OSX)
 import Transport
 import libc
 import Sockets
@@ -338,3 +339,4 @@ public final class AsyncServer: Server {
         }
     }
 }
+#endif
