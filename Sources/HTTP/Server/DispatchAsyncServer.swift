@@ -78,6 +78,7 @@ public final class DispatchAsyncServer: Server {
                     perror("  send() failed");
                     return
                 }
+                print("Wrote \(rc)/\(res.count) bytes")
                 write.suspend()
                 print("Write done")
             }
