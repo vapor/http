@@ -87,9 +87,9 @@ public final class DispatchAsyncServer: Server {
             queue.read = read
             
             read.setEventHandler {
-                // print("Reading data from \(client)")
+                print("Reading data from \(client)")
                 let rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
-                // print("Read \(rc) from \(client)")
+                print("Read \(rc) from \(client)")
                 
                 func close() {
                     _ = libc.close(client)
