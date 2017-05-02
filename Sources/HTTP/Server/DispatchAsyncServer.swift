@@ -111,7 +111,7 @@ public final class DispatchAsyncServer: Server {
                     if (rc == 0)
                     {
                         print("\(client) closed");
-
+                        close(client)
                         new.cancel()
                         write.cancel()
                         reads[client] = nil
