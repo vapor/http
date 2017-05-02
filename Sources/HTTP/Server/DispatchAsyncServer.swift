@@ -74,31 +74,31 @@ public final class DispatchAsyncServer: Server {
             }
             print("Accepted \(client) on worker \(queue.id)")
             
-            func createWrite() {
-                let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
-                queue.write = write
-                
-                write.setEventHandler {
-                    print("Writing data to \(client)")
-                    let rc = send(client, &res, res.count, 0)
-                    if (rc < 0)
-                    {
-                        perror("  send() failed");
-                        return
-                    }
-                    print("Wrote \(rc)/\(res.count) bytes")
-                    write.cancel()
-                    
-                    createRead()
-                    print("Write done")
-                }
-                
-                write.setCancelHandler {
-                    print("Write \(client) cancelled")
-                }
-                
-                write.resume()
-            }
+//            func createWrite() {
+//                let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
+//                queue.write = write
+//                
+//                write.setEventHandler {
+//                    print("Writing data to \(client)")
+//                    let rc = send(client, &res, res.count, 0)
+//                    if (rc < 0)
+//                    {
+//                        perror("  send() failed");
+//                        return
+//                    }
+//                    print("Wrote \(rc)/\(res.count) bytes")
+//                    write.cancel()
+//                    
+//                    createRead()
+//                    print("Write done")
+//                }
+//                
+//                write.setCancelHandler {
+//                    print("Write \(client) cancelled")
+//                }
+//                
+//                write.resume()
+//            }
 
             func createRead() {
                 let read = DispatchSource.makeReadSource(fileDescriptor: client, queue: queue.queue)
@@ -106,7 +106,7 @@ public final class DispatchAsyncServer: Server {
                 
                 read.setEventHandler {
                     print("Reading data from \(client)")
-                    let rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
+                    var rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
                     print("Read \(rc) from \(client)")
                     
                     func close() {
@@ -132,7 +132,17 @@ public final class DispatchAsyncServer: Server {
                         return
                     }
                     
-                    createWrite()
+                    rc = send(client, &res, res.count, 0)
+                    if (rc < 0)
+                    {
+                        perror("  send() failed");
+                        return
+                    }
+                    print("Wrote \(rc)/\(res.count) bytes")
+                    // write.cancel()
+                    
+                    
+                    // createWrite()
                     print("Read done")
                 }
                 
