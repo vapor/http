@@ -79,6 +79,7 @@ public final class DispatchAsyncServer: Server {
                     return
                 }
                 write.suspend()
+                print("Write done")
             }
 
             write.setCancelHandler {
