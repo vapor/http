@@ -63,16 +63,12 @@ public final class DispatchAsyncServer: Server {
         }
         
         main.setEventHandler() {
-            print("Before accept")
-            defer {
-                print("Accept done")
-            }
             let client = accept(listen.descriptor.raw, nil, nil)
             guard let queue = self.queues.random else {
                 print("Could not find queue")
                 return
             }
-            print("Accepted \(client) on worker \(queue.id)")
+            // print("Accepted \(client) on worker \(queue.id)")
             
 //            func createWrite() {
 //                let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
@@ -105,9 +101,9 @@ public final class DispatchAsyncServer: Server {
                 queue.read = read
                 
                 read.setEventHandler {
-                    print("Reading data from \(client)")
+                    // print("Reading data from \(client)")
                     var rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
-                    print("Read \(rc) from \(client)")
+                    // print("Read \(rc) from \(client)")
                     
                     func close() {
                         _ = libc.close(client)
@@ -127,7 +123,7 @@ public final class DispatchAsyncServer: Server {
                     
                     if (rc == 0)
                     {
-                        print("\(client) closed");
+                        // print("\(client) closed");
                         close()
                         return
                     }
@@ -138,16 +134,16 @@ public final class DispatchAsyncServer: Server {
                         perror("  send() failed");
                         return
                     }
-                    print("Wrote \(rc)/\(res.count) bytes")
+                    // print("Wrote \(rc)/\(res.count) bytes")
                     // write.cancel()
                     
                     
                     // createWrite()
-                    print("Read done")
+                    // print("Read done")
                 }
                 
                 read.setCancelHandler {
-                    print("Read \(client) cancelled")
+                    // print("Read \(client) cancelled")
                 }
                 
                 read.resume()
