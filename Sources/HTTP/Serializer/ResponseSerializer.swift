@@ -49,113 +49,111 @@ public final class ResponseSerializer<Stream: WriteableStream>: Serializer {
     }
 }
 
+extension Array where Iterator.Element == Bytes {
+}
+
+extension Byte {
+}
+
+fileprivate enum InternalParseError: Error {
+    case bufferFull
+}
+
 public final class BytesResponseSerializer {
     public init() {
-        state = .ready
+        serialized = 0
+        offset = 0
+        pointer = 0
+        done = false
     }
     
-    enum State {
-        case ready
-        case serializing(offset: Int)
-        case done
+    var serialized: Int
+    var offset: Int
+    var pointer: Int
+    var done: Bool
+    
+    func fill(_ bytes: Bytes, into buffer: inout Bytes) throws {
+        for byte in bytes {
+            try fill(byte, into: &buffer)
+        }
     }
     
-    var state: State
+    
+    func fill(_ byte: Byte, into buffer: inout Bytes) throws {
+        guard offset >= 0 else {
+            offset += 1
+            return
+        }
+    
+        guard pointer < buffer.count else {
+            serialized += pointer
+            offset = -1 * serialized
+            throw InternalParseError.bufferFull
+        }
+        
+        buffer[pointer] = byte
+        pointer += 1
+    }
     
     public func serialize(_ response: Response, into buffer: inout Bytes) throws -> Int {
         guard response.version.major == 1 && response.version.minor == 1 else {
             throw SerializerError.invalidVersion
         }
         
-        var pointer = 0
-        
-        startLine.forEach { byte in
-            buffer[pointer] = byte
-            pointer += 1
+        if done {
+            // reset
+            done = false
+            pointer = 0
+            serialized = 0
+            offset = 0
+            return 0
         }
-        
-        response.status.statusCode.description.makeBytes().forEach { byte in
-            buffer[pointer] = byte
-            pointer += 1
-        }
-        
-        buffer[pointer] = .space
-        pointer += 1
-        
-        response.status.reasonPhrase.makeBytes().forEach { byte in
-            buffer[pointer] = byte
-            pointer += 1
-        }
-        
-        buffer[pointer] = .carriageReturn
-        pointer += 1
-        
-        
-        buffer[pointer] = .newLine
-        pointer += 1
-        
-        switch response.body {
-        case .chunked(_):
-            response.headers[.contentLength] = nil
-            response.headers[.transferEncoding] = "chunked"
-        case .data(let bytes):
-            response.headers[.contentLength] = bytes.count.description
-            response.headers[.transferEncoding] = nil
-        }
-        
-        try serialize(response.headers, into: &buffer, pointer: &pointer)
     
-        switch response.body {
-        case .chunked:
-            break
-            // FIXME:
-            // let chunkStream = ChunkStream(stream: stream)
-            // try closure(chunkStream)
-            // try stream.flush()
-        case .data(let bytes):
-            bytes.forEach { byte in
-                buffer[pointer] = byte
-                pointer += 1
+        do {
+            try fill(startLine, into: &buffer)
+            try fill(response.status.statusCode.description.makeBytes(), into: &buffer)
+            try fill(.space, into: &buffer)
+            try fill(response.status.reasonPhrase.makeBytes(), into: &buffer)
+            try fill(.carriageReturn, into: &buffer)
+            try fill(.newLine, into: &buffer)
+            
+            switch response.body {
+            case .chunked(_):
+                response.headers[.contentLength] = nil
+                response.headers[.transferEncoding] = "chunked"
+            case .data(let bytes):
+                response.headers[.contentLength] = bytes.count.description
+                response.headers[.transferEncoding] = nil
             }
+            
+            for (key, value) in response.headers {
+                try fill(key.key.makeBytes(), into: &buffer)
+                try fill(.colon, into: &buffer)
+                try fill(.space, into: &buffer)
+                try fill(value.makeBytes(), into: &buffer)
+                try fill(.carriageReturn, into: &buffer)
+                try fill(.newLine, into: &buffer)
+            }
+            try fill(.carriageReturn, into: &buffer)
+            try fill(.newLine, into: &buffer)
+            
+            switch response.body {
+            case .chunked:
+                break
+                // FIXME:
+                // let chunkStream = ChunkStream(stream: stream)
+                // try closure(chunkStream)
+                // try stream.flush()
+            case .data(let bytes):
+                try fill(bytes, into: &buffer)
+            }
+            
+            done = true
+            return pointer
+        } catch InternalParseError.bufferFull {
+            let interrupted = pointer
+            pointer = 0
+            return interrupted
         }
-
-        return pointer
     }
-    
-    /// Serializes an HTTP message to bytes.
-    internal func serialize(
-        _ headers: [HeaderKey: String],
-        into buffer: inout Bytes,
-        pointer: inout Int
-    ) throws {
-        for (key, value) in headers {
-            key.key.makeBytes().forEach { byte in
-                buffer[pointer] = byte
-                pointer += 1
-            }
-            
-            buffer[pointer] = .colon
-            pointer += 1
-            
-            buffer[pointer] = .space
-            pointer += 1
-            
-            value.makeBytes().forEach { byte in
-                buffer[pointer] = byte
-                pointer += 1
-            }
-            
-            buffer[pointer] = .carriageReturn
-            pointer += 1
-            
-            buffer[pointer] = .newLine
-            pointer += 1
-        }
-        buffer[pointer] = .carriageReturn
-        pointer += 1
-        
-        buffer[pointer] = .newLine
-        pointer += 1
-    }
-
 }

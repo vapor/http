@@ -27,11 +27,16 @@ class Queue {
         self.responder = responder
         self.writer = BasicResponseWriter { response in
             // FIXME: what if buffer is too small?
-            let length = try! self.serializer.serialize(response, into: &self.buffer)
-            let rc = send(self.client, &self.buffer, length, 0)
-            if (rc < 0) {
-                perror("  send() failed");
-                return
+            var length = 1
+            while length > 0 {
+                length = try self.serializer.serialize(response, into: &self.buffer)
+                if length > 0 {
+                    let rc = send(self.client, &self.buffer, length, 0)
+                    if (rc < 0) {
+                        perror("  send() failed");
+                        return
+                    }
+                }
             }
         }
     }
