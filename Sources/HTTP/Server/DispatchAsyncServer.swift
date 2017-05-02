@@ -65,27 +65,6 @@ public final class DispatchAsyncServer: Server {
                 return
             }
             print("Accepted \(client) on worker \(queue.id)")
-            
-
-            let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
-            queue.write = write
-            
-            write.setEventHandler {
-                print("Writing data to \(client)")
-                let rc = send(client, &res, res.count, 0)
-                if (rc < 0)
-                {
-                    perror("  send() failed");
-                    return
-                }
-                print("Wrote \(rc)/\(res.count) bytes")
-                write.suspend()
-                print("Write done")
-            }
-
-            write.setCancelHandler {
-                print("Write \(client) cancelled")
-            }
 
 
             let read = DispatchSource.makeReadSource(fileDescriptor: client, queue: queue.queue)
@@ -99,7 +78,6 @@ public final class DispatchAsyncServer: Server {
                 func close() {
                     _ = libc.close(client)
                     read.cancel()
-                    write.cancel()
                 }
                 if (rc < 0)
                 {
@@ -118,7 +96,28 @@ public final class DispatchAsyncServer: Server {
                     close()
                     return
                 }
-                write.resume()
+                
+                
+                let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
+                queue.write = write
+                
+                write.setEventHandler {
+                    print("Writing data to \(client)")
+                    let rc = send(client, &res, res.count, 0)
+                    if (rc < 0)
+                    {
+                        perror("  send() failed");
+                        return
+                    }
+                    print("Wrote \(rc)/\(res.count) bytes")
+                    write.cancel()
+                    print("Write done")
+                }
+                
+                write.setCancelHandler {
+                    print("Write \(client) cancelled")
+                }
+                
                 print("Read done")
             }
                 
