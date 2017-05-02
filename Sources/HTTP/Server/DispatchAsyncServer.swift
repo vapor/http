@@ -73,39 +73,8 @@ public final class DispatchAsyncServer: Server {
                 return
             }
             print("Accepted \(client) on worker \(queue.id)")
-
-
-            let read = DispatchSource.makeReadSource(fileDescriptor: client, queue: queue.queue)
-            queue.read = read
             
-            read.setEventHandler {
-                print("Reading data from \(client)")
-                let rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
-                print("Read \(rc) from \(client)")
-                
-                func close() {
-                    _ = libc.close(client)
-                    read.cancel()
-                }
-                if (rc < 0)
-                {
-                    if (errno != EWOULDBLOCK)
-                    {
-                        perror("  recv() failed");
-                        close()
-                        return
-                    }
-                }
-                
-                
-                if (rc == 0)
-                {
-                    print("\(client) closed");
-                    close()
-                    return
-                }
-                
-                
+            func createWrite() {
                 let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
                 queue.write = write
                 
@@ -119,22 +88,62 @@ public final class DispatchAsyncServer: Server {
                     }
                     print("Wrote \(rc)/\(res.count) bytes")
                     write.cancel()
+                    
+                    createRead()
                     print("Write done")
                 }
                 
                 write.setCancelHandler {
                     print("Write \(client) cancelled")
                 }
+                
                 write.resume()
-                
-                print("Read done")
             }
+
+            func createRead() {
+                let read = DispatchSource.makeReadSource(fileDescriptor: client, queue: queue.queue)
+                queue.read = read
                 
-            read.setCancelHandler {
-                print("Read \(client) cancelled")
+                read.setEventHandler {
+                    print("Reading data from \(client)")
+                    let rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
+                    print("Read \(rc) from \(client)")
+                    
+                    func close() {
+                        _ = libc.close(client)
+                        read.cancel()
+                    }
+                    
+                    if (rc < 0)
+                    {
+                        if (errno != EWOULDBLOCK)
+                        {
+                            perror("  recv() failed");
+                            close()
+                            return
+                        }
+                    }
+                    
+                    
+                    if (rc == 0)
+                    {
+                        print("\(client) closed");
+                        close()
+                        return
+                    }
+                    
+                    createWrite()
+                    print("Read done")
+                }
+                
+                read.setCancelHandler {
+                    print("Read \(client) cancelled")
+                }
+                
+                read.resume()
             }
             
-            read.resume()
+            createRead()
         }
         
         main.resume()
