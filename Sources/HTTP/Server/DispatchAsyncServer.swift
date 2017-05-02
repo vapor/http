@@ -112,10 +112,10 @@ public final class DispatchAsyncServer: Server {
                     {
                         print("\(client) closed");
                         close(client)
-                        new.cancel()
-                        write.cancel()
                         reads[client] = nil
                         writes[client] = nil
+                        new.cancel()
+                        write.cancel()
                         return
                     }
                     
