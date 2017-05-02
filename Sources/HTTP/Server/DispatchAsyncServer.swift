@@ -71,7 +71,7 @@ public final class DispatchAsyncServer: Server {
             queue.write = write
             
             write.setEventHandler {
-                // print("Writing data to \(client)")
+                print("Writing data to \(client)")
                 let rc = send(client, &res, res.count, 0)
                 if (rc < 0)
                 {
@@ -82,7 +82,7 @@ public final class DispatchAsyncServer: Server {
             }
 
             write.setCancelHandler {
-                // print("Write \(client) cancelled") 
+                print("Write \(client) cancelled")
             }
 
 
@@ -120,7 +120,7 @@ public final class DispatchAsyncServer: Server {
             }
                 
             read.setCancelHandler {
-                // print("Read \(client) cancelled")
+                print("Read \(client) cancelled")
             }
             
             read.resume()
