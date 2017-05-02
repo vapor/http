@@ -52,8 +52,8 @@ public final class DispatchAsyncServer: Server {
     public func run(_ listen: TCPInternetSocket) throws {
         let main = DispatchSource.makeReadSource(fileDescriptor: listen.descriptor.raw, queue: queue)
         
-        var reads: [DispatchSourceRead] = []
-        var writes: [DispatchSourceWrite] = []
+        var reads: [Int32: DispatchSourceRead] = [:]
+        var writes: [Int32: DispatchSourceWrite] = [:]
         
         main.setEventHandler() {
             let client = accept(listen.descriptor.raw, nil, nil)
@@ -62,47 +62,63 @@ public final class DispatchAsyncServer: Server {
             }
             print("Accepted \(client) on worker \(queue.id)")
             
-            let write = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
-            writes.append(write)
-            
-            write.setEventHandler {
-                // print("Writing data to \(client)")
-                let rc = send(client, &res, res.count, 0)
-                if (rc < 0)
-                {
-                    perror("  send() failed");
-                    return
+            let write: DispatchSourceWrite
+            if let existing = writes[client] {
+                write = existing
+            } else {
+                let new = DispatchSource.makeWriteSource(fileDescriptor: client, queue: queue.queue)
+                writes[client] = new
+                
+                new.setEventHandler {
+                    // print("Writing data to \(client)")
+                    let rc = send(client, &res, res.count, 0)
+                    if (rc < 0)
+                    {
+                        perror("  send() failed");
+                        return
+                    }
+                    new.suspend()
                 }
-                write.suspend()
+                write = new
             }
             write.resume()
             
-            let read = DispatchSource.makeReadSource(fileDescriptor: client, queue: queue.queue)
-            reads.append(read)
-            read.setEventHandler {
-                let rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
-                if (rc < 0)
-                {
-                    if (errno != EWOULDBLOCK)
+            let read: DispatchSourceRead
+            if let existing = reads[client] {
+                read = existing
+            } else {
+                let new = DispatchSource.makeReadSource(fileDescriptor: client, queue: queue.queue)
+                reads[client] = new
+                
+                new.setEventHandler {
+                    let rc = recv(client, &queue.buffer, queue.buffer.capacity, 0)
+                    if (rc < 0)
                     {
-                        perror("  recv() failed");
+                        if (errno != EWOULDBLOCK)
+                        {
+                            perror("  recv() failed");
+                            return
+                        }
+                    }
+                    
+                    
+                    if (rc == 0)
+                    {
+                        // print("  Connection closed\n");
+                        new.cancel()
+                        write.cancel()
+                        reads[client] = nil
+                        writes[client] = nil
                         return
                     }
+                    
+                    write.resume()
                 }
                 
-                
-                if (rc == 0)
-                {
-                    // print("  Connection closed\n");
-                    read.cancel()
-                    return
+                new.setCancelHandler {
+                    // print("cancel")
                 }
-                
-                write.resume()
-            }
-            
-            read.setCancelHandler {
-                // print("cancel")
+                read = new
             }
             read.resume()
 
