@@ -5,9 +5,8 @@ private let crlf: Bytes = [.carriageReturn, .newLine]
 
 extension SMTPClient {
     internal func transmit(line: String, terminating: Bool = true) throws {
-        try stream.write(line)
-        if terminating { try stream.write(crlf) }
-        try stream.flush()
+        _ = try stream.write(line)
+        if terminating { _ = try stream.write(crlf) }
     }
 
     internal func transmit(line: String, terminating: Bool = true, expectingReplyCode: Int) throws {

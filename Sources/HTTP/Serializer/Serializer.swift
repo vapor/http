@@ -2,63 +2,72 @@ import Transport
 
 /// Internal serializer protocol for turning a basic
 /// HTTP message into bytes.
-internal protocol Serializer {
-    associatedtype StreamType: WriteableStream
-    var stream: StreamType { get }
+internal protocol ByteSerializer: class {
+    var serialized: Int { get set }
+    var offset: Int { get set }
+    var pointer: Int { get set }
 }
 
-extension Serializer {
-    /// Serializes an HTTP message to bytes.
-    internal func serialize(_ message: Message) throws -> Bytes {
-        guard message.version.major == 1 && message.version.minor == 1 else {
-            throw SerializerError.invalidVersion
+internal enum ByteSerializerError: Error {
+    case bufferFull
+}
+
+extension ByteSerializer {
+    func fill(_ bytes: Bytes, into buffer: inout Bytes) throws {
+        for byte in bytes {
+            try fill(byte, into: &buffer)
+        }
+    }
+    
+    func reset() {
+        pointer = 0
+        serialized = 0
+        offset = 0
+    }
+    
+    func fill(_ byte: Byte, into buffer: inout Bytes) throws {
+        guard offset >= 0 else {
+            offset += 1
+            return
         }
         
-        var length = 0
+        guard pointer < buffer.count else {
+            serialized += pointer
+            offset = -1 * serialized
+            throw ByteSerializerError.bufferFull
+        }
         
-        switch message.body {
+        buffer[pointer] = byte
+        pointer += 1
+    }
+    
+    func serialize(
+        _ headers: inout [HeaderKey: String],
+        into buffer: inout Bytes,
+        for body: Body
+    ) throws {
+        switch body {
         case .chunked(_):
-            message.headers[.contentLength] = nil
-            message.headers[.transferEncoding] = "chunked"
+            headers[.contentLength] = nil
+            headers[.transferEncoding] = "chunked"
         case .data(let bytes):
-            message.headers[.contentLength] = bytes.count.description
-            message.headers[.transferEncoding] = nil
+            headers[.contentLength] = bytes.count.description
+            headers[.transferEncoding] = nil
         }
         
-        var headerBytes: [(key: Bytes, value: Bytes)] = []
-        for (key, value) in message.headers {
-            let k = key.key.makeBytes()
-            let v = value.makeBytes()
-            length += k.count
-                + v.count
-                + 4 // 4 bytes for the ': ' and '\r\n'
-            headerBytes.append((key: k, value: v))
+        for (key, value) in headers {
+            try key.key.utf8.forEach { byte in
+                try fill(byte, into: &buffer)
+            }
+            try fill(.colon, into: &buffer)
+            try fill(.space, into: &buffer)
+            try value.utf8.forEach { byte in
+                try fill(byte, into: &buffer)
+            }
+            try fill(.carriageReturn, into: &buffer)
+            try fill(.newLine, into: &buffer)
         }
-        length += 2 // 2 bytes for the final '\r\n\
-        
-        let bodyBytes: Bytes
-        switch message.body {
-        case .chunked:
-            bodyBytes = []
-        case .data(let bytes):
-            length += bytes.count
-            bodyBytes = bytes
-        }
-        
-        var buffer = Bytes()
-        buffer.reserveCapacity(length)
-        
-        for header in headerBytes {
-            buffer += header.key
-            buffer += [.colon, .space]
-            buffer += header.value
-            buffer += Byte.crlf
-        }
-        
-        buffer += Byte.crlf
-        buffer += bodyBytes
-        
-        return buffer
+        try fill(.carriageReturn, into: &buffer)
+        try fill(.newLine, into: &buffer)
     }
 }
-

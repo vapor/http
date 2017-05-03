@@ -57,20 +57,24 @@ final class SMTPTestStream: Transport.ClientStream, Transport.Stream {
             isClosed = true
         }
     }
-
-    func write(_ bytes: Bytes) throws {
+    
+    func write(max: Int, from buffer: Bytes) throws -> Int {
         isClosed = false
-        writeBuffer += bytes
-    }
-
-    func flush() throws {
+        writeBuffer += buffer
+        
+        
         if let response = SMTPReplies[writeBuffer.makeString()] {
             readBuffer = response.makeBytes()
+            writeBuffer = []
         } else {
             // If reply not known, set to buffer
             readBuffer = writeBuffer
         }
-        writeBuffer = []
+        
+        print(writeBuffer.makeString())
+        print(readBuffer.makeString())
+        
+        return buffer.count
     }
 
     func read(max: Int, into buffer: inout Bytes) throws -> Int {

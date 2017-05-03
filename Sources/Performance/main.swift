@@ -1,11 +1,13 @@
 import HTTP
+import Sockets
 
-let server = AsyncServer(
+let socket = try TCPInternetSocket(
     scheme: "http",
     hostname: "0.0.0.0",
-    port: 8080
+    port: 8123
 )
-// let server = DispatchSyncServer()
+let server = TCPAsyncServer(socket)
+// let server = try TCPServer(socket)
 
 let responder = BasicResponder { req, writer in
     let res = Response(status: .ok, body: "Hello world: \(req.uri.path)".makeBytes())

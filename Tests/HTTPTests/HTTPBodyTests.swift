@@ -4,32 +4,22 @@ import Transport
 import libc
 import Sockets
 import Dispatch
+import Random
 
 class HTTPBodyTests: XCTestCase {
-    
-    func testAsync() throws {
-        let server = AsyncServer()
-        let responder = Request.Handler { req in
-            return Response(status: .ok, body: "Hello world".makeBytes())
-        }
-        try server.start(responder) { error in
-            print(error)
-        }
-    }
-    
 
     func testBufferParse() throws {
         do {
             let expected = "hello"
 
             let stream = TestStream()
-            try stream.write("GET / HTTP/1.1")
-            try stream.writeLineEnd()
-            try stream.write("Content-Length: \(expected.characters.count.description)")
-            try stream.writeLineEnd()
-            try stream.writeLineEnd()
-            try stream.write(expected)
-            let req = try RequestParser<TestStream>(stream).parse()
+            _ = try stream.write("GET / HTTP/1.1")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Content-Length: \(expected.characters.count.description)")
+            _ = try stream.writeLineEnd()
+            _ = try stream.writeLineEnd()
+            _ = try stream.write(expected)
+            let req = try RequestParser().parse(from: stream)
 
             switch req.body {
             case .data(let data):
@@ -47,18 +37,18 @@ class HTTPBodyTests: XCTestCase {
             let expected = "hello world!"
 
             let stream = TestStream()
-            try stream.write("GET / HTTP/1.1")
-            try stream.writeLineEnd()
-            try stream.write("Transfer-Encoding: chunked")
-            try stream.writeLineEnd()
-            try stream.writeLineEnd()
-            let chunkStream = ChunkStream(stream: stream)
+            _ = try stream.write("GET / HTTP/1.1")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Transfer-Encoding: chunked")
+            _ = try stream.writeLineEnd()
+            _ = try stream.writeLineEnd()
+            let chunkStream = ChunkStream(stream)
 
             try chunkStream.write("hello worl")
             try chunkStream.write("d!")
             try chunkStream.close()
-
-            let req = try RequestParser<TestStream>(stream).parse()
+            
+            let req = try RequestParser().parse(from: stream)
 
             switch req.body {
             case .data(let data):
@@ -82,8 +72,9 @@ class HTTPBodyTests: XCTestCase {
         let server = try TCPServer(serverSocket)
 
         struct HelloResponder: HTTP.Responder {
-            func respond(to request: Request) throws -> Response {
-                return Response(status: .ok, body: "Hello".makeBytes())
+            func respond(to request: Request, with writer: ResponseWriter) throws {
+                let res = Response(status: .ok, body: "Hello \(request.uri.path)".makeBytes())
+                try writer.write(res)
             }
         }
 
@@ -110,15 +101,18 @@ class HTTPBodyTests: XCTestCase {
                     hostname: "0.0.0.0",
                     port: port
                 )
+                
+                let path = try "/" + OSRandom.bytes(count: 16).hexEncoded.makeString()
+                
                 let req = Request(
                     method: .get,
-                    uri: "http://0.0.0.0:\(port)/"
+                    uri: "http://0.0.0.0:\(port)\(path)"
                 )
                 
                 let res = try TCPClient(clientSocket)
-                    .respond(to: req)
+                    .respondSync(to: req)
                 
-                XCTAssertEqual(res.body.bytes ?? [], "Hello".makeBytes())
+                XCTAssertEqual(res.body.bytes?.makeString(), "Hello \(path)")
             }
         } catch {
             XCTFail("\(error)")
@@ -128,10 +122,14 @@ class HTTPBodyTests: XCTestCase {
     }
     
     func testBigBody() throws {
-        let httpbin = try TCPInternetSocket(scheme: "http", hostname: "httpbin.org", port: 80)
+        let httpbin = try TCPInternetSocket(
+            scheme: "http",
+            hostname: "httpbin.org",
+            port: 80
+        )
         let client = try TCPClient(httpbin)
         let req = Request(method: .get, uri: "http://httpbin.org/bytes/8192")
-        let res = try client.respond(to: req)
+        let res = try client.respondSync(to: req)
         XCTAssertEqual(res.body.bytes?.count, 8192)
         try httpbin.close()
     }

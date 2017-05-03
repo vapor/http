@@ -88,7 +88,7 @@ class FoundationConversionTests: XCTestCase {
 
     func testFoundationClient() throws {
         let response = try FoundationClient(scheme: "https", hostname: "httpbin.org", port: 443)
-            .respond(to: Request(method: .get, uri: "https://httpbin.org/html"))
+            .respondSync(to: Request(method: .get, uri: "https://httpbin.org/html"))
 
         let expectation = "Herman Melville - Moby-Dick"
         let contained = response.body.bytes?.makeString().contains(expectation) ?? false

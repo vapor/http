@@ -44,8 +44,20 @@ internal final class ParseResults {
 
 extension ParseResults {
     /// Sets the parse results object on a C parser
-    static func set(_ results: inout ParseResults, on parser: inout http_parser) {
-        parser.data = UnsafeMutableRawPointer(&results)
+    static func set(on parser: inout http_parser) -> ParseResults {
+        let results = UnsafeMutablePointer<ParseResults>.allocate(capacity: 1)
+        let new = ParseResults()
+        results.initialize(to: new)
+        parser.data = UnsafeMutableRawPointer(results)
+        return new
+    }
+    
+    static func remove(from parser: inout http_parser) {
+        if let results = parser.data {
+            let pointer = results.assumingMemoryBound(to: ParseResults.self)
+            pointer.deinitialize()
+            pointer.deallocate(capacity: 1)
+        }
     }
     
     /// Fetches the parse results object from the C parser

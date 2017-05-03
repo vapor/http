@@ -3,30 +3,55 @@ import CHTTP
 import URI
 
 /// Parses responses from a readable stream.
-public final class ResponseParser<Stream: ReadableStream>: CHTTPParser {
+public final class ResponseParser: CHTTPParser {
     // Internal variables to conform
     // to the C HTTP parser protocol.
-    typealias StreamType = Stream
-    let stream: Stream
     var parser: http_parser
     var settings: http_parser_settings
-    var buffer: Bytes
+    var state:  CHTTPParserState
     
     /// Creates a new Response parser.
-    public init(_ stream: Stream) {
-        self.stream = stream
+    public init() {
         self.parser = http_parser()
         self.settings = http_parser_settings()
+        self.state = .ready
         http_parser_init(&parser, HTTP_RESPONSE)
-        self.buffer = Bytes()
-        self.buffer.reserveCapacity(ResponseParser.bufferSize)
+        initialize(&settings)
     }
     
     /// Parses a Response from the stream.
-    public func parse() throws -> Response {
-        // FIXME
-        var bytes = try stream.read(max: 2048)
-        let results = try parseMessage(from: &bytes, length: bytes.count)!
+    public func parse(max: Int, from buffer: Bytes) throws -> Response? {
+        let results: ParseResults
+        
+        switch state {
+        case .ready:
+            print("creating new results")
+            // create a new results object and set
+            // a reference to it on the parser
+            let newResults = ParseResults.set(on: &parser)
+            results = newResults
+            state = .parsing
+        case .parsing:
+            print("parsing away")
+            // get the current parse results object
+            guard let existingResults = ParseResults.get(from: &parser) else {
+                return nil
+            }
+            results = existingResults
+        }
+        
+        /// parse the message using the C HTTP parser.
+        try executeParser(max: max, from: buffer)
+        
+        guard results.isComplete else {
+            return nil
+        }
+        
+        // the results have completed, so we are ready
+        // for a new request to come in
+        state = .ready
+        ParseResults.remove(from: &parser)
+        
         
         let status = Status(statusCode: Int(parser.status_code))
         
@@ -42,19 +67,5 @@ public final class ResponseParser<Stream: ReadableStream>: CHTTPParser {
         )
         
         return response
-    }
-}
-
-// MARK: Settings
-
-private var _bufferSize = 2048
-extension ResponseParser {
-    public static var bufferSize: Int {
-        get {
-            return _bufferSize
-        }
-        set {
-            _bufferSize = newValue
-        }
     }
 }
