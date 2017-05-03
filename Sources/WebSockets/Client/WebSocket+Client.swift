@@ -80,7 +80,7 @@ extension WebSocket {
             uri: uri,
             headers: headers
         )
-        let response = try client.respondSync(to: request)
+        let response = try client.respond(to: request)
 
         guard response.status == .switchingProtocols else { throw FormatError.invalidOrUnsupportedStatus(response.status) }
         // Don't need to check version in server response

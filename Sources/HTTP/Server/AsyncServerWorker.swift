@@ -8,11 +8,11 @@ class AsyncServerWorker<Stream: DuplexStream & DescriptorRepresentable> {
     
     let serializer: ResponseSerializer
     let parser: RequestParser
-    let responder: Responder
+    let responder: AsyncResponder
     
     var connected: [Int32: DispatchSourceRead]
     
-    init(id: Int, _ responder: Responder) {
+    init(id: Int, _ responder: AsyncResponder) {
         self.id = id
         self.responder = responder
         

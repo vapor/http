@@ -42,7 +42,7 @@ public final class AsyncServer<
         self.workers = []
     }
 
-    public func start(_ responder: Responder, errors: @escaping ServerErrorHandler) throws {
+    public func start(_ responder: AsyncResponder, errors: @escaping ServerErrorHandler) throws {
         try stream.bind()
         try stream.listen(max: listenMax)
     

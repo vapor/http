@@ -24,20 +24,25 @@ public final class FoundationClient: Client {
     }
 
     /// responds to the request using URLResponse
-    public func respond(to request: Request, with writer: ResponseWriter) throws {
+    public func respond(to request: Request) throws -> Response {
         try assertValid(request)
-
-        let foundationRequest = try request.makeFoundationRequest()
         
-        let task = self.session.dataTask(with: foundationRequest) { data, urlResponse, error in
-            if let error = error {
-                print(error)
+        return try Portal.open { portal in
+            let foundationRequest = try request.makeFoundationRequest()
+            let task = self.session.dataTask(with: foundationRequest) { data, urlResponse, error in
+                if let error = error {
+                    portal.close(with: error)
+                    return
+                }
+                
+                do {
+                    let response = try Response(urlResponse: urlResponse, data: data)
+                    portal.close(with: response)
+                } catch {
+                    portal.close(with: error)
+                }
             }
-
-            // FIXME
-            let response = try! Response(urlResponse: urlResponse, data: data)
-            try! writer.write(response)
+            task.resume()
         }
-        task.resume()
     }
 }

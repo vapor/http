@@ -71,11 +71,8 @@ class HTTPBodyTests: XCTestCase {
         )
         let server = try TCPServer(serverSocket)
 
-        struct HelloResponder: HTTP.Responder {
-            func respond(to request: Request, with writer: ResponseWriter) throws {
-                let res = Response(status: .ok, body: "Hello \(request.uri.path)".makeBytes())
-                try writer.write(res)
-            }
+        let responder = BasicResponder { request in
+            return Response(status: .ok, body: "Hello \(request.uri.path)".makeBytes())
         }
 
         let group = DispatchGroup()
@@ -83,7 +80,7 @@ class HTTPBodyTests: XCTestCase {
         background {
             do {
                 group.leave()
-                try server.start(HelloResponder(), errors: { err in
+                try server.start(responder, errors: { err in
                     XCTFail("\(err)")
                 })
             } catch {
@@ -114,7 +111,7 @@ class HTTPBodyTests: XCTestCase {
                         )
                         
                         let res = try TCPClient(clientSocket)
-                            .respondSync(to: req)
+                            .respond(to: req)
                         
                         XCTAssertEqual(res.body.bytes?.makeString(), "Hello \(path)")
                     } catch {
@@ -138,7 +135,7 @@ class HTTPBodyTests: XCTestCase {
         )
         let client = try TCPClient(httpbin)
         let req = Request(method: .get, uri: "http://httpbin.org/bytes/8192")
-        let res = try client.respondSync(to: req)
+        let res = try client.respond(to: req)
         XCTAssertEqual(res.body.bytes?.count, 8192)
         try httpbin.close()
     }

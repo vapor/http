@@ -98,7 +98,7 @@ public final class BasicServer<StreamType: ServerStream>: Server {
             req.stream = stream
 
             keepAlive = req.keepAlive
-            let response = try responder.respondSync(to: req)
+            let response = try responder.respond(to: req)
             
             while true {
                 let length = try serializer.serialize(response, into: &buffer)
