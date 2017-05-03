@@ -44,17 +44,17 @@ class URIModificationTests: XCTestCase {
         uri = uri.deletingLastPathComponent()
         XCTAssertEqual(uri.path, "/documentation")
         uri = uri.deletingLastPathComponent()
-        XCTAssertEqual(uri.path, "")
+        XCTAssertEqual(uri.path, "/")
         uri = uri.deletingLastPathComponent()
-        XCTAssertEqual(uri.path, "")
+        XCTAssertEqual(uri.path, "/")
     }
     
     func testRemovingPath() {
         var uri = try! URI("https://vapor.github.io/documentation/foo/bar/baz")
         uri = uri.removingPath()
-        XCTAssertEqual(uri.path, "")
+        XCTAssertEqual(uri.path, "/")
         uri = uri.removingPath()
-        XCTAssertEqual(uri.path, "")
+        XCTAssertEqual(uri.path, "/")
     }
     
     func testLastPathComponent() {
@@ -67,7 +67,7 @@ class URIModificationTests: XCTestCase {
         uri = uri.deletingLastPathComponent()
         XCTAssertEqual(uri.lastPathComponent, "documentation")
         uri = uri.deletingLastPathComponent()
-        XCTAssertEqual(uri.lastPathComponent, nil)
+        XCTAssertEqual(uri.lastPathComponent, "")
         
     }
 }

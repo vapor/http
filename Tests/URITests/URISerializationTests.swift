@@ -54,7 +54,7 @@ class URISerializationTests: XCTestCase {
                      username: "",
                      pass: "",
                      port: nil,
-                     path: "",
+                     path: "/",
                      query: nil,
                      fragment: nil)
 
@@ -94,7 +94,7 @@ class URISerializationTests: XCTestCase {
                      username: "",
                      pass: "",
                      port: nil,
-                     path: "",
+                     path: "/",
                      query: nil,
                      fragment: nil)
 
@@ -104,7 +104,7 @@ class URISerializationTests: XCTestCase {
                      username: "",
                      pass: "",
                      port: nil,
-                     path: "",
+                     path: "/",
                      query: nil,
                      fragment: nil)
 
@@ -114,7 +114,7 @@ class URISerializationTests: XCTestCase {
                      username: "",
                      pass: "",
                      port: nil,
-                     path: "",
+                     path: "/",
                      query: nil,
                      fragment: nil)
 
@@ -134,7 +134,7 @@ class URISerializationTests: XCTestCase {
                      username: "",
                      pass: "",
                      port: nil,
-                     path: "",
+                     path: "/",
                      query: nil,
                      fragment: nil)
 
@@ -144,7 +144,7 @@ class URISerializationTests: XCTestCase {
                      username: "",
                      pass: "",
                      port: nil,
-                     path: "",
+                     path: "/",
                      query: "fred",
                      fragment: nil)
 
@@ -170,7 +170,7 @@ class URISerializationTests: XCTestCase {
                      username: "",
                      pass: "",
                      port: 80,
-                     path: "",
+                     path: "/",
                      query: nil,
                      fragment: nil)
     }
@@ -194,7 +194,7 @@ class URISerializationTests: XCTestCase {
                      username: "",
                      pass: "",
                      port: 80,
-                     path: "",
+                     path: "/",
                      query: encoded,
                      fragment: nil)
         

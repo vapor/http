@@ -50,7 +50,7 @@ public struct URI {
         self.userInfo = userInfo
         self.hostname = hostname.lowercased()
         self.port = port ?? URI.defaultPorts[scheme]
-        self.path = path
+        self.path = path.hasPrefix("/") ? path : "/" + path
         self.query = query
         self.fragment = fragment
     }
