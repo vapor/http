@@ -4,6 +4,7 @@ import Transport
 import libc
 import Sockets
 import Dispatch
+import Random
 
 class HTTPBodyTests: XCTestCase {
 
@@ -12,13 +13,13 @@ class HTTPBodyTests: XCTestCase {
             let expected = "hello"
 
             let stream = TestStream()
-            try stream.write("GET / HTTP/1.1")
-            try stream.writeLineEnd()
-            try stream.write("Content-Length: \(expected.characters.count.description)")
-            try stream.writeLineEnd()
-            try stream.writeLineEnd()
-            try stream.write(expected)
-            let req = try RequestParser<TestStream>(stream).parse()
+            _ = try stream.write("GET / HTTP/1.1")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Content-Length: \(expected.characters.count.description)")
+            _ = try stream.writeLineEnd()
+            _ = try stream.writeLineEnd()
+            _ = try stream.write(expected)
+            let req = try RequestParser().parse(from: stream)
 
             switch req.body {
             case .data(let data):
@@ -36,18 +37,18 @@ class HTTPBodyTests: XCTestCase {
             let expected = "hello world!"
 
             let stream = TestStream()
-            try stream.write("GET / HTTP/1.1")
-            try stream.writeLineEnd()
-            try stream.write("Transfer-Encoding: chunked")
-            try stream.writeLineEnd()
-            try stream.writeLineEnd()
-            let chunkStream = ChunkStream(stream: stream)
+            _ = try stream.write("GET / HTTP/1.1")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Transfer-Encoding: chunked")
+            _ = try stream.writeLineEnd()
+            _ = try stream.writeLineEnd()
+            let chunkStream = ChunkStream(stream)
 
             try chunkStream.write("hello worl")
             try chunkStream.write("d!")
             try chunkStream.close()
-
-            let req = try RequestParser<TestStream>(stream).parse()
+            
+            let req = try RequestParser().parse(from: stream)
 
             switch req.body {
             case .data(let data):
@@ -61,7 +62,7 @@ class HTTPBodyTests: XCTestCase {
     }
 
     func testClientStreamUsage() throws {
-        let port: Transport.Port = 8338
+        let port: Transport.Port = 8231
         
         let serverSocket = try TCPInternetSocket(
             scheme: "http",
@@ -70,10 +71,8 @@ class HTTPBodyTests: XCTestCase {
         )
         let server = try TCPServer(serverSocket)
 
-        struct HelloResponder: HTTP.Responder {
-            func respond(to request: Request) throws -> Response {
-                return Response(status: .ok, body: "Hello".makeBytes())
-            }
+        let responder = BasicResponder { request in
+            return Response(status: .ok, body: "Hello \(request.uri.path)".makeBytes())
         }
 
         let group = DispatchGroup()
@@ -81,43 +80,55 @@ class HTTPBodyTests: XCTestCase {
         background {
             do {
                 group.leave()
-                try server.start(HelloResponder(), errors: { err in
+                try server.start(responder, errors: { err in
                     XCTFail("\(err)")
                 })
             } catch {
-                group.leave()
                 XCTFail("\(error)")
             }
         }
         group.wait()
-        Thread.sleep(forTimeInterval: 2)
-
-        do {
-            for _ in 0..<8192 {
-                let clientSocket = try TCPInternetSocket(
-                    scheme: "http",
-                    hostname: "0.0.0.0",
-                    port: port
-                )
-                let req = Request(
-                    method: .get,
-                    uri: "http://0.0.0.0:\(port)/"
-                )
-                
-                let res = try TCPClient(clientSocket)
-                    .respond(to: req)
-                
-                XCTAssertEqual(res.body.bytes ?? [], "Hello".makeBytes())
-            }
-        } catch {
-            XCTFail("\(error)")
-        }
+        Thread.sleep(forTimeInterval: 1)
         
+        // spin up 2k requests across 8 threads
+        for _ in 1...8 {
+            group.enter()
+            background {
+                for _ in 0..<8 {
+                    do {
+                        let clientSocket = try TCPInternetSocket(
+                            scheme: "http",
+                            hostname: "127.0.0.1",
+                            port: port
+                        )
+                        
+                        let path = try "/" + OSRandom.bytes(count: 16).hexEncoded.makeString()
+                        
+                        let req = Request(
+                            method: .get,
+                            uri: "http://127.0.0.1:\(port)\(path)"
+                        )
+                        
+                        let res = try TCPClient(clientSocket)
+                            .respond(to: req)
+                        
+                        XCTAssertEqual(res.body.bytes?.makeString(), "Hello \(path)")
+                    } catch {
+                        XCTFail("\(error)")
+                    }
+                }
+                group.leave()
+            }
+        }
         // WARNING: `server` will keep running in the background since there is no way to stop it. Its socket will continue to exist and the associated port will be in use until the xctest process exits.
     }
     
     func testBigBody() throws {
-        let httpbin = try TCPInternetSocket(scheme: "http", hostname: "httpbin.org", port: 80)
+        let httpbin = try TCPInternetSocket(
+            scheme: "http",
+            hostname: "httpbin.org",
+            port: 80
+        )
         let client = try TCPClient(httpbin)
         let req = Request(method: .get, uri: "http://httpbin.org/bytes/8192")
         let res = try client.respond(to: req)

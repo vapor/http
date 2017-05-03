@@ -7,7 +7,7 @@ let dependencies: [Package.Dependency] = [
     .Package(url: "https://github.com/vapor/crypto.git", beta),
 
     // Secure Sockets
-    .Package(url: "https://github.com/vapor/tls.git", beta),
+    .Package(url: "https://github.com/vapor/tls.git", beta)
 ]
 
 let package = Package(
@@ -19,12 +19,10 @@ let package = Package(
         Target(name: "HTTP", dependencies: ["URI", "CHTTP"]),
         Target(name: "WebSockets", dependencies: ["HTTP", "URI"]),
         Target(name: "SMTP")
+        // Target(name: "Performance", dependencies: ["HTTP"])
     ],
     dependencies: dependencies,
     exclude: [
-        "Resources",
-        "Sources/HTTPExample",
-        "Sources/WebSocketsExample",
-        "Sources/SMTPExample",
+        "Sources/Performance"
     ]
 )

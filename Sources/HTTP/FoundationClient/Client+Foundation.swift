@@ -26,7 +26,7 @@ public final class FoundationClient: Client {
     /// responds to the request using URLResponse
     public func respond(to request: Request) throws -> Response {
         try assertValid(request)
-
+        
         return try Portal.open { portal in
             let foundationRequest = try request.makeFoundationRequest()
             let task = self.session.dataTask(with: foundationRequest) { data, urlResponse, error in
@@ -34,7 +34,7 @@ public final class FoundationClient: Client {
                     portal.close(with: error)
                     return
                 }
-
+                
                 do {
                     let response = try Response(urlResponse: urlResponse, data: data)
                     portal.close(with: response)

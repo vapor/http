@@ -3,29 +3,53 @@ import CHTTP
 import URI
 
 /// Parses requests from a readable stream.
-public final class RequestParser<Stream: ReadableStream>: CHTTPParser {
+public final class RequestParser: CHTTPParser {
     // Internal variables to conform
     // to the C HTTP parser protocol.
-    typealias StreamType = Stream
-    let stream: Stream
     var parser: http_parser
     var settings: http_parser_settings
-    var buffer: Bytes
+    var state:  CHTTPParserState
     
     /// Creates a new Request parser.
-    public init(_ stream: Stream) {
-        self.stream = stream
+    public init() {
         self.parser = http_parser()
         self.settings = http_parser_settings()
+        self.state = .ready
         http_parser_init(&parser, HTTP_REQUEST)
-        self.buffer = Bytes()
-        self.buffer.reserveCapacity(RequestParser.bufferSize)
+        initialize(&settings)
     }
     
     /// Parses a Request from the stream.
-    public func parse() throws -> Request {
+    public func parse(max: Int, from buffer: Bytes) throws -> Request? {
+        let results: ParseResults
+        
+        switch state {
+        case .ready:
+            // create a new results object and set
+            // a reference to it on the parser
+            let newResults = ParseResults.set(on: &parser)
+            results = newResults
+            state = .parsing
+        case .parsing:
+            // get the current parse results object
+            guard let existingResults = ParseResults.get(from: &parser) else {
+                return nil
+            }
+            results = existingResults
+        }
+        
         /// parse the message using the C HTTP parser.
-        let results = try parseMessage()
+        try executeParser(max: max, from: buffer)
+        
+        guard results.isComplete else {
+            return nil
+        }
+        
+        // the results have completed, so we are ready
+        // for a new request to come in
+        state = .ready
+        ParseResults.remove(from: &parser)
+        
         
         /// switch on the C method type from the parser
         let method: Method
@@ -90,19 +114,5 @@ public final class RequestParser<Stream: ReadableStream>: CHTTPParser {
         )
 
         return request
-    }
-}
-
-// MARK: Settings
-
-private var _bufferSize = 2048
-extension RequestParser {
-    public static var bufferSize: Int {
-        get {
-            return _bufferSize
-        }
-        set {
-            _bufferSize = newValue
-        }
     }
 }

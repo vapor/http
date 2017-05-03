@@ -14,7 +14,7 @@ public class ChunkStream {
     public let raw: WriteableStream
     public var isClosed: Bool
 
-    public init(stream: WriteableStream) {
+    public init(_ stream: WriteableStream) {
         self.raw = stream
         isClosed = false
     }
@@ -35,15 +35,11 @@ public class ChunkStream {
         var buffer = "\(bytes.count.hex)\r\n".makeBytes()
         buffer += bytes
         buffer += "\r\n".makeBytes()
-        try raw.write(buffer)
-    }
-
-    public func flush(timingOut deadline: Double) throws {
-        try raw.flush()
+        _ = try raw.write(buffer)
     }
 
     public func close() throws {
-        try raw.write("0\r\n\r\n") // stream should close by client
+        _ = try raw.write("0\r\n\r\n") // stream should close by client
         isClosed = true
     }
 }

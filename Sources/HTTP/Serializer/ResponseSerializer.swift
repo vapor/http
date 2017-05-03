@@ -5,46 +5,57 @@ import Transport
 // version is attempted to be serialized.
 private let startLine: Bytes = [.H, .T, .T, .P, .forwardSlash, .one, .period, .one, .space]
 
-public final class ResponseSerializer<Stream: WriteableStream>: Serializer {
-    typealias StreamType = Stream
-    let stream: Stream
-    public init(_ stream: Stream) {
-        self.stream = stream
+public final class ResponseSerializer: ByteSerializer {
+    var serialized: Int
+    var offset: Int
+    var pointer: Int
+    var done: Bool
+    
+    public init() {
+        serialized = 0
+        offset = 0
+        pointer = 0
+        done = false
     }
     
-    public func serialize(_ response: Response) throws {
-        let message = try serialize(response as Message)
+    public func serialize(_ response: Response, into buffer: inout Bytes) throws -> Int {
+        guard response.version.major == 1 && response.version.minor == 1 else {
+            throw SerializerError.invalidVersion
+        }
         
-        let reasonPhrase = response.status.reasonPhrase.makeBytes()
-        let length = 15 // 13 bytes for the following characters: HTTP/1.1_xxx_\r\n
-            + reasonPhrase.count
-            + message.count
-        
-        var buffer = Bytes()
-        buffer.reserveCapacity(length)
-        
-        buffer += startLine
-        buffer += response
-            .status
-            .statusCode
-            .description
-            .makeBytes()
-        
-        buffer.append(.space)
-        buffer += reasonPhrase
-        buffer += Byte.crlf
-        buffer += message
-        
-        try stream.write(buffer)
-        try stream.flush()
-        
-        switch response.body {
-        case .chunked(let closure):
-            let chunkStream = ChunkStream(stream: stream)
-            try closure(chunkStream)
-            try stream.flush()
-        case .data:
-            break
+        if done {
+            reset()
+            done = false
+            return 0
+        }
+    
+        do {
+            try fill(startLine, into: &buffer)
+            try response.status.statusCode.description.utf8.forEach { byte in
+                try fill(byte, into: &buffer)
+            }
+            try fill(.space, into: &buffer)
+            try response.status.reasonPhrase.utf8.forEach { byte in
+                try fill(byte, into: &buffer)
+            }
+            try fill(.carriageReturn, into: &buffer)
+            try fill(.newLine, into: &buffer)
+            
+            try serialize(&response.headers, into: &buffer, for: response.body)
+            
+            switch response.body {
+            case .chunked:
+                break
+            case .data(let bytes):
+                try fill(bytes, into: &buffer)
+            }
+            
+            done = true
+            return pointer
+        } catch ByteSerializerError.bufferFull {
+            let interrupted = pointer
+            pointer = 0
+            return interrupted
         }
     }
 }

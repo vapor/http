@@ -64,7 +64,7 @@ class WebSocketSerializationTests: XCTestCase {
     func testSingleFrameUnmaskedTextMessage() throws {
         let input: [Byte] = [0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f]
         let test = TestStream()
-        try test.write(input)
+        _ = try test.write(input)
         let msg = try FrameParser(stream: test).acceptFrame()
         let str = msg.payload.makeString()
         XCTAssert(str == "Hello")
@@ -85,7 +85,7 @@ class WebSocketSerializationTests: XCTestCase {
     func testSingleFrameMaskedTextMessage() throws {
         let input: [Byte] = [0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58]
         let test = TestStream()
-        try test.write(input)
+        _ = try test.write(input)
         let msg = try FrameParser(stream: test).acceptFrame()
         let str = msg.payload.makeString()
         XCTAssert(str == "Hello")
@@ -113,7 +113,7 @@ class WebSocketSerializationTests: XCTestCase {
     func testFragmentedUnmaskedTextMessageOne() throws {
         let input: [Byte] = [0x01, 0x03, 0x48, 0x65, 0x6c]
         let test = TestStream()
-        try test.write(input)
+        _ = try test.write(input)
         let msg = try FrameParser(stream: test).acceptFrame()
         XCTAssert(msg.isFragment)
         XCTAssert(msg.isFragmentHeader)
@@ -138,7 +138,7 @@ class WebSocketSerializationTests: XCTestCase {
     func testFragmentedUnmaskedTextMessageTwo() throws {
         let input: [Byte] = [0x80, 0x02, 0x6c, 0x6f]
         let test = TestStream()
-        try test.write(input)
+        _ = try test.write(input)
         let msg = try FrameParser(stream: test).acceptFrame()
         XCTAssert(msg.isFragment)
         XCTAssert(msg.isFragmentFooter)
@@ -172,7 +172,7 @@ class WebSocketSerializationTests: XCTestCase {
     func testUnmaskedPingRequest() throws {
         let input: [Byte] = [0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f]
         let test = TestStream()
-        try test.write(input)
+        _ = try test.write(input)
         let msg = try FrameParser(stream: test).acceptFrame()
         XCTAssert(msg.isControlFrame)
 
@@ -199,7 +199,7 @@ class WebSocketSerializationTests: XCTestCase {
          */
         let input: [Byte] = [0x8a, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58]
         let test = TestStream()
-        try test.write(input)
+        _ = try test.write(input)
         let msg = try FrameParser(stream: test).acceptFrame()
         XCTAssert(msg.isControlFrame)
 
@@ -238,7 +238,7 @@ class WebSocketSerializationTests: XCTestCase {
         let headerBytes: [Byte] = [0x82, 0x7E] + twoFiftySix
         let input = headerBytes + randomBinary
         let test = TestStream()
-        try test.write(input)
+        _ = try test.write(input)
         let msg = try FrameParser(stream: test).acceptFrame()
         XCTAssertFalse(msg.isControlFrame)
 
@@ -279,7 +279,7 @@ class WebSocketSerializationTests: XCTestCase {
 
         let input = headerBytes + randomBinary
         let test = TestStream()
-        try test.write(input)
+        _ = try test.write(input)
         let msg = try FrameParser(stream: test).acceptFrame()
         XCTAssertFalse(msg.isControlFrame)
 
@@ -380,9 +380,10 @@ final class TestStream: DuplexStream {
         }
     }
 
-    func write(_ bytes: Bytes) throws {
+    func write(max: Int, from bytes: Bytes) throws -> Int {
         isClosed = false
         buffer += bytes
+        return bytes.count
     }
 
     func flush() throws {

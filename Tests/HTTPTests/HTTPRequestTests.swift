@@ -15,16 +15,16 @@ class HTTPRequestTests: XCTestCase {
         do {
             let stream = TestStream()
 
-            try stream.write("GET /plaintext HTTP/1.1")
-            try stream.writeLineEnd()
-            try stream.write("Accept: */*")
-            try stream.writeLineEnd()
-            try stream.write("Host: qutheory.io")
-            try stream.writeLineEnd()
-            try stream.writeLineEnd()
+            _ = try stream.write("GET /plaintext HTTP/1.1")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Accept: */*")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Host: qutheory.io")
+            _ = try stream.writeLineEnd()
+            _ = try stream.writeLineEnd()
 
-            let parser = RequestParser<TestStream>(stream)
-            let request = try parser.parse()
+            let parser = RequestParser()
+            let request = try parser.parse(from: stream)
             request.stream = stream
 
             XCTAssertEqual(request.method, Method.get)
@@ -44,17 +44,17 @@ class HTTPRequestTests: XCTestCase {
         do {
             let stream = TestStream()
 
-            try stream.write("GET http://qutheory.io:1337/p_2?query#fragment HTTP/1.4")
-            try stream.writeLineEnd()
-            try stream.write("Accept: */*")
-            try stream.writeLineEnd()
-            try stream.write("Content-Type: application/")
-            try stream.writeLineEnd()
-            try stream.write(" json")
-            try stream.writeLineEnd()
-            try stream.writeLineEnd()
+            _ = try stream.write("GET http://qutheory.io:1337/p_2?query#fragment HTTP/1.4")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Accept: */*")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Content-Type: application/")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write(" json")
+            _ = try stream.writeLineEnd()
+            _ = try stream.writeLineEnd()
 
-            let request = try RequestParser<TestStream>(stream).parse()
+            let request = try RequestParser().parse(from: stream)
             XCTAssertEqual(request.method.description, "GET")
             XCTAssertEqual(request.uri.hostname, "qutheory.io")
             XCTAssertEqual(request.uri.port, 1337)
@@ -74,18 +74,18 @@ class HTTPRequestTests: XCTestCase {
         do {
             let stream = TestStream()
             
-            try stream.write("GET /plaintext HTTP/1.1")
-            try stream.writeLineEnd()
-            try stream.write("Accept: */*")
-            try stream.writeLineEnd()
-            try stream.write("Host: qutheory.io")
-            try stream.writeLineEnd()
-            try stream.write("X-Forwarded-For: 5.6.7.8")
-            try stream.writeLineEnd()
-            try stream.writeLineEnd()
+            _ = try stream.write("GET /plaintext HTTP/1.1")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Accept: */*")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Host: qutheory.io")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("X-Forwarded-For: 5.6.7.8")
+            _ = try stream.writeLineEnd()
+            _ = try stream.writeLineEnd()
 
-            let parser = RequestParser<TestStream>(stream)
-            let request = try parser.parse()
+            let parser = RequestParser()
+            let request = try parser.parse(from: stream)
             request.stream = stream
 
             XCTAssertEqual(request.method, Method.get)
@@ -99,20 +99,20 @@ class HTTPRequestTests: XCTestCase {
         do {
             let stream = TestStream()
             
-            try stream.write("GET /plaintext HTTP/1.1")
-            try stream.writeLineEnd()
-            try stream.write("Accept: */*")
-            try stream.writeLineEnd()
-            try stream.write("Host: qutheory.io")
-            try stream.writeLineEnd()
-            try stream.write("X-Forwarded-For: 5.6.7.8")
-            try stream.writeLineEnd()
-            try stream.write("Forwarded: for=192.0.2.60; proto=http; by=203.0.113.43")
-            try stream.writeLineEnd()
-            try stream.writeLineEnd()
-
-            let parser = RequestParser<TestStream>(stream)
-            let request = try parser.parse()
+            _ = try stream.write("GET /plaintext HTTP/1.1")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Accept: */*")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Host: qutheory.io")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("X-Forwarded-For: 5.6.7.8")
+            _ = try stream.writeLineEnd()
+            _ = try stream.write("Forwarded: for=192.0.2.60; proto=http; by=203.0.113.43")
+            _ = try stream.writeLineEnd()
+            _ = try stream.writeLineEnd()
+            
+            let parser = RequestParser()
+            let request = try parser.parse(from: stream)
             request.stream = stream
             
             XCTAssertEqual(request.method, Method.get)

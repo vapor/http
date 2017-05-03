@@ -32,9 +32,12 @@ public final class BasicClient<StreamType: ClientStream>: Client {
         return stream.port
     }
 
+    var buffer: Bytes
+    
     public init(_ stream: StreamType) throws {
         self.stream = stream
         try stream.connect()
+        buffer = Bytes(repeating: 0, count: 2048)
     }
     
     deinit {
@@ -57,16 +60,46 @@ public final class BasicClient<StreamType: ClientStream>: Client {
         request.headers["Host"] = stream.hostname
         request.headers["User-Agent"] = userAgent
 
-        let serializer = RequestSerializer<StreamType>(stream)
-        try serializer.serialize(request)
+        let serializer = RequestSerializer()
+        while true {
+            let serialized = try serializer.serialize(request, into: &buffer)
+            guard serialized > 0 else {
+                break
+            }
+            let written = try stream.write(max: serialized, from: buffer)
+            guard written == serialized else {
+                // FIXME: better error
+                throw StreamError.closed
+            }
+        }
+        
+        switch request.body {
+        case .chunked(let closure):
+            let chunk = ChunkStream(stream)
+            try closure(chunk)
+        default:
+            break
+        }
 
-        let parser = ResponseParser<StreamType>(stream)
-        let response = try parser.parse()
+        let parser = ResponseParser()
+        
+        var response: Response?
+        while response == nil {
+            let read = try stream.read(max: buffer.count, into: &buffer)
+            guard read > 0 else {
+                break
+            }
+            response = try parser.parse(max: read, from: buffer)
+        }
+        
+        guard let res = response else {
+            throw StreamError.closed
+        }
 
         // set the stream for peer information
-        response.stream = stream
+        res.stream = stream
         
-        return response
+        return res
     }
 }
 

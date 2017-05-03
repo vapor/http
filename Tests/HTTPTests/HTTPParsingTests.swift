@@ -9,32 +9,6 @@ class HTTPParsingTests: XCTestCase {
        ("testParser", testParser),
        ("testSerializer", testSerializer)
     ]
-    
-    
-    
-    
-    
-    func testYES() throws {
-        let buffer = TestStream()
-        
-        try buffer.write("GET https://user:password@google.com:8080/foobar?yo=hi#dude HTTP/1.2")
-        try buffer.writeLineEnd()
-        try buffer.write("Content-Length: 5")
-        try buffer.writeLineEnd()
-        try buffer.write("Content-Type: text/plain")
-        try buffer.writeLineEnd()
-        try buffer.writeLineEnd()
-        try buffer.write("asdf!")
-        
-        let parser = RequestParser<TestStream>(buffer)
-        let request = try parser.parse()
-        print(request)
-    }
-    
-    
-    
-    
-    
 
     func testParser() {
         let stream = TestStream()
@@ -52,11 +26,12 @@ class HTTPParsingTests: XCTestCase {
         data += "\r\n"
         data += content
 
-        try! stream.write(data.makeBytes())
+        _ = try! stream.write(data.makeBytes())
 
 
         do {
-            let request = try RequestParser<TestStream>(stream).parse()
+            let parser = RequestParser()
+            let request = try parser.parse(from: stream)
 
             //MARK: Verify Request
             XCTAssert(request.method == Method.post, "Incorrect method \(request.method)")
@@ -67,7 +42,7 @@ class HTTPParsingTests: XCTestCase {
         }
     }
 
-    func testSerializer() {
+    func testSerializer() throws {
         //MARK: Create Response
         let response = Response(
             status: .enhanceYourCalm,
@@ -75,28 +50,24 @@ class HTTPParsingTests: XCTestCase {
                 "Test": "123",
                 "Content-Type": "text/plain"
             ],
-            chunked: { stream in
-                try stream.write("Hello, world")
-                try stream.close()
-            }
+            body: "Hello, world!"
         )
 
-        let stream = TestStream()
-        let serializer = ResponseSerializer<TestStream>(stream)
+        let serializer = ResponseSerializer()
+        
+        var data = Bytes(repeating: 0, count: 2048)
         do {
-            try serializer.serialize(response)
+            _ = try serializer.serialize(response, into: &data)
         } catch {
             XCTFail("Could not serialize response: \(error)")
         }
-
-        let data = try! stream.read(max: 2048)
 
         print(data.makeString())
         XCTAssert(data.makeString().contains("HTTP/1.1 420 Enhance Your Calm"))
         XCTAssert(data.makeString().contains("Content-Type: text/plain"))
         XCTAssert(data.makeString().contains("Test: 123"))
-        XCTAssert(data.makeString().contains("Transfer-Encoding: chunked"))
-        XCTAssert(data.makeString().contains("\r\n\r\nC\r\nHello, world\r\n0\r\n\r\n"))
+        XCTAssert(data.makeString().contains("Content-Length: 13"))
+        XCTAssert(data.makeString().contains("\r\n\r\nHello, world!"))
     }
 }
 
@@ -138,9 +109,10 @@ final class TestStream: InternetStream, DuplexStream {
         }
     }
 
-    func write(_ bytes: Bytes) throws {
+    func write(max: Int, from buffer: Bytes) throws -> Int {
         isClosed = false
-        buffer += bytes
+        self.buffer += buffer
+        return buffer.count
     }
 
     func flush() throws {

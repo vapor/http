@@ -27,7 +27,7 @@ public final class BasicServer<StreamType: ServerStream>: Server {
         return stream.port
     }
 
-    public init(_ stream: StreamType, listenMax: Int = 4096) throws {
+    public init(_ stream: StreamType, listenMax: Int = 128) throws {
         self.stream = stream
         self.listenMax = listenMax
     }
@@ -66,31 +66,61 @@ public final class BasicServer<StreamType: ServerStream>: Server {
 
     private func respond(stream: StreamType.Client, responder: Responder) throws {
         try stream.setTimeout(defaultServerTimeout)
+        
+        var buffer = Bytes(repeating: 0, count: 2048)
 
-        let parser = RequestParser<StreamType.Client>(stream)
-        let serializer = ResponseSerializer<StreamType.Client>(stream)
+        let parser = RequestParser()
+        let serializer = ResponseSerializer()
 
         defer {
             try? stream.close()
         }
 
         var keepAlive = false
-        repeat {
-            let request: Request
-            do {
-                request = try parser.parse()
-            } catch ParserError.streamClosed {
-                break
-            } catch {
-                throw error
+        main: repeat {
+            var request: Request?
+            
+            while request == nil {
+                let read = try stream.read(max: buffer.count, into: &buffer)
+                guard read > 0 else {
+                    break main
+                }
+                request = try parser.parse(max: read, from: buffer)
+            }
+            
+            guard let req = request else {
+                // FIXME: better error
+                print("Could not parse a request from the stream")
+                throw ParserError.invalidMessage
             }
             
             // set the stream for peer information
-            request.stream = stream
+            req.stream = stream
 
-            keepAlive = request.keepAlive
-            let response = try responder.respond(to: request)
-            try serializer.serialize(response)
+            keepAlive = req.keepAlive
+            let response = try responder.respond(to: req)
+            
+            while true {
+                let length = try serializer.serialize(response, into: &buffer)
+                guard length > 0 else {
+                    break
+                }
+                let written = try stream.write(max: length, from: buffer)
+                guard written == length else {
+                    // FIXME: better error
+                    print("Could not write all bytes to the stream")
+                    throw StreamError.closed
+                }
+            }
+            
+            switch response.body {
+            case .chunked(let closure):
+                let chunk = ChunkStream(stream)
+                try closure(chunk)
+            default:
+                break
+            }
+            
             try response.onComplete?(stream)
         } while keepAlive && !stream.isClosed
     }
