@@ -46,10 +46,6 @@ public final class ResponseSerializer: ByteSerializer {
             switch response.body {
             case .chunked:
                 break
-                // FIXME:
-                // let chunkStream = ChunkStream(stream: stream)
-                // try closure(chunkStream)
-                // try stream.flush()
             case .data(let bytes):
                 try fill(bytes, into: &buffer)
             }

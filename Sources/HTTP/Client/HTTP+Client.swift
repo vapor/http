@@ -73,6 +73,13 @@ public final class BasicClient<StreamType: ClientStream>: Client {
             }
         }
         
+        switch request.body {
+        case .chunked(let closure):
+            let chunk = ChunkStream(stream)
+            try closure(chunk)
+        default:
+            break
+        }
 
         let parser = ResponseParser()
         

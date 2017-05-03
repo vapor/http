@@ -31,8 +31,7 @@ public final class FoundationClient: Client {
         
         let task = self.session.dataTask(with: foundationRequest) { data, urlResponse, error in
             if let error = error {
-                // FIXME
-                // throw error
+                print(error)
             }
 
             // FIXME

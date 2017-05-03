@@ -53,10 +53,6 @@ public final class RequestSerializer: ByteSerializer {
             switch request.body {
             case .chunked:
                 break
-                // FIXME:
-                // let chunkStream = ChunkStream(stream: stream)
-                // try closure(chunkStream)
-            // try stream.flush()
             case .data(let bytes):
                 try fill(bytes, into: &buffer)
             }
