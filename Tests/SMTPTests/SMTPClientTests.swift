@@ -98,6 +98,7 @@ class SMTPClientTests: XCTestCase {
         }
     }
 
+// FIXME: logan, help! :)
 //    func testInitialize() throws {
 //        let client = try makeTestClient()
 //        try client.stream.write("220 smtp.mysite.io welcome\r\n".makeBytes())

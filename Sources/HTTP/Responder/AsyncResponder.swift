@@ -1,6 +1,3 @@
-//public protocol Responder {
-//    func respond(to request: Request) throws -> Response
-//}
 import Dispatch
 
 public protocol AsyncResponder {
