@@ -75,8 +75,11 @@ class HTTPBodyTests: XCTestCase {
             return Response(status: .ok, body: "Hello \(request.uri.path)".makeBytes())
         }
 
+        let group = DispatchGroup()
+        group.enter()
         background {
             do {
+                group.leave()
                 try server.start(responder, errors: { err in
                     XCTFail("\(err)")
                 })
@@ -84,12 +87,14 @@ class HTTPBodyTests: XCTestCase {
                 XCTFail("\(error)")
             }
         }
-        Thread.sleep(forTimeInterval: 2)
+        group.wait()
+        Thread.sleep(forTimeInterval: 1)
         
         // spin up 2k requests across 8 threads
         for _ in 1...8 {
+            group.enter()
             background {
-                for _ in 0..<256 {
+                for _ in 0..<8 {
                     do {
                         let clientSocket = try TCPInternetSocket(
                             scheme: "http",
@@ -112,12 +117,9 @@ class HTTPBodyTests: XCTestCase {
                         XCTFail("\(error)")
                     }
                 }
+                group.leave()
             }
         }
-        
-        
-        Thread.sleep(forTimeInterval: 5)
-        
         // WARNING: `server` will keep running in the background since there is no way to stop it. Its socket will continue to exist and the associated port will be in use until the xctest process exits.
     }
     
