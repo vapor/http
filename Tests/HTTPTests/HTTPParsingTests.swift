@@ -9,32 +9,6 @@ class HTTPParsingTests: XCTestCase {
        ("testParser", testParser),
        ("testSerializer", testSerializer)
     ]
-    
-    
-    
-    
-    
-    func testYES() throws {
-        let buffer = TestStream()
-        
-        _ = try buffer.write("GET https://user:password@google.com:8080/foobar?yo=hi#dude HTTP/1.2")
-        _ = try buffer.writeLineEnd()
-        _ = try buffer.write("Content-Length: 5")
-        _ = try buffer.writeLineEnd()
-        _ = try buffer.write("Content-Type: text/plain")
-        _ = try buffer.writeLineEnd()
-        _ = try buffer.writeLineEnd()
-        _ = try buffer.write("asdf!")
-        
-        let parser = RequestParser()
-        let request = try parser.parse(from: buffer)
-        print(request)
-    }
-    
-    
-    
-    
-    
 
     func testParser() {
         let stream = TestStream()

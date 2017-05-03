@@ -90,6 +90,7 @@ public final class BasicServer<StreamType: ServerStream>: Server {
             
             guard let req = request else {
                 // FIXME: better error
+                print("Could not parse a request from the stream")
                 throw ParserError.invalidMessage
             }
             
@@ -107,7 +108,8 @@ public final class BasicServer<StreamType: ServerStream>: Server {
                 let written = try stream.write(max: length, from: buffer)
                 guard written == length else {
                     // FIXME: better error
-                    throw ParserError.invalidMessage
+                    print("Could not write all bytes to the stream")
+                    throw StreamError.closed
                 }
             }
             

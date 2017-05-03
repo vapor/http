@@ -10,6 +10,8 @@ class AsyncServerWorker<Stream: DuplexStream & DescriptorRepresentable> {
     let parser: RequestParser
     let responder: Responder
     
+    var connected: [Int32: DispatchSourceRead]
+    
     init(id: Int, _ responder: Responder) {
         self.id = id
         self.responder = responder
@@ -18,38 +20,47 @@ class AsyncServerWorker<Stream: DuplexStream & DescriptorRepresentable> {
         self.buffer = Bytes(repeating: 0, count: 4096)
         self.serializer = ResponseSerializer()
         self.parser = RequestParser()
+        
+        connected = [:]
     }
     
     func accept(
         _ client: Stream
     ) throws {
-        let read = DispatchSource.makeReadSource(
-            fileDescriptor: client.makeDescriptor().raw,
+        let fd = client.makeDescriptor().raw
+        let readSource = DispatchSource.makeReadSource(
+            fileDescriptor: fd,
             queue: queue
         )
+        connected[fd] = readSource
         
-        read.setEventHandler {
-            try! self.onDataAvailable(read, client)
+        readSource.setEventHandler {
+            try! self.onDataAvailable(client)
         }
         
-        read.setCancelHandler {}
-        read.resume()
+        readSource.resume()
     }
     
     private func onDataAvailable(
-        _ readSource: DispatchSourceRead,
         _ client: Stream
     ) throws {
+        let fd = client.makeDescriptor().raw
+        guard let readSource = connected[fd] else {
+            return
+        }
+        
         let read: Int
         do {
             read = try client.read(max: buffer.count, into: &buffer)
         } catch {
             readSource.cancel()
+            connected[fd] = nil
             throw error
         }
         
         if read == 0 {
             readSource.cancel()
+            connected[fd] = nil
         }
         
         guard let request = try parser.parse(

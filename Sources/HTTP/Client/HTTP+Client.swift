@@ -75,7 +75,6 @@ public final class BasicClient<StreamType: ClientStream>: Client {
         
 
         let parser = ResponseParser()
-        print("Creating a new parser")
         
         var response: Response?
         while response == nil {
@@ -83,7 +82,6 @@ public final class BasicClient<StreamType: ClientStream>: Client {
             guard read > 0 else {
                 break
             }
-            print(read)
             response = try parser.parse(max: read, from: buffer)
         }
         

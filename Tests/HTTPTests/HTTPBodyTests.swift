@@ -62,7 +62,7 @@ class HTTPBodyTests: XCTestCase {
     }
 
     func testClientStreamUsage() throws {
-        let port: Transport.Port = 8338
+        let port: Transport.Port = 8231
         
         let serverSocket = try TCPInternetSocket(
             scheme: "http",
@@ -92,31 +92,40 @@ class HTTPBodyTests: XCTestCase {
             }
         }
         group.wait()
-        Thread.sleep(forTimeInterval: 2)
-
-        do {
-            for _ in 0..<8192 {
-                let clientSocket = try TCPInternetSocket(
-                    scheme: "http",
-                    hostname: "0.0.0.0",
-                    port: port
-                )
-                
-                let path = try "/" + OSRandom.bytes(count: 16).hexEncoded.makeString()
-                
-                let req = Request(
-                    method: .get,
-                    uri: "http://0.0.0.0:\(port)\(path)"
-                )
-                
-                let res = try TCPClient(clientSocket)
-                    .respondSync(to: req)
-                
-                XCTAssertEqual(res.body.bytes?.makeString(), "Hello \(path)")
+        Thread.sleep(forTimeInterval: 1)
+        
+        // spin up 2k requests across 8 threads
+        for _ in 1...8 {
+            group.enter()
+            background {
+                for _ in 0..<256 {
+                    do {
+                        let clientSocket = try TCPInternetSocket(
+                            scheme: "http",
+                            hostname: "127.0.0.1",
+                            port: port
+                        )
+                        
+                        let path = try "/" + OSRandom.bytes(count: 16).hexEncoded.makeString()
+                        
+                        let req = Request(
+                            method: .get,
+                            uri: "http://127.0.0.1:\(port)\(path)"
+                        )
+                        
+                        let res = try TCPClient(clientSocket)
+                            .respondSync(to: req)
+                        
+                        XCTAssertEqual(res.body.bytes?.makeString(), "Hello \(path)")
+                    } catch {
+                        XCTFail("\(error)")
+                    }
+                }
+                group.leave()
             }
-        } catch {
-            XCTFail("\(error)")
         }
+        
+        group.wait()
         
         // WARNING: `server` will keep running in the background since there is no way to stop it. Its socket will continue to exist and the associated port will be in use until the xctest process exits.
     }

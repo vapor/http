@@ -22,6 +22,20 @@ extension Responder {
     }
 }
 
+public struct BasicSyncResponder: Responder {
+    public typealias Closure = (Request) throws -> Response
+    let closure: Closure
+    
+    public init(_ closure: @escaping Closure) {
+        self.closure = closure
+    }
+    
+    public func respond(to request: Request, with writer: ResponseWriter) throws {
+        let res = try closure(request)
+        try writer.write(res)
+    }
+}
+
 public struct BasicResponder: Responder {
     public typealias Closure = (Request, ResponseWriter) throws -> ()
     let closure: Closure

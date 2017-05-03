@@ -44,7 +44,6 @@ extension SMTPClient {
 
     internal func acceptReplyLine() throws -> (replyCode: Int, reply: String, isLast: Bool) {
         let line = try stream.readLine()
-        print(line.makeString())
         let replyCode = line.prefix(3).makeString().int ?? -1
         let token = line[safe: 3] // 0,1,2 == Status Code 3 is hyphen if should continue
         let reply = line.dropFirst(4).makeString()

@@ -25,14 +25,12 @@ public final class ResponseParser: CHTTPParser {
         
         switch state {
         case .ready:
-            print("creating new results")
             // create a new results object and set
             // a reference to it on the parser
             let newResults = ParseResults.set(on: &parser)
             results = newResults
             state = .parsing
         case .parsing:
-            print("parsing away")
             // get the current parse results object
             guard let existingResults = ParseResults.get(from: &parser) else {
                 return nil
