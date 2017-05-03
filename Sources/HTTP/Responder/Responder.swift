@@ -13,3 +13,8 @@ public struct BasicResponder: Responder {
         return try self.closure(request)
     }
 }
+
+
+extension Request {
+    public typealias Handler = BasicResponder
+}
