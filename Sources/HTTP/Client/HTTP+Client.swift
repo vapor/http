@@ -109,22 +109,6 @@ public var userAgent = "App (Swift) VaporEngine/\(VERSION)"
 
 extension Client {
     internal func assertValid(_ request: Request) throws {
-        if request.uri.hostname.isEmpty {
-            guard request.uri.hostname == hostname else {
-                throw ClientError.invalidRequestHost
-            }
-        }
-
-        if request.uri.scheme.isEmpty {
-            guard request.uri.scheme.isSecure == scheme.isSecure else {
-                throw ClientError.invalidRequestScheme
-            }
-        }
-
-        if let requestPort = request.uri.port {
-            guard requestPort == port else { throw ClientError.invalidRequestPort }
-        }
-
         guard request.uri.userInfo == nil else {
             /// Userinfo (i.e., username and password) are now disallowed in HTTP and
             /// HTTPS URIs, because of security issues related to their transmission

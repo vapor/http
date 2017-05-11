@@ -98,7 +98,6 @@ class FoundationConversionTests: XCTestCase {
         headersExpectation["access-control-allow-credentials"] = "true"
         headersExpectation["Content-Type"] = "text/html; charset=utf-8"
         headersExpectation["Content-Length"] = "3741"
-        headersExpectation["Server"] = "gunicorn/19.7.1"
         headersExpectation["Access-Control-Allow-Origin"] = "*"
         headersExpectation.forEach { key, expectedValue in
             let found = response.headers[key]
