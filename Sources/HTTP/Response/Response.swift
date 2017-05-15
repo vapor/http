@@ -40,8 +40,7 @@ extension Response {
     ) {
         var headers = headers
         headers["Location"] = location
-        // .found == 302 and is commonly used for temporarily moved
-        let status: Status = permanently ? .movedPermanently : .found
+        let status: Status = permanently ? .movedPermanently : .temporaryRedirect
         self.init(status: status, headers: headers)
     }
 }
