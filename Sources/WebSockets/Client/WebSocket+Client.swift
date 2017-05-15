@@ -6,56 +6,48 @@ import URI
 import HTTP
 
 extension WebSocket {
-    public static func background<C: Client>(
+    public static func background<C: ClientStream>(
         to uri: String,
         using client: C,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
-    )  throws
-        where C: DuplexStreamRepresentable
-    {
+    )  throws {
         let uri = try URI(uri)
         try background(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
     }
 
-    public static func background<C: Client>(
+    public static func background<C: ClientStream>(
         to uri: URI,
         using client: C,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
-    ) throws
-        where C: DuplexStreamRepresentable
-    {
+    ) throws {
         Core.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
             _ = try? connect(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
         }
     }
 
-    public static func connect<C: Client>(
+    public static func connect<C: ClientStream>(
         to uri: String,
         using client: C,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
-    ) throws
-        where C: DuplexStreamRepresentable
-    {
+    ) throws {
         let uri = try URI(uri)
         try connect(to: uri, using: client, protocols: protocols, headers: headers,  onConnect: onConnect)
     }
 
-    public static func connect<C: Client>(
+    public static func connect<C: ClientStream>(
         to uri: URI,
-        using client: C,
+        using stream: C,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
-    ) throws
-        where C: DuplexStreamRepresentable
-    {
+    ) throws {
         guard !uri.hostname.isEmpty else { throw WebSocket.FormatError.invalidURI }
 
         let requestKey = WebSocket.makeRequestKey()
@@ -74,6 +66,8 @@ extension WebSocket {
             headers.secWebProtocol = protocols
         }
         
+        let client = try BasicClient(stream)
+        
         // manually requesting to preserve queries that might be in URI easily
         let request = Request(
             method: .get,
@@ -90,22 +84,11 @@ extension WebSocket {
         let expected = try WebSocket.exchange(requestKey: requestKey)
         guard accept == expected else { throw FormatError.invalidSecAcceptHeader }
 
-        let ws = WebSocket(client.makeDuplexStream(), mode: .client)
+        let ws = WebSocket(stream, mode: .client)
         try onConnect(ws)
         try ws.listen()
     }
 }
-
-public protocol DuplexStreamRepresentable {
-    func makeDuplexStream() -> DuplexStream
-}
-
-extension BasicClient: DuplexStreamRepresentable {
-    public func makeDuplexStream() -> DuplexStream {
-        return stream as DuplexStream
-    }
-}
-
 
 extension WebSocket {
     /*

@@ -348,8 +348,7 @@ class WebSocketConnectTests : XCTestCase {
 	let headers: [HeaderKey: String] = ["Authorized": "Bearer exampleBearer"]
 	do {
         let socket = try TCPInternetSocket(scheme: "ws", hostname: "127.0.0.1", port: 80)
-        let client = try TCPClient(socket)
-        try WebSocket.background(to:"ws:127.0.0.1", using: client, headers: headers) { (websocket: WebSocket) throws -> Void in
+        try WebSocket.background(to:"ws:127.0.0.1", using: socket, headers: headers) { (websocket: WebSocket) throws -> Void in
                     XCTAssert(false, "No server, so this should fail to connect")
 		    }
 	} catch {
