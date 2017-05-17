@@ -1,15 +1,5 @@
 import PackageDescription
 
-let beta = Version(2,0,0, prereleaseIdentifiers: ["beta"])
-
-let dependencies: [Package.Dependency] = [
-    // Crypto
-    .Package(url: "https://github.com/vapor/crypto.git", beta),
-
-    // Secure Sockets
-    .Package(url: "https://github.com/vapor/tls.git", beta)
-]
-
 let package = Package(
     name: "Engine",
     targets: [
@@ -21,7 +11,13 @@ let package = Package(
         Target(name: "SMTP")
         // Target(name: "Performance", dependencies: ["HTTP"])
     ],
-    dependencies: dependencies,
+    dependencies: [
+    // Crypto
+    .Package(url: "https://github.com/vapor/crypto.git", majorVersion: 2),
+
+    // Secure Sockets
+    .Package(url: "https://github.com/vapor/tls.git", majorVersion: 2),
+    ],
     exclude: [
         "Sources/Performance"
     ]
