@@ -3,11 +3,11 @@ import Transport
 /// Internal serializer protocol for turning a basic
 /// HTTP message into bytes.
 internal protocol ByteSerializer: class {
-    // how many bytes have been serialized
+    /// How many bytes have been serialized
     var serialized: Int { get set }
-    // offset to skip on next fill call
+    /// Offset to skip on next fill call
     var offset: Int { get set }
-    // current pointer in the buffer
+    /// Current pointer in the buffer
     var pointer: Int { get set }
 }
 
