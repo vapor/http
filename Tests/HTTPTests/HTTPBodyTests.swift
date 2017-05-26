@@ -135,6 +135,24 @@ class HTTPBodyTests: XCTestCase {
         XCTAssertEqual(res.body.bytes?.count, 8192)
         try httpbin.close()
     }
+
+    func testBigFile() throws {
+        // comment this out to boot a server for testing
+        
+        /* let localhost = try TCPInternetSocket(
+            scheme: "http",
+            hostname: "0.0.0.0",
+            port: 8742
+        )
+        let server = try TCPServer(localhost)
+
+        let bigFile = Bytes(repeating: .a, count: 20_000_000)
+        let responder = BasicResponder { req in
+            return Response(status: .ok, body: bigFile)
+        }
+
+        try server.start(responder) */
+    }
     
     static var allTests = [
         ("testBufferParse", testBufferParse),

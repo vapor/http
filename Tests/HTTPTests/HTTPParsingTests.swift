@@ -67,7 +67,7 @@ class HTTPParsingTests: XCTestCase {
         XCTAssert(data.makeString().contains("Content-Type: text/plain"))
         XCTAssert(data.makeString().contains("Test: 123"))
         XCTAssert(data.makeString().contains("Content-Length: 13"))
-        XCTAssert(data.makeString().contains("\r\n\r\nHello, world!"))
+        XCTAssert(data.makeString().contains("\r\n\r\n"))
     }
 
     func testParserHostPort() throws {
