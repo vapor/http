@@ -9,7 +9,7 @@ public final class RequestParser: CHTTPParser {
     var parser: http_parser
     var settings: http_parser_settings
     var state:  CHTTPParserState
-    
+
     /// Creates a new Request parser.
     public init() {
         self.parser = http_parser()
@@ -18,11 +18,11 @@ public final class RequestParser: CHTTPParser {
         http_parser_init(&parser, HTTP_REQUEST)
         initialize(&settings)
     }
-    
+
     /// Parses a Request from the stream.
     public func parse(max: Int, from buffer: Bytes) throws -> Request? {
         let results: ParseResults
-        
+
         switch state {
         case .ready:
             // create a new results object and set
@@ -37,20 +37,20 @@ public final class RequestParser: CHTTPParser {
             }
             results = existingResults
         }
-        
+
         /// parse the message using the C HTTP parser.
         try executeParser(max: max, from: buffer)
-        
+
         guard results.isComplete else {
             return nil
         }
-        
+
         // the results have completed, so we are ready
         // for a new request to come in
         state = .ready
         ParseResults.remove(from: &parser)
-        
-        
+
+
         /// switch on the C method type from the parser
         let method: Method
         switch http_method(parser.method) {
@@ -79,31 +79,33 @@ public final class RequestParser: CHTTPParser {
             guard
                 let pointer = http_method_str(http_method(parser.method)),
                 let string = String(validatingUTF8: pointer)
-            else {
-                throw ParserError.invalidMessage
+                else {
+                    throw ParserError.invalidMessage
             }
             method = .other(method: string)
         }
-        
+
         // parse the uri from the url bytes.
         var uri = URIParser.shared.parse(bytes: results.url)
-        
+
         // set the host on the uri if it exists
         // in the headers
         if let hostname = results.headers[.host] {
-            uri.hostname = hostname
+            let (host, port) = parse(host: hostname)
+            uri.hostname = host
+            uri.port = port ?? uri.port
         }
-        
+
         // if there is no scheme, use http by default
         if uri.scheme.isEmpty == true {
             uri.scheme = "http"
         }
-        
+
         // require a version to have been parsed
         guard let version = results.version else {
             throw ParserError.invalidMessage
         }
-        
+
         // create the request
         let request = Request(
             method: method,
@@ -114,5 +116,16 @@ public final class RequestParser: CHTTPParser {
         )
 
         return request
+    }
+
+    func parse(host: String) -> (host: String, port: Port?) {
+        let components = host.makeBytes().split(
+            separator: .colon,
+            maxSplits: 1,
+            omittingEmptySubsequences: true
+        )
+        let host = components.first?.makeString() ?? host
+        let port = components.last.flatMap { Int($0.makeString()) }
+        return (host, port?.port)
     }
 }
