@@ -43,13 +43,6 @@ public final class ResponseSerializer: ByteSerializer {
             
             try serialize(&response.headers, into: &buffer, for: response.body)
             
-            switch response.body {
-            case .chunked:
-                break
-            case .data(let bytes):
-                try fill(bytes, into: &buffer)
-            }
-            
             done = true
             return pointer
         } catch ByteSerializerError.bufferFull {

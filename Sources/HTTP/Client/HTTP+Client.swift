@@ -77,8 +77,8 @@ public final class BasicClient<StreamType: ClientStream>: Client {
         case .chunked(let closure):
             let chunk = ChunkStream(stream)
             try closure(chunk)
-        default:
-            break
+        case .data(let bytes):
+            _ = try stream.write(bytes)
         }
 
         let parser = ResponseParser()
