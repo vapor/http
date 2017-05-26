@@ -7,7 +7,8 @@ import Transport
 class HTTPParsingTests: XCTestCase {
     static let allTests = [
        ("testParser", testParser),
-       ("testSerializer", testSerializer)
+       ("testSerializer", testSerializer),
+       ("testParserHostPort", testParserHostPort),
     ]
 
     func testParser() {
@@ -62,12 +63,37 @@ class HTTPParsingTests: XCTestCase {
             XCTFail("Could not serialize response: \(error)")
         }
 
-        print(data.makeString())
         XCTAssert(data.makeString().contains("HTTP/1.1 420 Enhance Your Calm"))
         XCTAssert(data.makeString().contains("Content-Type: text/plain"))
         XCTAssert(data.makeString().contains("Test: 123"))
         XCTAssert(data.makeString().contains("Content-Length: 13"))
         XCTAssert(data.makeString().contains("\r\n\r\nHello, world!"))
+    }
+
+    func testParserHostPort() throws {
+        let stream = TestStream()
+
+        //MARK: Create Request
+        let content = "{\"hello\": \"world\"}"
+
+        var data = "POST /json HTTP/1.1\r\n"
+        data += "Accept-Encoding: gzip, deflate\r\n"
+        data += "Accept: */*\r\n"
+        data += "Accept-Language: en-us\r\n"
+        data += "Host: localhost:8080\r\n"
+        data += "Cookie: 1=1;2=2\r\n"
+        data += "Content-Type: application/json; charset=utf-8\r\n"
+        data += "Content-Length: \(content.characters.count)\r\n"
+        data += "\r\n"
+        data += content
+
+        _ = try stream.write(data.makeBytes())
+
+        let parser = RequestParser()
+        let request = try parser.parse(from: stream)
+        XCTAssertEqual(request.uri.hostname, "localhost")
+        let uri = request.uri.appendingPathComponent("foo")
+        XCTAssertEqual(uri.description, "http://localhost:8080/json/foo")
     }
 }
 
