@@ -40,7 +40,7 @@ extension Response {
     ) {
         var headers = headers
         headers["Location"] = location
-        let status: Status = permanently ? .movedPermanently : .temporaryRedirect
+        let status: Status = permanently ? .movedPermanently : .seeOther
         self.init(status: status, headers: headers)
     }
 }
