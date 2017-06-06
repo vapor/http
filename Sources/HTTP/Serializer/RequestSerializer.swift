@@ -50,13 +50,6 @@ public final class RequestSerializer: ByteSerializer {
             
             try serialize(&request.headers, into: &buffer, for: request.body)
             
-            switch request.body {
-            case .chunked:
-                break
-            case .data(let bytes):
-                try fill(bytes, into: &buffer)
-            }
-            
             done = true
             return pointer
         } catch ByteSerializerError.bufferFull {
