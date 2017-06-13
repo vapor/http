@@ -45,11 +45,6 @@ public final class Request: Message {
             let encoded = f.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed)
             path += "#\(encoded ?? "")"
         }
-        // Prefix w/ `/` to properly indicate that this we're not using absolute URI.
-        // Absolute URIs are deprecated and MUST NOT be generated. (they should be parsed for robustness)
-        if !path.hasPrefix("/") {
-            path = "/" + path
-        }
 
         let versionLine = "HTTP/\(version.major).\(version.minor)"
         let requestLine = "\(method) \(path) \(versionLine)"

@@ -92,22 +92,6 @@ public final class Client<
 
 extension ClientProtocol {
     internal func assertValid(_ request: Request) throws {
-        if request.uri.host.isEmpty {
-            guard request.uri.host == host else {
-                throw ClientError.invalidRequestHost
-            }
-        }
-
-        if request.uri.scheme.isEmpty {
-            guard request.uri.scheme.securityLayer.isSecure == securityLayer.isSecure else {
-                throw ClientError.invalidRequestScheme
-            }
-        }
-
-        if let requestPort = request.uri.port {
-            guard requestPort == port else { throw ClientError.invalidRequestPort }
-        }
-
         guard request.uri.userInfo == nil else {
             /*
                  Userinfo (i.e., username and password) are now disallowed in HTTP and
