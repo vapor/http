@@ -64,12 +64,11 @@ class HTTPBodyTests: XCTestCase {
     func testClientStreamUsage() throws {
         let port: Transport.Port = 8231
         
-        let serverSocket = try TCPInternetSocket(
+        let server = try TCPServer(
             scheme: "http",
             hostname: "0.0.0.0",
             port: port
         )
-        let server = try TCPServer(serverSocket)
 
         let responder = BasicResponder { request in
             return Response(status: .ok, body: "Hello \(request.uri.path)".makeBytes())

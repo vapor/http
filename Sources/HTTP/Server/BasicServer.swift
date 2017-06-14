@@ -6,11 +6,6 @@ import TLS
 
 public var defaultServerTimeout: Double = 30
 
-public typealias TCPServer = BasicServer<TCPInternetSocket>
-
-
-public typealias TLSServer = BasicServer<TLS.InternetSocket>
-
 public final class BasicServer<StreamType: ServerStream>: Server {
     public let stream: StreamType
     public let listenMax: Int
