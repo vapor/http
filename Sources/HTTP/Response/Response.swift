@@ -28,24 +28,6 @@ public final class Response: Message {
 }
 
 extension Response {
-    /// Creates a redirect response.
-    ///
-    /// Set permanently to 'true' to allow caching to automatically
-    /// redirect from browsers.
-    /// Defaulting to non-permanent to prevent unexpected caching.
-    public convenience init(
-        headers: [HeaderKey: String] = [:],
-        redirect location: String,
-        permanently: Bool = false
-    ) {
-        var headers = headers
-        headers["Location"] = location
-        let status: Status = permanently ? .movedPermanently : .seeOther
-        self.init(status: status, headers: headers)
-    }
-}
-
-extension Response {
     /// Creates a Response with a body of Bytes.
     public convenience init<S: Sequence>(
         version: Version = Version(major: 1, minor: 1),
