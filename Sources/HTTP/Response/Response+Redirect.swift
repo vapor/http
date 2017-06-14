@@ -1,7 +1,7 @@
 /// Specifies the type of redirect
 /// that the client should receive
 public enum RedirectType {
-    /// A permanent redirect
+    /// A cacheable redirect
     case permanent // 301 permanent
     /// Forces the redirect to come with a GET, regardless of req method
     case normal // 303 see other
@@ -30,7 +30,7 @@ extension RedirectType {
     fileprivate var status: Status {
         switch self {
         case .permanent:
-            return .permanentRedirect
+            return .movedPermanently
         case .normal:
             return .seeOther
         case .temporary:
