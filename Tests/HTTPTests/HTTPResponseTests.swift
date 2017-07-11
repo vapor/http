@@ -18,7 +18,7 @@ class HTTPResponseTests: XCTestCase {
     func testPermanentRedirect() {
         let url = "http://tanner.xyz"
         
-        let redirect = Response(redirect: url, permanently: true)
+        let redirect = Response(redirect: url, .permanent)
         XCTAssertEqual(redirect.headers["location"], url, "Location header should be in headers")
         XCTAssertEqual(redirect.status.statusCode, 301, "Permanent redirects should use status '301 Moved Permanently'")
     }
