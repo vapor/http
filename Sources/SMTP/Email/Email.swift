@@ -74,11 +74,35 @@ public final class Email {
     /**
         Email constructor w/ necessary components.
     */
-    public init(from: EmailAddressRepresentable, to: EmailAddressRepresentable..., subject: String, body: EmailBodyRepresentable, attachments: [EmailAttachmentRepresentable] = []) {
+    public init(
+        from: EmailAddressRepresentable,
+        toArray: [EmailAddressRepresentable],
+        subject: String,
+        body: EmailBodyRepresentable,
+        attachments: [EmailAttachmentRepresentable] = []
+    ) {
         self.from = from.emailAddress
-        self.to = to.map { $0.emailAddress }
+        self.to = toArray.map { $0.emailAddress }
         self.subject = subject
         self.body = body.emailBody
         self.attachments = attachments
+    }
+}
+
+extension Email {
+    public convenience init(
+        from: EmailAddressRepresentable,
+        to: EmailAddressRepresentable...,
+        subject: String,
+        body: EmailBodyRepresentable,
+        attachments: [EmailAttachmentRepresentable] = []
+    ) {
+        self.init(
+            from: from,
+            toArray: to,
+            subject: subject,
+            body: body,
+            attachments: attachments
+        )
     }
 }
