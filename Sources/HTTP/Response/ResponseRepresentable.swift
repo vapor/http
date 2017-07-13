@@ -1,3 +1,5 @@
+import Foundation
+
 /**
     Any data structure that complies to this protocol
     can be returned to generic Vapor closures or route handlers.
@@ -25,6 +27,17 @@ extension Swift.String: ResponseRepresentable {
             status: .ok,
             headers: ["Content-Type": "text/plain; charset=utf-8"],
             body: self.makeBytes()
+        )
+    }
+}
+
+///Allows Foundation Data to be returned through closures
+extension Foundation.Data: ResponseRepresentable {
+    public func makeResponse() -> Response {
+        return Response(
+            status: .ok,
+            headers: [:],
+            body: self
         )
     }
 }
