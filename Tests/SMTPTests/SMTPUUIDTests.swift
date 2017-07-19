@@ -16,6 +16,7 @@ class SMTPUUIDTests: XCTestCase {
     ]
 
     func testSMTPUUID() {
-        XCTAssert(NSUUID.smtpMessageId.components(separatedBy: "-").count == 1)
+        let mid = NSUUID.smtpMessageId
+        XCTAssert(mid.hasPrefix("<") && mid.contains("@") && mid.hasSuffix(">"))
     }
 }
