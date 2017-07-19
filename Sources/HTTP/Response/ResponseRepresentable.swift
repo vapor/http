@@ -36,6 +36,7 @@ extension Foundation.Data: ResponseRepresentable {
     public func makeResponse() -> Response {
         return Response(
             status: .ok,
+			headers: ["Content-Type": "application/octet-stream"],
             body: self
         )
     }
