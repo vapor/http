@@ -36,7 +36,6 @@ extension Foundation.Data: ResponseRepresentable {
     public func makeResponse() -> Response {
         return Response(
             status: .ok,
-            headers: [:],
             body: self
         )
     }
