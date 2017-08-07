@@ -26,9 +26,6 @@ let package = Package(
         
         // Random
         .package(url: "https://github.com/vapor/random.git", .upToNextMajor(from: "1.2.0")),
-        
-        // Crypto
-        .package(url: "https://github.com/vapor/crypto.git", .upToNextMajor(from: "2.1.0")),
     ],
     targets: [
         .target(name: "CHTTP"),
