@@ -4,4 +4,3 @@ Packages
 *.xcodeproj
 Package.pins
 DerivedData/
-Package.resolved
