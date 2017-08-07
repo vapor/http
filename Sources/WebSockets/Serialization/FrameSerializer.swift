@@ -104,3 +104,26 @@ public final class FrameSerializer {
         return frame.header.maskingKey.hash(frame.payload)
     }
 }
+
+#if swift(>=4.0)
+extension UInt8 {
+    func toUIntMax() -> UInt64 {
+        return UInt64(self)
+    }
+}
+extension UInt16 {
+    func toUIntMax() -> UInt64 {
+        return UInt64(self)
+    }
+}
+extension UInt32 {
+    func toUIntMax() -> UInt64 {
+        return UInt64(self)
+    }
+}
+extension UInt64 {
+    func toUIntMax() -> UInt64 {
+        return UInt64(self)
+    }
+}
+#endif
