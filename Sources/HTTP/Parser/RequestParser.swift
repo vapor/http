@@ -1,5 +1,6 @@
-import Transport
+import Bits
 import CHTTP
+import Transport
 import URI
 
 /// Parses requests from a readable stream.

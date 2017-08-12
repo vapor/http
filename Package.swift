@@ -1,25 +1,44 @@
-// swift-tools-version:3.0
+// swift-tools-version:4.0
 import PackageDescription
 
 let package = Package(
     name: "Engine",
-    targets: [
-        Target(name: "CHTTP"),
-        Target(name: "URI", dependencies: ["CHTTP"]),
-        Target(name: "Cookies", dependencies: ["HTTP"]),
-        Target(name: "HTTP", dependencies: ["URI", "CHTTP"]),
-        Target(name: "WebSockets", dependencies: ["HTTP", "URI"]),
-        Target(name: "SMTP")
-        // Target(name: "Performance", dependencies: ["HTTP"])
+    products: [
+        .library(name: "CHTTP", targets: ["CHTTP"]),
+        .library(name: "URI", targets: ["URI"]),
+        .library(name: "Cookies", targets: ["Cookies"]),
+        .library(name: "HTTP", targets: ["HTTP"]),
+        .library(name: "WebSockets", targets: ["WebSockets"]),
+        .library(name: "SMTP", targets: ["SMTP"]),
     ],
     dependencies: [
-    // Crypto
-    .Package(url: "https://github.com/vapor/crypto.git", majorVersion: 2),
+        // Crypto
+        .package(url: "https://github.com/vapor/crypto.git", .branch("beta")),
 
-    // Secure Sockets
-    .Package(url: "https://github.com/vapor/tls.git", majorVersion: 2),
+        // Secure Sockets
+        .package(url: "https://github.com/vapor/tls.git", .branch("beta")),
+        
+        // Core Stuff
+        .package(url: "https://github.com/vapor/core.git", .branch("beta")),
+        
+        // Sockets
+        .package(url: "https://github.com/vapor/sockets.git", .branch("beta")),
+        
+        // Random
+        .package(url: "https://github.com/vapor/random.git", .branch("beta")),
     ],
-    exclude: [
-        "Sources/Performance"
+    targets: [
+        .target(name: "CHTTP"),
+        .target(name: "URI", dependencies: ["CHTTP", "Core", "Transport"]),
+        .testTarget(name: "URITests", dependencies: ["URI"]),
+        .target(name: "Cookies", dependencies: ["HTTP"]),
+        .testTarget(name: "CookiesTests", dependencies: ["Cookies"]),
+        .target(name: "HTTP", dependencies: ["URI", "CHTTP", "Sockets", "TLS", "Random"]),
+        .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
+        .target(name: "WebSockets", dependencies: ["HTTP", "URI", "Crypto"]),
+        .testTarget(name: "WebSocketsTests", dependencies: ["WebSockets"]),
+        .target(name: "SMTP", dependencies: ["Sockets", "Transport"]),
+        .testTarget(name: "SMTPTests", dependencies: ["SMTP"]),
+        .target(name: "Performance", dependencies: ["HTTP"])
     ]
 )

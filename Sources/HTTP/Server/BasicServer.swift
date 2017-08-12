@@ -1,8 +1,9 @@
-import libc
-import Transport
+import Bits
 import Dispatch
+import libc
 import Sockets
 import TLS
+import Transport
 
 public var defaultServerTimeout: Double = 30
 

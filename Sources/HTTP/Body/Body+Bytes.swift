@@ -1,5 +1,4 @@
-// TODO: Temporary
-@_exported import Core
+import Bits
 
 extension Body {
     public var bytes: Bytes? {

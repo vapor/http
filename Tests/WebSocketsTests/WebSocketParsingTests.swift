@@ -1,13 +1,11 @@
-import XCTest
-import Foundation
-
-import libc
-import HTTP
+import Bits
 import Core
+import Foundation
+import HTTP
+import Sockets
 import Transport
 @testable import WebSockets
-import Sockets
-
+import XCTest
 
 /*
     Examples from: https://tools.ietf.org/html/rfc6455#section-5.7

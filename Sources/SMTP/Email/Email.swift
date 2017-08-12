@@ -1,5 +1,5 @@
+import Bits
 import Foundation
-import struct Core.Bytes
 
 /*
     to /

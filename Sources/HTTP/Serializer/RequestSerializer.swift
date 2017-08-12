@@ -1,3 +1,4 @@
+import Bits
 import Transport
 
 // we have hardcoded HTTP/1.1 since that is all this parser supports.
@@ -40,7 +41,7 @@ public final class RequestSerializer: ByteSerializer {
             
             if let query = request.uri.query {
                 try fill(.questionMark, into: &buffer)
-                try fill(query.bytes, into: &buffer)
+                try fill(query.makeBytes(), into: &buffer)
             }
             
             try fill(startLine, into: &buffer)

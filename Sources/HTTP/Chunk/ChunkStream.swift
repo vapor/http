@@ -1,3 +1,4 @@
+import Bits
 import Transport
 
 /// Chunked transfer encoding is a data transfer mechanism in

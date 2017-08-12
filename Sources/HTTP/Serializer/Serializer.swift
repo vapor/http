@@ -1,3 +1,4 @@
+import Bits
 import Transport
 
 /// Internal serializer protocol for turning a basic

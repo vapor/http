@@ -1,4 +1,4 @@
-import struct Core.Bytes
+import Bits
 
 /*
      'close' included in Model file to ensure safety while interacting with sensitive variables

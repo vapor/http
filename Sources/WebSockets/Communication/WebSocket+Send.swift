@@ -1,4 +1,4 @@
-import struct Core.Bytes
+import Bits
 
 /**
      Technically WebSockets supports up to UInt64.max packet sizes, however

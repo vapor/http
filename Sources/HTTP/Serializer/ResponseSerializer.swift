@@ -1,3 +1,4 @@
+import Bits
 import Transport
 
 // we have hardcoded HTTP/1.1 since that is all this parser supports.

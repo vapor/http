@@ -1,5 +1,6 @@
-import Transport
+import Bits
 import CHTTP
+import Transport
 import URI
 
 /// Internal CHTTP parser protocol

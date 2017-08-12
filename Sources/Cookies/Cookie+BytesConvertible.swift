@@ -1,3 +1,4 @@
+import Bits
 import Core
 
 extension Cookie: BytesConvertible {

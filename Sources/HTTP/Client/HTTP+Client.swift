@@ -1,5 +1,6 @@
-import Transport
+import Bits
 import Sockets
+import Transport
 
 public enum ClientError: Swift.Error {
     case invalidRequestHost

@@ -1,5 +1,6 @@
-import URI
+import Bits
 import CHTTP
+import URI
 
 /// Possible header states
 enum HeaderState {

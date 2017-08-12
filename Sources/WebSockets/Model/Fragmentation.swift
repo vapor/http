@@ -1,4 +1,4 @@
-import struct Core.Bytes
+import Bits
 
 /*
 

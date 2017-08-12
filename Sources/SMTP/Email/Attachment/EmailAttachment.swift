@@ -1,4 +1,4 @@
-import struct Core.Bytes
+import Bits
 
 /*
     Attachments such as images and pdfs can be appended to emails using this object
