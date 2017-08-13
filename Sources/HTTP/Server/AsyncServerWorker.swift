@@ -1,6 +1,7 @@
 import Bits
 import Dispatch
 import Sockets
+import Transport
 
 class AsyncServerWorker<Stream: DuplexStream & DescriptorRepresentable> {
     var id: Int

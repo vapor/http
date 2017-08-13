@@ -1,10 +1,11 @@
-import XCTest
-@testable import HTTP
-import Transport
-import libc
-import Sockets
+import Core
 import Dispatch
+@testable import HTTP
+import libc
 import Random
+import Sockets
+import Transport
+import XCTest
 
 class HTTPBodyTests: XCTestCase {
 
