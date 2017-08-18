@@ -3,6 +3,8 @@ import Sockets
 import Streams
 import XCTest
 
+#if Xcode
+
 class ExampleTests : XCTestCase {
 //    Running 5s test @ http://localhost:8080/
 //    2 threads and 10 connections
@@ -13,6 +15,7 @@ class ExampleTests : XCTestCase {
 //    Requests/sec: 106308.54
 //    Transfer/sec:      3.85MB
     func testExample() throws {
+        
         let server = try ServerSocket(port: 8080)
 
         server.onConnect = { client in
@@ -34,3 +37,5 @@ class ExampleTests : XCTestCase {
         }
     }
 }
+
+#endif
