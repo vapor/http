@@ -45,7 +45,7 @@ public final class RemoteClient : TCPSocket {
     }
     
     /// Starts receiving data from the client
-    func listen() {
+    public func listen() {
         self.readSource.setEventHandler {
             #if os(Linux)
                 self.read = Glibc.recv(self.descriptor, self.pointer, self.pointerSize, 0)
@@ -61,6 +61,12 @@ public final class RemoteClient : TCPSocket {
             guard self.read != 0 else {
                 self.close()
                 return
+            }
+            
+            let buffer = UnsafeBufferPointer(start: self.pointer, count: self.read)
+            
+            for stream in self.branchStreams {
+                _ = try? stream(buffer)
             }
         }
         

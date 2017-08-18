@@ -13,6 +13,7 @@ extension TCPSocket {
     /// - parameter length: The length of the buffer to send
     /// - throws: If the socket is disconnected
     /// - returns: The amount of bytes written
+    @discardableResult
     public func write(contentsAt pointer: UnsafePointer<UInt8>, withLengthOf length: Int) throws -> Int {
         #if os(Linux)
             let sent = Glibc.send(self.descriptor, pointer, length, 0)

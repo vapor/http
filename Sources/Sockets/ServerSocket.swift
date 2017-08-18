@@ -14,6 +14,8 @@ public final class ServerSocket : TCPSocket {
     /// The dispatch queue that peers are accepted on.
     let queue: DispatchQueue
     
+    let bufferQueue = DispatchQueue(label: "codes.vapor.clientBufferQueue", qos: .userInteractive)
+    
     /// Creates a new Server Socket
     ///
     /// - parameter hostname: The hostname to listen to. By default, all hostnames will be accepted
@@ -65,13 +67,13 @@ public final class ServerSocket : TCPSocket {
             }
             
             let client = RemoteClient(descriptor: clientDescriptor, addr: addr) {
-                self.queue.sync {
+                self.bufferQueue.sync {
                     clients[clientDescriptor] = nil
                     addr.deallocate(capacity: 1)
                 }
             }
             
-            self.queue.sync {
+            self.bufferQueue.sync {
                 clients[clientDescriptor] = client
             }
             

@@ -142,10 +142,10 @@ public class TCPSocket : Stream {
     }
     
     /// Internal typealias used to define a cascading callback
-    fileprivate typealias ProcessOutputCallback = ((Output) throws -> ())
+    typealias ProcessOutputCallback = ((Output) throws -> ())
     
     /// All entities waiting for a new packet
-    fileprivate var branchStreams = [ProcessOutputCallback]()
+    var branchStreams = [ProcessOutputCallback]()
     
     /// Maps this stream of data to a stream of other information
     public func map<T>(_ closure: @escaping ((Output) throws -> (T?))) -> StreamTransformer<Output, T> {

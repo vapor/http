@@ -7,8 +7,14 @@ public protocol Stream {
     func map<T>(_ closure: @escaping ((Output) throws -> (T?))) -> StreamTransformer<Output, T>
 }
 
+extension Stream {
+    public func then(_ closure: @escaping ((Output) throws -> (Void))) {
+        _ = self.map(closure)
+    }
+}
+
 /// A helper that allows you to transform streams
-open class StreamTransformer<From, To> {
+open class StreamTransformer<From, To> : Stream {
     /// The input, that's being transformed
     public typealias Input = From
     
