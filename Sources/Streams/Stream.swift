@@ -30,7 +30,7 @@ open class StreamTransformer<From, To> : Stream {
     }
     
     /// Transforms the incoming data
-    public func transform(_ input: Input) throws {
+    public func process(_ input: Input) throws {
         if let output = try transformer(input) {
             for stream in branchStreams {
                 try stream(output)
@@ -42,13 +42,13 @@ open class StreamTransformer<From, To> : Stream {
     public func map<T>(_ closure: @escaping ((Output) throws -> (T?))) -> StreamTransformer<Output, T> {
         let stream = StreamTransformer<Output, T>(using: closure)
         
-        branchStreams.append(stream.transform)
+        branchStreams.append(stream.process)
         
         return stream
     }
     
     /// Internal typealias used to define a cascading callback
-    fileprivate typealias ProcessOutputCallback = ((To) throws -> ())
+    fileprivate typealias ProcessOutputCallback = ((Output) throws -> ())
     
     /// An internal array, used to keep track of all closures waiting for more data from this stream
     fileprivate var branchStreams = [ProcessOutputCallback]()

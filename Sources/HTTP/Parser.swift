@@ -243,7 +243,7 @@ internal final class HTTPParser : Stream {
     func map<T>(_ closure: @escaping ((Request) throws -> (T?))) -> StreamTransformer<Request, T> {
         let stream = StreamTransformer<Output, T>(using: closure)
         
-        branchStreams.append(stream.transform)
+        branchStreams.append(stream.process)
         
         return stream
     }
