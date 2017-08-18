@@ -1,3 +1,4 @@
+import Dispatch
 @testable import HTTP
 import Sockets
 import Streams
@@ -30,11 +31,13 @@ class ExampleTests : XCTestCase {
             client.listen()
         }
 
+        #if Xcode
         try server.start()
 
-        while true {
-            sleep(3600000)
-        }
+        let group = DispatchGroup()
+        group.enter()
+        group.wait()
+        #endif
     }
 }
 
