@@ -1,10 +1,5 @@
 import Dispatch
-
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin
-#endif
+import libc
 
 extension TCPSocket {
     /// Writes all data from the pointer's position with the length specified to this socket.

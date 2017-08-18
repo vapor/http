@@ -1,9 +1,4 @@
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin
-#endif
-
+import libc
 import Foundation
 
 /// Keeps track of a set of data, related to a UTF8 String, using COW

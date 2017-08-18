@@ -1,10 +1,5 @@
 import Sockets
-
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin
-#endif
+import libc
 
 fileprivate let contentLengthHeader = [UInt8]("Content-Length: ".utf8)
 fileprivate let eol = [UInt8]("\r\n".utf8)
