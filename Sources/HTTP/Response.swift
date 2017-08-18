@@ -147,17 +147,17 @@ extension Client : HTTPRemote {
 
             let buffer = UnsafeRawBufferPointer(start: pointer, count: consumed)
             let dispatchData = DispatchData(bytes: buffer)
-            write(dispatchData)
+            try write(dispatchData)
             // try socket.write(max: consumed, from: buffer)
         } else {
             let buffer = UnsafeRawBufferPointer(start: pointer, count: consumed)
             let dispatchData = DispatchData(bytes: buffer)
-            write(dispatchData)
+            try write(dispatchData)
             
             if let body = body {
                 let buffer = UnsafeRawBufferPointer(start: body.buffer.baseAddress, count: body.buffer.count)
                 let dispatchData = DispatchData(bytes: buffer)
-                write(dispatchData)
+                try write(dispatchData)
             }
         }
     }

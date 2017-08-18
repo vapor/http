@@ -20,19 +20,12 @@ public final class RequestParser: Core.Stream, CParser {
         http_parser_init(&parser, HTTP_REQUEST)
         initialize(&settings)
     }
-
-    /// Internal typealias used to define a cascading callback
-    typealias ProcessOutputCallback = ((Output) throws -> ())
-
-    /// All entities waiting for a new packet
-    var branchStreams = [ProcessOutputCallback]()
-
-    public func map<T>(_ closure: @escaping ((Request) throws -> (T?))) -> StreamTransformer<Request, T> {
-        let stream = StreamTransformer<Output, T>(using: closure)
-        branchStreams.append(stream.process)
-        return stream
+    
+    let stream = BasicStream<Output>()
+    
+    public func then(_ closure: @escaping ((Request) throws -> (Future<Void>))) {
+        stream.then(closure)
     }
-
 
     /// Parses a Request from the stream.
     public func parse(from buffer: ByteBuffer) throws -> Request? {
