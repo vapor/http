@@ -3,7 +3,7 @@ import Core
 import Foundation
 
 /// Parses requests from a readable stream.
-public final class RequestParser: Core.Stream, CHTTPParser {
+public final class RequestParser: Core.Stream, CParser {
     public typealias Output = Request
 
     // Internal variables to conform
@@ -36,18 +36,18 @@ public final class RequestParser: Core.Stream, CHTTPParser {
 
     /// Parses a Request from the stream.
     public func parse(from buffer: ByteBuffer) throws -> Request? {
-        let results: CHTTPParseResults
+        let results: CParseResults
 
         switch state {
         case .ready:
             // create a new results object and set
             // a reference to it on the parser
-            let newResults = CHTTPParseResults.set(on: &parser)
+            let newResults = CParseResults.set(on: &parser)
             results = newResults
             state = .parsing
         case .parsing:
             // get the current parse results object
-            guard let existingResults = CHTTPParseResults.get(from: &parser) else {
+            guard let existingResults = CParseResults.get(from: &parser) else {
                 return nil
             }
             results = existingResults
@@ -63,7 +63,7 @@ public final class RequestParser: Core.Stream, CHTTPParser {
         // the results have completed, so we are ready
         // for a new request to come in
         state = .ready
-        CHTTPParseResults.remove(from: &parser)
+        CParseResults.remove(from: &parser)
 
 
         /// switch on the C method type from the parser

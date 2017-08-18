@@ -11,7 +11,7 @@ enum HeaderState {
 
 
 /// Internal CHTTP parser protocol
-internal protocol CHTTPParser: class {
+internal protocol CParser: class {
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
 }
@@ -21,7 +21,7 @@ enum CHTTPParserState {
     case parsing
 }
 
-extension CHTTPParser {
+extension CParser {
     /// Parses a generic CHTTP message, filling the
     /// ParseResults object attached to the C praser.
     internal func executeParser(max: Int, from buffer: ByteBuffer) throws {
@@ -41,12 +41,12 @@ extension CHTTPParser {
     }
 }
 
-extension CHTTPParser {
+extension CParser {
     func initialize(_ settings: inout http_parser_settings) {
         // called when chunks of the url have been read
         settings.on_url = { parser, chunk, length in
             guard
-                let results = CHTTPParseResults.get(from: parser),
+                let results = CParseResults.get(from: parser),
                 let bytes = chunk?.makeBuffer(length: length)
                 else {
                     // signal an error
@@ -66,7 +66,7 @@ extension CHTTPParser {
         // called when chunks of a header field have been read
         settings.on_header_field = { parser, chunk, length in
             guard
-                let results = CHTTPParseResults.get(from: parser),
+                let results = CParseResults.get(from: parser),
                 let bytes = chunk?.makeBuffer(length: length)
             else {
                 // signal an error
@@ -105,7 +105,7 @@ extension CHTTPParser {
         // called when chunks of a header value have been read
         settings.on_header_value = { parser, chunk, length in
             guard
-                let results = CHTTPParseResults.get(from: parser),
+                let results = CParseResults.get(from: parser),
                 let bytes = chunk?.makeBuffer(length: length)
             else {
                 // signal an error
@@ -140,7 +140,7 @@ extension CHTTPParser {
 
         // called when header parsing has completed
         settings.on_headers_complete = { parser in
-            guard let results = CHTTPParseResults.get(from: parser) else {
+            guard let results = CParseResults.get(from: parser) else {
                 // signal an error
                 return 1
             }
@@ -166,7 +166,7 @@ extension CHTTPParser {
         // called when chunks of the body have been read
         settings.on_body = { parser, chunk, length in
             guard
-                let results = CHTTPParseResults.get(from: parser),
+                let results = CParseResults.get(from: parser),
                 let bytes = chunk?.makeBuffer(length: length)
             else {
                 // signal an error
@@ -186,7 +186,7 @@ extension CHTTPParser {
         settings.on_message_complete = { parser in
             guard
                 let parser = parser,
-                let results = CHTTPParseResults.get(from: parser)
+                let results = CParseResults.get(from: parser)
             else {
                 // signal an error
                 return 1
