@@ -90,10 +90,10 @@ public protocol HTTPRemote {
 }
 
 /// Makes the TCPClient an HTTPRemote
-extension RemoteClient : HTTPRemote {
+extension TCPClient : HTTPRemote {
     /// Handles the error and closes the connection
     public func error(_ error: Error) {
-        self.close()
+        socket.close()
     }
     
     /// Sends the serialized HTTP response over the socket
@@ -145,14 +145,14 @@ extension RemoteClient : HTTPRemote {
             consumed = consumed &+ body.buffer.count
 
             let buffer = ByteBuffer(start: pointer, count: consumed)
-            try write(max: consumed, from: buffer)
+            try socket.write(max: consumed, from: buffer)
         } else {
             let buffer = ByteBuffer(start: pointer, count: consumed)
-            try write(max: consumed, from: buffer)
+            try socket.write(max: consumed, from: buffer)
             
             if let body = body {
                 let bytes = ByteBuffer(start: body.buffer.baseAddress, count: body.buffer.count)
-                try self.write(max: body.buffer.count, from: bytes)
+                try socket.write(max: body.buffer.count, from: bytes)
             }
         }
     }

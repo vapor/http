@@ -7,39 +7,23 @@ import libc
 fileprivate var len: socklen_t = socklen_t(MemoryLayout<UInt32>.size)
 
 /// Any TCP socket. It doesn't specify being a server or client yet.
-public class TCPSocket: Core.Stream {
-    /// Sockets stream buffers of bytes
-    public typealias Output = ByteBuffer
-    
+public class TCPSocket {
     /// The file descriptor related to this socket
     public let descriptor: Int32
-
-    // MARK: Internal
-    
-    /// A ReadSource that will trigger the internal on-read function when the socket contains more data
-    let readSource: DispatchSourceRead
-    
-    /// A DispatchQueue that handles all TCP connections if no other is provided
-    static let queue = DispatchQueue(label: "codes.vapor.tcpsocketqueue", attributes: .concurrent)
     
     /// The socket's address storage
     ///
     /// For servers, the hostname at which connections are accepted
     ///
     /// For clients, the hostname that is being connected to
-    var socketAddress = UnsafeMutablePointer<sockaddr_storage>.allocate(capacity: 1)
+    var address = UnsafeMutablePointer<sockaddr_storage>.allocate(capacity: 1)
     
     /// `true` when this socket is a server socket
-    let server: Bool
+    let isServer: Bool
     
-    internal init(descriptor: Int32, server: Bool, queue: DispatchQueue? = nil) {
+    internal init(descriptor: Int32, isServer: Bool) {
         self.descriptor = descriptor
-        self.server = server
-        
-        // Set up the read source so that reading happens asynchronously using DispatchSources
-        self.readSource = DispatchSource.makeReadSource(fileDescriptor: descriptor, queue: queue ?? TCPSocket.queue)
-        
-        self.readSource.setCancelHandler(handler: self.cleanup)
+        self.isServer = isServer
     }
     
     /// Creates a new TCP socket
@@ -48,15 +32,15 @@ public class TCPSocket: Core.Stream {
     /// - parameter port: For servers, the port to accept on. For clients, the port to connect to
     /// - parameter client: `true` if the connection is for a server, `false` for clients
     /// - parameter queue: The dispatch queue on which read callbacks are dispatched.b
-    internal init(hostname: String, port: UInt16, server: Bool, dispatchQueue queue: DispatchQueue? = nil) throws {
-        self.server = server
+    internal init(hostname: String, port: UInt16, isServer: Bool) throws {
+        self.isServer = isServer
         
         var addressCriteria = addrinfo.init()
         
         // Support both IPv4 and IPv6
         addressCriteria.ai_family = Int32(AF_INET)
         
-        if server {
+        if isServer {
             addressCriteria.ai_flags = AI_PASSIVE
         }
         
@@ -82,10 +66,10 @@ public class TCPSocket: Core.Stream {
         
         guard let addr = info.pointee.ai_addr else { throw TCPError.bindFailure }
         
-        socketAddress.initialize(to: sockaddr_storage())
+        address.initialize(to: sockaddr_storage())
         
         let _addr = UnsafeMutablePointer<sockaddr_in>.init(OpaquePointer(addr))!
-        let specPtr = UnsafeMutablePointer<sockaddr_in>(OpaquePointer(socketAddress))
+        let specPtr = UnsafeMutablePointer<sockaddr_in>(OpaquePointer(address))
         specPtr.assign(from: _addr, count: 1)
         
         // Open the socket, get the descriptor
@@ -105,16 +89,15 @@ public class TCPSocket: Core.Stream {
         guard setsockopt(self.descriptor, SOL_SOCKET, SO_REUSEADDR, &yes, socklen_t(MemoryLayout<Int>.size)) > -1 else {
             throw TCPError.bindFailure
         }
-        
-        // Set up the read source so that reading happens asynchronously using DispatchSources
-        self.readSource = DispatchSource.makeReadSource(fileDescriptor: descriptor, queue: queue ?? TCPSocket.queue)
-        
-        self.readSource.setCancelHandler(handler: self.cleanup)
     }
 
     /// Closes the socket
-    open func close() {
-        self.readSource.cancel()
+    public func close() {
+        #if os(Linux)
+            Glibc.close(self.descriptor)
+        #else
+            Darwin.close(self.descriptor)
+        #endif
     }
     
     /// Returns a boolean describing if the socket is still healthy and open
@@ -125,40 +108,8 @@ public class TCPSocket: Core.Stream {
         return error == 0
     }
 
-    // MARK: Stream
-    
-    /// Internal typealias used to define a cascading callback
-    typealias ProcessOutputCallback = ((Output) throws -> ())
-    
-    /// All entities waiting for a new packet
-    var branchStreams = [ProcessOutputCallback]()
-    
-    /// Maps this stream of data to a stream of other information
-    public func map<T>(_ closure: @escaping ((Output) throws -> (T?))) -> StreamTransformer<Output, T> {
-        let stream = StreamTransformer<Output, T>(using: closure)
-        
-        branchStreams.append(stream.process)
-        
-        return stream
-    }
-
-    // MARK: Cleanup
-
-    /// Called when closing the socket
-    ///
-    /// In charge of cleaning everything, from the socket's file descriptor to the SSL layer and anything extra
-    ///
-    /// Do **not** call this manually, or your application will very likely crash.
-    internal func cleanup() {
-        #if os(Linux)
-            Glibc.close(self.descriptor)
-        #else
-            Darwin.close(self.descriptor)
-        #endif
-    }
-
     deinit {
-        cleanup()
-        socketAddress.deallocate(capacity: 1)
+        close()
+        address.deallocate(capacity: 1)
     }
 }

@@ -16,18 +16,15 @@ class ExampleTests : XCTestCase {
 //    Requests/sec: 106308.54
 //    Transfer/sec:      3.85MB
     func testExample() throws {
-        
-        let server = try ServerSocket(port: 8080)
+        let server = try TCPServer(port: 8080)
 
-        server.onConnect = { client in
+        server.then { client in
             let parser = RequestParser()
-            
-            let requestStream = client.map(parser.parse)
 
-            requestStream.map { request in
+            client.map(parser.parse).map { request in
                 return Response(status: 200)
             }.then(client.send)
-            
+
             client.listen()
         }
 
