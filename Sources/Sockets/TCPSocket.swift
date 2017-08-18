@@ -23,7 +23,7 @@ public class TCPSocket : Stream {
     let readSource: DispatchSourceRead
     
     /// A DispatchQueue that handles all TCP connections if no other is provided
-    static let queue = DispatchQueue(label: "codes.vapor.tcpsocketqueue")
+    static let queue = DispatchQueue(label: "codes.vapor.tcpsocketqueue", attributes: .concurrent)
     
     /// The socket's address storage
     ///

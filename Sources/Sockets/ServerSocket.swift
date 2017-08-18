@@ -16,6 +16,8 @@ public final class ServerSocket : TCPSocket {
     
     let bufferQueue = DispatchQueue(label: "codes.vapor.clientBufferQueue", qos: .userInteractive)
     
+    let cleanupQueue = DispatchQueue(label: "codes.vapor.clientBufferQueue", qos: .background)
+    
     /// Creates a new Server Socket
     ///
     /// - parameter hostname: The hostname to listen to. By default, all hostnames will be accepted
@@ -27,6 +29,10 @@ public final class ServerSocket : TCPSocket {
         
         try super.init(hostname: hostname, port: port, server: true, dispatchQueue: queue)
     }
+    
+    // Stores all clients so they won't be deallocated in the async process
+    // Refers to clients by their file descriptor
+    var clients = [Int32 : _RemoteClient]()
     
     /// Starts listening for peers asynchronously
     ///
@@ -46,10 +52,6 @@ public final class ServerSocket : TCPSocket {
             throw TCPError.bindFailure
         }
         
-        // Stores all clients so they won't be deallocated in the async process
-        // Refers to clients by their file descriptor
-        var clients = [Int32 : RemoteClient]()
-        
         // For every connected client, this closure triggers
         readSource.setEventHandler {
             // Prepare for a client's connection
@@ -68,13 +70,13 @@ public final class ServerSocket : TCPSocket {
             
             let client = RemoteClient(descriptor: clientDescriptor, addr: addr) {
                 self.bufferQueue.sync {
-                    clients[clientDescriptor] = nil
+                    self.clients[clientDescriptor] = nil
                     addr.deallocate(capacity: 1)
                 }
             }
             
             self.bufferQueue.sync {
-                clients[clientDescriptor] = client
+                self.clients[clientDescriptor] = client._remote
             }
             
             self.onConnect?(client)

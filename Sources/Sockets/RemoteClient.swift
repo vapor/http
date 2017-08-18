@@ -1,3 +1,4 @@
+import Streams
 import Dispatch
 
 #if os(Linux)
@@ -6,8 +7,56 @@ import Dispatch
     import Darwin
 #endif
 
+/// A COW interface to the underlying remote client
+public struct RemoteClient : Stream {
+    public typealias Output = UnsafeBufferPointer<UInt8>
+    
+    public func map<T>(_ closure: @escaping ((Output) throws -> (T?))) -> StreamTransformer<Output, T> {
+        guard let _remote = _remote else {
+            return StreamTransformer<Output, T> { _ in
+                return nil
+            }
+        }
+        
+        return _remote.map(closure)
+    }
+    
+    /// A closure that can be called whenever the socket encountered a critical error
+    public var onError: ((Error) -> ())? {
+        get {
+            return _remote?.onError
+        }
+        set {
+            _remote?.onError = newValue
+        }
+    }
+    
+    weak var _remote: _RemoteClient?
+    
+    /// Creates a new Remote Client from the ServerSocket's details
+    init(descriptor: Int32, addr: UnsafePointer<sockaddr_storage>, onClose:  @escaping (() -> ())) {
+        _remote = _RemoteClient(descriptor: descriptor, addr: addr, onClose: onClose)
+    }
+    
+    public func listen() {
+        _remote?.listen()
+    }
+    
+    public func close() {
+        _remote?.close()
+    }
+    
+    public func write(contentsAt pointer: UnsafePointer<UInt8>, withLengthOf length: Int) throws -> Int {
+        guard let _remote = _remote else {
+            throw TCPError.sendFailure
+        }
+        
+        return try _remote.write(contentsAt: pointer, withLengthOf: length)
+    }
+}
+
 /// The remote peer of a `ServerSocket`
-public final class RemoteClient : TCPSocket {
+final class _RemoteClient : TCPSocket {
     /// A handler that will be executed when this client closes
     ///
     /// Useful for cleaning up
