@@ -15,6 +15,9 @@ public class TCPSocket {
     /// Sockets stream buffers of bytes
     public typealias Streamable = UnsafeBufferPointer<UInt8>
     
+    /// The file descriptor related to this socket
+    public let descriptor: Int32
+    
     /// A ReadSource that will trigger the internal on-read function when the socket contains more data
     let readSource: DispatchSourceRead
     
@@ -28,7 +31,18 @@ public class TCPSocket {
     /// For clients, the hostname that is being connected to
     var socketAddress = UnsafeMutablePointer<sockaddr_storage>.allocate(capacity: 1)
     
+    /// `true` when this socket is a server socket
     let server: Bool
+    
+    internal init(descriptor: Int32, server: Bool, queue: DispatchQueue? = nil) {
+        self.descriptor = descriptor
+        self.server = server
+        
+        // Set up the read source so that reading happens asynchronously using DispatchSources
+        self.readSource = DispatchSource.makeReadSource(fileDescriptor: descriptor, queue: queue ?? TCPSocket.queue)
+        
+        self.readSource.setCancelHandler(handler: self.cleanup)
+    }
     
     /// Creates a new TCP socket
     ///
@@ -121,9 +135,6 @@ public class TCPSocket {
     open func close() {
         self.readSource.cancel()
     }
-    
-    /// The file descriptor related to this socket
-    public let descriptor: Int32
     
     /// Returns a boolean describing if the socket is still healthy and open
     public var isConnected: Bool {

@@ -15,4 +15,8 @@ public enum TCPError : Error {
     ///
     /// Likely because the socket was closed due to either party disconnecting or losing connection.
     case sendFailure
+    
+    // TODO: Fill out the docs here
+    
+    case readFailure
 }
