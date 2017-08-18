@@ -31,7 +31,7 @@ class ExampleTests : XCTestCase {
             requestBase64.map { buffer in
                 return String(bytes: buffer, encoding: .utf8)
             }.then {
-                print($0)
+                _ = $0
             }
             
             client.listen()

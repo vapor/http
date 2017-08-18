@@ -51,7 +51,7 @@ extension Base64Stream.Mode {
                 pointer[outputPosition &+ 2] = 0x3d
                 pointer[outputPosition &+ 3] = 0x3d
                 
-                return (true, outputPosition &+ 4, inputPosition &+ 3)
+                return (true, outputPosition &+ 4, inputPosition &+ 1)
             }
             
             processedByte |= (input[inputPosition &+ 1] & 0xf0) >> 4
@@ -63,7 +63,7 @@ extension Base64Stream.Mode {
                 
                 // '='
                 pointer[outputPosition &+ 3] = 0x3d
-                return (true, outputPosition &+ 4, inputPosition &+ 3)
+                return (true, outputPosition &+ 4, inputPosition &+ 2)
             }
             
             processedByte |= (input[inputPosition &+ 2] & 0xc0) >> 6
