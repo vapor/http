@@ -16,7 +16,8 @@ let package = Package(
         .testTarget(name: "StreamsTests", dependencies: ["Streams"]),
         .target(name: "Sockets", dependencies: ["Streams"]),
         .testTarget(name: "SocketsTests", dependencies: ["Sockets"]),
-        .target(name: "HTTP", dependencies: ["Sockets"]),
+        .target(name: "CHTTP"),
+        .target(name: "HTTP", dependencies: ["CHTTP", "Sockets"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
     ]
 )

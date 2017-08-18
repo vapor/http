@@ -16,7 +16,7 @@ class ExampleTests : XCTestCase {
         let server = try ServerSocket(port: 8080)
 
         server.onConnect = { client in
-            let parser = HTTPParser()
+            let parser = RequestParser()
             
             let requestStream = client.map(parser.parse)
 

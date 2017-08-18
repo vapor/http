@@ -13,41 +13,7 @@ fileprivate let upgradeSignature = [UInt8]("HTTP/1.1 101 Switching Protocols\r\n
 fileprivate let okSignature = [UInt8]("HTTP/1.1 200 OK\r\n".utf8)
 fileprivate let notFoundSignature = [UInt8]("HTTP/1.1 404 NOT FOUND\r\n".utf8)
 
-/// The HTTP response status
-///
-/// TODO: Add more status codes
-public enum Status : ExpressibleByIntegerLiteral {
-    /// upgrade is used for upgrading the connection to a new protocol, such as WebSocket or HTTP/2
-    case upgrade
-    
-    /// A successful response
-    case ok
-    
-    /// The resource has not been found
-    case notFound
-    
-    /// An internal error occurred
-    case internalServerError
-    
-    /// Something yet to be implemented
-    case custom(code: Int, message: String)
-    
-    /// Checks of two Statuses are equal
-    public static func ==(lhs: Status, rhs: Status) -> Bool {
-        return lhs.code == rhs.code
-    }
-    
-    /// The HTTP status code
-    public var code: Int {
-        switch self {
-        case .upgrade: return 101
-        case .ok: return 200
-        case .notFound: return 404
-        case .internalServerError: return 500
-        case .custom(let code, _): return code
-        }
-    }
-    
+extension Status {
     /// Returns a signature, for internal purposes only
     fileprivate var signature: [UInt8] {
         switch self {
@@ -62,22 +28,6 @@ public enum Status : ExpressibleByIntegerLiteral {
         case .custom(let code, let message):
             return code.description.utf8 + [0x20] + message.utf8
         }
-    }
-    
-    /// Creates a new (custom) status code
-    public init(_ code: Int, message: String = "") {
-        switch code {
-        case 101: self = .upgrade
-        case 200: self = .ok
-        case 404: self = .notFound
-        case 500: self = .internalServerError
-        default: self = .custom(code: code, message: message)
-        }
-    }
-    
-    /// Creates a new status from an integer literal
-    public init(integerLiteral value: Int) {
-        self.init(value)
     }
 }
 
