@@ -1,11 +1,6 @@
 import Streams
 import Dispatch
-
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin
-#endif
+import libc
 
 /// A COW interface to the underlying remote client
 public struct RemoteClient : Stream {
@@ -46,6 +41,7 @@ public struct RemoteClient : Stream {
         _remote?.close()
     }
     
+    @discardableResult
     public func write(contentsAt pointer: UnsafePointer<UInt8>, withLengthOf length: Int) throws -> Int {
         guard let _remote = _remote else {
             throw TCPError.sendFailure

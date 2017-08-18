@@ -1,10 +1,5 @@
 import Streams
-
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin
-#endif
+import libc
 
 typealias RequestParsedHandler = ((Request)->())
 

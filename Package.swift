@@ -9,10 +9,12 @@ let package = Package(
         .library(name: "Sockets", targets: ["Sockets"]),
         .library(name: "HTTP", targets: ["HTTP"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/vapor/core.git", .revision("rework"))
+    ],
     targets: [
         .target(name: "Async"),
-        .target(name: "Streams"),
+        .target(name: "Streams", dependencies: ["libc"]),
         .testTarget(name: "StreamsTests", dependencies: ["Streams"]),
         .target(name: "Sockets", dependencies: ["Streams"]),
         .testTarget(name: "SocketsTests", dependencies: ["Sockets"]),

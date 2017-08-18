@@ -1,11 +1,6 @@
 import Streams
 import Dispatch
-
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin
-#endif
+import libc
 
 extension TCPSocket {
     

@@ -1,11 +1,6 @@
 import Streams
 import Dispatch
-
-#if os(Linux)
-    import Glibc
-#else
-    import Darwin
-#endif
+import libc
 
 /// Used as a simple global variable, to prevent too many allocations
 /// A socket's length is always 4 since it's a UInt32
