@@ -1,5 +1,6 @@
-import Sockets
+import Dispatch
 import libc
+import TCP
 
 fileprivate let contentLengthHeader = [UInt8]("Content-Length: ".utf8)
 fileprivate let eol = [UInt8]("\r\n".utf8)
@@ -90,10 +91,10 @@ public protocol HTTPRemote {
 }
 
 /// Makes the TCPClient an HTTPRemote
-extension TCPClient : HTTPRemote {
+extension Client : HTTPRemote {
     /// Handles the error and closes the connection
     public func error(_ error: Error) {
-        socket.close()
+        close()
     }
     
     /// Sends the serialized HTTP response over the socket
@@ -144,15 +145,19 @@ extension TCPClient : HTTPRemote {
             memcpy(pointer.advanced(by: consumed), baseAddress, body.buffer.count)
             consumed = consumed &+ body.buffer.count
 
-            let buffer = ByteBuffer(start: pointer, count: consumed)
-            try socket.write(max: consumed, from: buffer)
+            let buffer = UnsafeRawBufferPointer(start: pointer, count: consumed)
+            let dispatchData = DispatchData(bytes: buffer)
+            write(dispatchData)
+            // try socket.write(max: consumed, from: buffer)
         } else {
-            let buffer = ByteBuffer(start: pointer, count: consumed)
-            try socket.write(max: consumed, from: buffer)
+            let buffer = UnsafeRawBufferPointer(start: pointer, count: consumed)
+            let dispatchData = DispatchData(bytes: buffer)
+            write(dispatchData)
             
             if let body = body {
-                let bytes = ByteBuffer(start: body.buffer.baseAddress, count: body.buffer.count)
-                try socket.write(max: body.buffer.count, from: bytes)
+                let buffer = UnsafeRawBufferPointer(start: body.buffer.baseAddress, count: body.buffer.count)
+                let dispatchData = DispatchData(bytes: buffer)
+                write(dispatchData)
             }
         }
     }

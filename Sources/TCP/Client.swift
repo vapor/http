@@ -1,11 +1,14 @@
 import Core
 import Dispatch
+import Foundation
 import libc
 
 /// The remote peer of a `ServerSocket`
-public final class TCPClient: Stream {
-    public let socket: TCPSocket
-    let queue: DispatchQueue
+public final class Client: Core.Stream {
+    let socket: Socket
+
+    public typealias OnRead = (ByteBuffer) -> ()
+    public var onRead: OnRead?
 
     /// A closure that can be called whenever the socket encountered a critical error
     public var onError: ((Error) -> ())? = nil
@@ -20,31 +23,66 @@ public final class TCPClient: Stream {
     let pointer: UnsafeMutablePointer<UInt8>
 
     /// Creates a new Remote Client from the ServerSocket's details
-    init(socket: TCPSocket) {
+    init(socket: Socket) {
         self.socket = socket
-        self.queue = DispatchQueue(label: "codes.vapor.listen", qos: .userInteractive)
+        self.readQueue = DispatchQueue(label: "codes.vapor.net.tcp.client.read", qos: .userInteractive)
 
         // Allocate one TCP packet
         self.pointerSize = 65_507
         self.pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: self.pointerSize)
         self.pointer.initialize(to: 0, count: self.pointerSize)
+
+        let writeQueue = DispatchQueue(label: "codes.vapor.net.tcp.client.write", qos: .userInteractive)
+        let writeSource = DispatchSource.makeWriteSource(fileDescriptor: socket.descriptor, queue: writeQueue)
+        self.writeQueue = writeQueue
+        self.writeSource = writeSource
+
+        writeSource.setEventHandler {
+            guard let data = self.writeData else {
+                return
+            }
+            self.writeData = nil
+            let copied = Data(data)
+            let buffer = ByteBuffer.init(start: copied.withUnsafeBytes { $0 }, count: copied.count)
+            try! self.socket.write(max: copied.count, from: buffer)
+        }
+        writeSource.resume()
     }
 
-    var listenSource: DispatchSourceRead?
+    let readQueue: DispatchQueue
+    var readSource: DispatchSourceRead?
+
+    let writeQueue: DispatchQueue
+    let writeSource: DispatchSourceWrite
+    var writeData: DispatchData?
+
+    public func write(_ data: DispatchData) {
+        if writeData == nil {
+            writeData = data
+        } else {
+            writeData?.append(data)
+        }
+    }
+
+    public func close() {
+        readSource?.cancel()
+        writeSource.cancel()
+        socket.close()
+    }
 
     /// Starts receiving data from the client
     public func listen() {
-        let listenSource = DispatchSource.makeReadSource(
+        let readSource = DispatchSource.makeReadSource(
             fileDescriptor: socket.descriptor,
-            queue: queue
+            queue: readQueue
         )
-        self.listenSource = listenSource
+        self.readSource = readSource
 
-        listenSource.setEventHandler {
+        readSource.setEventHandler {
             self.read = recv(self.socket.descriptor, self.pointer, self.pointerSize, 0)
 
             guard self.read > -1 else {
-                self.handleError(TCPError.readFailure)
+                self.handleError("TCPError.readFailure")
                 return
             }
 
@@ -53,18 +91,22 @@ public final class TCPClient: Stream {
                 return
             }
 
-            let buffer = UnsafeBufferPointer(start: self.pointer, count: self.read)
+            let buffer = UnsafeBufferPointer(
+                start: self.pointer,
+                count: self.read
+            )
 
-            for stream in self.branchStreams {
+            self.onRead?(buffer)
+            self.branchStreams.forEach { stream in
                 _ = try? stream(buffer)
             }
         }
 
-        listenSource.resume()
+        readSource.resume()
     }
 
     /// Takes care of error handling
-    func handleError(_ error: TCPError) {
+    func handleError(_ error: Error) {
         self.socket.close()
         self.onError?(error)
     }

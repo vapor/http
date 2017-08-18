@@ -5,7 +5,7 @@ import libc
 public typealias MutableByteBuffer = UnsafeMutableBufferPointer<Byte>
 extension String: Error { }
 
-extension TCPSocket {
+extension Socket {
     public func read(max: Int, into buffer: MutableByteBuffer) throws -> Int {
         let receivedBytes = libc.read(descriptor, buffer.baseAddress.unsafelyUnwrapped, max)
 

@@ -7,7 +7,7 @@ import libc
 fileprivate var len: socklen_t = socklen_t(MemoryLayout<UInt32>.size)
 
 /// Any TCP socket. It doesn't specify being a server or client yet.
-public class TCPSocket {
+public class Socket {
     /// The file descriptor related to this socket
     public let descriptor: Int32
     
@@ -57,14 +57,18 @@ public class TCPSocket {
         var addrInfo: UnsafeMutablePointer<addrinfo>?
         
         guard getaddrinfo(hostname, port.description, &addressCriteria, &addrInfo) > -1 else {
-            throw TCPError.bindFailure
+            throw "TCPError.bindFailure"
         }
         
-        guard let info = addrInfo else { throw TCPError.bindFailure }
+        guard let info = addrInfo else {
+            throw "TCPError.bindFailure"
+        }
         
         defer { freeaddrinfo(info) }
         
-        guard let addr = info.pointee.ai_addr else { throw TCPError.bindFailure }
+        guard let addr = info.pointee.ai_addr else {
+            throw "TCPError.bindFailure"
+        }
         
         address.initialize(to: sockaddr_storage())
         
@@ -76,18 +80,18 @@ public class TCPSocket {
         self.descriptor = socket(addressCriteria.ai_family, addressCriteria.ai_socktype, addressCriteria.ai_protocol)
         
         guard descriptor > -1 else {
-            throw TCPError.bindFailure
+            throw "TCPError.bindFailure"
         }
         
         // Set the socket to async/non blocking I/O
         guard fcntl(self.descriptor, F_SETFL, O_NONBLOCK) > -1 else {
-            throw TCPError.bindFailure
+            throw "TCPError.bindFailure"
         }
         
         var yes = 1
         
         guard setsockopt(self.descriptor, SOL_SOCKET, SO_REUSEADDR, &yes, socklen_t(MemoryLayout<Int>.size)) > -1 else {
-            throw TCPError.bindFailure
+            throw "TCPError.bindFailure"
         }
     }
 

@@ -16,7 +16,7 @@ class ExampleTests : XCTestCase {
 //    Requests/sec: 106308.54
 //    Transfer/sec:      3.85MB
     func testExample() throws {
-        let server = try TCPServer(port: 8080)
+        let server = try Server(port: 8080)
 
         server.then { client in
             let parser = RequestParser()
@@ -28,13 +28,13 @@ class ExampleTests : XCTestCase {
             client.listen()
         }
 
-        #if Xcode
-        try server.start()
-
-        let group = DispatchGroup()
-        group.enter()
-        group.wait()
-        #endif
+//        #if Xcode
+//        try server.start()
+//
+//        let group = DispatchGroup()
+//        group.enter()
+//        group.wait()
+//        #endif
     }
 }
 

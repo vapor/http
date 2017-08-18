@@ -3,8 +3,8 @@ import Dispatch
 import libc
 
 /// A server socket can accept peers. Each accepted peer get's it own socket after accepting.
-public final class TCPServer: Stream {
-    public let socket: TCPSocket
+public final class Server: Stream {
+    public let socket: Socket
 
     /// The dispatch queue that peers are accepted on.
     let queue: DispatchQueue
@@ -19,17 +19,17 @@ public final class TCPServer: Stream {
     public init(hostname: String = "0.0.0.0", port: UInt16) throws {
         // Default to `.userInteractive` because this is a single thread responsible for *all* incoming connections
         self.queue = DispatchQueue(label: "codes.vapor.clientConnectQueue", qos: .userInteractive)
-        self.socket = try TCPSocket(hostname: hostname, port: port, isServer: true)
+        self.socket = try Socket(hostname: hostname, port: port, isServer: true)
     }
 
-    public init(socket: TCPSocket) {
+    public init(socket: Socket) {
         self.socket = socket
         self.queue = DispatchQueue(label: "codes.vapor.clientConnectQueue", qos: .userInteractive)
     }
 
     // Stores all clients so they won't be deallocated in the async process
     // Refers to clients by their file descriptor
-    var clients = [Int32: TCPClient]()
+    var clients = [Int32: Client]()
 
     var connectSource: DispatchSourceRead?
 
@@ -43,12 +43,12 @@ public final class TCPServer: Stream {
 
         // Bind to the address
         guard bind(socket.descriptor, addr, addrSize) > -1 else {
-            throw TCPError.bindFailure
+            throw "TCPError.bindFailure"
         }
 
         // Start listening on the address
         guard listen(socket.descriptor, maxIncomingConnections) > -1 else {
-            throw TCPError.bindFailure
+            throw "TCPError.bindFailure"
         }
 
         let connectSource = DispatchSource.makeReadSource(
@@ -73,8 +73,8 @@ public final class TCPServer: Stream {
                 return
             }
 
-            let clientSocket = TCPSocket(descriptor: clientDescriptor, isServer: false)
-            let client = TCPClient(socket: clientSocket)
+            let clientSocket = Socket(descriptor: clientDescriptor, isServer: false)
+            let client = Client(socket: clientSocket)
 
 //            let client = RemoteClient(descriptor: clientDescriptor, addr: addr) {
 //                self.bufferQueue.sync {
@@ -98,7 +98,7 @@ public final class TCPServer: Stream {
 
     // MARK: Stream
 
-    public typealias Output = TCPClient
+    public typealias Output = Client
 
     /// Internal typealias used to define a cascading callback
     typealias ProcessOutputCallback = ((Output) throws -> ())

@@ -2,7 +2,7 @@ import Core
 import Dispatch
 import libc
 
-extension TCPSocket {
+extension Socket {
     /// Writes all data from the pointer's position with the length specified to this socket.
     ///
     /// - parameter pointer: The pointer to the start of the buffer
@@ -28,7 +28,7 @@ extension TCPSocket {
                 self.close()
                 return 0
             default:
-                throw TCPError.sendFailure
+                throw "TCPError.sendFailure"
             }
         }
         
