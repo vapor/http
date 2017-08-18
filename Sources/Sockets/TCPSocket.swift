@@ -1,4 +1,3 @@
-import Streams
 import Dispatch
 
 #if os(Linux)
@@ -20,7 +19,7 @@ public class TCPSocket {
     let readSource: DispatchSourceRead
     
     /// A DispatchQueue that handles all TCP connections if no other is provided
-    static let queue = DispatchQueue(label: "org.openkitten.lynx.socket")
+    static let queue = DispatchQueue(label: "codes.vapor.tcpsocketqueue")
     
     /// The socket's address storage
     ///
@@ -29,13 +28,23 @@ public class TCPSocket {
     /// For clients, the hostname that is being connected to
     var socketAddress = UnsafeMutablePointer<sockaddr_storage>.allocate(capacity: 1)
     
-    public init(hostname: String, port: UInt16, client: Bool, dispatchQueue queue: DispatchQueue? = nil) throws {
+    let server: Bool
+    
+    /// Creates a new TCP socket
+    ///
+    /// - parameter hostname: For servers, the hostname on which clients are accepted. For clients, the hostname to connect to
+    /// - parameter port: For servers, the port to accept on. For clients, the port to connect to
+    /// - parameter client: `true` if the connection is for a server, `false` for clients
+    /// - parameter queue: The dispatch queue on which read callbacks are dispatched.b
+    internal init(hostname: String, port: UInt16, server: Bool, dispatchQueue queue: DispatchQueue? = nil) throws {
+        self.server = server
+        
         var addressCriteria = addrinfo.init()
         
         // Support both IPv4 and IPv6
         addressCriteria.ai_family = Int32(AF_INET)
         
-        if !client {
+        if server {
             addressCriteria.ai_flags = AI_PASSIVE
         }
         
@@ -91,6 +100,10 @@ public class TCPSocket {
         self.readSource.setCancelHandler(handler: self.cleanup)
     }
     
+    open func connect() {
+        
+    }
+    
     /// Called when closing the socket
     ///
     /// In charge of cleaning everything, from the socket's file descriptor to the SSL layer and anything extra
@@ -104,7 +117,7 @@ public class TCPSocket {
         #endif
     }
     
-    /// Closes the socket.
+    /// Closes the socket
     open func close() {
         self.readSource.cancel()
     }
@@ -118,5 +131,17 @@ public class TCPSocket {
         getsockopt(self.descriptor, SOL_SOCKET, SO_ERROR, &error, &len)
         
         return error == 0
+    }
+    
+    deinit {
+        // Closes the file descriptor when it's not used anymore.
+        // If it's closed properly, this will throw an error which we'll ignore
+        #if os(Linux)
+            Glibc.close(self.descriptor)
+        #else
+            Darwin.close(self.descriptor)
+        #endif
+        
+        socketAddress.deallocate(capacity: 1)
     }
 }
