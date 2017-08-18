@@ -1,9 +1,9 @@
-import Streams
+import Core
 import Dispatch
 import libc
 
 /// A COW interface to the underlying remote client
-public struct RemoteClient : Stream {
+public struct RemoteClient: Stream {
     public typealias Output = UnsafeBufferPointer<UInt8>
     
     public func map<T>(_ closure: @escaping ((Output) throws -> (T?))) -> StreamTransformer<Output, T> {
@@ -42,12 +42,12 @@ public struct RemoteClient : Stream {
     }
     
     @discardableResult
-    public func write(contentsAt pointer: UnsafePointer<UInt8>, withLengthOf length: Int) throws -> Int {
+    public func write(max: Int, from buffer: ByteBuffer) throws -> Int {
         guard let _remote = _remote else {
             throw TCPError.sendFailure
         }
         
-        return try _remote.write(contentsAt: pointer, withLengthOf: length)
+        return try _remote.write(max: max, from: buffer)
     }
 }
 

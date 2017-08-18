@@ -143,13 +143,16 @@ extension RemoteClient : HTTPRemote {
         if let body = body, body.buffer.count &- consumed < 65_536, let baseAddress = body.buffer.baseAddress {
             memcpy(pointer.advanced(by: consumed), baseAddress, body.buffer.count)
             consumed = consumed &+ body.buffer.count
-            
-            try self.write(contentsAt: pointer, withLengthOf: consumed)
+
+            let buffer = ByteBuffer(start: pointer, count: consumed)
+            try write(max: consumed, from: buffer)
         } else {
-            try self.write(contentsAt: pointer, withLengthOf: consumed)
+            let buffer = ByteBuffer(start: pointer, count: consumed)
+            try write(max: consumed, from: buffer)
             
-            if let body = body, let baseAddress = body.buffer.baseAddress {
-                try self.write(contentsAt: baseAddress, withLengthOf: body.buffer.count)
+            if let body = body {
+                let bytes = ByteBuffer(start: body.buffer.baseAddress, count: body.buffer.count)
+                try self.write(max: body.buffer.count, from: bytes)
             }
         }
     }

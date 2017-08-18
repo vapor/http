@@ -1,3 +1,4 @@
+import Core
 import Dispatch
 import libc
 
@@ -9,18 +10,17 @@ extension TCPSocket {
     /// - throws: If the socket is disconnected
     /// - returns: The amount of bytes written
     @discardableResult
-    public func write(contentsAt pointer: UnsafePointer<UInt8>, withLengthOf length: Int) throws -> Int {
-        #if os(Linux)
-            let sent = Glibc.send(self.descriptor, pointer, length, 0)
-        #else
-            let sent = Darwin.send(self.descriptor, pointer, length, 0)
-        #endif
-        
+    public func write(max: Int, from buffer: ByteBuffer) throws -> Int {
+        guard let pointer = buffer.baseAddress else {
+            return 0
+        }
+
+        let sent = send(self.descriptor, pointer, max, 0)
         guard sent != -1 else {
             switch errno {
             case EINTR:
                 // try again
-                return try self.write(contentsAt: pointer, withLengthOf: length)
+                return try write(max: max, from: buffer)
             case ECONNRESET:
                 // closed by peer, need to close this side.
                 // Since this is not an error, no need to throw unless the close

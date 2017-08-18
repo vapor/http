@@ -1,4 +1,4 @@
-import Streams
+import Core
 import Dispatch
 import libc
 
@@ -7,12 +7,14 @@ import libc
 fileprivate var len: socklen_t = socklen_t(MemoryLayout<UInt32>.size)
 
 /// Any TCP socket. It doesn't specify being a server or client yet.
-public class TCPSocket : Stream {
+public class TCPSocket: Core.Stream {
     /// Sockets stream buffers of bytes
-    public typealias Output = UnsafeBufferPointer<UInt8>
+    public typealias Output = ByteBuffer
     
     /// The file descriptor related to this socket
     public let descriptor: Int32
+
+    // MARK: Internal
     
     /// A ReadSource that will trigger the internal on-read function when the socket contains more data
     let readSource: DispatchSourceRead
@@ -109,20 +111,7 @@ public class TCPSocket : Stream {
         
         self.readSource.setCancelHandler(handler: self.cleanup)
     }
-    
-    /// Called when closing the socket
-    ///
-    /// In charge of cleaning everything, from the socket's file descriptor to the SSL layer and anything extra
-    ///
-    /// Do **not** call this manually, or your application will very likely crash.
-    open func cleanup() {
-        #if os(Linux)
-            Glibc.close(self.descriptor)
-        #else
-            Darwin.close(self.descriptor)
-        #endif
-    }
-    
+
     /// Closes the socket
     open func close() {
         self.readSource.cancel()
@@ -135,6 +124,8 @@ public class TCPSocket : Stream {
         
         return error == 0
     }
+
+    // MARK: Stream
     
     /// Internal typealias used to define a cascading callback
     typealias ProcessOutputCallback = ((Output) throws -> ())
@@ -150,16 +141,24 @@ public class TCPSocket : Stream {
         
         return stream
     }
-    
-    deinit {
-        // Closes the file descriptor when it's not used anymore.
-        // If it's closed properly, this will throw an error which we'll ignore
+
+    // MARK: Cleanup
+
+    /// Called when closing the socket
+    ///
+    /// In charge of cleaning everything, from the socket's file descriptor to the SSL layer and anything extra
+    ///
+    /// Do **not** call this manually, or your application will very likely crash.
+    internal func cleanup() {
         #if os(Linux)
             Glibc.close(self.descriptor)
         #else
             Darwin.close(self.descriptor)
         #endif
-        
+    }
+
+    deinit {
+        cleanup()
         socketAddress.deallocate(capacity: 1)
     }
 }

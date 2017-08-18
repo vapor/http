@@ -1,9 +1,9 @@
 import CHTTP
+import Core
 import Foundation
-import Streams
 
 /// Parses requests from a readable stream.
-public final class RequestParser: Streams.Stream, CHTTPParser {
+public final class RequestParser: Core.Stream, CHTTPParser {
     public typealias Output = Request
 
     // Internal variables to conform

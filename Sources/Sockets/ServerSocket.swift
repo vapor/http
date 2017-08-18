@@ -71,7 +71,8 @@ public final class ServerSocket : TCPSocket {
             let client = RemoteClient(descriptor: clientDescriptor, addr: addr) {
                 self.bufferQueue.sync {
                     self.clients[clientDescriptor] = nil
-                    addr.deallocate(capacity: 1)
+                    // FIXME:
+                    // addr.deallocate(capacity: 1)
                 }
             }
             

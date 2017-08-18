@@ -1,7 +1,7 @@
+import Core
 import Dispatch
-@testable import HTTP
+import HTTP
 import Sockets
-import Streams
 import XCTest
 
 #if Xcode

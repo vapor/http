@@ -1,7 +1,6 @@
 import CHTTP
 import Dispatch
 import Foundation
-import Streams
 
 /// Possible header states
 enum HeaderState {
