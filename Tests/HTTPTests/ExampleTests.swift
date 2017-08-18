@@ -24,16 +24,6 @@ class ExampleTests : XCTestCase {
                 return Response(status: 200)
             }.then(client.send)
             
-            let requestBase64 = Base64Stream(mode: .encoding)
-            
-            client.then(requestBase64.process)
-                
-            requestBase64.map { buffer in
-                return String(bytes: buffer, encoding: .utf8)
-            }.then {
-                _ = $0
-            }
-            
             client.listen()
         }
 
