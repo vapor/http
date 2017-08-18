@@ -22,19 +22,19 @@ public final class Client: Core.Stream {
     /// A pointer containing a maximum of `self.pointerSize` of data
     let pointer: UnsafeMutablePointer<UInt8>
 
+    let queue: DispatchQueue
+
     /// Creates a new Remote Client from the ServerSocket's details
-    init(socket: Socket) {
+    init(socket: Socket, queue: DispatchQueue) {
         self.socket = socket
-        self.readQueue = DispatchQueue(label: "codes.vapor.net.tcp.client.read", qos: .userInteractive)
+        self.queue = queue
 
         // Allocate one TCP packet
         self.pointerSize = 65_507
         self.pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: self.pointerSize)
         self.pointer.initialize(to: 0, count: self.pointerSize)
 
-        let writeQueue = DispatchQueue(label: "codes.vapor.net.tcp.client.write", qos: .userInteractive)
-        let writeSource = DispatchSource.makeWriteSource(fileDescriptor: socket.descriptor, queue: writeQueue)
-        self.writeQueue = writeQueue
+        let writeSource = DispatchSource.makeWriteSource(fileDescriptor: socket.descriptor, queue: queue)
         self.writeSource = writeSource
 
         writeSource.setEventHandler {
@@ -49,10 +49,7 @@ public final class Client: Core.Stream {
         writeSource.resume()
     }
 
-    let readQueue: DispatchQueue
     var readSource: DispatchSourceRead?
-
-    let writeQueue: DispatchQueue
     let writeSource: DispatchSourceWrite
     var writeData: DispatchData?
 
@@ -74,7 +71,7 @@ public final class Client: Core.Stream {
     public func listen() {
         let readSource = DispatchSource.makeReadSource(
             fileDescriptor: socket.descriptor,
-            queue: readQueue
+            queue: queue
         )
         self.readSource = readSource
 

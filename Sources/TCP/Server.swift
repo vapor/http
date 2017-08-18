@@ -8,23 +8,29 @@ public final class Server: Stream {
 
     /// The dispatch queue that peers are accepted on.
     let queue: DispatchQueue
-    let bufferQueue = DispatchQueue(label: "codes.vapor.clientBufferQueue", qos: .userInteractive)
-    let cleanupQueue = DispatchQueue(label: "codes.vapor.clientBufferQueue", qos: .background)
+    let workers: [DispatchQueue]
+    var worker: LoopIterator<[DispatchQueue]>
 
     /// Creates a new Server Socket
     ///
     /// - parameter hostname: The hostname to listen to. By default, all hostnames will be accepted
     /// - parameter port: The port to listen on.
     /// - throws: If reserving a socket failed.
-    public init(hostname: String = "0.0.0.0", port: UInt16) throws {
-        // Default to `.userInteractive` because this is a single thread responsible for *all* incoming connections
-        self.queue = DispatchQueue(label: "codes.vapor.clientConnectQueue", qos: .userInteractive)
-        self.socket = try Socket(hostname: hostname, port: port, isServer: true)
+    public convenience init(hostname: String = "0.0.0.0", port: UInt16) throws {
+        let socket = try Socket(hostname: hostname, port: port, isServer: true)
+        self.init(socket: socket)
     }
 
     public init(socket: Socket) {
         self.socket = socket
-        self.queue = DispatchQueue(label: "codes.vapor.clientConnectQueue", qos: .userInteractive)
+        self.queue = DispatchQueue(label: "codes.vapor.net.tcp.server.main", qos: .userInteractive)
+        var workers: [DispatchQueue] = []
+        for i in 1...8 {
+            let worker = DispatchQueue(label: "codes.vapor.net.tcp.server.worker.\(i)", qos: .userInteractive)
+            workers.append(worker)
+        }
+        worker = LoopIterator(collection: workers)
+        self.workers = workers
     }
 
     // Stores all clients so they won't be deallocated in the async process
@@ -57,6 +63,8 @@ public final class Server: Stream {
         )
         self.connectSource = connectSource
 
+        let bufferQueue = DispatchQueue(label: "codes.vapor.net.tcp.server.buffer")
+
         // For every connected client, this closure triggers
         connectSource.setEventHandler {
             // Prepare for a client's connection
@@ -74,7 +82,9 @@ public final class Server: Stream {
             }
 
             let clientSocket = Socket(descriptor: clientDescriptor, isServer: false)
-            let client = Client(socket: clientSocket)
+
+            let queue = self.worker.next() ?? self.queue
+            let client = Client(socket: clientSocket, queue: queue)
 
 //            let client = RemoteClient(descriptor: clientDescriptor, addr: addr) {
 //                self.bufferQueue.sync {
@@ -84,7 +94,7 @@ public final class Server: Stream {
 //                }
 //            }
 
-            self.bufferQueue.sync {
+            bufferQueue.sync {
                 self.clients[clientDescriptor] = client
             }
 
@@ -111,6 +121,33 @@ public final class Server: Stream {
         let stream = StreamTransformer<Output, T>(using: closure)
         branchStreams.append(stream.process)
         return stream
+    }
+}
+
+
+
+// MARK: Utilties
+
+public struct LoopIterator<Base: Collection>: IteratorProtocol {
+    private let collection: Base
+    private var index: Base.Index
+
+    public init(collection: Base) {
+        self.collection = collection
+        self.index = collection.startIndex
+    }
+
+    public mutating func next() -> Base.Iterator.Element? {
+        guard !collection.isEmpty else {
+            return nil
+        }
+
+        let result = collection[index]
+        collection.formIndex(after: &index) // (*) See discussion below
+        if index == collection.endIndex {
+            index = collection.startIndex
+        }
+        return result
     }
 }
 
