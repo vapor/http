@@ -4,12 +4,14 @@ import PackageDescription
 let package = Package(
     name: "Engine",
     products: [
+        .library(name: "Async", targets: ["Async"]),
         .library(name: "Streams", targets: ["Streams"]),
         .library(name: "Sockets", targets: ["Sockets"]),
         .library(name: "HTTP", targets: ["HTTP"]),
     ],
     dependencies: [],
     targets: [
+        .target(name: "Async"),
         .target(name: "Streams"),
         .testTarget(name: "StreamsTests", dependencies: ["Streams"]),
         .target(name: "Sockets", dependencies: ["Streams"]),

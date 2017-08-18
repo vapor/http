@@ -1,3 +1,4 @@
+import Streams
 import Dispatch
 
 #if os(Linux)
@@ -11,9 +12,9 @@ import Dispatch
 fileprivate var len: socklen_t = socklen_t(MemoryLayout<UInt32>.size)
 
 /// Any TCP socket. It doesn't specify being a server or client yet.
-public class TCPSocket {
+public class TCPSocket : Stream {
     /// Sockets stream buffers of bytes
-    public typealias Streamable = UnsafeBufferPointer<UInt8>
+    public typealias Output = UnsafeBufferPointer<UInt8>
     
     /// The file descriptor related to this socket
     public let descriptor: Int32
@@ -114,10 +115,6 @@ public class TCPSocket {
         self.readSource.setCancelHandler(handler: self.cleanup)
     }
     
-    open func connect() {
-        
-    }
-    
     /// Called when closing the socket
     ///
     /// In charge of cleaning everything, from the socket's file descriptor to the SSL layer and anything extra
@@ -142,6 +139,21 @@ public class TCPSocket {
         getsockopt(self.descriptor, SOL_SOCKET, SO_ERROR, &error, &len)
         
         return error == 0
+    }
+    
+    /// Internal typealias used to define a cascading callback
+    fileprivate typealias ProcessOutputCallback = ((Output) throws -> ())
+    
+    /// All entities waiting for a new packet
+    fileprivate var branchStreams = [ProcessOutputCallback]()
+    
+    /// Maps this stream of data to a stream of other information
+    public func map<T>(_ closure: @escaping ((Output) throws -> (T?))) -> StreamTransformer<Output, T> {
+        let stream = StreamTransformer<Output, T>(using: closure)
+        
+        branchStreams.append(stream.transform)
+        
+        return stream
     }
     
     deinit {
