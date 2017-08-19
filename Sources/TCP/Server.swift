@@ -5,11 +5,8 @@ import libc
 /// A server socket can accept peers. Each accepted peer get's it own socket after accepting.
 public final class Server: Core.OutputStream {
     // MARK: Stream
-
-    /// Stream output type
     public typealias Output = Client
-
-    /// Output stream
+    public var error: ErrorHandler?
     public var output: OutputHandler?
 
     // MARK: Dispatch
@@ -110,7 +107,8 @@ public final class Server: Core.OutputStream {
                 self.clients[clientDescriptor] = client
             }
 
-            try! self.output?(client)
+            client.error = self.error
+            self.output?(client)
         }
 
         connectSource.resume()

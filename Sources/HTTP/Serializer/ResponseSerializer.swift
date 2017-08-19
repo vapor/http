@@ -7,12 +7,13 @@ public final class ResponseSerializer: Serializer {
     public typealias Input = Response
     public typealias Output = DispatchData
     public var output: OutputHandler?
+    public var error: ErrorHandler?
 
     public init() {}
 
-    public func input(_ input: Response) throws {
+    public func input(_ input: Response) {
         let data = serialize(input)
-        try output?(data)
+        output?(data)
     }
 
     public func serialize(_ response: Response) -> DispatchData {

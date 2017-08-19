@@ -1,7 +1,7 @@
 import Core
 
 public protocol Responder {
-    func respond(to req: Request, using writer: ResponseWriter) throws
+    func respond(to req: Request, using writer: ResponseWriter)
 }
 
 extension Responder {
@@ -13,7 +13,7 @@ extension Responder {
 // MARK: Writer
 
 public protocol ResponseWriter {
-    func write(_ response: Response) throws
+    func write(_ response: Response)
 }
 
 extension ResponseWriter {
@@ -27,11 +27,12 @@ extension ResponseWriter {
 public final class ResponseOutputStream: ResponseWriter, Core.OutputStream {
     public typealias Output = Response
     public var output: OutputHandler?
+    public var error: ErrorHandler?
 
     public init() {}
 
-    public func write(_ response: Response) throws {
-        try output?(response)
+    public func write(_ response: Response) {
+        output?(response)
     }
 }
 
@@ -39,18 +40,19 @@ public final class ResponseOutputStream: ResponseWriter, Core.OutputStream {
 public final class ResponderStream<R: Responder>: Core.Stream {
     public typealias Input = Request
     public typealias Output = Response
+    public var error: ErrorHandler?
+    public var output: OutputHandler?
 
     let responder: R
-    public var output: OutputHandler?
 
     public init(_ responder: R) {
         self.responder = responder
     }
 
-    public func input(_ input: Request) throws {
+    public func input(_ input: Request) {
         let writer = ResponseOutputStream()
         writer.output = output
-        try responder.respond(to: input, using: writer)
+        responder.respond(to: input, using: writer)
     }
 }
 

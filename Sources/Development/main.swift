@@ -4,10 +4,11 @@ import Foundation
 import HTTP
 import TCP
 
+let res = try Response(status: .ok, body: "hi")
+
 struct Application: Responder {
-    func respond(to req: Request, using writer: ResponseWriter) throws {
-        let res = try Response(status: .ok, body: "hi")
-        try writer.write(res)
+    func respond(to req: Request, using writer: ResponseWriter) {
+        writer.write(res)
     }
 }
 
@@ -24,6 +25,10 @@ server.consume { client in
         .consume(into: client)
 
     client.listen()
+}
+
+server.error = { error in
+    print(error)
 }
 
 try server.start()

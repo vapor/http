@@ -8,6 +8,7 @@ public final class RequestParser: Core.Stream, CParser {
     public typealias Input = ByteBuffer
     public typealias Output = Request
     public var output: OutputHandler?
+    public var error: ErrorHandler?
 
     // Internal variables to conform
     // to the C HTTP parser protocol.
@@ -24,12 +25,22 @@ public final class RequestParser: Core.Stream, CParser {
         initialize(&settings)
     }
 
+    func reset() {
+        http_parser_init(&parser, HTTP_REQUEST)
+        initialize(&settings)
+    }
+
     /// Handles incoming stream data
-    public func input(_ input: ByteBuffer) throws {
-        guard let request = try parse(from: input) else {
-            return
+    public func input(_ input: ByteBuffer) {
+        do {
+            guard let request = try parse(from: input) else {
+                return
+            }
+            output?(request)
+        } catch {
+            self.error?(error)
+            reset()
         }
-        try output?(request)
     }
 
     /// Parses a Request from the stream.

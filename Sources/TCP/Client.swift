@@ -8,8 +8,7 @@ public final class Client: Core.Stream {
     // MARK: Stream
     public typealias Input = DispatchData
     public typealias Output = ByteBuffer
-
-    /// Output stream
+    public var error: ErrorHandler?
     public var output: OutputHandler?
 
     // MARK: Dispatch
@@ -37,7 +36,7 @@ public final class Client: Core.Stream {
     }
 
     // MARK: Public methods
-    public func input(_ input: DispatchData) throws {
+    public func input(_ input: DispatchData) {
         if queuedData == nil {
             queuedData = input
         } else {
@@ -56,7 +55,11 @@ public final class Client: Core.Stream {
 
                 let copied = Data(data)
                 let buffer = ByteBuffer(start: copied.withUnsafeBytes { $0 }, count: copied.count)
-                try! self.socket.write(max: copied.count, from: buffer)
+                do {
+                    try self.socket.write(max: copied.count, from: buffer)
+                } catch {
+                    self.error?(error)
+                }
             }
         }
         
@@ -72,13 +75,19 @@ public final class Client: Core.Stream {
         self.readSource = readSource
 
         readSource.setEventHandler {
-            let read = try! self.socket.read(max: self.buffer.count, into: self.buffer)
+            let read: Int
+            do {
+                read = try self.socket.read(max: self.buffer.count, into: self.buffer)
+            } catch {
+                self.error?(error)
+                return
+            }
 
             let frame = ByteBuffer(
                 start: self.buffer.baseAddress,
                 count: read
             )
-            try! self.output?(frame)
+            self.output?(frame)
         }
 
         readSource.resume()
