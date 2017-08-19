@@ -83,18 +83,18 @@ public final class RequestParser: Core.Stream, CParser {
         var uri = URIParser.shared.parse(bytes: results.url!)
 
 
-        let headers = Headers(dictionaryElements: results.headers)
+        let headers = Headers(storage: results.headers)
 
         // set the host on the uri if it exists
         // in the headers
-        if let hostname = headers["host"] {
-            let (host, port) = parse(host: hostname.stringValue)
+        if let hostname = headers[.host] {
+            let (host, port) = parse(host: hostname)
             uri.hostname = host
             uri.port = port ?? uri.port
         }
 
         // if there is no scheme, use http by default
-        if uri.scheme.isEmpty == true {
+        if uri.scheme?.isEmpty == true {
             uri.scheme = "http"
         }
 
@@ -105,11 +105,10 @@ public final class RequestParser: Core.Stream, CParser {
 
         let body: Body
         if let data = results.body {
-            var copied = Data(data)
-            let buffer = UnsafeMutableBufferPointer<Byte>.init(start: copied.withUnsafeMutableBytes { $0 }, count: data.count)
-            body = Body.init(pointingTo: buffer, deallocating: false)
+            let copied = Data(data)
+            body = Body(copied)
         } else {
-            body = Body([])
+            body = Body()
         }
 
 

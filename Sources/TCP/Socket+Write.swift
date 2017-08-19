@@ -21,14 +21,14 @@ extension Socket {
             case EINTR:
                 // try again
                 return try write(max: max, from: buffer)
-            case ECONNRESET:
+            case ECONNRESET, EBADF:
                 // closed by peer, need to close this side.
                 // Since this is not an error, no need to throw unless the close
                 // itself throws an error.
                 self.close()
                 return 0
             default:
-                throw "TCPError.sendFailure"
+                throw "TCPError.sendFailure: \(errno)"
             }
         }
         

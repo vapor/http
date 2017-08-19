@@ -1,3 +1,4 @@
+import Core
 import CHTTP
 import Dispatch
 import Foundation
@@ -5,7 +6,7 @@ import Foundation
 /// Possible header states
 enum HeaderState {
     case none
-    case value(key: HeaderKey, DispatchData)
+    case value(name: Headers.Name, DispatchData)
     case key(DispatchData)
 }
 
@@ -84,12 +85,8 @@ extension CParser {
                 // there was previously a value being parsed.
                 // it is now finished.
                 let copiedValue = Data(value)
-                let valueBuffer = UnsafeBufferPointer<Byte>(
-                    start: copiedValue.withUnsafeBytes { $0 },
-                    count: copiedValue.count
-                )
-                let headerValue = HeaderValue(buffer: valueBuffer)
-                results.headers.append((key, headerValue))
+                let headerValue = String(data: copiedValue, encoding: .utf8) ?? ""
+                results.headers[key, default: []].append(headerValue)
                 // start a new key
                 results.headerState = .key(data)
             case .key(var key):
@@ -124,15 +121,15 @@ extension CParser {
                 // there was previously a value being parsed.
                 // add the new bytes to it.
                 value.append(data)
-                results.headerState = .value(key: key, value)
+                results.headerState = .value(name: key, value)
             case .key(let key):
                 // there was previously a key being parsed.
                 // it is now finished.
                 let copiedKey = Data(key)
                 let key = String(data: copiedKey, encoding: .utf8)
-                let headerKey = HeaderKey(key ?? "")
+                let headerKey = Headers.Name(key ?? "")
                 // add the new bytes alongside the created key
-                results.headerState = .value(key: headerKey, data)
+                results.headerState = .value(name: headerKey, data)
             }
 
             return 0
@@ -151,10 +148,8 @@ extension CParser {
                 // there was previously a value being parsed.
                 // it should be added to the headers dict.
                 let copiedValue = Data(value)
-                let valueString = String(data: copiedValue, encoding: .utf8)
-
-                let headerValue = HeaderValue(valueString ?? "")
-                results.headers.append((key, headerValue))
+                let valueString = String(data: copiedValue, encoding: .utf8) ?? ""
+                results.headers[key, default: []].append(valueString)
             default:
                 // no other cases need to be handled.
                 break
