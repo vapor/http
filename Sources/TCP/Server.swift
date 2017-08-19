@@ -98,7 +98,7 @@ public final class Server: Stream {
                 self.clients[clientDescriptor] = client
             }
 
-            self.closures.forEach { try! $0(client) }
+            _ = try? self.stream.write(client)
         }
 
         connectSource.resume()
@@ -107,11 +107,11 @@ public final class Server: Stream {
     // MARK: Stream
 
     public typealias Output = Client
-    public typealias ClientHandler = (Client) throws -> (Void)
-    var closures: [ClientHandler] = []
+    public typealias ClientHandler = (Client) throws -> (Future<Void>)
+    let stream = BasicStream<Output>()
     
     public func then(_ closure: @escaping ClientHandler) {
-        closures.append(closure)
+        stream.then(closure)
     }
 }
 

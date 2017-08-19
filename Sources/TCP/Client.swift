@@ -118,7 +118,8 @@ public final class Client: Core.Stream {
                 start: self.pointer,
                 count: self.read
             )
-            self.closures.forEach { try! $0(buffer) }
+            
+            _ = try? self.stream.write(buffer)
         }
 
         readSource.resume()
@@ -139,14 +140,15 @@ public final class Client: Core.Stream {
     // MARK: Stream
 
     public typealias Output = ByteBuffer
-    public typealias ByteBufferHandler = (ByteBuffer) throws -> (Void)
-    var closures: [ByteBufferHandler] = []
-
+    public typealias ByteBufferHandler = (ByteBuffer) throws -> (Future<Void>)
+    
+    let stream = BasicStream<Output>()
+    
     /// Registers a closure that must be executed for every `Output` event
     ///
     /// - parameter closure: The closure to execute for each `Output` event
     public func then(_ closure: @escaping ByteBufferHandler) {
-        closures.append(closure)
+        stream.then(closure)
     }
 }
 

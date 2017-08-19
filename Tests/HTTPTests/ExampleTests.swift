@@ -16,17 +16,17 @@ class ExampleTests : XCTestCase {
 //    Requests/sec: 106308.54
 //    Transfer/sec:      3.85MB
     func testExample() throws {
-        let server = try Server(port: 8080)
-
-        server.then { client in
-            let parser = RequestParser()
-
-            client.map(parser.parse).map { request in
-                return Response(status: 200)
-            }.then(client.send)
-
-            client.listen()
-        }
+//        let server = try Server(port: 8080)
+//
+//        server.then { client in
+//            let parser = RequestParser()
+//
+//            client.map(parser.parse).map { request in
+//                return Response(status: 200)
+//            }.then(client.send)
+//
+//            client.listen()
+//        }
 
 //        #if Xcode
 //        try server.start()

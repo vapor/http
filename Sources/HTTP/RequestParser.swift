@@ -143,11 +143,12 @@ public final class RequestParser: Core.Stream, CParser {
     // MARK: Stream
 
     public typealias Output = Request
-    public typealias RequestHandler = (Request) throws -> (Void)
-    var closures: [RequestHandler] = []
+    public typealias RequestHandler = (Request) throws -> (Future<Void>)
+    
+    let stream = BasicStream<Output>()
 
     public func then(_ closure: @escaping RequestHandler) {
-        closures.append(closure)
+        stream.then(closure)
     }
 }
 

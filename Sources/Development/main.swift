@@ -5,12 +5,12 @@ import TCP
 
 let server = try TCP.Server(port: 8080)
 
-server.then { client in
+server.process { client in
     let parser = HTTP.RequestParser()
 
     client.map(parser.parse).map { request in
         return HTTP.Response(status: .ok, body: "hi")
-    }.then(client.send)
+    }.process(using: client.send)
     
     client.listen()
 }
