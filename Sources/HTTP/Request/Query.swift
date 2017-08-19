@@ -97,7 +97,7 @@ public struct Query : CustomDebugStringConvertible, RawRepresentable {
 extension Request {
     /// Extracts a query from the request
     public var form: Query {
-        return self.body?.query ?? Query()
+        return self.body.query ?? Query()
     }
 }
 
@@ -107,7 +107,7 @@ extension BodyRepresentable {
         guard let body = try? self.makeBody() else {
             return nil
         }
-        
+
         return Query(buffer: UnsafeBufferPointer(start: body.buffer.baseAddress, count: body.buffer.count))
     }
 }

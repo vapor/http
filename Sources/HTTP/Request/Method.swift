@@ -5,17 +5,17 @@ public enum Method : Equatable, Hashable, Codable, CustomDebugStringConvertible,
     /// Decodes a method from a String
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        
+
         let string = try container.decode(String.self).uppercased()
-        
+
         self.init(string)
     }
-    
+
     /// Debug helper, allows you to `po` a method and get it's debugDescription
     public var debugDescription: String {
         return string
     }
-    
+
     /// Represents this method as a String
     public var string: String {
         switch self {
@@ -28,50 +28,50 @@ public enum Method : Equatable, Hashable, Codable, CustomDebugStringConvertible,
         case .other(let method): return method
         }
     }
-    
+
     /// Encodes this method to a String
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.string)
     }
-    
+
     /// A GET request is used to retrieve information, such as a web-page or profile picture
     ///
     /// GET Requests will not provide a body
     case get
-    
+
     /// PUT is used to overwrite information.
     ///
     /// `PUT /users/1` is should replace the information for the user with ID `1`
     ///
     /// It may create a new entity if the requested entity didn't exist.
     case put
-    
+
     /// POST is used to create a new entity, such as a reaction in the comment section
     ///
     /// One of the more common methods, since it's also used to create new users and log in existing users
     case post
-    
+
     /// DELETE is an action that... deletes an entity.
     ///
     /// DELETE requests cannot provide a body
     case delete
-    
+
     /// PATCH is similar to PUT in that it updates an entity.
     ///
     /// ..but where PUT replaces an entity, PATCH only updated the specified fields
     case patch
-    
+
     /// OPTIONS is used by the browser to check if the conditions allow a specific request.
     ///
     /// Often used for secutity purposes.
     case options
-    
+
     /// There are many other methods. But the other ones are most commonly used.
     ///
     /// This `.other` contains the provided METHOD
     case other(String)
-    
+
     /// A hashValue is useful for using the method in a dictionary
     public var hashValue: Int {
         switch self {
@@ -84,7 +84,7 @@ public enum Method : Equatable, Hashable, Codable, CustomDebugStringConvertible,
         case .other(let s):  return 2006 &+ s.hashValue
         }
     }
-    
+
     /// Compares two methods to be equal
     public static func ==(lhs: Method, rhs: Method) -> Bool {
         switch (lhs, rhs) {
@@ -98,7 +98,7 @@ public enum Method : Equatable, Hashable, Codable, CustomDebugStringConvertible,
         default: return false
         }
     }
-    
+
     /// Creates a new method from a String
     public init(_ string: String ){
         switch string {
@@ -111,60 +111,19 @@ public enum Method : Equatable, Hashable, Codable, CustomDebugStringConvertible,
         default: self = .other(string)
         }
     }
-    
+
     /// Instantiate a Method from a String literal
     public init(stringLiteral value: String) {
         self.init(value)
     }
-    
+
     /// Instantiate a Method from a String literal
     public init(unicodeScalarLiteral value: String) {
         self.init(value)
     }
-    
+
     /// Instantiate a Method from a String literal
     public init(extendedGraphemeClusterLiteral value: String) {
         self.init(value)
-    }
-}
-
-/// Class so you don't copy the data at all and treat them like a state machine
-open class Request : Codable {
-    /// The HTTP method, the operation type
-    public let method: Method
-    
-    /// The path at which the operation is done
-    public var path: Path
-    
-    /// The headers provide metadata
-    public var headers: Headers
-    
-    /// The body is used to provide concrete information with relation to the operation
-    ///
-    /// Often contains a form, Multipart, file or JSON
-    public var body: Body?
-    
-    /// Creates a new request
-    public init(method: Method, path: Path, headers: Headers = [:], body: Body? = nil) {
-        self.method = method
-        self.path = path
-        self.headers = headers
-        self.body = body
-    }
-    
-    /// Creates a new request
-    public init(method: Method, path: Path, headers: Headers = [:], bodyRepresentable body: BodyRepresentable) throws {
-        self.method = method
-        self.path = path
-        self.headers = headers
-        self.body = try body.makeBody()
-    }
-    
-    /// Creates a new request from a raw buffer
-    public init(method: Method, path: Path, headers: Headers = [:], body: UnsafeMutableBufferPointer<UInt8>, deallocating: Bool = false) {
-        self.method = method
-        self.path = path
-        self.headers = headers
-        self.body = Body(pointingTo: body, deallocating: deallocating)
     }
 }
