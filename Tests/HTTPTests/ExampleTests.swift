@@ -1,7 +1,7 @@
 import Core
 import Dispatch
 import HTTP
-import Sockets
+import TCP
 import XCTest
 
 class ExampleTests : XCTestCase {

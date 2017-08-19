@@ -1,6 +1,6 @@
 import Foundation
 
-public final class Request: Codable {
+public final class Request: Message {
     public var method: Method
     public var uri: URI
     public var version: Version

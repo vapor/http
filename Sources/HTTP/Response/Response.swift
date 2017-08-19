@@ -31,7 +31,7 @@ extension Status {
 /// An HTTP response
 ///
 /// To be returned to a client
-public class Response : Codable {
+public class Response: Message {
     /// Encodes the response to a dictionary-type
     public func encode(to encoder: Encoder) throws {
         let body = try self.body?.makeBody()
@@ -49,15 +49,18 @@ public class Response : Codable {
         self.status = try container.decode(Status.self, forKey: .status)
         self.headers = try container.decode(Headers.self, forKey: .headers)
         self.body = try container.decodeIfPresent(Body.self, forKey: .body)
+        self.version = try container.decode(Version.self, forKey: .version)
     }
     
     /// Used internally for encoding/decoding purposes
     fileprivate enum CodingKeys : String, Swift.CodingKey {
-        case status, headers, body
+        case status, headers, body, version
     }
     
     /// The resulting status
     public var status: Status
+
+    public var version: Version
     
     /// The headers to be responded with
     public var headers: Headers
@@ -73,6 +76,7 @@ public class Response : Codable {
     public init(status: Status, headers: Headers = Headers()) {
         self.status = status
         self.headers = headers
+        self.version = Version(major: 1, minor: 1)
     }
     
     /// Creates a new response with a body
@@ -80,6 +84,7 @@ public class Response : Codable {
         self.status = status
         self.headers = headers
         self.body = body
+        self.version = Version(major: 1, minor: 1)
     }
 }
 
