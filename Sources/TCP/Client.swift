@@ -5,22 +5,25 @@ import libc
 
 /// The remote peer of a `ServerSocket`
 public final class Client: Core.Stream {
-    public let socket: Socket
+    // MARK: Stream
+    public typealias Input = DispatchData
+    public typealias Output = ByteBuffer
 
-    /// A closure that can be called whenever the socket encountered a critical error
-    public var onError: ((Error) -> ())? = nil
+    /// Output stream
+    public var output: OutputHandler?
 
-    /// The maximum amount of data inside `pointer`
-    let pointerSize: Int
+    // MARK: Dispatch
 
-    /// The amount of data currently in `pointer`
-    var read = 0
+    /// This client's dispatch queue.
+    public let queue: DispatchQueue
 
-    /// A pointer containing a maximum of `self.pointerSize` of data
-    let pointer: UnsafeMutablePointer<UInt8>
+    // MARK: Internal
 
-    let queue: DispatchQueue
-    let channel: DispatchIO
+    let socket: Socket
+    let buffer: MutableByteBuffer
+    var readSource: DispatchSourceRead?
+    var writeSource: DispatchSourceWrite?
+    var queuedData: DispatchData?
 
     /// Creates a new Remote Client from the ServerSocket's details
     init(socket: Socket, queue: DispatchQueue) {
@@ -28,34 +31,17 @@ public final class Client: Core.Stream {
         self.queue = queue
 
         // Allocate one TCP packet
-        self.pointerSize = 65_507
-        self.pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: self.pointerSize)
-        self.pointer.initialize(to: 0, count: self.pointerSize)
-        self.channel = DispatchIO(
-            type: .stream,
-            fileDescriptor: socket.descriptor,
-            queue: queue,
-            cleanupHandler: {
-                int in
-            }
-        )
+        let size = 65_507
+        let pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: size)
+        self.buffer = MutableByteBuffer(start: pointer, count: size)
     }
 
-    var readSource: DispatchSourceRead?
-    var writeSource: DispatchSourceWrite?
-
-    public func close() {
-        readSource?.cancel()
-        socket.close()
-    }
-
-    var queuedData: DispatchData?
-
-    public func write(_ data: DispatchData) {
+    // MARK: Public methods
+    public func input(_ input: DispatchData) throws {
         if queuedData == nil {
-            queuedData = data
+            queuedData = input
         } else {
-            queuedData?.append(data)
+            queuedData?.append(input)
         }
 
         if writeSource == nil {
@@ -72,25 +58,8 @@ public final class Client: Core.Stream {
                 let buffer = ByteBuffer(start: copied.withUnsafeBytes { $0 }, count: copied.count)
                 try! self.socket.write(max: copied.count, from: buffer)
             }
+            write.resume()
         }
-        writeSource?.resume()
-//        channel.write(
-//            offset: 0,
-//            data: data,
-//            queue: queue
-//        ) { done, data, err in
-//            if err != 0 {
-//                print("there was a write err")
-//            }
-//
-//            if done {
-//                return
-//            }
-//
-//            if let data = data {
-//                self.write(data)
-//            }
-//        }
     }
 
     /// Starts receiving data from the client
@@ -102,53 +71,32 @@ public final class Client: Core.Stream {
         self.readSource = readSource
 
         readSource.setEventHandler {
-            self.read = recv(self.socket.descriptor, self.pointer, self.pointerSize, 0)
+            let read = try! self.socket.read(max: self.buffer.count, into: self.buffer)
 
-            guard self.read > -1 else {
-                self.handleError("TCPError.readFailure")
-                return
-            }
-
-            guard self.read != 0 else {
-                self.socket.close()
-                return
-            }
-
-            let buffer = ByteBuffer(
-                start: self.pointer,
-                count: self.read
+            let frame = ByteBuffer(
+                start: self.buffer.baseAddress,
+                count: read
             )
-            
-            _ = try? self.stream.write(buffer)
+            try! self.output?(frame)
         }
 
         readSource.resume()
     }
 
-    /// Takes care of error handling
-    func handleError(_ error: Error) {
-        self.socket.close()
-        self.onError?(error)
+    public func close() {
+        readSource?.cancel()
+        socket.close()
     }
+
+    // MARK: Utilities
 
     /// Deallocated the pointer buffer
     deinit {
-        pointer.deinitialize(count: self.pointerSize)
-        pointer.deallocate(capacity: self.pointerSize)
-    }
-
-    // MARK: Stream
-
-    public typealias Output = ByteBuffer
-    public typealias ByteBufferHandler = (ByteBuffer) throws -> (Future<Void>)
-    
-    let stream = BasicStream<Output>()
-    
-    /// Registers a closure that must be executed for every `Output` event
-    ///
-    /// - parameter closure: The closure to execute for each `Output` event
-    public func then(_ closure: @escaping ByteBufferHandler) {
-        stream.then(closure)
+        guard let pointer = buffer.baseAddress else {
+            return
+        }
+        pointer.deinitialize(count: buffer.count)
+        pointer.deallocate(capacity: buffer.count)
     }
 }
 

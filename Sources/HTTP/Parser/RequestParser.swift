@@ -4,6 +4,11 @@ import Foundation
 
 /// Parses requests from a readable stream.
 public final class RequestParser: Core.Stream, CParser {
+    // MARK: Stream
+    public typealias Input = ByteBuffer
+    public typealias Output = Request
+    public var output: OutputHandler?
+
     // Internal variables to conform
     // to the C HTTP parser protocol.
     var parser: http_parser
@@ -19,8 +24,16 @@ public final class RequestParser: Core.Stream, CParser {
         initialize(&settings)
     }
 
+    /// Handles incoming stream data
+    public func input(_ input: ByteBuffer) throws {
+        guard let request = try parse(from: input) else {
+            return
+        }
+        try output?(request)
+    }
+
     /// Parses a Request from the stream.
-    public func parse(from buffer: ByteBuffer) throws -> Request? {
+    private func parse(from buffer: ByteBuffer) throws -> Request? {
         let results: CParseResults
 
         switch state {
@@ -124,7 +137,7 @@ public final class RequestParser: Core.Stream, CParser {
         return request
     }
 
-    func parse(host: String) -> (host: String, port: Port?) {
+    private func parse(host: String) -> (host: String, port: Port?) {
         let components = host.split(
             separator: ":",
             maxSplits: 1,
@@ -137,17 +150,6 @@ public final class RequestParser: Core.Stream, CParser {
         } else {
             return (host, nil)
         }
-    }
-
-    // MARK: Stream
-
-    public typealias Output = Request
-    public typealias RequestHandler = (Request) throws -> (Future<Void>)
-    
-    let stream = BasicStream<Output>()
-
-    public func then(_ closure: @escaping RequestHandler) {
-        stream.then(closure)
     }
 }
 

@@ -4,16 +4,31 @@ import Foundation
 import HTTP
 import TCP
 
+final class Application: Core.Stream {
+    typealias Input = Request
+    typealias Output = Response
+
+    var output: OutputHandler?
+
+    func input(_ input: Request) throws {
+        let res = try Response(status: .ok, body: "hi")
+        try output?(res)
+    }
+
+}
+
 let server = try TCP.Server(port: 8080)
 
-server.process { client in
+server.consume { client in
+    let app = Application()
     let parser = HTTP.RequestParser()
     let serializer = HTTP.ResponseSerializer()
 
-    client.map(parser.parse).map { request in
-        return try! HTTP.Response(status: .ok, body: "hi")
-    }.map(serializer.serialize).process(using: client.write)
-    
+    client.stream(to: parser)
+        .stream(to: app)
+        .stream(to: serializer)
+        .consume(into: client)
+
     client.listen()
 }
 

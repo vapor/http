@@ -3,11 +3,23 @@ import Dispatch
 import libc
 
 /// A server socket can accept peers. Each accepted peer get's it own socket after accepting.
-public final class Server: Stream {
-    public let socket: Socket
+public final class Server: Core.OutputStream {
+    // MARK: Stream
+
+    /// Stream output type
+    public typealias Output = Client
+
+    /// Output stream
+    public var output: OutputHandler?
+
+    // MARK: Dispatch
 
     /// The dispatch queue that peers are accepted on.
-    let queue: DispatchQueue
+    public let queue: DispatchQueue
+
+    // MARK: Internal
+
+    let socket: Socket
     let workers: [DispatchQueue]
     var worker: LoopIterator<[DispatchQueue]>
 
@@ -98,20 +110,10 @@ public final class Server: Stream {
                 self.clients[clientDescriptor] = client
             }
 
-            _ = try? self.stream.write(client)
+            try! self.output?(client)
         }
 
         connectSource.resume()
-    }
-
-    // MARK: Stream
-
-    public typealias Output = Client
-    public typealias ClientHandler = (Client) throws -> (Future<Void>)
-    let stream = BasicStream<Output>()
-    
-    public func then(_ closure: @escaping ClientHandler) {
-        stream.then(closure)
     }
 }
 

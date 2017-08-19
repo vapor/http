@@ -1,4 +1,6 @@
+import Core
+
 /// Internal Swift HTTP serializer protocol.
-internal protocol Serializer {
+internal protocol Serializer: Core.Stream {
     
 }

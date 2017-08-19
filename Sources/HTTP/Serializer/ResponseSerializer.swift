@@ -3,7 +3,17 @@ import Dispatch
 import Foundation
 
 public final class ResponseSerializer: Serializer {
+    // MARK: Stream
+    public typealias Input = Response
+    public typealias Output = DispatchData
+    public var output: OutputHandler?
+
     public init() {}
+
+    public func input(_ input: Response) throws {
+        let data = serialize(input)
+        try output?(data)
+    }
 
     public func serialize(_ response: Response) -> DispatchData {
         var serialized = serialize(response.status)
