@@ -5,7 +5,7 @@ import libc
 
 /// The remote peer of a `ServerSocket`
 public final class Client: Core.Stream {
-    let socket: Socket
+    public let socket: Socket
 
     /// A closure that can be called whenever the socket encountered a critical error
     public var onError: ((Error) -> ())? = nil
@@ -20,6 +20,7 @@ public final class Client: Core.Stream {
     let pointer: UnsafeMutablePointer<UInt8>
 
     let queue: DispatchQueue
+    let channel: DispatchIO
 
     /// Creates a new Remote Client from the ServerSocket's details
     init(socket: Socket, queue: DispatchQueue) {
@@ -30,44 +31,66 @@ public final class Client: Core.Stream {
         self.pointerSize = 65_507
         self.pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: self.pointerSize)
         self.pointer.initialize(to: 0, count: self.pointerSize)
-
-        let writeSource = DispatchSource.makeWriteSource(fileDescriptor: socket.descriptor, queue: queue)
-        self.writeSource = writeSource
-        
-        writeSource.setEventHandler {
-            guard let (data, callback) = self.input else {
-                return
+        self.channel = DispatchIO(
+            type: .stream,
+            fileDescriptor: socket.descriptor,
+            queue: queue,
+            cleanupHandler: {
+                int in
             }
-            
-            defer { self.input = nil }
-            
-            do {
-                let buffer = ByteBuffer.init(start: data.withUnsafeBytes { $0 }, count: data.count)
-                try self.socket.write(max: data.count, from: buffer)
-            } catch {
-                _ = try? callback.complete(error)
-            }
-        }
-        
-        writeSource.resume()
+        )
     }
 
     var readSource: DispatchSourceRead?
-    let writeSource: DispatchSourceWrite
-    var input: (DispatchData, ManualFuture<Void>)?
-
-    public func write(_ data: DispatchData) throws {
-        let future = ManualFuture<Void>()
-        
-        self.input = (data, future)
-        
-        try future.await()
-    }
+    var writeSource: DispatchSourceWrite?
 
     public func close() {
         readSource?.cancel()
-        writeSource.cancel()
         socket.close()
+    }
+
+    var queuedData: DispatchData?
+
+    public func write(_ data: DispatchData) {
+        if queuedData == nil {
+            queuedData = data
+        } else {
+            queuedData?.append(data)
+        }
+
+        if writeSource == nil {
+            let write = DispatchSource.makeWriteSource(fileDescriptor: socket.descriptor)
+            self.writeSource = write
+            write.setEventHandler {
+                write.suspend()
+                guard let data = self.queuedData else {
+                    return
+                }
+                self.queuedData = nil
+
+                let copied = Data(data)
+                let buffer = ByteBuffer(start: copied.withUnsafeBytes { $0 }, count: copied.count)
+                try! self.socket.write(max: copied.count, from: buffer)
+            }
+        }
+        writeSource?.resume()
+//        channel.write(
+//            offset: 0,
+//            data: data,
+//            queue: queue
+//        ) { done, data, err in
+//            if err != 0 {
+//                print("there was a write err")
+//            }
+//
+//            if done {
+//                return
+//            }
+//
+//            if let data = data {
+//                self.write(data)
+//            }
+//        }
     }
 
     /// Starts receiving data from the client
@@ -91,12 +114,11 @@ public final class Client: Core.Stream {
                 return
             }
 
-            let buffer = UnsafeBufferPointer(
+            let buffer = ByteBuffer(
                 start: self.pointer,
                 count: self.read
             )
-            
-            _ = try? self.stream.write(buffer)
+            self.closures.forEach { try! $0(buffer) }
         }
 
         readSource.resume()
@@ -117,15 +139,14 @@ public final class Client: Core.Stream {
     // MARK: Stream
 
     public typealias Output = ByteBuffer
-
-    /// The underlying stream helper
-    let stream = BasicStream<Output>()
+    public typealias ByteBufferHandler = (ByteBuffer) throws -> (Void)
+    var closures: [ByteBufferHandler] = []
 
     /// Registers a closure that must be executed for every `Output` event
     ///
     /// - parameter closure: The closure to execute for each `Output` event
-    public func then(_ closure: @escaping ((ByteBuffer) throws -> (Future<Void>))) {
-        stream.then(closure)
+    public func then(_ closure: @escaping ByteBufferHandler) {
+        closures.append(closure)
     }
 }
 

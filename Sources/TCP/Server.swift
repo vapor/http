@@ -25,7 +25,7 @@ public final class Server: Stream {
         self.socket = socket
         self.queue = DispatchQueue(label: "codes.vapor.net.tcp.server.main", qos: .userInteractive)
         var workers: [DispatchQueue] = []
-        for i in 1...8 {
+        for i in 1...4 {
             let worker = DispatchQueue(label: "codes.vapor.net.tcp.server.worker.\(i)", qos: .userInteractive)
             workers.append(worker)
         }
@@ -98,7 +98,7 @@ public final class Server: Stream {
                 self.clients[clientDescriptor] = client
             }
 
-            _ = try? self.stream.write(client)
+            self.closures.forEach { try! $0(client) }
         }
 
         connectSource.resume()
@@ -107,11 +107,11 @@ public final class Server: Stream {
     // MARK: Stream
 
     public typealias Output = Client
-
-    let stream = BasicStream<Client>()
+    public typealias ClientHandler = (Client) throws -> (Void)
+    var closures: [ClientHandler] = []
     
-    public func then(_ closure: @escaping ((Client) throws -> (Future<Void>))) {
-        stream.then(closure)
+    public func then(_ closure: @escaping ClientHandler) {
+        closures.append(closure)
     }
 }
 

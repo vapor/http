@@ -145,19 +145,21 @@ extension Client : HTTPRemote {
             memcpy(pointer.advanced(by: consumed), baseAddress, body.buffer.count)
             consumed = consumed &+ body.buffer.count
 
-            let buffer = UnsafeRawBufferPointer(start: pointer, count: consumed)
-            let dispatchData = DispatchData(bytes: buffer)
-            try write(dispatchData)
-            // try socket.write(max: consumed, from: buffer)
+            try socket.write(max: consumed, from: ByteBuffer(start: pointer, count: consumed))
+//            let buffer = UnsafeRawBufferPointer(start: pointer, count: consumed)
+//            let dispatchData = DispatchData(bytes: buffer)
+//            write(dispatchData)
         } else {
-            let buffer = UnsafeRawBufferPointer(start: pointer, count: consumed)
-            let dispatchData = DispatchData(bytes: buffer)
-            try write(dispatchData)
-            
+            try socket.write(max: consumed, from: ByteBuffer(start: pointer, count: consumed))
+//            let buffer = UnsafeRawBufferPointer(start: pointer, count: consumed)
+//            let dispatchData = DispatchData(bytes: buffer)
+//            write(dispatchData)
+
             if let body = body {
-                let buffer = UnsafeRawBufferPointer(start: body.buffer.baseAddress, count: body.buffer.count)
-                let dispatchData = DispatchData(bytes: buffer)
-                try write(dispatchData)
+                try socket.write(max: consumed, from: ByteBuffer(start: pointer, count: body.buffer.count))
+//                let buffer = UnsafeRawBufferPointer(start: body.buffer.baseAddress, count: body.buffer.count)
+//                let dispatchData = DispatchData(bytes: buffer)
+//                write(dispatchData)
             }
         }
     }

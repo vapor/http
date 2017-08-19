@@ -9,10 +9,10 @@ server.then { client in
     let parser = HTTP.RequestParser()
 
     client.map(parser.parse).map { request in
-        return HTTP.Response(status: 200)
+        return HTTP.Response(status: .ok, body: "hi")
     }.then(client.send)
     
-    return Future(client.listen)
+    client.listen()
 }
 
 try server.start()

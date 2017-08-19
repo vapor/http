@@ -7,6 +7,7 @@ extension String: Error { }
 
 extension Socket {
     public func read(max: Int, into buffer: MutableByteBuffer) throws -> Int {
+        
         let receivedBytes = libc.read(descriptor, buffer.baseAddress.unsafelyUnwrapped, max)
 
         guard receivedBytes != -1 else {
