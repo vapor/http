@@ -1,3 +1,5 @@
+import XCTest
+
 class SocketsTests : XCTestCase {
     func testExample() throws {}
 

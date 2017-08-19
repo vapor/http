@@ -2,9 +2,6 @@ import Core
 import Dispatch
 import libc
 
-public typealias MutableByteBuffer = UnsafeMutableBufferPointer<Byte>
-extension String: Error { }
-
 extension Socket {
     public func read(max: Int, into buffer: MutableByteBuffer) throws -> Int {
         
