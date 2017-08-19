@@ -38,6 +38,13 @@ public final class Client: Core.Stream {
 
     // MARK: Public methods
     public func input(_ input: DispatchData) throws {
+
+
+        let copied = Data(input)
+        let buffer = ByteBuffer(start: copied.withUnsafeBytes { $0 }, count: copied.count)
+        try! self.socket.write(max: copied.count, from: buffer)
+
+        return
         if queuedData == nil {
             queuedData = input
         } else {
@@ -54,9 +61,6 @@ public final class Client: Core.Stream {
                 }
                 self.queuedData = nil
 
-                let copied = Data(data)
-                let buffer = ByteBuffer(start: copied.withUnsafeBytes { $0 }, count: copied.count)
-                try! self.socket.write(max: copied.count, from: buffer)
             }
             write.resume()
         }
