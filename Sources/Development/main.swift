@@ -4,6 +4,8 @@ import Foundation
 import HTTP
 import TCP
 
+let res = try Response(status: .ok, body: "hi")
+
 final class Application: Core.Stream {
     typealias Input = Request
     typealias Output = Response
@@ -11,7 +13,6 @@ final class Application: Core.Stream {
     var output: OutputHandler?
 
     func input(_ input: Request) throws {
-        let res = try Response(status: .ok, body: "hi")
         try output?(res)
     }
 
