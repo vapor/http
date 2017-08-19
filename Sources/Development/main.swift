@@ -4,10 +4,33 @@ import Foundation
 import HTTP
 import TCP
 
+struct User: Codable {
+    var name: String
+    var age: Int
+}
+
+extension User: MessageCodable {
+    static func decode(from message: Message) throws -> User {
+        guard message.mediaType == .json else {
+            throw "only json supported"
+        }
+
+        return try JSONDecoder().decode(User.self, from: message.body.data)
+    }
+
+    func encode(to message: Message) throws {
+        message.mediaType = .json
+        message.body = try Body(JSONEncoder().encode(self))
+    }
+
+}
+
 let res = try Response(status: .ok, body: "hi")
 
 struct Application: Responder {
     func respond(to req: Request, using writer: ResponseWriter) {
+        let user = User(name: "Vapor", age: 2)
+        try! res.content(user)
         writer.write(res)
     }
 }
