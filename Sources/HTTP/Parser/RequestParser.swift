@@ -1,10 +1,9 @@
-import Bits
 import CHTTP
-import Transport
-import URI
+import Core
+import Foundation
 
 /// Parses requests from a readable stream.
-public final class RequestParser: CHTTPParser {
+public final class RequestParser: Core.Stream, CParser {
     // Internal variables to conform
     // to the C HTTP parser protocol.
     var parser: http_parser
@@ -21,26 +20,26 @@ public final class RequestParser: CHTTPParser {
     }
 
     /// Parses a Request from the stream.
-    public func parse(max: Int, from buffer: Bytes) throws -> Request? {
-        let results: ParseResults
+    public func parse(from buffer: ByteBuffer) throws -> Request? {
+        let results: CParseResults
 
         switch state {
         case .ready:
             // create a new results object and set
             // a reference to it on the parser
-            let newResults = ParseResults.set(on: &parser)
+            let newResults = CParseResults.set(on: &parser)
             results = newResults
             state = .parsing
         case .parsing:
             // get the current parse results object
-            guard let existingResults = ParseResults.get(from: &parser) else {
+            guard let existingResults = CParseResults.get(from: &parser) else {
                 return nil
             }
             results = existingResults
         }
 
         /// parse the message using the C HTTP parser.
-        try executeParser(max: max, from: buffer)
+        try executeParser(max: buffer.count, from: buffer)
 
         guard results.isComplete else {
             return nil
@@ -49,7 +48,7 @@ public final class RequestParser: CHTTPParser {
         // the results have completed, so we are ready
         // for a new request to come in
         state = .ready
-        ParseResults.remove(from: &parser)
+        CParseResults.remove(from: &parser)
 
 
         /// switch on the C method type from the parser
@@ -59,18 +58,12 @@ public final class RequestParser: CHTTPParser {
             method = .delete
         case HTTP_GET:
             method = .get
-        case HTTP_HEAD:
-            method = .head
         case HTTP_POST:
             method = .post
         case HTTP_PUT:
             method = .put
-        case HTTP_CONNECT:
-            method = .connect
         case HTTP_OPTIONS:
             method = .options
-        case HTTP_TRACE:
-            method = .trace
         case HTTP_PATCH:
             method = .patch
         default:
@@ -81,18 +74,21 @@ public final class RequestParser: CHTTPParser {
                 let pointer = http_method_str(http_method(parser.method)),
                 let string = String(validatingUTF8: pointer)
                 else {
-                    throw ParserError.invalidMessage
+                    throw "ParserError.invalidMessage"
             }
-            method = .other(method: string)
+            method = Method(string)
         }
 
         // parse the uri from the url bytes.
-        var uri = URIParser.shared.parse(bytes: results.url)
+        var uri = URIParser.shared.parse(bytes: results.url!)
+
+
+        let headers = Headers(dictionaryElements: results.headers)
 
         // set the host on the uri if it exists
         // in the headers
-        if let hostname = results.headers[.host] {
-            let (host, port) = parse(host: hostname)
+        if let hostname = headers["host"] {
+            let (host, port) = parse(host: hostname.stringValue)
             uri.hostname = host
             uri.port = port ?? uri.port
         }
@@ -104,29 +100,55 @@ public final class RequestParser: CHTTPParser {
 
         // require a version to have been parsed
         guard let version = results.version else {
-            throw ParserError.invalidMessage
+            throw "ParserError.invalidMessage"
         }
+
+        let body: Body
+        if let data = results.body {
+            var copied = Data(data)
+            let buffer = UnsafeMutableBufferPointer<Byte>.init(start: copied.withUnsafeMutableBytes { $0 }, count: data.count)
+            body = Body.init(pointingTo: buffer, deallocating: false)
+        } else {
+            body = Body([])
+        }
+
 
         // create the request
         let request = Request(
             method: method,
             uri: uri,
             version: version,
-            headers: results.headers,
-            body: .data(results.body)
+            headers: headers,
+            body: body
         )
 
         return request
     }
 
     func parse(host: String) -> (host: String, port: Port?) {
-        let components = host.makeBytes().split(
-            separator: .colon,
+        let components = host.split(
+            separator: ":",
             maxSplits: 1,
             omittingEmptySubsequences: true
         )
-        let host = components.first?.makeString() ?? host
-        let port = components.last.flatMap { Int($0.makeString()) }
-        return (host, port?.port)
+        if components.count == 2 {
+            let host = String(components[0])
+            let port = UInt16(String(components[1]))
+            return (host, port)
+        } else {
+            return (host, nil)
+        }
+    }
+
+    // MARK: Stream
+
+    public typealias Output = Request
+    public typealias RequestHandler = (Request) throws -> (Future<Void>)
+    
+    let stream = BasicStream<Output>()
+
+    public func then(_ closure: @escaping RequestHandler) {
+        stream.then(closure)
     }
 }
+
