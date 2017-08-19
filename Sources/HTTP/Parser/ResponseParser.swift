@@ -3,27 +3,32 @@ import Core
 import Foundation
 
 /// Parses requests from a readable stream.
-public final class RequestParser: CParser {
+public final class ResponseParser: CParser {
     // MARK: Stream
     public typealias Input = ByteBuffer
-    public typealias Output = Request
+    public typealias Output = Response
     public var output: OutputHandler?
     public var error: ErrorHandler?
-
+    
     // Internal variables to conform
     // to the C HTTP parser protocol.
     var parser: http_parser
     var settings: http_parser_settings
     var state:  CHTTPParserState
-
+    
     /// Creates a new Request parser.
     public init() {
         self.parser = http_parser()
         self.settings = http_parser_settings()
         self.state = .ready
-        reset(HTTP_REQUEST)
+        reset(HTTP_RESPONSE)
     }
-
+    
+    func reset() {
+        http_parser_init(&parser, HTTP_REQUEST)
+        initialize(&settings)
+    }
+    
     /// Handles incoming stream data
     public func input(_ input: ByteBuffer) {
         do {
@@ -33,19 +38,19 @@ public final class RequestParser: CParser {
             output?(request)
         } catch {
             self.error?(error)
-            reset(HTTP_REQUEST)
+            reset(HTTP_RESPONSE)
         }
     }
-
-    public func parse(from data: Data) throws -> Request? {
+    
+    public func parse(from data: Data) throws -> Response? {
         let buffer = ByteBuffer(start: data.withUnsafeBytes { $0 }, count: data.count)
         return try parse(from: buffer)
     }
-
+    
     /// Parses a Request from the stream.
-    public func parse(from buffer: ByteBuffer) throws -> Request? {
+    public func parse(from buffer: ByteBuffer) throws -> Response? {
         let results: CParseResults
-
+        
         switch state {
         case .ready:
             // create a new results object and set
@@ -60,72 +65,28 @@ public final class RequestParser: CParser {
             }
             results = existingResults
         }
-
+        
         /// parse the message using the C HTTP parser.
         try executeParser(max: buffer.count, from: buffer)
-
+        
         guard results.isComplete else {
             return nil
         }
-
+        
         // the results have completed, so we are ready
         // for a new request to come in
         state = .ready
         CParseResults.remove(from: &parser)
 
-
-        /// switch on the C method type from the parser
-        let method: Method
-        switch http_method(parser.method) {
-        case HTTP_DELETE:
-            method = .delete
-        case HTTP_GET:
-            method = .get
-        case HTTP_POST:
-            method = .post
-        case HTTP_PUT:
-            method = .put
-        case HTTP_OPTIONS:
-            method = .options
-        case HTTP_PATCH:
-            method = .patch
-        default:
-            /// custom method detected,
-            /// convert the method into a string
-            /// and use Engine's other type
-            guard
-                let pointer = http_method_str(http_method(parser.method)),
-                let string = String(validatingUTF8: pointer)
-            else {
-                throw "ParserError.invalidMessage\(#line)"
-            }
-            method = Method(string)
-        }
-
-        // parse the uri from the url bytes.
-        var uri = URIParser.shared.parse(bytes: results.url!)
-
-
+        /// get response status
+        let status = Status(code: Int(parser.status_code))
         let headers = Headers(storage: results.headers)
-
-        // set the host on the uri if it exists
-        // in the headers
-        if let hostname = headers[.host] {
-            let (host, port) = parse(host: hostname)
-            uri.hostname = host
-            uri.port = port ?? uri.port
-        }
-
-        // if there is no scheme, use http by default
-        if uri.scheme?.isEmpty == true {
-            uri.scheme = "http"
-        }
 
         // require a version to have been parsed
         guard let version = results.version else {
             throw "ParserError.invalidMessage\(#line)"
         }
-
+        
         let body: Body
         if let data = results.body {
             let copied = Data(data)
@@ -133,33 +94,15 @@ public final class RequestParser: CParser {
         } else {
             body = Body()
         }
-
-
+        
         // create the request
-        let request = Request(
-            method: method,
-            uri: uri,
+        return Response(
             version: version,
+            status: status,
             headers: headers,
             body: body
         )
-
-        return request
-    }
-
-    private func parse(host: String) -> (host: String, port: Port?) {
-        let components = host.split(
-            separator: ":",
-            maxSplits: 1,
-            omittingEmptySubsequences: true
-        )
-        if components.count == 2 {
-            let host = String(components[0])
-            let port = UInt16(String(components[1]))
-            return (host, port)
-        } else {
-            return (host, nil)
-        }
     }
 }
+
 

@@ -12,7 +12,7 @@ enum HeaderState {
 
 
 /// Internal CHTTP parser protocol
-internal protocol CParser: class {
+internal protocol CParser: class, Core.Stream {
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
 }
@@ -37,8 +37,13 @@ extension CParser {
         // if the parsed count does not equal the bytes passed
         // to the parser, it is signaling an error
         guard parsedCount == max else {
-            throw "ParserError.invalidMessage"
+            throw "ParserError.invalidMessage\(#line)"
         }
+    }
+
+    internal func reset(_ type: http_parser_type) {
+        http_parser_init(&parser, type)
+        initialize(&settings)
     }
 }
 
