@@ -98,9 +98,7 @@ public final class Server: Stream {
                 self.clients[clientDescriptor] = client
             }
 
-            self.branchStreams.forEach { branch in
-                try! branch(client)
-            }
+            _ = try? self.stream.write(client)
         }
 
         connectSource.resume()
@@ -110,17 +108,10 @@ public final class Server: Stream {
 
     public typealias Output = Client
 
-    /// Internal typealias used to define a cascading callback
-    typealias ProcessOutputCallback = ((Output) throws -> ())
-
-    /// All entities waiting for a new packet
-    var branchStreams = [ProcessOutputCallback]()
-
-    /// Maps this stream of data to a stream of other information
-    public func map<T>(_ closure: @escaping ((Output) throws -> (T?))) -> StreamTransformer<Output, T> {
-        let stream = StreamTransformer<Output, T>(using: closure)
-        branchStreams.append(stream.process)
-        return stream
+    let stream = BasicStream<Client>()
+    
+    public func then(_ closure: @escaping ((Client) throws -> (Future<Void>))) {
+        stream.then(closure)
     }
 }
 

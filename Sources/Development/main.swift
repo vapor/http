@@ -1,3 +1,4 @@
+import Core
 import Dispatch
 import HTTP
 import TCP
@@ -10,8 +11,8 @@ server.then { client in
     client.map(parser.parse).map { request in
         return HTTP.Response(status: 200)
     }.then(client.send)
-
-    client.listen()
+    
+    return Future(client.listen)
 }
 
 try server.start()

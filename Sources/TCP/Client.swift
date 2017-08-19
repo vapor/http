@@ -7,9 +7,6 @@ import libc
 public final class Client: Core.Stream {
     let socket: Socket
 
-    public typealias OnRead = (ByteBuffer) -> ()
-    public var onRead: OnRead?
-
     /// A closure that can be called whenever the socket encountered a critical error
     public var onError: ((Error) -> ())? = nil
 
@@ -36,29 +33,35 @@ public final class Client: Core.Stream {
 
         let writeSource = DispatchSource.makeWriteSource(fileDescriptor: socket.descriptor, queue: queue)
         self.writeSource = writeSource
-
+        
         writeSource.setEventHandler {
-            guard let data = self.writeData else {
+            guard let (data, callback) = self.input else {
                 return
             }
-            self.writeData = nil
-            let copied = Data(data)
-            let buffer = ByteBuffer.init(start: copied.withUnsafeBytes { $0 }, count: copied.count)
-            try! self.socket.write(max: copied.count, from: buffer)
+            
+            defer { self.input = nil }
+            
+            do {
+                let buffer = ByteBuffer.init(start: data.withUnsafeBytes { $0 }, count: data.count)
+                try self.socket.write(max: data.count, from: buffer)
+            } catch {
+                _ = try? callback.complete(error)
+            }
         }
+        
         writeSource.resume()
     }
 
     var readSource: DispatchSourceRead?
     let writeSource: DispatchSourceWrite
-    var writeData: DispatchData?
+    var input: (DispatchData, ManualFuture<Void>)?
 
-    public func write(_ data: DispatchData) {
-        if writeData == nil {
-            writeData = data
-        } else {
-            writeData?.append(data)
-        }
+    public func write(_ data: DispatchData) throws {
+        let future = ManualFuture<Void>()
+        
+        self.input = (data, future)
+        
+        try future.await()
     }
 
     public func close() {
@@ -92,11 +95,8 @@ public final class Client: Core.Stream {
                 start: self.pointer,
                 count: self.read
             )
-
-            self.onRead?(buffer)
-            self.branchStreams.forEach { stream in
-                _ = try? stream(buffer)
-            }
+            
+            _ = try? self.stream.write(buffer)
         }
 
         readSource.resume()
@@ -118,17 +118,14 @@ public final class Client: Core.Stream {
 
     public typealias Output = ByteBuffer
 
-    /// Internal typealias used to define a cascading callback
-    typealias ProcessOutputCallback = ((Output) throws -> ())
+    /// The underlying stream helper
+    let stream = BasicStream<Output>()
 
-    /// All entities waiting for a new packet
-    var branchStreams = [ProcessOutputCallback]()
-
-    /// Maps this stream of data to a stream of other information
-    public func map<T>(_ closure: @escaping ((Output) throws -> (T?))) -> StreamTransformer<Output, T> {
-        let stream = StreamTransformer<Output, T>(using: closure)
-        branchStreams.append(stream.process)
-        return stream
+    /// Registers a closure that must be executed for every `Output` event
+    ///
+    /// - parameter closure: The closure to execute for each `Output` event
+    public func then(_ closure: @escaping ((ByteBuffer) throws -> (Future<Void>))) {
+        stream.then(closure)
     }
 }
 
