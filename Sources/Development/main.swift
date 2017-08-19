@@ -4,29 +4,22 @@ import Foundation
 import HTTP
 import TCP
 
-let res = try Response(status: .ok, body: "hi")
-
-final class Application: Core.Stream {
-    typealias Input = Request
-    typealias Output = Response
-
-    var output: OutputHandler?
-
-    func input(_ input: Request) throws {
-        try output?(res)
+struct Application: Responder {
+    func respond(to req: Request, using writer: ResponseWriter) throws {
+        let res = try Response(status: .ok, body: "hi")
+        try writer.write(res)
     }
-
 }
 
+let app = Application()
 let server = try TCP.Server(port: 8080)
 
 server.consume { client in
-    let app = Application()
     let parser = HTTP.RequestParser()
     let serializer = HTTP.ResponseSerializer()
 
     client.stream(to: parser)
-        .stream(to: app)
+        .stream(to: app.makeStream())
         .stream(to: serializer)
         .consume(into: client)
 
