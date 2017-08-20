@@ -12,7 +12,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/debugging.git", .revision("beta"))
     ],
     targets: [
-        .target(name: "Development", dependencies: ["HTTP", "TCP"]),
+        .target(name: "Performance", dependencies: ["HTTP", "TCP"]),
         .target(name: "TCP", dependencies: ["Debugging", "Core", "libc"]),
         .testTarget(name: "TCPTests", dependencies: ["TCP"]),
         .target(name: "CHTTP"),
