@@ -46,6 +46,23 @@ public struct Error: Traceable, Debuggable, Swift.Error {
             column: column
         )
     }
+
+    public static func contentRequired(
+        _ type: Any.Type,
+        file: String = #file,
+        function: String = #function,
+        line: UInt = #line,
+        column: UInt = #column
+    ) -> Error {
+        return Error(
+            identifier: "contentRequired",
+            reason: "\(type) content required.",
+            file: file,
+            function: function,
+            line: line,
+            column: column
+        )
+    }
 }
 
 

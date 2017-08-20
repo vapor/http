@@ -1,11 +1,11 @@
 import Core
 
 public protocol Responder {
-    func respond(to req: Request, using writer: ResponseWriter)
+    func respond(to req: Request, using writer: ResponseWriter) throws
 }
 
 extension Responder {
-    public func makeStream() -> ResponderStream<Self> {
+    public func makeStream() -> ResponderStream {
         return ResponderStream(self)
     }
 }
@@ -37,22 +37,26 @@ public final class ResponseOutputStream: ResponseWriter, Core.OutputStream {
 }
 
 
-public final class ResponderStream<R: Responder>: Core.Stream {
+public final class ResponderStream: Core.Stream {
     public typealias Input = Request
     public typealias Output = Response
     public var errorStream: ErrorHandler?
     public var outputStream: OutputHandler?
 
-    let responder: R
+    let responder: Responder
 
-    public init(_ responder: R) {
+    public init(_ responder: Responder) {
         self.responder = responder
     }
 
     public func inputStream(_ input: Request) {
         let writer = ResponseOutputStream()
         writer.outputStream = outputStream
-        responder.respond(to: input, using: writer)
+        do {
+            try responder.respond(to: input, using: writer)
+        } catch {
+            errorStream?(error)
+        }
     }
 }
 

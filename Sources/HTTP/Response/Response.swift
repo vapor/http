@@ -33,7 +33,15 @@ extension Response {
     }
 }
 
-/// Can be representable as a response
+/// Can be converted from a response.
+public protocol ResponseInitializable {
+    init(response: Response) throws
+}
+
+/// Can be converted to a response
 public protocol ResponseRepresentable {
     func makeResponse() throws -> Response
 }
+
+/// Can be converted from and to a response
+public typealias ResponseConvertible = ResponseInitializable & ResponseRepresentable
