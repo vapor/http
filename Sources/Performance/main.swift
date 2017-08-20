@@ -11,8 +11,8 @@ struct User: Codable {
     var age: Int
 }
 
-extension User: MessageCodable {
-    static func decode(from message: Message) throws -> User {
+extension User: ContentCodable {
+    static func decodeContent(from message: Message) throws -> User? {
         guard message.mediaType == .json else {
             throw "only json supported"
         }
@@ -20,7 +20,7 @@ extension User: MessageCodable {
         return try JSONDecoder().decode(User.self, from: message.body.data)
     }
 
-    func encode(to message: Message) throws {
+    func encodeContent(to message: Message) throws {
         message.mediaType = .json
         message.body = try Body(JSONEncoder().encode(self))
     }
