@@ -1,11 +1,35 @@
 import Core
 import Dispatch
+import Foundation
 import libc
 
 extension Socket {
+    public func read(max: Int) throws -> Data {
+        var pointer = MutableBytesPointer.allocate(capacity: max)
+        defer {
+            pointer.deallocate(capacity: max)
+            pointer.deinitialize(count: max)
+        }
+        let buffer = MutableByteBuffer(start: pointer, count: max)
+        let read = try self.read(max: max, into: buffer)
+        let frame = ByteBuffer(start: pointer, count: read)
+        return Data(buffer: frame)
+    }
+
+    public func onReadable(queue: DispatchQueue, event: @escaping SocketEvent) -> DispatchSourceRead {
+        let source = DispatchSource.makeReadSource(
+            fileDescriptor: descriptor.raw,
+            queue: queue
+        )
+        source.setEventHandler {
+            event()
+        }
+        source.resume()
+        return source
+    }
+
     public func read(max: Int, into buffer: MutableByteBuffer) throws -> Int {
-        
-        let receivedBytes = libc.read(descriptor, buffer.baseAddress.unsafelyUnwrapped, max)
+        let receivedBytes = libc.read(descriptor.raw, buffer.baseAddress.unsafelyUnwrapped, max)
 
         guard receivedBytes != -1 else {
             switch errno {
