@@ -97,24 +97,14 @@ public final class RequestParser: CParser {
                 let pointer = http_method_str(http_method(parser.method)),
                 let string = String(validatingUTF8: pointer)
             else {
-                throw "ParserError.invalidMessage\(#line)"
+                throw Error.invalidMessage()
             }
             method = Method(string)
         }
 
         // parse the uri from the url bytes.
         var uri = URIParser.shared.parse(bytes: results.url!)
-
-
         let headers = Headers(storage: results.headers)
-
-        // set the host on the uri if it exists
-        // in the headers
-        if let hostname = headers[.host] {
-            let (host, port) = parse(host: hostname)
-            uri.hostname = host
-            uri.port = port ?? uri.port
-        }
 
         // if there is no scheme, use http by default
         if uri.scheme?.isEmpty == true {
@@ -123,7 +113,7 @@ public final class RequestParser: CParser {
 
         // require a version to have been parsed
         guard let version = results.version else {
-            throw "ParserError.invalidMessage\(#line)"
+            throw Error.invalidMessage()
         }
 
         let body: Body
@@ -133,7 +123,6 @@ public final class RequestParser: CParser {
         } else {
             body = Body()
         }
-
 
         // create the request
         let request = Request(
@@ -145,21 +134,6 @@ public final class RequestParser: CParser {
         )
 
         return request
-    }
-
-    private func parse(host: String) -> (host: String, port: Port?) {
-        let components = host.split(
-            separator: ":",
-            maxSplits: 1,
-            omittingEmptySubsequences: true
-        )
-        if components.count == 2 {
-            let host = String(components[0])
-            let port = UInt16(String(components[1]))
-            return (host, port)
-        } else {
-            return (host, nil)
-        }
     }
 }
 

@@ -1,9 +1,11 @@
+import Core
 import Debugging
+import Foundation
 import libc
 
 /// Errors that can be thrown while working with TCP sockets.
 public struct Error: Traceable, Debuggable, Swift.Error {
-    public static let readableName = "TCP Error"
+    public static let readableName = "HTTP Error"
     public let identifier: String
     public var reason: String
     public var file: String
@@ -29,19 +31,15 @@ public struct Error: Traceable, Debuggable, Swift.Error {
         self.stackTrace = Error.makeStackTrace()
     }
 
-    public static func posix(
-        _ errno: Int32,
-        identifier: String,
+    public static func invalidMessage(
         file: String = #file,
         function: String = #function,
         line: UInt = #line,
         column: UInt = #column
     ) -> Error {
-        let message = libc.strerror(errno)
-        let string = String(cString: message!, encoding: .utf8) ?? "unknown"
         return Error(
-            identifier: identifier,
-            reason: string,
+            identifier: "invalidMessage",
+            reason: "Unable to parse invalid HTTP message.",
             file: file,
             function: function,
             line: line,
@@ -49,5 +47,6 @@ public struct Error: Traceable, Debuggable, Swift.Error {
         )
     }
 }
+
 
 

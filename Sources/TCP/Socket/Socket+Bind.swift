@@ -24,19 +24,19 @@ extension Socket {
 
         var res = getaddrinfo(hostname, port.description, &hints, &result)
         guard res == 0 else {
-            throw TCPError.posix(errno, identifier: "getAddressInfo")
+            throw Error.posix(errno, identifier: "getAddressInfo")
         }
         defer {
             freeaddrinfo(result)
         }
 
         guard let info = result else {
-            throw TCPError(identifier: "unwrapAddress", reason: "Could not unwrap address info.")
+            throw Error(identifier: "unwrapAddress", reason: "Could not unwrap address info.")
         }
 
         res = libc.bind(descriptor.raw, info.pointee.ai_addr, info.pointee.ai_addrlen)
         guard res == 0 else {
-            throw TCPError.posix(errno, identifier: "bind")
+            throw Error.posix(errno, identifier: "bind")
         }
     }
 
@@ -45,7 +45,7 @@ extension Socket {
     public func listen(backlog: Int32 = 4096) throws {
         let res = libc.listen(descriptor.raw, backlog)
         guard res == 0 else {
-            throw TCPError.posix(errno, identifier: "listen")
+            throw Error.posix(errno, identifier: "listen")
         }
     }
 
@@ -54,7 +54,7 @@ extension Socket {
     public func accept() throws -> Socket {
         let clientfd = libc.accept(descriptor.raw, nil, nil)
         guard clientfd > 0 else {
-            throw TCPError.posix(errno, identifier: "accept")
+            throw Error.posix(errno, identifier: "accept")
         }
 
         return Socket(

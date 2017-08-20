@@ -31,14 +31,14 @@ public class Socket {
     ) throws {
         let sockfd = socket(AF_INET, SOCK_STREAM, 0)
         guard sockfd > 0 else {
-            throw TCPError.posix(errno, identifier: "socketCreate")
+            throw Error.posix(errno, identifier: "socketCreate")
         }
         let descriptor = Descriptor(raw: sockfd)
 
         if isNonBlocking {
             // Set the socket to async/non blocking I/O
             guard fcntl(descriptor.raw, F_SETFL, O_NONBLOCK) == 0 else {
-                throw TCPError.posix(errno, identifier: "setNonBlocking")
+                throw Error.posix(errno, identifier: "setNonBlocking")
             }
         }
 
@@ -46,7 +46,7 @@ public class Socket {
             var yes = 1
             let intSize = socklen_t(MemoryLayout<Int>.size)
             guard setsockopt(descriptor.raw, SOL_SOCKET, SO_REUSEADDR, &yes, intSize) == 0 else {
-                throw TCPError.posix(errno, identifier: "setReuseAddress")
+                throw Error.posix(errno, identifier: "setReuseAddress")
             }
         }
 

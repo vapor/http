@@ -84,7 +84,7 @@ public final class ResponseParser: CParser {
 
         // require a version to have been parsed
         guard let version = results.version else {
-            throw "ParserError.invalidMessage\(#line)"
+            throw Error.invalidMessage()
         }
         
         let body: Body

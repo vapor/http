@@ -26,18 +26,13 @@ extension CParser {
     /// Parses a generic CHTTP message, filling the
     /// ParseResults object attached to the C praser.
     internal func executeParser(max: Int, from buffer: ByteBuffer) throws {
-        // cast the buffer
-        guard let pointer = buffer.cPointer else {
-            throw "ParserError.streamClosed"
-        }
-
         // call the CHTTP parser
-        let parsedCount = http_parser_execute(&parser, &settings, pointer, max)
+        let parsedCount = http_parser_execute(&parser, &settings, buffer.cPointer, max)
 
         // if the parsed count does not equal the bytes passed
         // to the parser, it is signaling an error
         guard parsedCount == max else {
-            throw "ParserError.invalidMessage\(#line)"
+            throw Error.invalidMessage()
         }
     }
 
@@ -208,8 +203,8 @@ extension CParser {
 // MARK: Utilities
 
 extension UnsafeBufferPointer where Element == Byte {
-    fileprivate var cPointer: UnsafePointer<CChar>? {
-        return baseAddress?.withMemoryRebound(to: CChar.self, capacity: count) { $0 }
+    fileprivate var cPointer: UnsafePointer<CChar> {
+        return baseAddress.unsafelyUnwrapped.withMemoryRebound(to: CChar.self, capacity: count) { $0 }
     }
 }
 

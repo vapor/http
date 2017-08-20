@@ -4,6 +4,8 @@ import Foundation
 import HTTP
 import TCP
 
+extension String: Swift.Error { }
+
 struct User: Codable {
     var name: String
     var age: Int
@@ -97,7 +99,7 @@ do {
     }
 
     server.errorStream = { error in
-        print(error)
+        debugPrint(error)
     }
 
     try server.start(port: 8080)

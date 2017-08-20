@@ -22,7 +22,7 @@ extension Socket {
                 self.close()
                 return 0
             default:
-                throw TCPError.posix(errno, identifier: "write")
+                throw Error.posix(errno, identifier: "write")
             }
         }
         
