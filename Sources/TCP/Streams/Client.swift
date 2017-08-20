@@ -52,6 +52,7 @@ public final class Client: Core.Stream {
     public func inputStream(_ input: DispatchData) {
         if inputBuffer == nil {
             inputBuffer = input
+            writeSource?.resume()
         } else {
             inputBuffer?.append(input)
         }
@@ -80,8 +81,6 @@ public final class Client: Core.Stream {
                     self.errorStream?(error)
                 }
             }
-        } else {
-            writeSource?.resume()
         }
 
     }

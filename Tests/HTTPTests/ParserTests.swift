@@ -65,7 +65,8 @@ class ParserTests : XCTestCase {
     }
 
     static let allTests = [
-        ("testRequest", testRequest)
+        ("testRequest", testRequest),
+        ("testResponse", testResponse),
     ]
 }
 
