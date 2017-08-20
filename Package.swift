@@ -8,11 +8,12 @@ let package = Package(
         .library(name: "HTTP", targets: ["HTTP"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/core.git", .revision("inputoutput"))
+        .package(url: "https://github.com/vapor/core.git", .revision("inputoutput")),
+        .package(url: "https://github.com/vapor/debugging.git", .revision("beta"))
     ],
     targets: [
         .target(name: "Development", dependencies: ["HTTP", "TCP"]),
-        .target(name: "TCP", dependencies: ["libc", "Core"]),
+        .target(name: "TCP", dependencies: ["Debugging", "Core", "libc"]),
         .testTarget(name: "TCPTests", dependencies: ["TCP"]),
         .target(name: "CHTTP"),
         .target(name: "HTTP", dependencies: ["CHTTP", "TCP"]),

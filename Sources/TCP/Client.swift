@@ -3,7 +3,7 @@ import Dispatch
 import Foundation
 import libc
 
-/// The remote peer of a `ServerSocket`
+/// TCP client stream.
 public final class Client: Core.Stream {
     // MARK: Stream
     public typealias Input = DispatchData

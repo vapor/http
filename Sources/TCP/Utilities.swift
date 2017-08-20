@@ -1,6 +1,6 @@
-extension String: Error { }
-
-public struct LoopIterator<Base: Collection>: IteratorProtocol {
+/// Infinitely loop over a collection.
+/// Used to supply server worker queues to clients.
+internal struct LoopIterator<Base: Collection>: IteratorProtocol {
     private let collection: Base
     private var index: Base.Index
 

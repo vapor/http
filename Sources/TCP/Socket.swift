@@ -31,120 +31,27 @@ public class Socket {
     ) throws {
         let sockfd = socket(AF_INET, SOCK_STREAM, 0)
         guard sockfd > 0 else {
-            throw "Failed to create socket"
+            throw TCPError.posix(errno, identifier: "socketCreate")
         }
         let descriptor = Descriptor(raw: sockfd)
 
         if isNonBlocking {
             // Set the socket to async/non blocking I/O
             guard fcntl(descriptor.raw, F_SETFL, O_NONBLOCK) == 0 else {
-                throw "setting nonblock failed"
+                throw TCPError.posix(errno, identifier: "setNonBlocking")
             }
         }
 
         if shouldReuseAddress {
             var yes = 1
-            guard setsockopt(descriptor.raw, SOL_SOCKET, SO_REUSEADDR, &yes, socklen_t(MemoryLayout<Int>.size)) == 0 else {
-                throw "setting reuse addr failed"
+            let intSize = socklen_t(MemoryLayout<Int>.size)
+            guard setsockopt(descriptor.raw, SOL_SOCKET, SO_REUSEADDR, &yes, intSize) == 0 else {
+                throw TCPError.posix(errno, identifier: "setReuseAddress")
             }
         }
 
         self.init(
             established: descriptor,
-            isNonBlocking: isNonBlocking,
-            shouldReuseAddress: shouldReuseAddress
-        )
-    }
-
-    public func connect(hostname: String = "localhost", port: UInt16 = 80) throws {
-        var hints = addrinfo()
-
-        // Support both IPv4 and IPv6
-        hints.ai_family = AF_INET
-
-        // Specify that this is a TCP Stream
-        hints.ai_socktype = SOCK_STREAM
-
-        // Look ip the sockeaddr for the hostname
-        var result: UnsafeMutablePointer<addrinfo>?
-
-        var res = getaddrinfo(hostname, port.description, &hints, &result)
-        guard res == 0 else {
-            perror("connect")
-            throw "get addr info failed"
-        }
-        defer {
-            freeaddrinfo(result)
-        }
-
-        guard let info = result else {
-            throw "nil result"
-        }
-
-        res = libc.connect(descriptor.raw, info.pointee.ai_addr, info.pointee.ai_addrlen)
-        guard res == 0 || (isNonBlocking && errno == EINPROGRESS) else {
-            perror("connect")
-            throw "connect error: \(errno)"
-        }
-    }
-
-
-    public func bind(hostname: String = "localhost", port: UInt16 = 80) throws {
-        var hints = addrinfo()
-
-        // Support both IPv4 and IPv6
-        hints.ai_family = AF_INET
-
-        // Specify that this is a TCP Stream
-        hints.ai_socktype = SOCK_STREAM
-        hints.ai_protocol = IPPROTO_TCP
-
-        // If the AI_PASSIVE flag is specified in hints.ai_flags, and node is
-        // NULL, then the returned socket addresses will be suitable for
-        // bind(2)ing a socket that will accept(2) connections.
-        hints.ai_flags = AI_PASSIVE
-
-
-        // Look ip the sockeaddr for the hostname
-        var result: UnsafeMutablePointer<addrinfo>?
-
-        var res = getaddrinfo(hostname, port.description, &hints, &result)
-        guard res == 0 else {
-            perror("connect")
-            throw "get addr info failed"
-        }
-        defer {
-            freeaddrinfo(result)
-        }
-
-        guard let info = result else {
-            throw "nil result"
-        }
-
-        res = libc.bind(descriptor.raw, info.pointee.ai_addr, info.pointee.ai_addrlen)
-        guard res == 0 else {
-            perror("bind")
-            throw "connect error: \(errno)"
-        }
-    }
-
-    public func listen(backlog: Int32 = 4096) throws {
-        let res = libc.listen(descriptor.raw, backlog)
-        guard res == 0 else {
-            perror("listen")
-            throw "connect error: \(errno)"
-        }
-    }
-
-
-    public func accept() throws -> Socket {
-        let clientfd = libc.accept(descriptor.raw, nil, nil)
-        guard clientfd > 0 else {
-            throw "invalid client fd"
-        }
-
-        return Socket(
-            established: Descriptor(raw: clientfd),
             isNonBlocking: isNonBlocking,
             shouldReuseAddress: shouldReuseAddress
         )
