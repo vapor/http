@@ -30,9 +30,7 @@ class SocketsTests : XCTestCase {
             group.leave()
         }
 
-        // get rid of warnings
-        print([read, write])
-
+        XCTAssertNotNil([read, write])
         group.wait()
     }
 

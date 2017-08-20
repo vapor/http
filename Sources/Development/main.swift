@@ -48,7 +48,7 @@ server.consume { client in
         .stream(to: serializer)
         .consume(into: client)
 
-    client.listen()
+    client.start()
 }
 
 server.error = { error in
