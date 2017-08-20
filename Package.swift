@@ -8,7 +8,10 @@ let package = Package(
         .library(name: "HTTP", targets: ["HTTP"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/core.git", .revision("inputoutput")),
+        // Core extensions, type-aliases, and functions that facilitate common tasks.
+        .package(url: "https://github.com/vapor/core.git", .revision("beta")),
+
+        // A library to aid Vapor users with better debugging around the framework
         .package(url: "https://github.com/vapor/debugging.git", .revision("beta"))
     ],
     targets: [

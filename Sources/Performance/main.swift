@@ -30,11 +30,11 @@ extension User: ContentCodable {
 let res = try Response(status: .ok, body: "hi")
 
 struct Application: Responder {
-    func respond(to req: Request, using writer: ResponseWriter) {
+    func respond(to req: Request) throws -> Future<ResponseRepresentable> {
         // let user = User(name: "Vapor", age: 2)
         // print(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8))
         // try! res.content(user)
-        writer.write(res)
+        return Future { res }
     }
 }
 
@@ -64,7 +64,7 @@ do {
     emitter.stream(to: serializer)
         .stream(to: client)
         .stream(to: parser)
-        .consume { response in
+        .drain { response in
             print(String(data: response.body.data, encoding: .utf8)!)
         }
 
@@ -86,14 +86,14 @@ do {
     let app = Application()
     let server = try TCP.Server()
 
-    server.consume { client in
+    server.drain { client in
         let parser = HTTP.RequestParser()
         let serializer = HTTP.ResponseSerializer()
 
         client.stream(to: parser)
-            .stream(to: app.makeStream())
+            .stream(to: app.makeStream(on: client.queue))
             .stream(to: serializer)
-            .consume(into: client)
+            .drain(into: client)
 
         client.start()
     }

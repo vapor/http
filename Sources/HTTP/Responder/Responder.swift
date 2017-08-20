@@ -1,12 +1,16 @@
 import Core
+import Dispatch
 
 public protocol Responder {
-    func respond(to req: Request, using writer: ResponseWriter) throws
+    func respond(to req: Request) throws -> Future<ResponseRepresentable>
 }
 
 extension Responder {
-    public func makeStream() -> ResponderStream {
-        return ResponderStream(self)
+    public func makeStream(on queue: DispatchQueue) -> ResponderStream {
+        return ResponderStream(
+            responder: self,
+            queue: queue
+        )
     }
 }
 
@@ -44,16 +48,24 @@ public final class ResponderStream: Core.Stream {
     public var outputStream: OutputHandler?
 
     let responder: Responder
+    let queue: DispatchQueue
 
-    public init(_ responder: Responder) {
+    public init(responder: Responder, queue: DispatchQueue) {
         self.responder = responder
+        self.queue = queue
     }
 
     public func inputStream(_ input: Request) {
         let writer = ResponseOutputStream()
         writer.outputStream = outputStream
         do {
-            try responder.respond(to: input, using: writer)
+            try responder.respond(to: input).then(asynchronously: queue) { res in
+                do {
+                    try writer.write(res)
+                } catch {
+                    self.errorStream?(error)
+                }
+            }
         } catch {
             errorStream?(error)
         }

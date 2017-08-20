@@ -45,3 +45,11 @@ public protocol ResponseRepresentable {
 
 /// Can be converted from and to a response
 public typealias ResponseConvertible = ResponseInitializable & ResponseRepresentable
+
+// MARK: Response Conformance
+
+extension Response: ResponseRepresentable {
+    public func makeResponse() throws -> Response {
+        return self
+    }
+}
