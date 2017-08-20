@@ -30,13 +30,14 @@ let res = try Response(status: .ok, body: "hi")
 struct Application: Responder {
     func respond(to req: Request, using writer: ResponseWriter) {
         let user = User(name: "Vapor", age: 2)
+        // print(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8))
         try! res.content(user)
         writer.write(res)
     }
 }
 
 let app = Application()
-let server = try TCP.Server(port: 8080)
+let server = try TCP.Server()
 
 server.consume { client in
     let parser = HTTP.RequestParser()
@@ -54,7 +55,7 @@ server.error = { error in
     print(error)
 }
 
-try server.start()
+try server.start(port: 8080)
 
 print("Server started...")
 

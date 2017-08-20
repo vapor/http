@@ -18,14 +18,15 @@ public final class Client: Core.Stream {
 
     // MARK: Internal
 
-    let socket: Socket
+    public let socket: Socket
     let buffer: MutableByteBuffer
     var readSource: DispatchSourceRead?
     var writeSource: DispatchSourceWrite?
     var queuedData: DispatchData?
+    var onClose: SocketEvent?
 
     /// Creates a new Remote Client from the ServerSocket's details
-    init(socket: Socket, queue: DispatchQueue) {
+    public init(socket: Socket, queue: DispatchQueue) {
         self.socket = socket
         self.queue = queue
 
@@ -36,7 +37,19 @@ public final class Client: Core.Stream {
     }
 
     // MARK: Public methods
+
     public func input(_ input: DispatchData) {
+        write(input)
+    }
+
+//    public func input(_ data: Data) {
+//        let pointer = BytesPointer(data.withUnsafeBytes { $0 })
+//        let buffer = UnsafeRawBufferPointer(start: pointer, count: data.count)
+//        let dispatch = DispatchData(bytes: buffer)
+//        write(dispatch)
+//    }
+
+    public func write(_ input: DispatchData) {
         if queuedData == nil {
             queuedData = input
         } else {
@@ -44,10 +57,8 @@ public final class Client: Core.Stream {
         }
 
         if writeSource == nil {
-            let write = DispatchSource.makeWriteSource(fileDescriptor: socket.descriptor)
-            self.writeSource = write
-            write.setEventHandler {
-                write.suspend()
+            writeSource = socket.onWriteable(queue: queue) {
+                self.writeSource?.suspend()
                 guard let data = self.queuedData else {
                     return
                 }
@@ -61,21 +72,27 @@ public final class Client: Core.Stream {
                     self.error?(error)
                 }
             }
+        } else {
+            writeSource?.resume()
         }
-        
-        writeSource?.resume()
+
     }
 
     /// Starts receiving data from the client
     public func listen() {
-        let readSource = DispatchSource.makeReadSource(
-            fileDescriptor: socket.descriptor,
+        let source = DispatchSource.makeReadSource(
+            fileDescriptor: socket.descriptor.raw,
             queue: queue
         )
-        self.readSource = readSource
+        readSource = source
+        source.setEventHandler {
 
-        readSource.setEventHandler {
+            // print("\(Thread.current) = \(self.socket.descriptor.raw) = \(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8))")
+
+        /// readSource = socket.onReadable(queue: queue) {
+            // print(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8) == self.queue.label)
             let read: Int
+
             do {
                 read = try self.socket.read(max: self.buffer.count, into: self.buffer)
             } catch {
@@ -87,21 +104,25 @@ public final class Client: Core.Stream {
                 start: self.buffer.baseAddress,
                 count: read
             )
+
             self.output?(frame)
         }
-
-        readSource.resume()
+        source.resume()
     }
 
     public func close() {
         readSource?.cancel()
+        writeSource?.cancel()
         socket.close()
+        onClose?()
     }
 
     // MARK: Utilities
 
     /// Deallocated the pointer buffer
     deinit {
+        print("deinit")
+        close()
         guard let pointer = buffer.baseAddress else {
             return
         }
