@@ -8,11 +8,15 @@ let package = Package(
         .library(name: "HTTP", targets: ["HTTP"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/core.git", .revision("beta"))
+        // Core extensions, type-aliases, and functions that facilitate common tasks.
+        .package(url: "https://github.com/vapor/core.git", .revision("beta")),
+
+        // A library to aid Vapor users with better debugging around the framework
+        .package(url: "https://github.com/vapor/debugging.git", .revision("beta"))
     ],
     targets: [
-        .target(name: "Development", dependencies: ["HTTP", "TCP"]),
-        .target(name: "TCP", dependencies: ["libc", "Core"]),
+        .target(name: "Performance", dependencies: ["HTTP", "TCP"]),
+        .target(name: "TCP", dependencies: ["Debugging", "Core", "libc"]),
         .testTarget(name: "TCPTests", dependencies: ["TCP"]),
         .target(name: "CHTTP"),
         .target(name: "HTTP", dependencies: ["CHTTP", "TCP"]),

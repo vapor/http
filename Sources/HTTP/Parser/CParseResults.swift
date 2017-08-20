@@ -17,14 +17,14 @@ internal final class CParseResults {
 
     // message components
     var version: Version?
-    var headers: [(HeaderKey, HeaderValue)]
+    var headers: [Headers.Name: [String]]
     var body: DispatchData?
     var url: DispatchData?
 
     /// Creates a new results object
     init() {
         self.isComplete = false
-        self.headers = []
+        self.headers = [:]
         self.headerState = .none
     }
 }
@@ -58,4 +58,3 @@ extension CParseResults {
             .pointee
     }
 }
-

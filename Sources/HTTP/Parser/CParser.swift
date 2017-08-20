@@ -1,3 +1,4 @@
+import Core
 import CHTTP
 import Dispatch
 import Foundation
@@ -5,13 +6,13 @@ import Foundation
 /// Possible header states
 enum HeaderState {
     case none
-    case value(key: HeaderKey, DispatchData)
+    case value(name: Headers.Name, DispatchData)
     case key(DispatchData)
 }
 
 
 /// Internal CHTTP parser protocol
-internal protocol CParser: class {
+internal protocol CParser: class, Core.Stream {
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
 }
@@ -25,19 +26,19 @@ extension CParser {
     /// Parses a generic CHTTP message, filling the
     /// ParseResults object attached to the C praser.
     internal func executeParser(max: Int, from buffer: ByteBuffer) throws {
-        // cast the buffer
-        guard let pointer = buffer.cPointer else {
-            throw "ParserError.streamClosed"
-        }
-
         // call the CHTTP parser
-        let parsedCount = http_parser_execute(&parser, &settings, pointer, max)
+        let parsedCount = http_parser_execute(&parser, &settings, buffer.cPointer, max)
 
         // if the parsed count does not equal the bytes passed
         // to the parser, it is signaling an error
         guard parsedCount == max else {
-            throw "ParserError.invalidMessage"
+            throw Error.invalidMessage()
         }
+    }
+
+    internal func reset(_ type: http_parser_type) {
+        http_parser_init(&parser, type)
+        initialize(&settings)
     }
 }
 
@@ -84,12 +85,8 @@ extension CParser {
                 // there was previously a value being parsed.
                 // it is now finished.
                 let copiedValue = Data(value)
-                let valueBuffer = UnsafeBufferPointer<Byte>(
-                    start: copiedValue.withUnsafeBytes { $0 },
-                    count: copiedValue.count
-                )
-                let headerValue = HeaderValue(buffer: valueBuffer)
-                results.headers.append((key, headerValue))
+                let headerValue = String(data: copiedValue, encoding: .utf8) ?? ""
+                results.headers[key, default: []].append(headerValue)
                 // start a new key
                 results.headerState = .key(data)
             case .key(var key):
@@ -124,15 +121,15 @@ extension CParser {
                 // there was previously a value being parsed.
                 // add the new bytes to it.
                 value.append(data)
-                results.headerState = .value(key: key, value)
+                results.headerState = .value(name: key, value)
             case .key(let key):
                 // there was previously a key being parsed.
                 // it is now finished.
                 let copiedKey = Data(key)
                 let key = String(data: copiedKey, encoding: .utf8)
-                let headerKey = HeaderKey(key ?? "")
+                let headerKey = Headers.Name(key ?? "")
                 // add the new bytes alongside the created key
-                results.headerState = .value(key: headerKey, data)
+                results.headerState = .value(name: headerKey, data)
             }
 
             return 0
@@ -151,10 +148,8 @@ extension CParser {
                 // there was previously a value being parsed.
                 // it should be added to the headers dict.
                 let copiedValue = Data(value)
-                let valueString = String(data: copiedValue, encoding: .utf8)
-
-                let headerValue = HeaderValue(valueString ?? "")
-                results.headers.append((key, headerValue))
+                let valueString = String(data: copiedValue, encoding: .utf8) ?? ""
+                results.headers[key, default: []].append(valueString)
             default:
                 // no other cases need to be handled.
                 break
@@ -208,8 +203,8 @@ extension CParser {
 // MARK: Utilities
 
 extension UnsafeBufferPointer where Element == Byte {
-    fileprivate var cPointer: UnsafePointer<CChar>? {
-        return baseAddress?.withMemoryRebound(to: CChar.self, capacity: count) { $0 }
+    fileprivate var cPointer: UnsafePointer<CChar> {
+        return baseAddress.unsafelyUnwrapped.withMemoryRebound(to: CChar.self, capacity: count) { $0 }
     }
 }
 

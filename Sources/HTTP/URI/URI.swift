@@ -13,12 +13,12 @@
  */
 public struct URI: Codable {
     // https://tools.ietf.org/html/rfc3986#section-3.1
-    public var scheme: String
+    public var scheme: String?
 
     // https://tools.ietf.org/html/rfc3986#section-3.2.1
     public var userInfo: UserInfo?
     // https://tools.ietf.org/html/rfc3986#section-3.2.2
-    public var hostname: String
+    public var hostname: String?
     // https://tools.ietf.org/html/rfc3986#section-3.2.3
     public var port: Port?
 
@@ -33,19 +33,22 @@ public struct URI: Codable {
 
     /// Creates a new URI
     public init(
-        scheme: String = "",
+        scheme: String? = nil,
         userInfo: UserInfo? = nil,
-        hostname: String,
+        hostname: String? = nil,
         port: Port? = nil,
-        path: String = "",
+        path: String = "/",
         query: String? = nil,
         fragment: String? = nil
     ) {
-        let scheme = scheme.lowercased()
-        self.scheme = scheme
+        self.scheme = scheme?.lowercased()
         self.userInfo = userInfo
-        self.hostname = hostname.lowercased()
-        self.port = port ?? URI.defaultPorts[scheme]
+        self.hostname = hostname?.lowercased()
+        if let scheme = scheme {
+            self.port = port ?? URI.defaultPorts[scheme]
+        } else {
+            self.port = nil
+        }
         self.path = path.hasPrefix("/") ? path : "/" + path
         self.query = query
         self.fragment = fragment
@@ -90,6 +93,9 @@ extension URI {
 
     /// The default port for scheme associated with this URI if known
     public var defaultPort: Port? {
+        guard let scheme = scheme else {
+            return nil
+        }
         return URI.defaultPorts[scheme]
     }
 }
