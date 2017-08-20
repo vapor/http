@@ -8,7 +8,7 @@ let package = Package(
         .library(name: "HTTP", targets: ["HTTP"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/core.git", .revision("beta"))
+        .package(url: "https://github.com/vapor/core.git", .revision("inputoutput"))
     ],
     targets: [
         .target(name: "Development", dependencies: ["HTTP", "TCP"]),

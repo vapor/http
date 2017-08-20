@@ -6,8 +6,8 @@ import libc
 public final class Server: Core.OutputStream {
     // MARK: Stream
     public typealias Output = Client
-    public var error: ErrorHandler?
-    public var output: OutputHandler?
+    public var errorStream: ErrorHandler?
+    public var outputStream: OutputHandler?
 
     // MARK: Dispatch
 
@@ -52,14 +52,14 @@ public final class Server: Core.OutputStream {
             do {
                 socket = try self.socket.accept()
             } catch {
-                self.error?(error)
+                self.errorStream?(error)
                 return
             }
 
             let queue = self.worker.next()!
             let client = Client(socket: socket, queue: queue)
-            client.error = self.error
-            self.output?(client)
+            client.errorStream = self.errorStream
+            self.outputStream?(client)
         }
     }
 }

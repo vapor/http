@@ -8,8 +8,8 @@ public final class Client: Core.Stream {
     // MARK: Stream
     public typealias Input = DispatchData
     public typealias Output = ByteBuffer
-    public var error: ErrorHandler?
-    public var output: OutputHandler?
+    public var errorStream: ErrorHandler?
+    public var outputStream: OutputHandler?
 
     /// This client's dispatch queue. Use this
     /// for all async operations performed as a
@@ -49,7 +49,7 @@ public final class Client: Core.Stream {
     // MARK: Stream
 
     /// Handles stream input
-    public func input(_ input: DispatchData) {
+    public func inputStream(_ input: DispatchData) {
         if inputBuffer == nil {
             inputBuffer = input
         } else {
@@ -76,7 +76,7 @@ public final class Client: Core.Stream {
                 } catch {
                     // any errors that occur here cannot be thrown,
                     // so send them to stream error catcher.
-                    self.error?(error)
+                    self.errorStream?(error)
                 }
             }
         } else {
@@ -97,7 +97,7 @@ public final class Client: Core.Stream {
             } catch {
                 // any errors that occur here cannot be thrown,
                 // so send them to stream error catcher.
-                self.error?(error)
+                self.errorStream?(error)
                 return
             }
 
@@ -107,7 +107,7 @@ public final class Client: Core.Stream {
                 start: self.outputBuffer.baseAddress,
                 count: read
             )
-            self.output?(bufferView)
+            self.outputStream?(bufferView)
         }
     }
 

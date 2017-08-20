@@ -51,7 +51,7 @@ server.consume { client in
     client.start()
 }
 
-server.error = { error in
+server.errorStream = { error in
     print(error)
 }
 

@@ -7,8 +7,8 @@ public final class ResponseParser: CParser {
     // MARK: Stream
     public typealias Input = ByteBuffer
     public typealias Output = Response
-    public var output: OutputHandler?
-    public var error: ErrorHandler?
+    public var outputStream: OutputHandler?
+    public var errorStream: ErrorHandler?
     
     // Internal variables to conform
     // to the C HTTP parser protocol.
@@ -30,14 +30,14 @@ public final class ResponseParser: CParser {
     }
     
     /// Handles incoming stream data
-    public func input(_ input: ByteBuffer) {
+    public func inputStream(_ input: ByteBuffer) {
         do {
             guard let request = try parse(from: input) else {
                 return
             }
-            output?(request)
+            outputStream?(request)
         } catch {
-            self.error?(error)
+            self.errorStream?(error)
             reset(HTTP_RESPONSE)
         }
     }

@@ -6,14 +6,14 @@ public final class ResponseSerializer: Serializer {
     // MARK: Stream
     public typealias Input = Response
     public typealias Output = DispatchData
-    public var output: OutputHandler?
-    public var error: ErrorHandler?
+    public var outputStream: OutputHandler?
+    public var errorStream: ErrorHandler?
 
     public init() {}
 
-    public func input(_ input: Response) {
+    public func inputStream(_ input: Response) {
         let data = serialize(input)
-        output?(data)
+        outputStream?(data)
     }
 
     public func serialize(_ response: Response) -> DispatchData {

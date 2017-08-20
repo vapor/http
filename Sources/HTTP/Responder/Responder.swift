@@ -26,13 +26,13 @@ extension ResponseWriter {
 
 public final class ResponseOutputStream: ResponseWriter, Core.OutputStream {
     public typealias Output = Response
-    public var output: OutputHandler?
-    public var error: ErrorHandler?
+    public var outputStream: OutputHandler?
+    public var errorStream: ErrorHandler?
 
     public init() {}
 
     public func write(_ response: Response) {
-        output?(response)
+        outputStream?(response)
     }
 }
 
@@ -40,8 +40,8 @@ public final class ResponseOutputStream: ResponseWriter, Core.OutputStream {
 public final class ResponderStream<R: Responder>: Core.Stream {
     public typealias Input = Request
     public typealias Output = Response
-    public var error: ErrorHandler?
-    public var output: OutputHandler?
+    public var errorStream: ErrorHandler?
+    public var outputStream: OutputHandler?
 
     let responder: R
 
@@ -49,9 +49,9 @@ public final class ResponderStream<R: Responder>: Core.Stream {
         self.responder = responder
     }
 
-    public func input(_ input: Request) {
+    public func inputStream(_ input: Request) {
         let writer = ResponseOutputStream()
-        writer.output = output
+        writer.outputStream = outputStream
         responder.respond(to: input, using: writer)
     }
 }
