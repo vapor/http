@@ -18,7 +18,7 @@ public final class Client: Core.Stream {
 
     // MARK: Internal
 
-    let socket: Socket
+    public let socket: Socket
     let buffer: MutableByteBuffer
     var readSource: DispatchSourceRead?
     var writeSource: DispatchSourceWrite?
@@ -42,12 +42,12 @@ public final class Client: Core.Stream {
         write(input)
     }
 
-    public func input(_ data: Data) {
-        let pointer = BytesPointer(data.withUnsafeBytes { $0 })
-        let buffer = UnsafeRawBufferPointer(start: pointer, count: data.count)
-        let dispatch = DispatchData(bytes: buffer)
-        write(dispatch)
-    }
+//    public func input(_ data: Data) {
+//        let pointer = BytesPointer(data.withUnsafeBytes { $0 })
+//        let buffer = UnsafeRawBufferPointer(start: pointer, count: data.count)
+//        let dispatch = DispatchData(bytes: buffer)
+//        write(dispatch)
+//    }
 
     public func write(_ input: DispatchData) {
         if queuedData == nil {
@@ -80,7 +80,16 @@ public final class Client: Core.Stream {
 
     /// Starts receiving data from the client
     public func listen() {
-        readSource = socket.onReadable(queue: queue) {
+        let source = DispatchSource.makeReadSource(
+            fileDescriptor: socket.descriptor.raw,
+            queue: queue
+        )
+        readSource = source
+        source.setEventHandler {
+
+            // print("\(Thread.current) = \(self.socket.descriptor.raw) = \(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8))")
+
+        /// readSource = socket.onReadable(queue: queue) {
             // print(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8) == self.queue.label)
             let read: Int
 
@@ -98,6 +107,7 @@ public final class Client: Core.Stream {
 
             self.output?(frame)
         }
+        source.resume()
     }
 
     public func close() {

@@ -65,16 +65,16 @@ public final class Server: Core.OutputStream {
             let client = Client(socket: socket, queue: queue)
             client.error = self.error
             self.output?(client)
-
-            buffer.sync {
-                self.clients[client.socket.descriptor] = client
-            }
-
-            client.onClose = {
-                buffer.sync {
-                    self.clients[client.socket.descriptor] = nil
-                }
-            }
+//
+//            buffer.sync {
+//                self.clients[client.socket.descriptor] = client
+//            }
+//
+//            client.onClose = {
+//                buffer.sync {
+//                    self.clients[client.socket.descriptor] = nil
+//                }
+//            }
 
         }
     }

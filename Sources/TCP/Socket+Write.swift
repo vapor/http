@@ -6,11 +6,11 @@ import libc
 public typealias SocketEvent = () -> ()
 
 extension Socket {
-    @discardableResult
-    public func write(_ data: Data) throws -> Int {
-        let buffer = ByteBuffer(start: data.withUnsafeBytes { $0 }, count: data.count)
-        return try write(max: data.count, from: buffer)
-    }
+//    @discardableResult
+//    public func write(_ data: Data) throws -> Int {
+//        let buffer = ByteBuffer(start: data.withUnsafeBytes { $0 }, count: data.count)
+//        return try write(max: data.count, from: buffer)
+//    }
 
     public func onWriteable(queue: DispatchQueue, event: @escaping SocketEvent) -> DispatchSourceWrite {
         let source = DispatchSource.makeWriteSource(

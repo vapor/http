@@ -7,6 +7,5 @@ public struct Descriptor: Hashable {
 
     public static func ==(lhs: Descriptor, rhs: Descriptor) -> Bool {
         return lhs.raw == rhs.raw
-
     }
 }
