@@ -6,7 +6,7 @@ import XCTest
 
 XCTMain([
 	// MARK: HTTP
-    testCase(ExampleTests.allTests),
+    testCase(ParserTests.allTests),
 
     // MARK: TCP
     testCase(SocketsTests.allTests),

@@ -1,7 +1,7 @@
 /// The HTTP response status
 ///
 /// TODO: Add more status codes
-public enum Status: Codable, ExpressibleByIntegerLiteral {
+public enum Status: Codable, ExpressibleByIntegerLiteral, Equatable {
     /// upgrade is used for upgrading the connection to a new protocol, such as WebSocket or HTTP/2
     case upgrade
     /// A successful response
