@@ -4,17 +4,17 @@ import Foundation
 import libc
 
 extension Socket {
-//    public func read(max: Int) throws -> Data {
-//        var pointer = MutableBytesPointer.allocate(capacity: max)
-//        defer {
-//            pointer.deallocate(capacity: max)
-//            pointer.deinitialize(count: max)
-//        }
-//        let buffer = MutableByteBuffer(start: pointer, count: max)
-//        let read = try self.read(max: max, into: buffer)
-//        let frame = ByteBuffer(start: pointer, count: read)
-//        return Data(buffer: frame)
-//    }
+    public func read(max: Int) throws -> Data {
+        var pointer = MutableBytesPointer.allocate(capacity: max)
+        defer {
+            pointer.deallocate(capacity: max)
+            pointer.deinitialize(count: max)
+        }
+        let buffer = MutableByteBuffer(start: pointer, count: max)
+        let read = try self.read(max: max, into: buffer)
+        let frame = ByteBuffer(start: pointer, count: read)
+        return Data(buffer: frame)
+    }
 
     public func onReadable(queue: DispatchQueue, event: @escaping SocketEvent) -> DispatchSourceRead {
         let source = DispatchSource.makeReadSource(

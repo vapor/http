@@ -29,9 +29,9 @@ let res = try Response(status: .ok, body: "hi")
 
 struct Application: Responder {
     func respond(to req: Request, using writer: ResponseWriter) {
-        let user = User(name: "Vapor", age: 2)
+        // let user = User(name: "Vapor", age: 2)
         // print(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8))
-        try! res.content(user)
+        // try! res.content(user)
         writer.write(res)
     }
 }

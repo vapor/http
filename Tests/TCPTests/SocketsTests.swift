@@ -2,9 +2,9 @@ import TCP
 import XCTest
 
 class SocketsTests : XCTestCase {
-    func testClient() throws {
-        let socket = try! Socket()
-        try! socket.connect(hostname: "google.com")
+    func testConnect() throws {
+        let socket = try Socket()
+        try socket.connect(hostname: "google.com")
 
         let data = """
         GET / HTTP/1.1\r
@@ -14,26 +14,62 @@ class SocketsTests : XCTestCase {
         hi
         """.data(using: .utf8)!
 
-        let group = DispatchGroup()
+        let queue = DispatchQueue(label: "codes.vapor.test")
 
-        let write = socket.onWriteable {
+        let read = socket.onWriteable(queue: queue) {
             try! socket.write(data)
         }
 
+        let group = DispatchGroup()
         group.enter()
-        let read = socket.onReadable {
-            let response = try! socket.read(max: 65_536)
+        let write = socket.onReadable(queue: queue) {
+            let response = try! socket.read(max: 8_192)
 
             let string = String(data: response, encoding: .utf8)
-            print(string)
+            XCTAssert(string?.contains("HTTP/1.0 400 Bad Request") == true)
             group.leave()
         }
 
+        // get rid of warnings
+        print([read, write])
+
+        group.wait()
+    }
+
+    func testBind() throws {
+        let server = try Socket()
+        try server.bind(hostname: "localhost", port: 8337)
+        try server.listen()
+
+        let queue = DispatchQueue(label: "codes.vapor.test")
+        let group = DispatchGroup()
+        group.enter()
+
+        var accepted: (Socket, DispatchSourceRead)?
+
+        let read = server.onReadable(queue: queue) {
+            let client = try! server.accept()
+            let read = client.onReadable(queue: queue) {
+                let data = try! client.read(max: 8_192)
+                XCTAssertEqual(String(data: data, encoding: .utf8), "hello")
+                group.leave()
+            }
+            accepted = (client, read)
+            XCTAssertNotNil(accepted)
+        }
+        XCTAssertNotNil(read)
+
+        do {
+            let client = try Socket(isNonBlocking: false)
+            try client.connect(hostname: "localhost", port: 8337)
+            let data = "hello".data(using: .utf8)!
+            try! client.write(data)
+        }
 
         group.wait()
     }
 
     static let allTests = [
-        ("testClient", testClient)
+        ("testConnect", testConnect)
     ]
 }
