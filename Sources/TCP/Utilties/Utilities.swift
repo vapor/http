@@ -27,6 +27,6 @@ internal struct LoopIterator<Base: Collection>: IteratorProtocol {
 import libc
 
 // fix some constants on linux
-let SOCK_STREAM = Int32(libc.SOCK_STREAM)
+let SOCK_STREAM = Int32(libc.SOCK_STREAM.rawValue)
 let IPPROTO_TCP = Int32(libc.IPPROTO_TCP)
 #endif

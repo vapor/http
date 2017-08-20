@@ -72,7 +72,8 @@ public final class Client: Core.Stream {
                 let copied = Data(data)
                 let buffer = ByteBuffer(start: copied.withUnsafeBytes { $0 }, count: copied.count)
                 do {
-                    try self.socket.write(max: copied.count, from: buffer)
+                    _ = try self.socket.write(max: copied.count, from: buffer)
+                    // FIXME: we should verify the lengths match here.
                 } catch {
                     // any errors that occur here cannot be thrown,
                     // so send them to stream error catcher.

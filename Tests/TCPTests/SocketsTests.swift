@@ -17,7 +17,7 @@ class SocketsTests : XCTestCase {
         let queue = DispatchQueue(label: "codes.vapor.test")
 
         let read = socket.onWriteable(queue: queue) {
-            try! socket.write(data)
+            _ = try! socket.write(data)
         }
 
         let group = DispatchGroup()
@@ -61,7 +61,7 @@ class SocketsTests : XCTestCase {
             let client = try Socket(isNonBlocking: false)
             try client.connect(hostname: "localhost", port: 8337)
             let data = "hello".data(using: .utf8)!
-            try! client.write(data)
+            _ = try! client.write(data)
         }
 
         group.wait()
