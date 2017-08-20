@@ -22,3 +22,11 @@ internal struct LoopIterator<Base: Collection>: IteratorProtocol {
         return result
     }
 }
+
+#if os(Linux)
+import libc
+
+// fix some constants on linux
+let SOCK_STREAM = Int32(libc.SOCK_STREAM)
+let IPPROTO_TCP = Int32(libc.IPPROTO_TCP)
+#endif
