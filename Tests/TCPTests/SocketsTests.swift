@@ -1,3 +1,4 @@
+import Dispatch
 import TCP
 import XCTest
 
