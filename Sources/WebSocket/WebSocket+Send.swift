@@ -1,7 +1,7 @@
 import Core
 import libc
 
-extension WebSocketConnection {
+extension Connection {
     @discardableResult
     internal func sendFrame(opcode: Frame.OpCode, pointer: UnsafePointer<UInt8>, length: Int, maskingWith mask: (UInt8,UInt8,UInt8,UInt8)? = nil) throws -> Int {
         let drained: Int
@@ -52,7 +52,7 @@ extension WebSocketConnection {
             memcpy(message.advanced(by: extra), pointer, drained)
         }
         
-        try client.socket.write(max: drained &+ extra, from: ByteBuffer(start: message, count: drained &+ extra))
+        _ = try client.socket.write(max: drained &+ extra, from: ByteBuffer(start: message, count: drained &+ extra))
         return drained
     }
 }

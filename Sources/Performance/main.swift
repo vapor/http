@@ -1,3 +1,4 @@
+import WebSocket
 import Core
 import Dispatch
 import Foundation
@@ -89,8 +90,10 @@ do {
     server.drain { client in
         let parser = HTTP.RequestParser()
         let serializer = HTTP.ResponseSerializer()
+        let websocketMiddleware = WebSocketMiddleware(client: client)
 
         client.stream(to: parser)
+            .stream(to: websocketMiddleware)
             .stream(to: app.makeStream(on: client.queue))
             .stream(to: serializer)
             .drain(into: client)

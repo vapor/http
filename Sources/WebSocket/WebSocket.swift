@@ -34,7 +34,7 @@ public class WebSocket {
         serializer.drain(into: client)
         serializer.inputStream(response)
         
-        let connection = WebSocketConnection(client: client)
+        let connection = Connection(client: client)
         var previousType: Frame.OpCode?
         
         connection.drain { frame in
@@ -148,84 +148,4 @@ public class WebSocketMiddleware : RequestMiddleware {
             self.errorStream?(error)
         }
     }
-}
-
-internal final class WebSocketConnection : Core.Stream {
-    func inputStream(_ input: Frame) {
-        client.drain { buffer in
-            guard let pointer = buffer.baseAddress else {
-                return
-            }
-            
-            do {
-                let frame = try Frame(from: pointer, length: buffer.count)
-                self.outputStream?(frame)
-            } catch {
-                self.client.errorStream?(error)
-            }
-        }
-    }
-    
-    var outputStream: ((Frame) -> ())?
-    
-    let message = UnsafeMutablePointer<UInt8>.allocate(capacity: Int(UInt16.max))
-    
-    var errorStream: BaseStream.ErrorHandler?
-    
-    internal typealias Input = Frame
-    internal typealias Output = Frame
-    
-    init(client: Client) {
-        self.client = client
-    }
-    
-    let client: Client
-}
-
-public final class TextStream : Core.Stream {
-    public func inputStream(_ input: String) {
-        do {
-            _ = try input.withCString(encodedAs: UTF8.self) { pointer in
-                try frameStream?.sendFrame(opcode: .text, pointer: pointer, length: input.utf8.count)
-            }
-        } catch {
-            self.errorStream?(error)
-        }
-    }
-    
-    public var outputStream: ((String) -> ())?
-    
-    internal weak var frameStream: WebSocketConnection?
-    
-    public var errorStream: BaseStream.ErrorHandler?
-    
-    public typealias Input = String
-    public typealias Output = String
-    
-    init() {}
-}
-
-public final class BinaryStream : Core.Stream {
-    public func inputStream(_ input: ByteBuffer) {
-        guard let pointer = input.baseAddress else {
-            return
-        }
-        
-        do {
-            try frameStream?.sendFrame(opcode: .binary, pointer: pointer, length: input.count)
-        } catch {
-            self.errorStream?(error)
-        }
-    }
-    
-    public var outputStream: ((ByteBuffer) -> ())?
-    
-    internal weak var frameStream: WebSocketConnection?
-    
-    public var errorStream: BaseStream.ErrorHandler?
-    
-    public typealias Input = ByteBuffer
-    public typealias Output = ByteBuffer
-    
-    init() {}
 }
