@@ -91,6 +91,12 @@ do {
         let parser = HTTP.RequestParser()
         let serializer = HTTP.ResponseSerializer()
         let websocketMiddleware = WebSocketMiddleware(client: client)
+        
+        websocketMiddleware.onConnect { websocket in
+            websocket.textStream.drain { string in
+                websocket.textStream.inputStream(string)
+            }
+        }
 
         client.stream(to: parser)
             .stream(to: websocketMiddleware)

@@ -7,6 +7,7 @@ import TCP
 public class WebSocket {
     public let textStream = TextStream()
     public let binaryStream = BinaryStream()
+    let connection: Connection
     
     init(client: Client, key: String, version: Int) throws {
         let headers: Headers
@@ -34,14 +35,17 @@ public class WebSocket {
         serializer.drain(into: client)
         serializer.inputStream(response)
         
-        let connection = Connection(client: client)
+        self.connection = Connection(client: client)
         var previousType: Frame.OpCode?
         
-        connection.drain { frame in
+        self.textStream.frameStream = self.connection
+        self.binaryStream.frameStream = self.connection
+        
+        self.connection.drain { frame in
             func processString() {
                 // invalid string
                 guard let string = frame.data.string() else {
-                    connection.client.close()
+                    self.connection.client.close()
                     return
                 }
                 
@@ -69,15 +73,15 @@ public class WebSocket {
                 processBinary()
             case .ping:
                 guard let pointer = frame.data.baseAddress else {
-                    connection.client.close()
+                    self.connection.client.close()
                     return
                 }
                 
                 do {
                     // reply the input
-                    try connection.sendFrame(opcode: .pong, pointer: pointer, length: frame.data.count)
+                    try self.connection.sendFrame(opcode: .pong, pointer: pointer, length: frame.data.count)
                 } catch {
-                    connection.errorStream?(error)
+                    self.connection.errorStream?(error)
                 }
             case .continuation:
                 defer {
@@ -88,7 +92,7 @@ public class WebSocket {
                 
                 // TODO: ignore typeless continuations?
                 guard let type = previousType else {
-                    connection.client.close()
+                    self.connection.client.close()
                     return
                 }
                 
@@ -98,11 +102,11 @@ public class WebSocket {
                     processBinary()
                 } else {
                     // invalid, close or ignore?
-                    connection.client.close()
+                    self.connection.client.close()
                     return
                 }
             case .close:
-                connection.client.close()
+                self.connection.client.close()
             case .pong:
                 return
             }
@@ -116,7 +120,11 @@ public class WebSocketMiddleware : RequestMiddleware {
     
     public var outputStream: ((Request) -> ())?
     public var errorStream: BaseStream.ErrorHandler?
-    public var websocketStream: ((WebSocket) -> ())?
+    var websocketStream: ((WebSocket) -> ())?
+    
+    public func onConnect(_ handler: @escaping ((WebSocket) -> ())) {
+        self.websocketStream = handler
+    }
     
     // prevent reference cycles
     weak var client: Client?
@@ -143,7 +151,8 @@ public class WebSocketMiddleware : RequestMiddleware {
         }
         
         do {
-            self.websocketStream?(try WebSocket(client: client, key: key, version: version))
+            let websocket = try WebSocket(client: client, key: key, version: version)
+            self.websocketStream?(websocket)
         } catch {
             self.errorStream?(error)
         }
