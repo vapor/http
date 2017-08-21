@@ -12,6 +12,7 @@ public struct Error: Traceable, Debuggable, Swift.Error {
     public var column: UInt
     public var stackTrace: [String]
 
+    /// Create a new TCP error.
     public init(
         identifier: String,
         reason: String,
@@ -29,6 +30,7 @@ public struct Error: Traceable, Debuggable, Swift.Error {
         self.stackTrace = Error.makeStackTrace()
     }
 
+    /// Create a new TCP error from a POSIX errno.
     public static func posix(
         _ errno: Int32,
         identifier: String,

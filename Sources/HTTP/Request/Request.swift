@@ -1,14 +1,26 @@
 import Foundation
 
+/// HTTP request.
 public final class Request: Message {
+    /// HTTP requests have a method, like GET or POST
     public var method: Method
+
+    /// This is usually just a path like `/foo` but
+    /// may be a full URI in the case of a proxy
     public var uri: URI
+
+    /// See Message.version
     public var version: Version
+
+    /// See Message.headers
     public var headers: Headers
+
+    /// See Message.body
     public var body: Body {
         didSet { updateContentLength() }
     }
 
+    /// Create a new HTTP request.
     public init(
         method: Method = .get,
         uri: URI = URI(),
@@ -28,6 +40,7 @@ public final class Request: Message {
 // MARK: Convenience
 
 extension Request {
+    /// Create a new HTTP request using something BodyRepresentable.
     public convenience init(
         method: Method = .get,
         uri: URI = URI(),

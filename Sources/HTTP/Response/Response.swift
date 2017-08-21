@@ -1,13 +1,22 @@
 import Foundation
 
+/// HTTP response.
 public final class Response: Message {
+    /// See Message.version
     public var version: Version
+
+    /// HTTP response status code.
     public var status: Status
+
+    /// See Message.headers
     public var headers: Headers
+
+    /// See Message.body
     public var body: Body {
         didSet { updateContentLength() }
     }
 
+    /// Create a new HTTP response.
     public init(
         version: Version = Version(major: 1, minor: 1),
         status: Status = .ok,
@@ -23,6 +32,7 @@ public final class Response: Message {
 }
 
 extension Response {
+    /// Create a new HTTP response using something BodyRepresentable.
     public convenience init(
         version: Version = Version(major: 1, minor: 1),
         status: Status = .ok,

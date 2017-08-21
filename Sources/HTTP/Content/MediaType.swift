@@ -104,6 +104,7 @@ public struct MediaType {
         return acceptedMediaTypes
     }
 
+    /// Returns true if the supplied media type matches this media type.
     public func matches(other mediaType: MediaType) -> Bool {
         if type == "*" || mediaType.type == "*" {
             return true

@@ -1,5 +1,6 @@
 import Foundation
 
+/// ContentEncodable & ContentDecodable.
 public typealias ContentCodable = ContentEncodable & ContentDecodable
 
 /// Types conforming to this protocol can be used
