@@ -35,16 +35,76 @@ public class WebSocket {
         serializer.inputStream(response)
         
         let connection = WebSocketConnection(client: client)
+        var previousType: Frame.OpCode?
+        
         connection.drain { frame in
-            switch frame.opCode {
-            case .text:
+            func processString() {
+                // invalid string
                 guard let string = frame.data.string() else {
+                    connection.client.close()
                     return
                 }
                 
-                self.textStream.inputStream(string)
-            case .binary:
+                self.textStream.outputStream?(string)
+            }
+            
+            func processBinary() {
+                let readBuffer = ByteBuffer(start: frame.data.baseAddress, count: frame.data.count)
                 
+                self.binaryStream.outputStream?(readBuffer)
+            }
+            
+            switch frame.opCode {
+            case .text:
+                if !frame.final {
+                    previousType = .text
+                }
+                
+                processString()
+            case .binary:
+                if !frame.final {
+                    previousType = .binary
+                }
+                
+                processBinary()
+            case .ping:
+                guard let pointer = frame.data.baseAddress else {
+                    connection.client.close()
+                    return
+                }
+                
+                do {
+                    // reply the input
+                    try connection.sendFrame(opcode: .pong, pointer: pointer, length: frame.data.count)
+                } catch {
+                    connection.errorStream?(error)
+                }
+            case .continuation:
+                defer {
+                    if frame.final {
+                        previousType = nil
+                    }
+                }
+                
+                // TODO: ignore typeless continuations?
+                guard let type = previousType else {
+                    connection.client.close()
+                    return
+                }
+                
+                if type == .text {
+                    processString()
+                } else if type == .binary {
+                    processBinary()
+                } else {
+                    // invalid, close or ignore?
+                    connection.client.close()
+                    return
+                }
+            case .close:
+                connection.client.close()
+            case .pong:
+                return
             }
         }
     }
