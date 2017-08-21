@@ -5,6 +5,9 @@ import Crypto
 import TCP
 
 public class WebSocket {
+    public let textStream = TextStream()
+    public let binaryStream = BinaryStream()
+    
     init(client: Client, key: String, version: Int) throws {
         let headers: Headers
         
@@ -23,6 +26,26 @@ public class WebSocket {
                 "Connection": "Upgrade",
                 "Sec-WebSocket-Accept": hash
             ]
+        }
+        
+        let response = Response(status: 101, headers: headers)
+        
+        let serializer = HTTP.ResponseSerializer()
+        serializer.drain(into: client)
+        serializer.inputStream(response)
+        
+        let connection = WebSocketConnection(client: client)
+        connection.drain { frame in
+            switch frame.opCode {
+            case .text:
+                guard let string = frame.data.string() else {
+                    return
+                }
+                
+                self.textStream.inputStream(string)
+            case .binary:
+                
+            }
         }
     }
 }
@@ -66,6 +89,7 @@ public class WebSocketMiddleware : RequestMiddleware {
 
         guard let client = client else {
             self.outputStream?(request)
+            return
         }
         
         do {
@@ -78,37 +102,80 @@ public class WebSocketMiddleware : RequestMiddleware {
 
 internal final class WebSocketConnection : Core.Stream {
     func inputStream(_ input: Frame) {
-        input.data
+        client.drain { buffer in
+            guard let pointer = buffer.baseAddress else {
+                return
+            }
+            
+            do {
+                let frame = try Frame(from: pointer, length: buffer.count)
+                self.outputStream?(frame)
+            } catch {
+                self.client.errorStream?(error)
+            }
+        }
     }
     
     var outputStream: ((Frame) -> ())?
+    
+    let message = UnsafeMutablePointer<UInt8>.allocate(capacity: Int(UInt16.max))
     
     var errorStream: BaseStream.ErrorHandler?
     
     internal typealias Input = Frame
     internal typealias Output = Frame
     
-    let socket: Socket
+    init(client: Client) {
+        self.client = client
+    }
+    
+    let client: Client
 }
 
 public final class TextStream : Core.Stream {
+    public func inputStream(_ input: String) {
+        do {
+            _ = try input.withCString(encodedAs: UTF8.self) { pointer in
+                try frameStream?.sendFrame(opcode: .text, pointer: pointer, length: input.utf8.count)
+            }
+        } catch {
+            self.errorStream?(error)
+        }
+    }
+    
+    public var outputStream: ((String) -> ())?
+    
+    internal weak var frameStream: WebSocketConnection?
+    
+    public var errorStream: BaseStream.ErrorHandler?
+    
     public typealias Input = String
     public typealias Output = String
     
-    let connection: WebSocketConnection
-    
-    init(connection: WebSocketConnection) {
-        self.connection = connection
-    }
+    init() {}
 }
 
 public final class BinaryStream : Core.Stream {
-    public typealias Input = Data
-    public typealias Output = Data
-    
-    let connection: WebSocketConnection
-    
-    init(connection: WebSocketConnection) {
-        self.connection = connection
+    public func inputStream(_ input: ByteBuffer) {
+        guard let pointer = input.baseAddress else {
+            return
+        }
+        
+        do {
+            try frameStream?.sendFrame(opcode: .binary, pointer: pointer, length: input.count)
+        } catch {
+            self.errorStream?(error)
+        }
     }
+    
+    public var outputStream: ((ByteBuffer) -> ())?
+    
+    internal weak var frameStream: WebSocketConnection?
+    
+    public var errorStream: BaseStream.ErrorHandler?
+    
+    public typealias Input = ByteBuffer
+    public typealias Output = ByteBuffer
+    
+    init() {}
 }
