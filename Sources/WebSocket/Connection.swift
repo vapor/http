@@ -23,7 +23,7 @@ internal final class Connection : Core.Stream {
         let parser = FrameParser()
         
         client.stream(to: parser).drain { frame in
-            outputStream?(frame)
+            self.outputStream?(frame)
         }
     }
     

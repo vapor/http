@@ -58,10 +58,15 @@ public final class Frame {
     /// The serialized message
     let buffer: MutableByteBuffer
     var headerUntil: Int
+    
+    var payloadLength: Int {
+        return buffer.count &- headerUntil
+    }
+    
     public let mask: [UInt8]?
     
     /// The payload of this frame
-    public var payload: ByteBuffer {
+    var payload: ByteBuffer {
         return ByteBuffer(start: buffer.baseAddress, count: buffer.count &- headerUntil)
     }
     
