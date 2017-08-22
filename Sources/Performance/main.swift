@@ -108,7 +108,6 @@ do {
         let serializer = HTTP.ResponseSerializer()
 
         client.stream(to: parser)
-            // .stream(to: websocketMiddleware)
             .stream(to: app.makeStream(on: client.client.queue))
             .stream(to: serializer)
             .drain(into: client)
