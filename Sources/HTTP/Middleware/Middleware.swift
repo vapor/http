@@ -40,6 +40,14 @@ extension Middleware {
     }
 }
 
+extension Array where Element == Middleware {
+    /// Converts an array of middleware into a responder by chaining
+    /// them to an actual responder.
+    public func makeResponder(chainedto responder: Responder) -> Responder {
+        return makeResponder(chainedto: responder)
+    }
+}
+
 extension Array where Element: Middleware {
     /// Converts an array of middleware into a responder by chaining
     /// them to an actual responder.
