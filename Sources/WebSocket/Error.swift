@@ -13,6 +13,8 @@ public struct Error : Swift.Error, Debuggable, Traceable {
             return "WebSocket frames that aren't final must be binary or a continuation of binary"
         case .invalidBufferSize:
             return "The buffer provided was empty"
+        case .invalidRequest:
+            return "The websocket upgrade request is not valid"
         }
     }
     
@@ -30,7 +32,7 @@ public struct Error : Swift.Error, Debuggable, Traceable {
          function: String = #function,
          line: UInt = #line,
          column: UInt = #column
-         ) {
+    ) {
         self.stackTrace = Error.makeStackTrace()
         self.file = file
         self.function = function
@@ -67,5 +69,8 @@ public struct Error : Swift.Error, Debuggable, Traceable {
         
         /// Only binary/continuation frames don't need to be final
         case invalidFrameParameters
+
+        /// The upgrade request was not formatted properly
+        case invalidRequest
     }
 }

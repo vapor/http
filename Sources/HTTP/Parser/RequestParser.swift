@@ -37,6 +37,9 @@ public final class RequestParser: CParser {
         }
     }
 
+    /// Parses request Data. If the data does not contain
+    /// an entire HTTP request, nil will be returned and
+    /// the parser will remain ready to accept new Data.
     public func parse(from data: Data) throws -> Request? {
         let buffer = ByteBuffer(start: data.withUnsafeBytes { $0 }, count: data.count)
         return try parse(from: buffer)

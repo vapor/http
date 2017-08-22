@@ -2,20 +2,31 @@ import Core
 import Dispatch
 import Foundation
 
+/// Converts requests to DispatchData.
 public final class RequestSerializer: Serializer {
-    // MARK: Stream
+    /// See InputStream.Input
     public typealias Input = Request
-    public typealias Output = DispatchData
+
+    /// See OutputStream.Output
+    public typealias Output = SerializedMessage
+
+    /// See OutputStream.outputStream
     public var outputStream: OutputHandler?
+
+    /// See BaseStream.errorStream
     public var errorStream: ErrorHandler?
 
+    /// Create a new RequestSerializer
     public init() {}
 
+    /// Handles incoming requests.
     public func inputStream(_ input: Request) {
         let data = serialize(input)
-        outputStream?(data)
+        let message = SerializedMessage(message: data, onUpgrade: input.onUpgrade)
+        outputStream?(message)
     }
 
+    /// Serializes a request into DispatchData.
     public func serialize(_ request: Request) -> DispatchData {
         var serialized = serialize(method: request.method, uri: request.uri)
 
@@ -32,6 +43,7 @@ public final class RequestSerializer: Serializer {
         return serialized
     }
 
+    /// Handles http request method serialization
     private func serialize(method: Method, uri: URI) -> DispatchData {
         return DispatchData("\(method.string) \(uri.path) HTTP/1.1\r\n")
     }

@@ -4,12 +4,14 @@ internal struct LoopIterator<Base: Collection>: IteratorProtocol {
     private let collection: Base
     private var index: Base.Index
 
-    public init(collection: Base) {
+    /// Create a new Loop Iterator from a collection.
+    init(collection: Base) {
         self.collection = collection
         self.index = collection.startIndex
     }
 
-    public mutating func next() -> Base.Iterator.Element? {
+    /// Get the next item in the loop iterator.
+    mutating func next() -> Base.Iterator.Element? {
         guard !collection.isEmpty else {
             return nil
         }
