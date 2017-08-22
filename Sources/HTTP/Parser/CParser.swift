@@ -43,6 +43,7 @@ extension CParser {
 }
 
 extension CParser {
+    /// Initializes the http parser settings with appropriate callbacks.
     func initialize(_ settings: inout http_parser_settings) {
         // called when chunks of the url have been read
         settings.on_url = { parser, chunk, length in

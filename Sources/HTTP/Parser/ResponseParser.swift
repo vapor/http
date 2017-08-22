@@ -23,7 +23,9 @@ public final class ResponseParser: CParser {
         self.state = .ready
         reset(HTTP_RESPONSE)
     }
-    
+
+    /// Resets the parser so it can accept new data.
+    /// Call this method if parsing fails.
     func reset() {
         http_parser_init(&parser, HTTP_REQUEST)
         initialize(&settings)
