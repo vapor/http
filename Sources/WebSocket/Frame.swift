@@ -26,6 +26,8 @@ import Core
 ///
 /// Interfacing with this class directly is usually not necessary and not recommended unless you know how WebSockets work.
 public final class Frame {
+    public typealias Header = (final: Bool, op: Frame.OpCode, size: UInt64, mask: [UInt8], consumed: Int)
+    
     /// The type of payload
     public enum OpCode: Byte {
         /// This message is a continuation of a previous frame and it's associated payload
@@ -56,7 +58,7 @@ public final class Frame {
     /// The serialized message
     let buffer: MutableByteBuffer
     var headerUntil: Int
-    let mask: [UInt8]?
+    public let mask: [UInt8]?
     
     /// The payload of this frame
     public var payload: ByteBuffer {
@@ -64,8 +66,6 @@ public final class Frame {
     }
     
     /// Creates a new payload by referencing the original payload.
-    ///
-    /// Do **not** deallocate the original payload whilst this Frame is still being used
     public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, final: Bool = true) throws {
         if !final {
             guard op == .binary || op == .continuation else {
@@ -77,15 +77,18 @@ public final class Frame {
         self.final = final
         
         let payloadLengthSize: Int
+        let lengthByte: UInt8
         var number: [UInt8]
         
         // the amount of bytes needed for this payload
         if payload.count < 126 {
+            lengthByte = UInt8(payload.count)
             payloadLengthSize = 1
             number = []
             
         // Serialize as UInt16
         } else if payload.count <= Int(UInt16.max) {
+            lengthByte = 126
             payloadLengthSize = 3
             
             var length = UInt16(payload.count).littleEndian
@@ -96,6 +99,7 @@ public final class Frame {
             
         // Serialize as UInt64
         } else {
+            lengthByte = 127
             payloadLengthSize = 9
             
             var length = UInt64(payload.count).littleEndian
@@ -109,19 +113,41 @@ public final class Frame {
         let bufferSize = 2 + payloadLengthSize + payload.count
         let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
         
+        // sets the length bytes
+        pointer[1] = pointer[1] | lengthByte
+        memcpy(pointer.advanced(by: 2), number, number.count)
+        
         // set final bit if needed and rawValue
         pointer.pointee = (final ? 0b10000000 : 0) | op.rawValue
         
         if let mask = mask {
+            // Masks must be 4 bytes
             guard mask.count == 4 else {
                 throw WebSocketError.invalidMask
             }
             
+            // sets the mask bit
+            pointer[1] = pointer[1] | 0b10000000
+            
             pointer.advanced(by: 2 &+ payloadLengthSize).assign(from: mask, count: 4)
             self.mask = mask
             
+            let outputOffset = 2 &+ payloadLengthSize &+ 4
+            
+            // You can't write buffers
+            if let baseAddress = payload.baseAddress {
+                // masks the data and puts it into the buffer
+                for i in 0..<payload.count {
+                    pointer[outputOffset &+ i] = baseAddress[i] ^ mask[i % 4]
+                }
+            }
         } else {
             self.mask = nil
+            
+            // You can't write buffers
+            if let baseAddress = payload.baseAddress {
+                pointer.advanced(by: 2 &+ payloadLengthSize).assign(from: baseAddress, count: payload.count)
+            }
         }
         
         self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)

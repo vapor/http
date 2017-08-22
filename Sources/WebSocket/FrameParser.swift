@@ -1,7 +1,43 @@
 import Core
 
 public final class FrameParser : Core.Stream {
-    static func decodeFrameHeader(from base: UnsafePointer<UInt8>, length: Int) throws -> (final: Bool, op: Frame.OpCode, size: UInt64, mask: [UInt8], consumed: Int) {
+    public typealias Input = ByteBuffer
+    public typealias Output = Frame
+    
+    public var outputStream: OutputHandler?
+    public var errorStream: ErrorHandler?
+    
+    public func inputStream(_ input: ByteBuffer) {
+        guard let pointer = input.baseAddress else {
+            // ignore
+            return
+        }
+        
+        if let header = header {
+            
+        } else {
+            guard let header = try? FrameParser.decodeFrameHeader(from: pointer, length: input.count) else {
+                self.partialBuffer += Array(input)
+                return
+            }
+            
+            defer { self.header = header }
+        }
+    }
+    
+    let bufferBuilder: MutableBytesPointer
+    let maximumPayloadSize: Int
+    
+    var partialBuffer = [UInt8]()
+    var header: Frame.Header?
+    
+    public init(maximumPayloadSize: Int = 10_000_000) {
+        self.maximumPayloadSize = maximumPayloadSize
+        // 2 for the header, 9 for the length, 4 for the mask
+        self.bufferBuilder = MutableBytesPointer.allocate(capacity: maximumPayloadSize + 15)
+    }
+    
+    static func decodeFrameHeader(from base: UnsafePointer<UInt8>, length: Int) throws -> Frame.Header {
         guard
             length > 3,
             let code = Frame.OpCode(rawValue: base[0] & 0b00001111),
@@ -65,12 +101,3 @@ public final class FrameParser : Core.Stream {
         return (final, code, payloadLength, mask, consumed)
     }
 }
-
-
-//let length = numericCast(header.payloadLength) as Int
-//let data = UnsafeMutablePointer<UInt8>.allocate(capacity: length)
-//
-//for i in 0..<length {
-//    data[i] = base[i] ^ mask[i % 4]
-//}
-
