@@ -11,6 +11,8 @@ struct User: Codable {
     var age: Int
 }
 
+extension String: Swift.Error { }
+
 extension User: ContentCodable {
     static func decodeContent(from message: Message) throws -> User? {
         guard message.mediaType == .json else {

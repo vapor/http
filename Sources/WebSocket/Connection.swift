@@ -3,17 +3,12 @@ import Dispatch
 import HTTP
 import TCP
 
-internal final class Connection : Core.Stream {
-    func inputStream(_ input: Frame) {
-        serializer.inputStream(input)
-    }
-    
-    var outputStream: ((Frame) -> ())?
-    
-    var errorStream: BaseStream.ErrorHandler?
-    
+internal final class Connection: Core.Stream {
     internal typealias Input = Frame
     internal typealias Output = Frame
+
+    var outputStream: OutputHandler?
+    var errorStream: ErrorHandler?
     
     let serializer = FrameSerializer()
 
@@ -33,4 +28,7 @@ internal final class Connection : Core.Stream {
         }
     }
 
+    func inputStream(_ input: Frame) {
+        serializer.inputStream(input)
+    }
 }

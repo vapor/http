@@ -9,7 +9,8 @@ public class WebSocket {
     public let binaryStream = BinaryStream()
     let connection: Connection
     var previousType: Frame.OpCode?
-    
+
+    /// Create a new WebSocket from a client
     public init(client: TCP.Client) {
         self.connection = Connection(client: client)
         
@@ -23,10 +24,12 @@ public class WebSocket {
 // MARK: Convenience
 
 extension WebSocket {
+    /// Returns true if this request should upgrade to websocket protocol
     public static func shouldUpgrade(for req: Request) -> Bool {
         return req.headers[.connection] == "Upgrade" && req.headers[.upgrade] == "websocket"
     }
 
+    /// Creates a websocket upgrade response for the upgrade request
     public static func upgradeResponse(for req: Request) throws -> Response {
         guard
             req.method == .get,
@@ -34,7 +37,7 @@ extension WebSocket {
             let secWebsocketVersion = req.headers["Sec-WebSocket-Version"],
             let version = Int(secWebsocketVersion)
         else {
-            throw "bad websocket req"
+            throw Error(.invalidRequest)
         }
 
         let headers: Headers
@@ -61,5 +64,3 @@ extension WebSocket {
         return Response(status: 101, headers: headers)
     }
 }
-
-extension String: Swift.Error {}
