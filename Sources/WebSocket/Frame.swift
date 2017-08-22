@@ -108,7 +108,7 @@ public final class Frame {
     public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, isMasked: Bool, final: Bool = true) throws {
         if !final {
             guard op == .binary || op == .continuation else {
-                throw WebSocketError.invalidFrameParameters
+                throw Error(.invalidFrameParameters)
             }
         }
         
@@ -167,7 +167,7 @@ public final class Frame {
             // Masks must be 4 bytes
             guard mask.count == 4 else {
                 self.buffer.dealloc()
-                throw WebSocketError.invalidMask
+                throw Error(.invalidMask)
             }
             
             // sets the mask bit
@@ -183,15 +183,4 @@ public final class Frame {
         
         self.maskBytes = mask
     }
-}
-
-public enum WebSocketError : Error {
-    case invalidBufferSize
-    case invalidFrame
-    case invalidUpgrade
-    case couldNotConnect
-    case invalidMask
-    case invalidBuffer
-    case invalidFrameParameters
-    case noMask
 }

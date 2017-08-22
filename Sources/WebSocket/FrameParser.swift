@@ -13,8 +13,34 @@ public final class FrameParser : Core.Stream {
             return
         }
         
-        if let processing = processing {
+        func processBuffer(header: Frame.Header, buffer: ByteBuffer) {
+            defer {
+                self.processing = nil
+            }
             
+            do {
+                let frame = try Frame(op: header.op, payload: buffer, mask: header.mask, isMasked: header.mask != nil)
+                
+                self.outputStream?(frame)
+            } catch {
+                errorStream?(error)
+            }
+        }
+        
+        if let (header, offset) = processing {
+            let total = Int(header.size)
+            
+            if offset + input.count >= total {
+                let consume = total &- offset
+                
+                bufferBuilder.advanced(by: offset).assign(from: pointer, count: consume)
+                
+                processBuffer(header: header, buffer: ByteBuffer(start: bufferBuilder, count: total))
+                
+                self.inputStream(ByteBuffer(start: pointer.advanced(by: consume), count: input.count &- consume))
+            } else {
+                bufferBuilder.advanced(by: offset).assign(from: pointer, count: input.count)
+            }
         } else {
             guard let header = try? FrameParser.decodeFrameHeader(from: pointer, length: input.count) else {
                 self.partialBuffer += Array(input)
@@ -22,33 +48,32 @@ public final class FrameParser : Core.Stream {
             }
             
             guard header.size < UInt64(self.maximumPayloadSize) else {
-                self.errorStream?(WebSocketError.invalidBufferSize)
+                self.errorStream?(Error(.invalidBufferSize))
                 return
             }
             
             let pointer = pointer.advanced(by: header.consumed)
             let remaining = input.count &- header.consumed
             
-            do {
-                guard Int(header.size) <= remaining else {
-                    self.partialBuffer += Array(input)
-                    return
-                }
-                
-                let frame = try Frame(op: header.op, payload: ByteBuffer(start: pointer, count: Int(header.size)), mask: header.mask, isMasked: header.mask != nil)
-                
-                self.outputStream?(frame)
-            } catch {
-                errorStream?(error)
+            guard Int(header.size) <= remaining else {
+                bufferBuilder.assign(from: pointer, count: input.count)
+                self.processing = (header, input.count)
+                return
             }
+            
+            processBuffer(header: header, buffer: ByteBuffer(start: pointer, count: Int(header.size)))
         }
+    }
+    
+    deinit {
+        bufferBuilder.deallocate(capacity: maximumPayloadSize + 15)
     }
     
     let bufferBuilder: MutableBytesPointer
     let maximumPayloadSize: Int
     
     var partialBuffer = [UInt8]()
-    var processing: (Frame.Header, MutableByteBuffer)?
+    var processing: (Frame.Header, Int)?
     
     public init(maximumPayloadSize: Int = 10_000_000) {
         self.maximumPayloadSize = maximumPayloadSize
@@ -61,7 +86,7 @@ public final class FrameParser : Core.Stream {
             length > 3,
             let code = Frame.OpCode(rawValue: base[0] & 0b00001111),
             base[1] & 0b10000000 == 0b10000000 else {
-                throw WebSocketError.invalidFrame
+                throw Error(.invalidFrame)
         }
         
         // If the FIN bit is set
@@ -76,21 +101,21 @@ public final class FrameParser : Core.Stream {
         // Binary and continuation frames don't need to be final
         if !final {
             guard code == .continuation || code == .binary else {
-                throw WebSocketError.invalidFrame
+                throw Error(.invalidFrameParameters)
             }
         }
         
         // Ping and pong cannot have a bigger payload than tihs
         if code == .ping || code == .pong {
             guard payloadLength < 126 else {
-                throw WebSocketError.invalidFrame
+                throw Error(.invalidFrame)
             }
         }
         
         // Parse the payload length as UInt16 following the 126
         if payloadLength == 126 {
             guard length >= 5 else {
-                throw WebSocketError.invalidFrame
+                throw Error(.invalidFrame)
             }
             
             payloadLength = base.withMemoryRebound(to: UInt16.self, capacity: 1, { UInt64($0.pointee) })
@@ -101,7 +126,7 @@ public final class FrameParser : Core.Stream {
         // payload length byte == 127 means it's followed by a UInt64
         } else if payloadLength == 127 {
             guard length >= 11 else {
-                throw WebSocketError.invalidFrame
+                throw Error(.invalidFrame)
             }
             
             payloadLength = base.withMemoryRebound(to: UInt64.self, capacity: 1, { $0.pointee })
@@ -111,14 +136,14 @@ public final class FrameParser : Core.Stream {
         }
         
         guard length &- consumed == payloadLength &+ 4, payloadLength < Int.max else {
-            throw WebSocketError.invalidFrame
+            throw Error(.invalidFrame)
         }
         
         let mask: [UInt8]?
         
         if isMasked {
             guard consumed &+ 4 < length else {
-                throw WebSocketError.invalidMask
+                throw Error(.invalidMask)
             }
             
             mask = [base[0], base[1], base[2], base[3]]
