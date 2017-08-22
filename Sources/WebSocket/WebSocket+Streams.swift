@@ -2,12 +2,13 @@ import Core
 
 public final class TextStream : Core.Stream {
     public func inputStream(_ input: String) {
-        do {
-            _ = try input.withCString(encodedAs: UTF8.self) { pointer in
-                try frameStream?.sendFrame(opcode: .text, pointer: pointer, length: input.utf8.count)
+        _ = input.withCString(encodedAs: UTF8.self) { pointer in
+            do {
+                let frame = try Frame(op: .text, payload: ByteBuffer(start: pointer, count: input.utf8.count), mask: nil, isMasked: false, applyMask: masking)
+                frameStream?.inputStream(frame)
+            } catch {
+                self.errorStream?(error)
             }
-        } catch {
-            self.errorStream?(error)
         }
     }
     
@@ -20,17 +21,18 @@ public final class TextStream : Core.Stream {
     public typealias Input = String
     public typealias Output = String
     
-    init() {}
+    let masking: Bool
+    
+    public init(masking: Bool = false) {
+        self.masking = masking
+    }
 }
 
 public final class BinaryStream : Core.Stream {
     public func inputStream(_ input: ByteBuffer) {
-        guard let pointer = input.baseAddress else {
-            return
-        }
-        
         do {
-            try frameStream?.sendFrame(opcode: .binary, pointer: pointer, length: input.count)
+            let frame = try Frame(op: .binary, payload: input, mask: nil, isMasked: false, applyMask: masking)
+            frameStream?.inputStream(frame)
         } catch {
             self.errorStream?(error)
         }
@@ -45,5 +47,9 @@ public final class BinaryStream : Core.Stream {
     public typealias Input = ByteBuffer
     public typealias Output = ByteBuffer
     
-    init() {}
+    let masking: Bool
+    
+    public init(masking: Bool = false) {
+        self.masking = masking
+    }
 }

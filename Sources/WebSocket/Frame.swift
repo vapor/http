@@ -63,15 +63,49 @@ public final class Frame {
         return buffer.count &- headerUntil
     }
     
-    public let mask: [UInt8]?
+    public var isMasked: Bool
+    public let maskBytes: [UInt8]?
+    
+    fileprivate var mutablePayload: MutableByteBuffer {
+        return MutableByteBuffer(start: buffer.baseAddress, count: buffer.count &- headerUntil)
+    }
     
     /// The payload of this frame
     var payload: ByteBuffer {
         return ByteBuffer(start: buffer.baseAddress, count: buffer.count &- headerUntil)
     }
     
+    public func unmask() {
+        guard isMasked else {
+            return
+        }
+        
+        toggleMask()
+    }
+    
+    public func mask() {
+        guard !isMasked else {
+            return
+        }
+        
+        toggleMask()
+    }
+    
+    func toggleMask() {
+        guard let maskBytes = maskBytes, let pointer = mutablePayload.baseAddress else {
+            return
+        }
+        
+        let outputOffset = self.headerUntil
+        
+        // applies mask to the data and puts it into the buffer
+        for i in 0..<payload.count {
+            pointer[outputOffset &+ i] = pointer[i] ^ maskBytes[i % 4]
+        }
+    }
+    
     /// Creates a new payload by referencing the original payload.
-    public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, final: Bool = true) throws {
+    public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, isMasked: Bool, applyMask: Bool, final: Bool = true) throws {
         if !final {
             guard op == .binary || op == .continuation else {
                 throw WebSocketError.invalidFrameParameters
@@ -80,6 +114,7 @@ public final class Frame {
         
         self.opCode = op
         self.final = final
+        self.isMasked = isMasked != applyMask
         
         let payloadLengthSize: Int
         let lengthByte: UInt8
@@ -125,6 +160,14 @@ public final class Frame {
         // set final bit if needed and rawValue
         pointer.pointee = (final ? 0b10000000 : 0) | op.rawValue
         
+        // You can't write empty buffers
+        if let baseAddress = payload.baseAddress {
+            pointer.advanced(by: 2 &+ payloadLengthSize).assign(from: baseAddress, count: payload.count)
+        }
+        
+        self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
+        headerUntil = 2 &+ payloadLengthSize &+ (mask == nil ? 0 : 4)
+        
         if let mask = mask {
             // Masks must be 4 bytes
             guard mask.count == 4 else {
@@ -135,28 +178,18 @@ public final class Frame {
             pointer[1] = pointer[1] | 0b10000000
             
             pointer.advanced(by: 2 &+ payloadLengthSize).assign(from: mask, count: 4)
-            self.mask = mask
+            self.maskBytes = mask
             
-            let outputOffset = 2 &+ payloadLengthSize &+ 4
-            
-            // You can't write buffers
-            if let baseAddress = payload.baseAddress {
-                // masks the data and puts it into the buffer
-                for i in 0..<payload.count {
-                    pointer[outputOffset &+ i] = baseAddress[i] ^ mask[i % 4]
-                }
+            if applyMask {
+                toggleMask()
             }
         } else {
-            self.mask = nil
-            
-            // You can't write buffers
-            if let baseAddress = payload.baseAddress {
-                pointer.advanced(by: 2 &+ payloadLengthSize).assign(from: baseAddress, count: payload.count)
+            guard !applyMask else {
+                throw WebSocketError.noMask
             }
+            
+            self.maskBytes = nil
         }
-        
-        self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
-        headerUntil = 2 &+ payloadLengthSize &+ (mask == nil ? 0 : 4)
     }
 }
 
@@ -167,4 +200,5 @@ public enum WebSocketError : Error {
     case invalidMask
     case invalidBuffer
     case invalidFrameParameters
+    case noMask
 }

@@ -8,6 +8,8 @@ public class WebSocket {
     public let textStream = TextStream()
     public let binaryStream = BinaryStream()
     let connection: Connection
+    let serializer: HTTP.ResponseSerializer
+    var previousType: Frame.OpCode?
     
     init(client: Client, key: String, version: Int) throws {
         let headers: Headers
@@ -31,86 +33,16 @@ public class WebSocket {
         
         let response = Response(status: 101, headers: headers)
         
-        let serializer = HTTP.ResponseSerializer()
+        self.serializer = HTTP.ResponseSerializer()
         serializer.drain(into: client)
         serializer.inputStream(response)
         
         self.connection = Connection(client: client)
-        var previousType: Frame.OpCode?
         
         self.textStream.frameStream = self.connection
         self.binaryStream.frameStream = self.connection
         
-        self.connection.drain { frame in
-            func processString() {
-                // invalid string
-                guard let string = frame.data.string() else {
-                    self.connection.client.close()
-                    return
-                }
-                
-                self.textStream.outputStream?(string)
-            }
-            
-            func processBinary() {
-                let readBuffer = ByteBuffer(start: frame.data.baseAddress, count: frame.data.count)
-                
-                self.binaryStream.outputStream?(readBuffer)
-            }
-            
-            switch frame.opCode {
-            case .text:
-                if !frame.final {
-                    previousType = .text
-                }
-                
-                processString()
-            case .binary:
-                if !frame.final {
-                    previousType = .binary
-                }
-                
-                processBinary()
-            case .ping:
-                guard let pointer = frame.data.baseAddress else {
-                    self.connection.client.close()
-                    return
-                }
-                
-                do {
-                    // reply the input
-                    try self.connection.sendFrame(opcode: .pong, pointer: pointer, length: frame.data.count)
-                } catch {
-                    self.connection.errorStream?(error)
-                }
-            case .continuation:
-                defer {
-                    if frame.final {
-                        previousType = nil
-                    }
-                }
-                
-                // TODO: ignore typeless continuations?
-                guard let type = previousType else {
-                    self.connection.client.close()
-                    return
-                }
-                
-                if type == .text {
-                    processString()
-                } else if type == .binary {
-                    processBinary()
-                } else {
-                    // invalid, close or ignore?
-                    self.connection.client.close()
-                    return
-                }
-            case .close:
-                self.connection.client.close()
-            case .pong:
-                return
-            }
-        }
+        self.connection.drain(self.processFrame)
     }
 }
 

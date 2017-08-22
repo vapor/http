@@ -1,13 +1,10 @@
+import Dispatch
 import Core
 import TCP
 
 internal final class Connection : Core.Stream {
     func inputStream(_ input: Frame) {
-        do {
-            try self.sendFrame(input)
-        } catch {
-            self.errorStream?(error)
-        }
+        serializer.inputStream(input)
     }
     
     var outputStream: ((Frame) -> ())?
@@ -17,6 +14,8 @@ internal final class Connection : Core.Stream {
     internal typealias Input = Frame
     internal typealias Output = Frame
     
+    let serializer = FrameSerializer()
+    
     init(client: Client) {
         self.client = client
         
@@ -24,6 +23,11 @@ internal final class Connection : Core.Stream {
         
         client.stream(to: parser).drain { frame in
             self.outputStream?(frame)
+        }
+        
+        serializer.drain { buffer in
+            let buffer = UnsafeRawBufferPointer(buffer)
+            client.inputStream(DispatchData(bytes: buffer))
         }
     }
     
