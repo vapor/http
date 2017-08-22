@@ -1,5 +1,6 @@
 import Core
 
+/// 
 public protocol RequestMiddleware : Core.Stream {
     associatedtype Input = Request
     associatedtype Output = Request

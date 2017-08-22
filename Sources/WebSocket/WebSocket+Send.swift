@@ -1,9 +1,13 @@
 import Core
-import libc
 
-extension Connection {
-    @discardableResult
-    internal func sendFrame(opcode: Frame.OpCode, pointer: UnsafePointer<UInt8>, length: Int, maskingWith mask: (UInt8,UInt8,UInt8,UInt8)? = nil) throws -> Int {
+public final class FrameSerializer : Core.Stream {
+    public typealias Input = Frame
+    public typealias Output = ByteBuffer
+    
+    public var outputStream: OutputHandler?
+    public var errorStream: ErrorHandler?
+    
+    public func inputStream(_ input: Frame) {
         let drained: Int
         let extra: Int
         

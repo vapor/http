@@ -1,3 +1,4 @@
+import libc
 import Core
 
 /// Frame format:
@@ -20,82 +21,111 @@ import Core
 /// + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
 /// |                     Payload Data continued ...                |
 /// +---------------------------------------------------------------+
-internal final class Frame {
-    enum OpCode: Byte {
+///
+/// A WebSocket frame contains a payload
+///
+/// Interfacing with this class directly is usually not necessary and not recommended unless you know how WebSockets work.
+public final class Frame {
+    /// The type of payload
+    public enum OpCode: Byte {
+        /// This message is a continuation of a previous frame and it's associated payload
         case continuation = 0x00
+        
+        /// This message is (the start of) a text (`String`) based payload
         case text = 0x01
+        
+        /// This message is (the start of) a binary payload
         case binary = 0x02
         
+        /// This message is an indication of closing the connection
         case close = 0x08
+        
+        /// This message is a ping, it's contents must be `pong`-ed back
         case ping = 0x09
+        
+        /// This message is a pong and must contain the original `ping`'s contents
         case pong = 0x0a
     }
     
-    let final: Bool
-    let opCode: OpCode
-    let data: MutableByteBuffer
+    /// If `true`, this is the final message in it's sequence
+    public let final: Bool
     
-    init(from base: UnsafePointer<UInt8>, length: Int) throws {
-        guard
-            length > 3,
-            let code = OpCode(rawValue: base[0] & 0b00001111),
-            base[1] & 0b10000000 == 0b10000000 else {
-                throw WebSocketError.invalidFrame
-        }
-        
-        // If the FIN bit is set
-        final = base[0] & 0b10000000 == 0b10000000
-        self.opCode = code
-        
-        // Extract the payload bits
-        var payloadLength = UInt64(base[1] & 0b01111111)
-        var consumed = 2
-        var base = base.advanced(by: 2)
-        
-        if !final {
-            guard code == .continuation || code == .binary else {
-                throw WebSocketError.invalidFrame
-            }
-        }
-        
-        if code == .ping || code == .pong {
-            guard payloadLength < 126 else {
-                throw WebSocketError.invalidFrame
-            }
-        }
-        
-        if payloadLength == 126 {
-            payloadLength = base.withMemoryRebound(to: UInt16.self, capacity: 1, { UInt64($0.pointee) })
-            
-            base = base.advanced(by: 2)
-            consumed = consumed &+ 2
-        } else if payloadLength == 127 {
-            payloadLength = base.withMemoryRebound(to: UInt64.self, capacity: 1, { $0.pointee })
-            
-            base = base.advanced(by: 8)
-            consumed = consumed &+ 8
-        }
-        
-        guard length &- consumed == payloadLength &+ 4, payloadLength < Int.max else {
-            throw WebSocketError.invalidFrame
-        }
-        
-        let mask = [base[0], base[1], base[2], base[3]]
-        base = base.advanced(by: 4)
-        consumed = consumed &+ 4
-        
-        let length = numericCast(payloadLength) as Int
-        let data = UnsafeMutablePointer<UInt8>.allocate(capacity: length)
-        
-        for i in 0..<length {
-            data[i] = base[i] ^ mask[i % 4]
-        }
-        
-        self.data = UnsafeMutableBufferPointer(start: data, count: length)
+    /// The type of frame (and payload)
+    public let opCode: OpCode
+    
+    /// The serialized message
+    let buffer: MutableByteBuffer
+    var headerUntil: Int
+    let mask: [UInt8]?
+    
+    /// The payload of this frame
+    public var payload: ByteBuffer {
+        return ByteBuffer(start: buffer.baseAddress, count: buffer.count &- headerUntil)
     }
     
-    deinit {
-        data.baseAddress?.deallocate(capacity: data.count)
+    /// Creates a new payload by referencing the original payload.
+    ///
+    /// Do **not** deallocate the original payload whilst this Frame is still being used
+    public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, final: Bool = true) throws {
+        if !final {
+            guard op == .binary || op == .continuation else {
+                throw WebSocketError.invalidFrameParameters
+            }
+        }
+        
+        self.opCode = op
+        self.final = final
+        
+        let payloadLengthSize: Int
+        var number: [UInt8]
+        
+        // the amount of bytes needed for this payload
+        if payload.count < 126 {
+            payloadLengthSize = 1
+            number = []
+            
+        // Serialize as UInt16
+        } else if payload.count <= Int(UInt16.max) {
+            payloadLengthSize = 3
+            
+            var length = UInt16(payload.count).littleEndian
+            
+            number = [UInt8](repeating: 0, count: 2)
+            
+            memcpy(&number, &length, 2)
+            
+        // Serialize as UInt64
+        } else {
+            payloadLengthSize = 9
+            
+            var length = UInt64(payload.count).littleEndian
+            
+            number = [UInt8](repeating: 0, count: 8)
+            
+            memcpy(&number, &length, 8)
+        }
+        
+        // create a buffer for the entire message
+        let bufferSize = 2 + payloadLengthSize + payload.count
+        let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
+        
+        // set final bit if needed and rawValue
+        pointer.pointee = (final ? 0b10000000 : 0) | op.rawValue
+        
+        if let mask = mask {
+            guard mask.count == 4 else {
+                throw WebSocketError.invalidMask
+            }
+            
+            pointer.advanced(by: 2 &+ payloadLengthSize).assign(from: mask, count: 4)
+            self.mask = mask
+            
+        } else {
+            self.mask = nil
+        }
+        
+        self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
+        headerUntil = 2 &+ payloadLengthSize &+ (mask == nil ? 0 : 4)
     }
 }
 
@@ -103,5 +133,7 @@ public enum WebSocketError : Error {
     case invalidFrame
     case invalidUpgrade
     case couldNotConnect
+    case invalidMask
     case invalidBuffer
+    case invalidFrameParameters
 }
