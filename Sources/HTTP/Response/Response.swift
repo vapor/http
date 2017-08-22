@@ -18,6 +18,8 @@ import Foundation
 /// a request and use the HTTP client to prompt a response
 /// from the remote server.
 ///
+///     let res = Response(status: .ok, body: "hello")
+///
 /// See Message
 public final class Response: Message {
     /// See Message.version

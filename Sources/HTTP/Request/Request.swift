@@ -18,6 +18,8 @@ import Foundation
 /// a request and use the HTTP client to prompt a response
 /// from the remote server.
 ///
+///     let req = Request(method: .post, body: "hello")
+///
 /// See Message
 public final class Request: Message {
     /// HTTP requests have a method, like GET or POST
