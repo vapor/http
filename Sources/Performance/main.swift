@@ -34,7 +34,9 @@ struct Application: Responder {
         // let user = User(name: "Vapor", age: 2)
         // print(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8))
         // try! res.content(user)
-        return Future { res }
+        let promise = Promise<Response>()
+        try promise.complete(res)
+        return promise.future
     }
 }
 
@@ -91,7 +93,7 @@ do {
         let serializer = HTTP.ResponseSerializer()
 
         client.stream(to: parser)
-            .stream(to: app.makeStream(on: client.queue))
+            .stream(to: app.makeStream())
             .stream(to: serializer)
             .drain(into: client)
 
