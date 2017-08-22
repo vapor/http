@@ -1,6 +1,24 @@
+import Core
 import Foundation
 
-/// HTTP request.
+/// An HTTP request.
+///
+/// Used to request a response from an HTTP server.
+///
+///     POST /foo HTTP/1.1
+///     Content-Length: 5
+///
+///     hello
+///
+/// The HTTP server will stream incoming requests from clients.
+/// You must handle these requests and generate responses.
+///
+/// When you want to request data from another server, such as
+/// calling another API from your application, you will create
+/// a request and use the HTTP client to prompt a response
+/// from the remote server.
+///
+/// See Message
 public final class Request: Message {
     /// HTTP requests have a method, like GET or POST
     public var method: Method
@@ -19,6 +37,9 @@ public final class Request: Message {
     public var body: Body {
         didSet { updateContentLength() }
     }
+    
+    /// See Extendable.extend
+    public var extend: Extend
 
     /// Create a new HTTP request.
     public init(
@@ -33,6 +54,7 @@ public final class Request: Message {
         self.version = version
         self.headers = headers
         self.body = body
+        self.extend = Extend()
         updateContentLength()
     }
 }
