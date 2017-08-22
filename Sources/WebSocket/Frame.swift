@@ -57,13 +57,19 @@ public final class Frame {
     
     /// The serialized message
     let buffer: MutableByteBuffer
+    
+    /// The size of the header (all the way until the start of the payload)
     var headerUntil: Int
     
+    /// The length of the payload
     var payloadLength: Int {
         return buffer.count &- headerUntil
     }
     
+    /// if true, this message is masked
     public private(set) var isMasked: Bool
+    
+    /// The bytes used to mask the payload
     public let maskBytes: [UInt8]?
     
     fileprivate var mutablePayload: MutableByteBuffer {
@@ -71,8 +77,12 @@ public final class Frame {
     }
     
     /// The payload of this frame
-    var payload: ByteBuffer {
+    public var payload: ByteBuffer {
         return ByteBuffer(start: buffer.baseAddress?.advanced(by: headerUntil), count: payloadLength)
+    }
+    
+    deinit {
+        buffer.dealloc()
     }
     
     public func unmask() {
