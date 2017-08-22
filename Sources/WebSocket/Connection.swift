@@ -1,5 +1,6 @@
-import Dispatch
 import Core
+import Dispatch
+import HTTP
 import TCP
 
 internal final class Connection : Core.Stream {
@@ -15,8 +16,9 @@ internal final class Connection : Core.Stream {
     internal typealias Output = Frame
     
     let serializer = FrameSerializer()
-    
-    init(client: Client) {
+
+    let client: TCP.Client
+    init(client: TCP.Client) {
         self.client = client
         
         let parser = FrameParser()
@@ -30,6 +32,5 @@ internal final class Connection : Core.Stream {
             client.inputStream(DispatchData(bytes: buffer))
         }
     }
-    
-    let client: Client
+
 }
