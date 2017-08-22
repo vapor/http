@@ -31,10 +31,10 @@ extension User: ContentCodable {
 
 struct Application: Responder {
     func respond(to req: Request) throws -> Future<Response> {
-        let res: Response
+        let promise = Promise<Response>()
 
         if WebSocket.shouldUpgrade(for: req) {
-            res = try WebSocket.upgradeResponse(for: req)
+            let res = try WebSocket.upgradeResponse(for: req)
             res.onUpgrade = { client in
                 let websocket = WebSocket(client: client)
                 websocket.textStream.drain { text in
@@ -42,11 +42,13 @@ struct Application: Responder {
                     websocket.textStream.inputStream(rev)
                 }
             }
+            try! promise.complete(res)
         } else {
-            res = try Response(status: .ok, body: "hi")
+            let res = try Response(status: .ok, body: "hi")
+            try! promise.complete(res)
         }
 
-        return Future { res }
+        return promise.future
     }
 }
 
