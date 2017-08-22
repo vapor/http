@@ -1,8 +1,6 @@
 extension WebSocket {
     func processFrame(_ frame: Frame) {
-        if frame.isMasked {
-            frame.unmask()
-        }
+        frame.unmask()
         
         func processString() {
             // invalid string
@@ -34,7 +32,7 @@ extension WebSocket {
         case .ping:
             do {
                 // reply the input
-                let pongFrame = try Frame(op: .pong , payload: frame.payload, mask: nil, isMasked: false, applyMask: false)
+                let pongFrame = try Frame(op: .pong , payload: frame.payload, mask: nil, isMasked: frame.isMasked)
                 self.connection.inputStream(pongFrame)
             } catch {
                 self.connection.errorStream?(error)

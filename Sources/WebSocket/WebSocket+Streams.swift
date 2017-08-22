@@ -4,7 +4,12 @@ public final class TextStream : Core.Stream {
     public func inputStream(_ input: String) {
         _ = input.withCString(encodedAs: UTF8.self) { pointer in
             do {
-                let frame = try Frame(op: .text, payload: ByteBuffer(start: pointer, count: input.utf8.count), mask: nil, isMasked: false, applyMask: masking)
+                let frame = try Frame(op: .text, payload: ByteBuffer(start: pointer, count: input.utf8.count), mask: randomMask(), isMasked: false)
+                
+                if masking {
+                    frame.mask()
+                }
+                
                 frameStream?.inputStream(frame)
             } catch {
                 self.errorStream?(error)
@@ -23,6 +28,12 @@ public final class TextStream : Core.Stream {
     
     let masking: Bool
     
+    func randomMask() -> [UInt8]? {
+        // TODO: Generate for masking clients
+        
+        return nil
+    }
+    
     public init(masking: Bool = false) {
         self.masking = masking
     }
@@ -31,7 +42,12 @@ public final class TextStream : Core.Stream {
 public final class BinaryStream : Core.Stream {
     public func inputStream(_ input: ByteBuffer) {
         do {
-            let frame = try Frame(op: .binary, payload: input, mask: nil, isMasked: false, applyMask: masking)
+            let frame = try Frame(op: .binary, payload: input, mask: randomMask(), isMasked: false)
+            
+            if masking {
+                frame.mask()
+            }
+            
             frameStream?.inputStream(frame)
         } catch {
             self.errorStream?(error)
@@ -48,6 +64,12 @@ public final class BinaryStream : Core.Stream {
     public typealias Output = ByteBuffer
     
     let masking: Bool
+    
+    func randomMask() -> [UInt8]? {
+        // TODO: Generate for masking clients
+        
+        return nil
+    }
     
     public init(masking: Bool = false) {
         self.masking = masking

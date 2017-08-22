@@ -13,7 +13,7 @@ public final class FrameParser : Core.Stream {
             return
         }
         
-        if let header = header {
+        if let processing = processing {
             
         } else {
             guard let header = try? FrameParser.decodeFrameHeader(from: pointer, length: input.count) else {
@@ -21,7 +21,26 @@ public final class FrameParser : Core.Stream {
                 return
             }
             
-            defer { self.header = header }
+            guard header.size < UInt64(self.maximumPayloadSize) else {
+                self.errorStream?(WebSocketError.invalidBufferSize)
+                return
+            }
+            
+            let pointer = pointer.advanced(by: header.consumed)
+            let remaining = input.count &- header.consumed
+            
+            do {
+                guard Int(header.size) <= remaining else {
+                    self.partialBuffer += Array(input)
+                    return
+                }
+                
+                let frame = try Frame(op: header.op, payload: ByteBuffer(start: pointer, count: Int(header.size)), mask: header.mask, isMasked: header.mask != nil)
+                
+                self.outputStream?(frame)
+            } catch {
+                errorStream?(error)
+            }
         }
     }
     
@@ -29,7 +48,7 @@ public final class FrameParser : Core.Stream {
     let maximumPayloadSize: Int
     
     var partialBuffer = [UInt8]()
-    var header: Frame.Header?
+    var processing: (Frame.Header, MutableByteBuffer)?
     
     public init(maximumPayloadSize: Int = 10_000_000) {
         self.maximumPayloadSize = maximumPayloadSize
@@ -50,6 +69,7 @@ public final class FrameParser : Core.Stream {
         
         // Extract the payload bits
         var payloadLength = UInt64(base[1] & 0b01111111)
+        let isMasked = base[1] & 0b10000000 == 0b10000000
         var consumed = 2
         var base = base.advanced(by: 2)
         
@@ -94,9 +114,19 @@ public final class FrameParser : Core.Stream {
             throw WebSocketError.invalidFrame
         }
         
-        let mask = [base[0], base[1], base[2], base[3]]
-        base = base.advanced(by: 4)
-        consumed = consumed &+ 4
+        let mask: [UInt8]?
+        
+        if isMasked {
+            guard consumed &+ 4 < length else {
+                throw WebSocketError.invalidMask
+            }
+            
+            mask = [base[0], base[1], base[2], base[3]]
+            base = base.advanced(by: 4)
+            consumed = consumed &+ 4
+        } else {
+            mask = nil
+        }
         
         return (final, code, payloadLength, mask, consumed)
     }

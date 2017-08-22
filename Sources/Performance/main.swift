@@ -94,6 +94,7 @@ do {
         
         websocketMiddleware.onConnect { websocket in
             websocket.textStream.drain { string in
+                print(string)
                 websocket.textStream.inputStream(string)
             }
         }
