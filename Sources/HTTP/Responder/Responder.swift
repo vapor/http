@@ -9,7 +9,7 @@ public protocol Responder {
 extension Responder {
     /// Creates a stream from this responder capable of being
     /// added to a server or client stream.
-    public func makeStream(on queue: DispatchQueue) -> ResponderStream {
+    public func makeStream(on queue: DispatchQueue? = nil) -> ResponderStream {
         return ResponderStream(
             responder: self,
             queue: queue
@@ -35,11 +35,11 @@ public final class ResponderStream: Core.Stream {
     let responder: Responder
 
     /// The queue on which responses will be awaited
-    let queue: DispatchQueue
+    let queue: DispatchQueue?
 
     /// Create a new response stream.
     /// The responses will be awaited on the supplied queue.
-    public init(responder: Responder, queue: DispatchQueue) {
+    public init(responder: Responder, queue: DispatchQueue? = nil) {
         self.responder = responder
         self.queue = queue
     }
