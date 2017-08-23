@@ -27,14 +27,16 @@ extension User: ContentCodable {
 
 }
 
-let res = try Response(status: .ok, body: "hi")
 
 struct Application: Responder {
     func respond(to req: Request) throws -> Future<Response> {
         // let user = User(name: "Vapor", age: 2)
         // print(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8))
         // try! res.content(user)
-        return Future { res }
+        let p = Promise<Response>()
+        let res = try Response(status: .ok, body: "hi")
+        try! p.complete(res)
+        return p.future
     }
 }
 
