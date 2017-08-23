@@ -35,7 +35,7 @@ struct Application: Responder {
         // try! res.content(user)
         let p = Promise<Response>()
         let res = try Response(status: .ok, body: "hi")
-        try! p.complete(res)
+        p.complete(res)
         return p.future
     }
 }
