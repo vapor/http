@@ -21,7 +21,7 @@ import Core
 /// + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
 /// |                     Payload Data continued ...                |
 /// +---------------------------------------------------------------+
-///
+
 /// A WebSocket frame contains a payload
 ///
 /// Interfacing with this class directly is usually not necessary and not recommended unless you know how WebSockets work.
@@ -67,7 +67,9 @@ public final class Frame {
     }
     
     /// if true, this message is masked
-    public private(set) var isMasked: Bool
+    public var isMasked: Bool {
+        return self.buffer[1] & 0b10000000 == 0b10000000
+    }
     
     /// The bytes used to mask the payload
     public let maskBytes: [UInt8]?
@@ -91,7 +93,7 @@ public final class Frame {
         }
         
         toggleMask()
-        isMasked = false
+        self.buffer[1] = self.buffer[1] & 0b01111111
     }
     
     public func mask() {
@@ -100,7 +102,7 @@ public final class Frame {
         }
         
         toggleMask()
-        isMasked = true
+        self.buffer[1] = self.buffer[1] | 0b10000000
     }
     
     func toggleMask() {
@@ -115,7 +117,7 @@ public final class Frame {
     }
     
     /// Creates a new payload by referencing the original payload.
-    public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, isMasked: Bool, isFinal: Bool = true) throws {
+    public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, isMasked: Bool = false, isFinal: Bool = true) throws {
         if !isFinal {
             guard op == .binary || op == .continuation else {
                 throw Error(.invalidFrameParameters)
@@ -124,7 +126,6 @@ public final class Frame {
         
         self.opCode = op
         self.isFinal = isFinal
-        self.isMasked = isMasked
         
         let payloadLengthSize: Int
         let lengthByte: UInt8
@@ -164,7 +165,7 @@ public final class Frame {
         let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
         
         // sets the length bytes
-        pointer[1] = pointer[1] | lengthByte
+        pointer[1] = lengthByte
         memcpy(pointer.advanced(by: 2), number, number.count)
         
         // set final bit if needed and rawValue
@@ -180,8 +181,9 @@ public final class Frame {
                 throw Error(.invalidMask)
             }
             
-            // sets the mask bit
-            pointer[1] = pointer[1] | 0b10000000
+            if isMasked {
+                pointer[1] = pointer[1] | 0b10000000
+            }
             
             pointer.advanced(by: 2 &+ payloadLengthSize).assign(from: mask, count: 4)
         }

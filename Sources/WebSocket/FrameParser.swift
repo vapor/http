@@ -8,48 +8,22 @@ public final class FrameParser : Core.Stream {
     public var errorStream: ErrorHandler?
     
     public func inputStream(_ input: ByteBuffer) {
-        guard let pointer = input.baseAddress else {
+        guard let pointer = input.baseAddress, input.count > 0 else {
             // ignore
             return
         }
         
-        func processBuffer(header: Frame.Header, buffer: ByteBuffer) {
-            defer {
-                self.processing = nil
-            }
-            
-            do {
-                let frame = try Frame(op: header.op, payload: buffer, mask: header.mask, isMasked: header.mask != nil)
-                
-                self.outputStream?(frame)
-            } catch {
-                errorStream?(error)
-            }
-        }
-        
-        if let (header, offset) = processing {
-            let total = Int(header.size)
-            
-            if offset + input.count >= total {
-                let consume = total &- offset
-                
-                bufferBuilder.advanced(by: offset).assign(from: pointer, count: consume)
-                
-                processBuffer(header: header, buffer: ByteBuffer(start: bufferBuilder, count: total))
-                
-                self.inputStream(ByteBuffer(start: pointer.advanced(by: consume), count: input.count &- consume))
-            } else {
-                bufferBuilder.advanced(by: offset).assign(from: pointer, count: input.count)
-            }
-        } else {
-            guard let header = try? FrameParser.decodeFrameHeader(from: pointer, length: input.count) else {
-                self.partialBuffer += Array(input)
-                return
+        func process(pointer: BytesPointer, length: Int) -> (Bool, Int) {
+            guard let header = try? FrameParser.decodeFrameHeader(from: pointer, length: length) else {
+                self.bufferBuilder.advanced(by: accumulated).assign(from: pointer, count: length)
+                self.accumulated += length
+                return (false, 0)
             }
             
             guard header.size < UInt64(self.maximumPayloadSize) else {
+                self.accumulated = 0
                 self.errorStream?(Error(.invalidBufferSize))
-                return
+                return (false, 0)
             }
             
             let pointer = pointer.advanced(by: header.consumed)
@@ -57,11 +31,69 @@ public final class FrameParser : Core.Stream {
             
             guard Int(header.size) <= remaining else {
                 bufferBuilder.assign(from: pointer, count: input.count)
-                self.processing = (header, input.count)
+                self.processing = header
+                self.accumulated += input.count
+                return (false, 0)
+            }
+            
+            do {
+                let frame = try Frame(op: header.op, payload: ByteBuffer(start: pointer, count: Int(header.size)), mask: header.mask, isMasked: header.mask != nil, isFinal: true)
+                
+                self.outputStream?(frame)
+                return (true, frame.buffer.count)
+            } catch {
+                errorStream?(error)
+                return (false, 0)
+            }
+        }
+        
+        if let header = processing {
+            let total = Int(header.size)
+            
+            if accumulated + input.count >= total {
+                let consume = total &- accumulated
+                
+                bufferBuilder.advanced(by: accumulated).assign(from: pointer, count: consume)
+                
+                do {
+                    let frame = try Frame(op: header.op, payload: ByteBuffer(start: bufferBuilder, count: Int(header.size)), mask: header.mask, isMasked: header.mask != nil, isFinal: true)
+                    
+                    self.outputStream?(frame)
+                } catch {
+                    errorStream?(error)
+                }
+                
+                self.inputStream(ByteBuffer(start: pointer.advanced(by: consume), count: input.count &- consume))
+            } else {
+                bufferBuilder.advanced(by: accumulated).assign(from: pointer, count: input.count)
+            }
+        } else if accumulated > 0 {
+            guard accumulated + input.count < UInt64(self.maximumPayloadSize) else {
+                self.accumulated = 0
+                self.errorStream?(Error(.invalidBufferSize))
                 return
             }
             
-            processBuffer(header: header, buffer: ByteBuffer(start: pointer, count: Int(header.size)))
+            bufferBuilder.advanced(by: accumulated).assign(from: pointer, count: input.count)
+            accumulated += input.count
+            
+            let result =  process(pointer: pointer, length: input.count)
+            
+            if result.0 {
+                let unconsumed = accumulated &- result.1
+                let pointer = MutableBytesPointer.allocate(capacity: unconsumed)
+                pointer.assign(from: pointer.advanced(by: result.1), count: unconsumed)
+                
+                defer { pointer.deallocate(capacity: unconsumed) }
+                
+                self.inputStream(ByteBuffer(start: pointer, count: unconsumed))
+            }
+        } else {
+            let result = process(pointer: pointer, length: input.count)
+            
+            if result.0 {
+                self.inputStream(ByteBuffer(start: pointer.advanced(by: result.1), count: input.count &- result.1))
+            }
         }
     }
     
@@ -69,11 +101,12 @@ public final class FrameParser : Core.Stream {
         bufferBuilder.deallocate(capacity: maximumPayloadSize + 15)
     }
     
+    var accumulated = 0
     let bufferBuilder: MutableBytesPointer
     let maximumPayloadSize: Int
     
     var partialBuffer = [UInt8]()
-    var processing: (Frame.Header, Int)?
+    var processing: Frame.Header?
     
     public init(maximumPayloadSize: Int = 10_000_000) {
         self.maximumPayloadSize = maximumPayloadSize
@@ -84,8 +117,7 @@ public final class FrameParser : Core.Stream {
     static func decodeFrameHeader(from base: UnsafePointer<UInt8>, length: Int) throws -> Frame.Header {
         guard
             length > 3,
-            let code = Frame.OpCode(rawValue: base[0] & 0b00001111),
-            base[1] & 0b10000000 == 0b10000000 else {
+            let code = Frame.OpCode(rawValue: base[0] & 0b00001111) else {
                 throw Error(.invalidFrame)
         }
         
@@ -135,13 +167,13 @@ public final class FrameParser : Core.Stream {
             consumed = consumed &+ 8
         }
         
-        guard length &- consumed == payloadLength &+ 4, payloadLength < Int.max else {
-            throw Error(.invalidFrame)
-        }
-        
         let mask: [UInt8]?
         
         if isMasked {
+            guard length &- consumed >= payloadLength &+ 4, payloadLength < Int.max else {
+                throw Error(.invalidFrame)
+            }
+            
             guard consumed &+ 4 < length else {
                 throw Error(.invalidMask)
             }
@@ -150,6 +182,10 @@ public final class FrameParser : Core.Stream {
             base = base.advanced(by: 4)
             consumed = consumed &+ 4
         } else {
+            guard length &- consumed >= payloadLength, payloadLength < Int.max else {
+                throw Error(.invalidFrame)
+            }
+            
             mask = nil
         }
         

@@ -39,6 +39,7 @@ struct Application: Responder {
                 let websocket = WebSocket(client: client)
                 websocket.textStream.drain { text in
                     let rev = String(text.reversed())
+                    print(text)
                     websocket.textStream.inputStream(rev)
                 }
             }
@@ -94,7 +95,7 @@ do {
     request.headers[.host] = "google.com"
     request.headers[.userAgent] = "vapor/engine"
 
-    emitter.emit(request)
+//    emitter.emit(request)
 }
 
 // MARK: Server

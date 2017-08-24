@@ -11,7 +11,12 @@ public final class FrameSerializer : Core.Stream {
     public var errorStream: ErrorHandler?
     
     public func inputStream(_ input: Frame) {
-        input.mask()
+        if mask {
+            input.mask()
+        } else {
+            input.unmask()
+        }
+        
         outputStream?(ByteBuffer(start: input.buffer.baseAddress, count: input.buffer.count))
     }
     

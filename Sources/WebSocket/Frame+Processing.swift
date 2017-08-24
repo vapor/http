@@ -24,7 +24,7 @@ extension WebSocket {
         case .ping:
             do {
                 // reply the input
-                let pongFrame = try Frame(op: .pong , payload: frame.payload, mask: nil, isMasked: frame.isMasked)
+                let pongFrame = try Frame(op: .pong , payload: frame.payload, mask: frame.maskBytes, isMasked: self.connection.serverSide)
                 self.connection.inputStream(pongFrame)
             } catch {
                 self.connection.errorStream?(error)

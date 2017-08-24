@@ -21,7 +21,7 @@ public class WebSocket {
     
     public func close() {
         do {
-            let frame = try Frame(op: .close, payload: ByteBuffer(start: nil, count: 0), mask: connection.serverSide ? nil : randomMask(), isMasked: false)
+            let frame = try Frame(op: .close, payload: ByteBuffer(start: nil, count: 0), mask: connection.serverSide ? nil : randomMask(), isFinal: true)
             
             self.connection.inputStream(frame)
         } catch {}
@@ -42,8 +42,8 @@ public class WebSocket {
         
         let uuid = NSUUID().uuidString
         
-        let expectatedKey = try Base64Encoder.encode(data: SHA1.hash(uuid + "258EAFA5-E914-47DA-95CA-C5AB0DC85B1"))
-        let expectatedKeyString = String(bytes: expectatedKey, encoding: .utf8) ?? ""
+        let expectatedKey = try Base64Encoder.encode(data: SHA1.hash(uuid + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+        let expectedKeyString = String(bytes: expectatedKey, encoding: .utf8) ?? ""
         
         let request = Request(method: .get, uri: uri, headers: [
             "Connection": "Upgrade",
@@ -58,16 +58,25 @@ public class WebSocket {
             guard
                 response.status == .upgrade,
                 response.headers["Connection"] == "Upgrade",
-                response.headers["Upgrade"] == "websocket",
-                response.headers["Sec-WebSocket-Version"] == "13",
-                response.headers["Sec-WebSocket-Key"] == expectatedKeyString else {
+                response.headers["Upgrade"] == "websocket" else {
                     promise.fail(Error(.notUpgraded))
                     return
             }
             
-            promise.complete(WebSocket(client: client, serverSide: false))
+            if response.headers["Sec-WebSocket-Version"] == "13",
+                response.headers["Sec-WebSocket-Key"] == expectedKeyString {
+                promise.complete(WebSocket(client: client, serverSide: false))
+            } else {
+                guard response.headers["Sec-WebSocket-Accept"] == expectedKeyString else {
+                    promise.fail(Error(.notUpgraded))
+                    return
+                }
+                
+                promise.complete(WebSocket(client: client, serverSide: false))
+            }
         }
         
+        client.start()
         serializer.inputStream(request)
         
         return promise.future

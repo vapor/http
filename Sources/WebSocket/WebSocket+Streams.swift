@@ -6,11 +6,7 @@ public final class TextStream : Core.Stream {
             do {
                 let mask = self.masking ? randomMask() : nil
                 
-                let frame = try Frame(op: .text, payload: ByteBuffer(start: pointer, count: input.utf8.count), mask: mask, isMasked: false)
-                
-                if masking {
-                    frame.mask()
-                }
+                let frame = try Frame(op: .text, payload: ByteBuffer(start: pointer, count: input.utf8.count), mask: mask)
                 
                 frameStream?.inputStream(frame)
             } catch {
@@ -28,11 +24,11 @@ public final class TextStream : Core.Stream {
     public typealias Input = String
     public typealias Output = String
     
-    let masking: Bool
-    
-    public init(masking: Bool = false) {
-        self.masking = masking
+    var masking: Bool {
+        return frameStream?.serverSide == false
     }
+    
+    public init() { }
 }
 
 public final class BinaryStream : Core.Stream {
@@ -40,7 +36,7 @@ public final class BinaryStream : Core.Stream {
         do {
             let mask = self.masking ? randomMask() : nil
             
-            let frame = try Frame(op: .binary, payload: input, mask: mask, isMasked: false)
+            let frame = try Frame(op: .binary, payload: input, mask: mask)
             
             if masking {
                 frame.mask()
