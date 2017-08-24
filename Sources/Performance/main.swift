@@ -42,10 +42,10 @@ struct Application: Responder {
                     websocket.textStream.inputStream(rev)
                 }
             }
-            try! promise.complete(res)
+            promise.complete(res)
         } else {
             let res = try Response(status: .ok, body: "hi")
-            try! promise.complete(res)
+            promise.complete(res)
         }
 
         return promise.future
@@ -102,7 +102,7 @@ do {
     let app = Application()
     let tcpServer = try TCP.Server()
     let server = HTTP.Server(server: tcpServer)
-
+    
     server.drain { client in
         let parser = HTTP.RequestParser()
         let serializer = HTTP.ResponseSerializer()
@@ -123,6 +123,26 @@ do {
     print("Server started...")
 }
 
+// MARK: Websocket Client
+do {
+    let promise = Promise<Void>()
+    
+    try WebSocket.connect(to: "0.0.0.0", atPort: 8080, uri: URI(path: "/"), queue: .global()).then { socket in
+        let responses = ["test", "cat", "banana"]
+        
+        socket.textStream.drain { string in
+            print(string)
+        }
+        
+        for response in responses {
+            socket.textStream.inputStream(response)
+        }
+        
+        promise.complete(())
+    }
+
+    try promise.future.sync()
+}
 
 let group = DispatchGroup()
 group.enter()

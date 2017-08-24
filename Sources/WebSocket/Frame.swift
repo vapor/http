@@ -50,7 +50,7 @@ public final class Frame {
     }
     
     /// If `true`, this is the final message in it's sequence
-    public let final: Bool
+    public let isFinal: Bool
     
     /// The type of frame (and payload)
     public let opCode: OpCode
@@ -115,15 +115,15 @@ public final class Frame {
     }
     
     /// Creates a new payload by referencing the original payload.
-    public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, isMasked: Bool, final: Bool = true) throws {
-        if !final {
+    public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, isMasked: Bool, isFinal: Bool = true) throws {
+        if !isFinal {
             guard op == .binary || op == .continuation else {
                 throw Error(.invalidFrameParameters)
             }
         }
         
         self.opCode = op
-        self.final = final
+        self.isFinal = isFinal
         self.isMasked = isMasked
         
         let payloadLengthSize: Int
@@ -168,7 +168,7 @@ public final class Frame {
         memcpy(pointer.advanced(by: 2), number, number.count)
         
         // set final bit if needed and rawValue
-        pointer.pointee = (final ? 0b10000000 : 0) | op.rawValue
+        pointer.pointee = (isFinal ? 0b10000000 : 0) | op.rawValue
         
         self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
         self.headerUntil = 2 &+ payloadLengthSize &+ (mask == nil ? 0 : 4)

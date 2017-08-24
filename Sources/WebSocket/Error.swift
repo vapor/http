@@ -5,6 +5,8 @@ public struct Error : Swift.Error, Debuggable, Traceable {
     /// A description of the problem
     public var reason: String {
         switch problem {
+        case .notUpgraded:
+            return "The HTTP connection was not upgraded to WebSocket"
         case .invalidMask:
             return "Masks must be 4 bytes, no more, no less"
         case .invalidFrame:
@@ -58,6 +60,9 @@ public struct Error : Swift.Error, Debuggable, Traceable {
     
     /// The problem occurring
     enum Problem : String {
+        /// The HTTP connection was not upgraded to WebSocket
+        case notUpgraded
+        
         /// The buffer size provided for parsing/serializing was empty
         case invalidBufferSize
         

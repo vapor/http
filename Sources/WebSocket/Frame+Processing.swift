@@ -18,16 +18,8 @@ extension WebSocket {
         
         switch frame.opCode {
         case .text:
-            if !frame.final {
-                previousType = .text
-            }
-            
             processString()
         case .binary:
-            if !frame.final {
-                previousType = .binary
-            }
-            
             processBinary()
         case .ping:
             do {
@@ -38,27 +30,7 @@ extension WebSocket {
                 self.connection.errorStream?(error)
             }
         case .continuation:
-            defer {
-                if frame.final {
-                    previousType = nil
-                }
-            }
-            
-            // TODO: ignore typeless continuations?
-            guard let type = previousType else {
-                self.connection.client.close()
-                return
-            }
-            
-            if type == .text {
-                processString()
-            } else if type == .binary {
-                processBinary()
-            } else {
-                // invalid, close or ignore?
-                self.connection.client.close()
-                return
-            }
+            processBinary()
         case .close:
             self.connection.client.close()
         case .pong:

@@ -10,13 +10,17 @@ internal final class Connection: Core.Stream {
     var outputStream: OutputHandler?
     var errorStream: ErrorHandler?
     
-    let serializer = FrameSerializer()
+    let serializer: FrameSerializer
+    
+    let serverSide: Bool
 
     let client: TCP.Client
-    init(client: TCP.Client) {
+    init(client: TCP.Client, serverSide: Bool = true) {
         self.client = client
+        self.serverSide = serverSide
         
         let parser = FrameParser()
+        serializer = FrameSerializer(masking: !serverSide)
         
         client.stream(to: parser).drain { frame in
             self.outputStream?(frame)
