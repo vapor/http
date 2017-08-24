@@ -46,6 +46,8 @@ public class WebSocket {
         let expectatedKeyString = String(bytes: expectatedKey, encoding: .utf8) ?? ""
         
         let request = Request(method: .get, uri: uri, headers: [
+            "Connection": "Upgrade",
+            "Upgrade": "websocket",
             "Sec-WebSocket-Key": uuid,
             "Sec-WebSocket-Version": "13"
         ])
