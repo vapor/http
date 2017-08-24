@@ -11,11 +11,6 @@ public final class Client: Core.Stream {
     public var errorStream: ErrorHandler?
     public var outputStream: OutputHandler?
 
-    /// This client's dispatch queue. Use this
-    /// for all async operations performed as a
-    /// result of this client.
-    public let queue: DispatchQueue
-
     /// The client stream's underlying socket.
     public let socket: Socket
 
@@ -36,9 +31,8 @@ public final class Client: Core.Stream {
     var onClose: SocketEvent?
 
     /// Creates a new Remote Client from the ServerSocket's details
-    public init(socket: Socket, queue: DispatchQueue) {
+    public init(socket: Socket) {
         self.socket = socket
-        self.queue = queue
 
         // Allocate one TCP packet
         let size = 65_507
@@ -58,7 +52,7 @@ public final class Client: Core.Stream {
         }
 
         if writeSource == nil {
-            writeSource = socket.onWriteable(queue: queue) {
+            writeSource = socket.onWriteable {
                 // important: make sure to suspend or else writeable
                 // will keep calling.
                 self.writeSource?.suspend()
@@ -87,7 +81,7 @@ public final class Client: Core.Stream {
 
     /// Starts receiving data from the client
     public func start() {
-        readSource = socket.onReadable(queue: queue) {
+        readSource = socket.onReadable {
             let read: Int
             do {
                 read = try self.socket.read(

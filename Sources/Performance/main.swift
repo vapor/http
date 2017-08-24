@@ -28,15 +28,12 @@ extension User: ContentCodable {
 }
 
 
+let res = try Response(status: .ok, body: "hi")
+let fut = Future(res)
+
 struct Application: Responder {
     func respond(to req: Request) throws -> Future<Response> {
-        // let user = User(name: "Vapor", age: 2)
-        // print(String(cString: __dispatch_queue_get_label(nil), encoding: .utf8))
-        // try! res.content(user)
-        let p = Promise<Response>()
-        let res = try Response(status: .ok, body: "hi")
-        p.complete(res)
-        return p.future
+        return fut
     }
 }
 
@@ -61,7 +58,7 @@ do {
 
     let socket = try TCP.Socket()
     try socket.connect(hostname: "google.com", port: 80)
-    let client = TCP.Client(socket: socket, queue: .global())
+    let client = TCP.Client(socket: socket)
 
     emitter.stream(to: serializer)
         .stream(to: client)
@@ -90,10 +87,11 @@ do {
 
     server.drain { client in
         let parser = HTTP.RequestParser()
+        let responder = app.makeStream()
         let serializer = HTTP.ResponseSerializer()
 
         client.stream(to: parser)
-            .stream(to: app.makeStream(on: client.queue))
+            .stream(to: responder)
             .stream(to: serializer)
             .drain(into: client)
 
@@ -104,7 +102,7 @@ do {
         debugPrint(error)
     }
 
-    try server.start(port: 8080)
+    try server.start(port: 8081)
     print("Server started...")
 }
 

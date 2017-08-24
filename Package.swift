@@ -9,7 +9,7 @@ let package = Package(
     ],
     dependencies: [
         // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/core.git", .revision("beta")),
+        .package(url: "https://github.com/vapor/core.git", .revision("async-file")),
 
         // A library to aid Vapor users with better debugging around the framework
         .package(url: "https://github.com/vapor/debugging.git", .revision("beta"))
