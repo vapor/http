@@ -6,10 +6,9 @@ public typealias SocketEvent = () -> ()
 extension Socket {
     /// The socket event will be called on the supplied queue
     /// whenever this socket can be read from.
-    public func onReadable(queue: DispatchQueue, event: @escaping SocketEvent) -> DispatchSourceRead {
+    public func onReadable(event: @escaping SocketEvent) -> DispatchSourceRead {
         let source = DispatchSource.makeReadSource(
-            fileDescriptor: descriptor.raw,
-            queue: queue
+            fileDescriptor: descriptor.raw
         )
         source.setEventHandler {
             event()
@@ -21,11 +20,8 @@ extension Socket {
 
     /// The socket event will be called on the supplied queue
     /// whenever this socket can be written to.
-    public func onWriteable(queue: DispatchQueue, event: @escaping SocketEvent) -> DispatchSourceWrite {
-        let source = DispatchSource.makeWriteSource(
-            fileDescriptor: descriptor.raw,
-            queue: queue
-        )
+    public func onWriteable(event: @escaping SocketEvent) -> DispatchSourceWrite {
+        let source = DispatchSource.makeWriteSource(fileDescriptor: descriptor.raw)
         source.setEventHandler {
             event()
         }
