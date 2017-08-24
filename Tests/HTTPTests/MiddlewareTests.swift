@@ -46,7 +46,11 @@ final class TestApp: Responder {
 
     func respond(to req: Request) throws -> Future<Response> {
         closure(req)
-        return Future { Response() }
+        let promise = Promise<Response>()
+        
+        promise.complete(Response())
+        
+        return promise.future
     }
 }
 

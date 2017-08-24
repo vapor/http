@@ -1,3 +1,4 @@
+import Core
 import Dispatch
 import TCP
 import XCTest
@@ -21,18 +22,17 @@ class SocketsTests : XCTestCase {
             _ = try! socket.write(data)
         }
 
-        let group = DispatchGroup()
-        group.enter()
+        let promise = Promise<Void>()
         let write = socket.onReadable(queue: queue) {
             let response = try! socket.read(max: 8_192)
 
             let string = String(data: response, encoding: .utf8)
             XCTAssert(string?.contains("HTTP/1.0 400 Bad Request") == true)
-            group.leave()
+            promise.complete(())
         }
 
         XCTAssertNotNil([read, write])
-        group.wait()
+        try promise.future.sync()
     }
 
     func testBind() throws {
@@ -69,6 +69,7 @@ class SocketsTests : XCTestCase {
     }
 
     static let allTests = [
-        ("testConnect", testConnect)
+        ("testConnect", testConnect),
+        ("testBind", testBind)
     ]
 }

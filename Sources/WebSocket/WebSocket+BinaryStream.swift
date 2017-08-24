@@ -40,3 +40,17 @@ final class BinaryStream : Core.Stream {
     init() { }
 }
 
+
+extension WebSocket {
+    /// Sends a string to the server
+    public func send(_ buffer: ByteBuffer) {
+        self.binaryStream.inputStream(buffer)
+    }
+    
+    /// Drains the TextStream into this closure.
+    ///
+    /// Any previously listening closures will be overridden
+    public func onBinary(_ closure: @escaping ((ByteBuffer) -> ())) {
+        self.binaryStream.drain(closure)
+    }
+}
