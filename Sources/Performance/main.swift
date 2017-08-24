@@ -37,10 +37,10 @@ struct Application: Responder {
             let res = try WebSocket.upgradeResponse(for: req)
             res.onUpgrade = { client in
                 let websocket = WebSocket(client: client)
-                websocket.textStream.drain { text in
+                websocket.onText { text in
                     let rev = String(text.reversed())
                     print(text)
-                    websocket.textStream.inputStream(rev)
+                    websocket.send(rev)
                 }
             }
             promise.complete(res)
@@ -128,15 +128,15 @@ do {
 do {
     let promise = Promise<Void>()
     
-    try WebSocket.connect(to: "0.0.0.0", atPort: 8080, uri: URI(path: "/"), queue: .global()).then { socket in
+    _ = try WebSocket.connect(to: "0.0.0.0", atPort: 8080, uri: URI(path: "/"), queue: .global()).then { socket in
         let responses = ["test", "cat", "banana"]
         
-        socket.textStream.drain { string in
+        socket.onText { string in
             print(string)
         }
         
         for response in responses {
-            socket.textStream.inputStream(response)
+            socket.send(response)
         }
         
         promise.complete(())

@@ -74,19 +74,22 @@ public final class Frame {
     /// The bytes used to mask the payload
     public let maskBytes: [UInt8]?
     
+    /// A helper for finding the buffer that contains only the payload
     fileprivate var mutablePayload: MutableByteBuffer {
         return MutableByteBuffer(start: buffer.baseAddress?.advanced(by: headerUntil), count: payloadLength)
     }
     
-    /// The payload of this frame
+    /// A read-only payload buffer of this frame
     public var payload: ByteBuffer {
         return ByteBuffer(start: buffer.baseAddress?.advanced(by: headerUntil), count: payloadLength)
     }
     
     deinit {
+        // Deallocates the internal buffer
         buffer.dealloc()
     }
     
+    /// Unmasks the data if it's masked
     public func unmask() {
         guard isMasked else {
             return
@@ -96,6 +99,7 @@ public final class Frame {
         self.buffer[1] = self.buffer[1] & 0b01111111
     }
     
+    /// Masks the data if it's unmasked
     public func mask() {
         guard !isMasked else {
             return
@@ -119,6 +123,7 @@ public final class Frame {
     /// Creates a new payload by referencing the original payload.
     public init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, isMasked: Bool = false, isFinal: Bool = true) throws {
         if !isFinal {
+            // Only binary and continuation frames can be not final
             guard op == .binary || op == .continuation else {
                 throw Error(.invalidFrameParameters)
             }
@@ -181,7 +186,9 @@ public final class Frame {
                 throw Error(.invalidMask)
             }
             
+            // If the data is already masked
             if isMasked {
+                // Set the mask bit
                 pointer[1] = pointer[1] | 0b10000000
             }
             

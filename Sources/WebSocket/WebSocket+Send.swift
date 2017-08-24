@@ -1,16 +1,17 @@
 import libc
 import Core
 
-public final class FrameSerializer : Core.Stream {
-    public typealias Input = Frame
+/// Serializes frames to binary
+final class FrameSerializer : Core.Stream {
+    typealias Input = Frame
     
-    // TODO: Is this a good idea?
-    public typealias Output = ByteBuffer
+    typealias Output = ByteBuffer
     
-    public var outputStream: OutputHandler?
-    public var errorStream: ErrorHandler?
+    var outputStream: OutputHandler?
+    var errorStream: ErrorHandler?
     
-    public func inputStream(_ input: Frame) {
+    func inputStream(_ input: Frame) {
+        // masks the data if needed
         if mask {
             input.mask()
         } else {
@@ -27,6 +28,7 @@ public final class FrameSerializer : Core.Stream {
     }
 }
 
+/// Generates a random mask for client sockets
 func randomMask() -> [UInt8] {
     var buffer: [UInt8] = [0,0,0,0]
     
