@@ -13,6 +13,9 @@ public final class FrameParser : Core.Stream {
             return
         }
         
+        // Processed the data in a buffer
+        //
+        // Returns whether the header was successfully parsed into a frame and the amount of consumed bytes to do so
         func process(pointer: BytesPointer, length: Int) -> (Bool, Int) {
             guard let header = try? FrameParser.decodeFrameHeader(from: pointer, length: length) else {
                 self.bufferBuilder.advanced(by: accumulated).assign(from: pointer, count: length)
@@ -20,6 +23,7 @@ public final class FrameParser : Core.Stream {
                 return (false, 0)
             }
             
+            // Too big packets are rejected to prevent too much memory usage, causing potential crashes
             guard header.size < UInt64(self.maximumPayloadSize) else {
                 self.accumulated = 0
                 self.errorStream?(Error(.invalidBufferSize))
@@ -29,7 +33,9 @@ public final class FrameParser : Core.Stream {
             let pointer = pointer.advanced(by: header.consumed)
             let remaining = input.count &- header.consumed
             
+            // Not enough bytes for a frame
             guard Int(header.size) <= remaining else {
+                // Store the remaining data in the buffer
                 bufferBuilder.assign(from: pointer, count: input.count)
                 self.processing = header
                 self.accumulated += input.count
@@ -47,9 +53,11 @@ public final class FrameParser : Core.Stream {
             }
         }
         
+        // If a header was already processed
         if let header = processing {
             let total = Int(header.size)
             
+            // Parse the frame if we have enough bytes
             if accumulated + input.count >= total {
                 let consume = total &- accumulated
                 
@@ -65,21 +73,30 @@ public final class FrameParser : Core.Stream {
                 
                 self.inputStream(ByteBuffer(start: pointer.advanced(by: consume), count: input.count &- consume))
             } else {
+                // Store the remaining bytes since there's not enough for a frame
                 bufferBuilder.advanced(by: accumulated).assign(from: pointer, count: input.count)
             }
         } else if accumulated > 0 {
+            // We accumulated data already
+            
+            // If we're accumulating too much
             guard accumulated + input.count < UInt64(self.maximumPayloadSize) else {
+                // reject
                 self.accumulated = 0
                 self.errorStream?(Error(.invalidBufferSize))
                 return
             }
             
+            // Add the new data to the accumulated data
             bufferBuilder.advanced(by: accumulated).assign(from: pointer, count: input.count)
             accumulated += input.count
             
+            // process the incoming data
             let result =  process(pointer: pointer, length: input.count)
             
+            // If the processing was successful
             if result.0 {
+                // Add the unconsumed data to a pointer, and process that now
                 let unconsumed = accumulated &- result.1
                 let pointer = MutableBytesPointer.allocate(capacity: unconsumed)
                 pointer.assign(from: pointer.advanced(by: result.1), count: unconsumed)
@@ -170,11 +187,14 @@ public final class FrameParser : Core.Stream {
         let mask: [UInt8]?
         
         if isMasked {
+            // Ensure the minimum length is available
             guard length &- consumed >= payloadLength &+ 4, payloadLength < Int.max else {
+                // throw an invalidFrame for incomplete/invalid
                 throw Error(.invalidFrame)
             }
             
             guard consumed &+ 4 < length else {
+                // throw an invalidFrame for a missing mask buffer
                 throw Error(.invalidMask)
             }
             
@@ -182,6 +202,7 @@ public final class FrameParser : Core.Stream {
             base = base.advanced(by: 4)
             consumed = consumed &+ 4
         } else {
+            // throw an invalidFrame for incomplete/invalid
             guard length &- consumed >= payloadLength, payloadLength < Int.max else {
                 throw Error(.invalidFrame)
             }
