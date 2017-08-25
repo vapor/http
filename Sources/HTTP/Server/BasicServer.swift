@@ -111,6 +111,19 @@ public final class BasicServer<StreamType: ServerStream>: Server {
                 responseData.append(data)
             }
 
+            switch response.body {
+            case .chunked(_):
+                break
+            case .data(var bytes):
+                let buffer = UnsafeRawBufferPointer(
+                    start: &bytes,
+                    count: bytes.count
+                )
+                let data = DispatchData(bytes: buffer)
+                responseData.append(data)
+            }
+
+
             let copied = Data(responseData)
             let buffer = UnsafeBufferPointer<Byte>(
                 start: copied.withUnsafeBytes { $0 },
@@ -124,14 +137,15 @@ public final class BasicServer<StreamType: ServerStream>: Server {
                 print("Could not write all bytes to the stream")
                 throw StreamError.closed
             }
-            
+
             switch response.body {
             case .chunked(let closure):
                 let chunk = ChunkStream(stream)
                 try closure(chunk)
-            case .data(let bytes):
-                _ = try stream.write(bytes)
+            case .data(_):
+                break
             }
+
             
             try response.onComplete?(stream)
         } while keepAlive && !stream.isClosed
