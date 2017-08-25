@@ -1,5 +1,6 @@
 import libc
 import Transport
+import Foundation
 import Dispatch
 import Sockets
 import TLS
@@ -18,7 +19,7 @@ public final class BasicServer<StreamType: ServerStream>: Server {
         return stream.hostname
     }
 
-    public var port: Port {
+    public var port: Transport.Port {
         return stream.port
     }
 
@@ -94,18 +95,34 @@ public final class BasicServer<StreamType: ServerStream>: Server {
 
             keepAlive = req.keepAlive
             let response = try responder.respond(to: req)
+
+            var responseData = DispatchData.empty
             
             while true {
                 let length = try serializer.serialize(response, into: &buffer)
                 guard length > 0 else {
                     break
                 }
-                let written = try stream.write(max: length, from: buffer)
-                guard written == length else {
-                    // FIXME: better error
-                    print("Could not write all bytes to the stream")
-                    throw StreamError.closed
-                }
+                let buffer = UnsafeRawBufferPointer(
+                    start: &buffer,
+                    count: length
+                )
+                let data = DispatchData(bytes: buffer)
+                responseData.append(data)
+            }
+
+            let copied = Data(responseData)
+            let buffer = UnsafeBufferPointer<Byte>(
+                start: copied.withUnsafeBytes { $0 },
+                count: copied.count
+            )
+            let bytes = Bytes(buffer)
+            let written = try stream.write(max: bytes.count, from: bytes)
+
+            guard written == bytes.count else {
+                // FIXME: better error
+                print("Could not write all bytes to the stream")
+                throw StreamError.closed
             }
             
             switch response.body {
@@ -119,4 +136,8 @@ public final class BasicServer<StreamType: ServerStream>: Server {
             try response.onComplete?(stream)
         } while keepAlive && !stream.isClosed
     }
+}
+
+extension DispatchData {
+    static let empty = DispatchData(bytes: UnsafeRawBufferPointer(start: nil, count: 0))
 }
