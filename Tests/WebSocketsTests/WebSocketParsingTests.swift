@@ -51,6 +51,7 @@ import Sockets
 */
 class WebSocketSerializationTests: XCTestCase {
     static let allTests = [
+        ("testMaximumWebSocketFramePayloadBuffer", testMaximumWebSocketFramePayloadBuffer),
         ("testSingleFrameUnmaskedTextMessage", testSingleFrameUnmaskedTextMessage),
         ("testSingleFrameMaskedTextMessage", testSingleFrameMaskedTextMessage),
         ("testFragmentedUnmaskedTextMessageOne", testFragmentedUnmaskedTextMessageOne),
@@ -60,6 +61,42 @@ class WebSocketSerializationTests: XCTestCase {
         ("test256BytesBinarySingleUnmaskedFrame", test256BytesBinarySingleUnmaskedFrame),
         ("testSixtyFourKiBSingleUnmaskedFrame", testSixtyFourKiBSingleUnmaskedFrame),
     ]
+    
+    func testMaximumWebSocketFramePayloadBuffer() throws {
+        func testSuccess() throws {
+            let input: [Byte] = [0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f]
+            
+            let test = TestStream()
+            _ = try test.write(input)
+            
+            let msg = try FrameParser(stream: test, maximumSize: 10).acceptFrame()
+            let str = msg.payload.makeString()
+            XCTAssertEqual(str, "Hello")
+        }
+        
+        func testBarelySuccess() throws {
+            let input: [Byte] = [0x81, 0x0a, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x48, 0x65, 0x6c, 0x6c, 0x6f]
+            
+            let test = TestStream()
+            _ = try test.write(input)
+            
+            let msg = try FrameParser(stream: test, maximumSize: 10).acceptFrame()
+            let str = msg.payload.makeString()
+            XCTAssertEqual(str, "HelloHello")
+        }
+        
+        func testFailure() throws {
+            let input: [Byte] = [0x81, 0x0b, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x48]
+            
+            let test = TestStream()
+            _ = try test.write(input)
+            
+            XCTAssertThrowsError(try FrameParser(stream: test, maximumSize: 10).acceptFrame())
+        }
+        
+        try testSuccess()
+        try testBarelySuccess()
+    }
 
     func testSingleFrameUnmaskedTextMessage() throws {
         let input: [Byte] = [0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f]

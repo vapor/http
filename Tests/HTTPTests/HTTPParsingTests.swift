@@ -6,10 +6,42 @@ import Transport
 
 class HTTPParsingTests: XCTestCase {
     static let allTests = [
-       ("testParser", testParser),
-       ("testSerializer", testSerializer),
-       ("testParserHostPort", testParserHostPort),
+        ("testMaximumRequestParserBuffer", testMaximumRequestParserBuffer),
+        ("testMaximumResponseParserBuffer", testMaximumResponseParserBuffer),
+        ("testParser", testParser),
+        ("testSerializer", testSerializer),
+        ("testParserHostPort", testParserHostPort),
     ]
+    
+    func testMaximumRequestParserBuffer() throws {
+        let request = Request(method: .get, uri: "test")
+        
+        let serializer = RequestSerializer()
+        var data = Bytes()
+        
+        _ = try serializer.serialize(request, into: &data)
+        
+        let requestParser = RequestParser(maximumSize: data.count)
+        _ = try requestParser.parse(max: data.count, from: data)
+        
+        let failingRequestParser = RequestParser(maximumSize: data.count - 1)
+        XCTAssertThrowsError(try failingRequestParser.parse(max: data.count, from: data))
+    }
+    
+    func testMaximumResponseParserBuffer() throws {
+        let response = Response(status: .ok)
+        
+        let serializer = ResponseSerializer()
+        var data = Bytes()
+        
+        _ = try serializer.serialize(response, into: &data)
+        
+        let responseParser = ResponseParser(maximumSize: data.count)
+        _ = try responseParser.parse(max: data.count, from: data)
+        
+        let failingResponseParser = ResponseParser(maximumSize: data.count - 1)
+        XCTAssertThrowsError(try failingResponseParser.parse(max: data.count, from: data))
+    }
 
     func testParser() {
         let stream = TestStream()

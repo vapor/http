@@ -13,7 +13,7 @@ class FoundationConversionTests: XCTestCase {
         // TEMP. (circle ci. hates this test)
         // ("testFoundationClient", testFoundationClient)
     ]
-
+    
     func testUriToUrlConversion() throws {
         let expectation = "https://google.com:443/search?foo=bar#frag"
         let uri = try URI(expectation)

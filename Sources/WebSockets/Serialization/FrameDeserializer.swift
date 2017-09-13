@@ -3,13 +3,17 @@ import Transport
 
 public enum FrameParserError: Swift.Error {
     case missingByte
+    case packetTooLarge
 }
 
 public final class FrameParser {
     private var stream: ReadableStream // FIXME: generic
+    
+    private let maximumSize: UInt64
 
-    public init(stream: ReadableStream) {
+    public init(stream: ReadableStream, maximumSize: UInt64 = UInt64.max) {
         self.stream = stream
+        self.maximumSize = maximumSize
     }
 
     public func acceptFrame() throws -> WebSocket.Frame {
@@ -27,6 +31,10 @@ public final class FrameParser {
             payloadLength = try extractEightBytePayloadLengthExtension()
         default:
             payloadLength = payloadLengthInfo.toUIntMax()
+        }
+        
+        guard payloadLength <= maximumSize else {
+            throw FrameParserError.packetTooLarge
         }
 
         let maskingKey: WebSocket.Frame.MaskingKey
