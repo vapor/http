@@ -129,6 +129,8 @@ public final class RequestParser: CHTTPParser {
             body: .data(results.body)
         )
 
+        self.parsedBytes = 0
+        
         return request
     }
 

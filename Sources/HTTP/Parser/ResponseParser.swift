@@ -78,6 +78,8 @@ public final class ResponseParser: CHTTPParser {
             body: .data(results.body)
         )
         
+        self.parsedBytes = 0
+        
         return response
     }
 }
