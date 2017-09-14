@@ -21,10 +21,10 @@ class HTTPParsingTests: XCTestCase {
         
         _ = try serializer.serialize(request, into: &data)
         
-        let requestParser = RequestParser(maximumSize: data.count)
+        let requestParser = RequestParser(maxSize: data.count)
         _ = try requestParser.parse(max: data.count, from: data)
         
-        let failingRequestParser = RequestParser(maximumSize: data.count - 1)
+        let failingRequestParser = RequestParser(maxSize: data.count - 1)
         XCTAssertThrowsError(try failingRequestParser.parse(max: data.count, from: data))
     }
     
@@ -36,10 +36,10 @@ class HTTPParsingTests: XCTestCase {
         
         _ = try serializer.serialize(response, into: &data)
         
-        let responseParser = ResponseParser(maximumSize: data.count)
+        let responseParser = ResponseParser(maxSize: data.count)
         _ = try responseParser.parse(max: data.count, from: data)
         
-        let failingResponseParser = ResponseParser(maximumSize: data.count - 1)
+        let failingResponseParser = ResponseParser(maxSize: data.count - 1)
         XCTAssertThrowsError(try failingResponseParser.parse(max: data.count, from: data))
     }
 
@@ -63,7 +63,7 @@ class HTTPParsingTests: XCTestCase {
 
 
         do {
-            let parser = RequestParser()
+            let parser = RequestParser(maxSize: 100_000)
             let request = try parser.parse(from: stream)
 
             //MARK: Verify Request
@@ -121,7 +121,7 @@ class HTTPParsingTests: XCTestCase {
 
         _ = try stream.write(data.makeBytes())
 
-        let parser = RequestParser()
+        let parser = RequestParser(maxSize: 100_000)
         let request = try parser.parse(from: stream)
         XCTAssertEqual(request.uri.hostname, "localhost")
         let uri = request.uri.appendingPathComponent("foo")

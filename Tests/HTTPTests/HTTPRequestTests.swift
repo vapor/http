@@ -23,7 +23,7 @@ class HTTPRequestTests: XCTestCase {
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
 
-            let parser = RequestParser()
+            let parser = RequestParser(maxSize: 100_000)
             let request = try parser.parse(from: stream)
             request.stream = stream
 
@@ -54,7 +54,7 @@ class HTTPRequestTests: XCTestCase {
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
 
-            let request = try RequestParser().parse(from: stream)
+            let request = try RequestParser(maxSize: 100_000).parse(from: stream)
             XCTAssertEqual(request.method.description, "GET")
             XCTAssertEqual(request.uri.hostname, "qutheory.io")
             XCTAssertEqual(request.uri.port, 1337)
@@ -84,7 +84,7 @@ class HTTPRequestTests: XCTestCase {
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
 
-            let parser = RequestParser()
+            let parser = RequestParser(maxSize: 100_000)
             let request = try parser.parse(from: stream)
             request.stream = stream
 
@@ -111,7 +111,7 @@ class HTTPRequestTests: XCTestCase {
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
             
-            let parser = RequestParser()
+            let parser = RequestParser(maxSize: 100_000)
             let request = try parser.parse(from: stream)
             request.stream = stream
             

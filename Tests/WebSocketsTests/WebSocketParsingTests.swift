@@ -69,7 +69,7 @@ class WebSocketSerializationTests: XCTestCase {
             let test = TestStream()
             _ = try test.write(input)
             
-            let msg = try FrameParser(stream: test, maximumSize: 10).acceptFrame()
+            let msg = try FrameParser(stream: test, maxSize: 10).acceptFrame()
             let str = msg.payload.makeString()
             XCTAssertEqual(str, "Hello")
         }
@@ -80,7 +80,7 @@ class WebSocketSerializationTests: XCTestCase {
             let test = TestStream()
             _ = try test.write(input)
             
-            let msg = try FrameParser(stream: test, maximumSize: 10).acceptFrame()
+            let msg = try FrameParser(stream: test, maxSize: 10).acceptFrame()
             let str = msg.payload.makeString()
             XCTAssertEqual(str, "HelloHello")
         }
@@ -91,7 +91,7 @@ class WebSocketSerializationTests: XCTestCase {
             let test = TestStream()
             _ = try test.write(input)
             
-            XCTAssertThrowsError(try FrameParser(stream: test, maximumSize: 10).acceptFrame())
+            XCTAssertThrowsError(try FrameParser(stream: test, maxSize: 10).acceptFrame())
         }
         
         try testSuccess()
@@ -102,7 +102,7 @@ class WebSocketSerializationTests: XCTestCase {
         let input: [Byte] = [0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f]
         let test = TestStream()
         _ = try test.write(input)
-        let msg = try FrameParser(stream: test).acceptFrame()
+        let msg = try FrameParser(stream: test, maxSize: 100_000).acceptFrame()
         let str = msg.payload.makeString()
         XCTAssert(str == "Hello")
 
@@ -123,7 +123,7 @@ class WebSocketSerializationTests: XCTestCase {
         let input: [Byte] = [0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58]
         let test = TestStream()
         _ = try test.write(input)
-        let msg = try FrameParser(stream: test).acceptFrame()
+        let msg = try FrameParser(stream: test, maxSize: 100_000).acceptFrame()
         let str = msg.payload.makeString()
         XCTAssert(str == "Hello")
 
@@ -151,7 +151,7 @@ class WebSocketSerializationTests: XCTestCase {
         let input: [Byte] = [0x01, 0x03, 0x48, 0x65, 0x6c]
         let test = TestStream()
         _ = try test.write(input)
-        let msg = try FrameParser(stream: test).acceptFrame()
+        let msg = try FrameParser(stream: test, maxSize: 100_000).acceptFrame()
         XCTAssert(msg.isFragment)
         XCTAssert(msg.isFragmentHeader)
         XCTAssertFalse(msg.isControlFrame)
@@ -176,7 +176,7 @@ class WebSocketSerializationTests: XCTestCase {
         let input: [Byte] = [0x80, 0x02, 0x6c, 0x6f]
         let test = TestStream()
         _ = try test.write(input)
-        let msg = try FrameParser(stream: test).acceptFrame()
+        let msg = try FrameParser(stream: test, maxSize: 100_000).acceptFrame()
         XCTAssert(msg.isFragment)
         XCTAssert(msg.isFragmentFooter)
         XCTAssertFalse(msg.isControlFrame)
@@ -210,7 +210,7 @@ class WebSocketSerializationTests: XCTestCase {
         let input: [Byte] = [0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f]
         let test = TestStream()
         _ = try test.write(input)
-        let msg = try FrameParser(stream: test).acceptFrame()
+        let msg = try FrameParser(stream: test, maxSize: 100_000).acceptFrame()
         XCTAssert(msg.isControlFrame)
 
         // is Hello, but message doesn't matter
@@ -237,7 +237,7 @@ class WebSocketSerializationTests: XCTestCase {
         let input: [Byte] = [0x8a, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58]
         let test = TestStream()
         _ = try test.write(input)
-        let msg = try FrameParser(stream: test).acceptFrame()
+        let msg = try FrameParser(stream: test, maxSize: 100_000).acceptFrame()
         XCTAssert(msg.isControlFrame)
 
         // is Hello, but message doesn't matter. Must match `ping` payload
@@ -276,7 +276,7 @@ class WebSocketSerializationTests: XCTestCase {
         let input = headerBytes + randomBinary
         let test = TestStream()
         _ = try test.write(input)
-        let msg = try FrameParser(stream: test).acceptFrame()
+        let msg = try FrameParser(stream: test, maxSize: 100_000).acceptFrame()
         XCTAssertFalse(msg.isControlFrame)
 
         let payload = msg.payload
@@ -317,7 +317,7 @@ class WebSocketSerializationTests: XCTestCase {
         let input = headerBytes + randomBinary
         let test = TestStream()
         _ = try test.write(input)
-        let msg = try FrameParser(stream: test).acceptFrame()
+        let msg = try FrameParser(stream: test, maxSize: 100_000).acceptFrame()
         XCTAssertFalse(msg.isControlFrame)
 
         let payload = msg.payload
@@ -385,7 +385,7 @@ class WebSocketConnectTests : XCTestCase {
 	let headers: [HeaderKey: String] = ["Authorized": "Bearer exampleBearer"]
 	do {
         let socket = try TCPInternetSocket(scheme: "ws", hostname: "127.0.0.1", port: 80)
-        try WebSocket.background(to:"ws:127.0.0.1", using: socket, headers: headers) { (websocket: WebSocket) throws -> Void in
+        try WebSocket.background(to:"ws:127.0.0.1", using: socket, maxPayloadSize: 100_000, headers: headers) { (websocket: WebSocket) throws -> Void in
                     XCTAssert(false, "No server, so this should fail to connect")
 		    }
 	} catch {
