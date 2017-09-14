@@ -5,6 +5,7 @@ class AsyncServerWorker<Stream: DuplexStream & DescriptorRepresentable> {
     var id: Int
     var queue: DispatchQueue
     var buffer: Bytes
+    let maxRequestSize: Int
     
     let serializer: ResponseSerializer
     let parser: RequestParser
@@ -12,14 +13,15 @@ class AsyncServerWorker<Stream: DuplexStream & DescriptorRepresentable> {
     
     var connected: [Int32: DispatchSourceRead]
     
-    init(id: Int, _ responder: AsyncResponder) {
+    init(id: Int, maxRequestSize: Int, _ responder: AsyncResponder) {
         self.id = id
         self.responder = responder
         
         self.queue = DispatchQueue(label: "codes.vapor.server.worker.\(id)")
         self.buffer = Bytes(repeating: 0, count: 4096)
         self.serializer = ResponseSerializer()
-        self.parser = RequestParser()
+        self.maxRequestSize = maxRequestSize
+        self.parser = RequestParser(maxSize: maxRequestSize)
         
         connected = [:]
     }
@@ -96,5 +98,12 @@ class AsyncServerWorker<Stream: DuplexStream & DescriptorRepresentable> {
             }
         }
 
+    }
+}
+
+extension AsyncServerWorker {
+    @available(*, deprecated, message: "Use init(id:, maxRequestSize:, _:) instead.")
+    public convenience init(id: Int, _ responder: AsyncResponder) {
+        self.init(id: id, maxRequestSize: Int.max, responder)
     }
 }

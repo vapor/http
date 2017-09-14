@@ -92,8 +92,19 @@
 
          If you're using built in Vapor syntax you should NOT call this manually.
          */
+        @available(*, deprecated, message: "Use listen(maxPayloadSize:) instead.")
         public func listen() throws {
-            let parser = FrameParser(stream: stream)
+            let parser = FrameParser(stream: stream, maxSize: UInt64.max)
+            try loop(with: parser)
+        }
+        
+        /**
+         Tells the WebSocket to begin accepting frames with a maximum payload size of `maxPayloadSize`
+         
+         If you're using built in Vapor syntax you should NOT call this manually.
+         */
+        public func listen(maxPayloadSize: UInt64) throws {
+            let parser = FrameParser(stream: stream, maxSize: maxPayloadSize)
             try loop(with: parser)
         }
 

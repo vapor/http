@@ -16,8 +16,8 @@ public final class RequestParser: CHTTPParser {
     private let maximumSize: Int
 
     /// Creates a new Request parser.
-    public init(maximumSize: Int = Int.max) {
-        self.maximumSize = maximumSize
+    public init(maxSize: Int) {
+        self.maximumSize = maxSize
         self.parser = http_parser()
         self.settings = http_parser_settings()
         self.state = .ready
@@ -141,5 +141,12 @@ public final class RequestParser: CHTTPParser {
         let host = components.first?.makeString() ?? host
         let port = components.last.flatMap { Int($0.makeString()) }
         return (host, port?.port)
+    }
+}
+
+extension RequestParser {
+    @available(*, deprecated, message: "Use init(maxSize:) instead.")
+    public convenience init() {
+        self.init(maxSize: Int.max)
     }
 }

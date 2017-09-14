@@ -16,8 +16,8 @@ public final class ResponseParser: CHTTPParser {
     private let maximumSize: Int
     
     /// Creates a new Response parser.
-    public init(maximumSize: Int = Int.max) {
-        self.maximumSize = maximumSize
+    public init(maxSize: Int) {
+        self.maximumSize = maxSize
         self.parser = http_parser()
         self.settings = http_parser_settings()
         self.state = .ready
@@ -79,5 +79,12 @@ public final class ResponseParser: CHTTPParser {
         )
         
         return response
+    }
+}
+
+extension ResponseParser {
+    @available(*, deprecated, message: "Use init(maxSize:) instead.")
+    public convenience init() {
+        self.init(maxSize: Int.max)
     }
 }

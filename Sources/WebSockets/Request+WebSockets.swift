@@ -2,13 +2,28 @@ import HTTP
 
 extension Request {
     /**
+     Upgrades the request to a WebSocket connection
+     WebSocket connection to provide two way information
+     transfer between the client and the server.
+     */
+    @available(*, deprecated, message: "Use upgradeToWebSocket(maxPayloadSize:, supportedProtocols:, body:) instead.")
+    public func upgradeToWebSocket(
+        supportedProtocols: ([String]) -> [String] = { $0 },
+        body: @escaping (WebSocket) throws -> Void
+    ) throws -> Response {
+        return try self.upgradeToWebSocket(maxPayloadSize: UInt64.max, supportedProtocols: supportedProtocols, body: body)
+    }
+    
+    /**
         Upgrades the request to a WebSocket connection
         WebSocket connection to provide two way information
         transfer between the client and the server.
     */
     public func upgradeToWebSocket(
+        maxPayloadSize: UInt64,
         supportedProtocols: ([String]) -> [String] = { $0 },
-        body: @escaping (WebSocket) throws -> Void) throws -> Response {
+        body: @escaping (WebSocket) throws -> Void
+    ) throws -> Response {
         guard let requestKey = headers.secWebSocketKey else {
             throw WebSocket.FormatError.missingSecKeyHeader
         }
@@ -39,7 +54,7 @@ extension Request {
         response.onComplete = { stream in
             let ws = WebSocket(stream, mode: .server)
             try body(ws)
-            try ws.listen()
+            try ws.listen(maxPayloadSize: maxPayloadSize)
         }
         return response
         

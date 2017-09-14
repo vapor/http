@@ -9,6 +9,7 @@ public var defaultServerTimeout: Double = 30
 public final class BasicServer<StreamType: ServerStream>: Server {
     public let stream: StreamType
     public let listenMax: Int
+    public let maxRequestSize: Int
 
     public var scheme: String {
         return stream.scheme
@@ -22,9 +23,10 @@ public final class BasicServer<StreamType: ServerStream>: Server {
         return stream.port
     }
 
-    public init(_ stream: StreamType, listenMax: Int = 128) throws {
+    public init(_ stream: StreamType, maxRequestSize: Int, listenMax: Int = 128) throws {
         self.stream = stream
         self.listenMax = listenMax
+        self.maxRequestSize = maxRequestSize
     }
 
     private let queue = DispatchQueue(
@@ -64,7 +66,7 @@ public final class BasicServer<StreamType: ServerStream>: Server {
         
         var buffer = Bytes(repeating: 0, count: 2048)
 
-        let parser = RequestParser()
+        let parser = RequestParser(maxSize: maxRequestSize)
         let serializer = ResponseSerializer()
 
         defer {
@@ -118,5 +120,12 @@ public final class BasicServer<StreamType: ServerStream>: Server {
             
             try response.onComplete?(stream)
         } while keepAlive && !stream.isClosed
+    }
+}
+
+extension BasicServer {
+    @available(*, deprecated, message: "Use init(_:, maxRequestSize:, listenMax:) instead.")
+    public convenience init(_ stream: StreamType, listenMax: Int = 128) throws {
+        try self.init(stream, maxRequestSize: Int.max, listenMax: listenMax)
     }
 }
