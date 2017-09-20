@@ -403,6 +403,16 @@
             let parser = FrameParser(stream: stream)
             try loop(with: parser)
         }
+    
+        /**
+         Tells the WebSocket to begin accepting frames with a maximum payload size of `maxPayloadSize`
+     
+         If you're using built in Vapor syntax you should NOT call this manually.
+         */
+        public func listen(maxPayloadSize: UInt64) throws {
+            let parser = FrameParser(stream: stream, maxSize: maxPayloadSize)
+            try loop(with: parser)
+        }
 
         /**
              [WARNING] - deserializer MUST be declared OUTSIDE of while-loop
