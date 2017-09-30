@@ -262,6 +262,10 @@ extension HeaderKey {
     return HeaderKey("Set-Cookie")
   }
 
+  static public var sourceMap: HeaderKey {
+    return HeaderKey("SourceMap")
+  }
+
   static public var strictTransportSecurity: HeaderKey {
     return HeaderKey("Strict-Transport-Security")
   }
