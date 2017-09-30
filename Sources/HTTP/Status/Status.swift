@@ -73,6 +73,7 @@ public enum Status {
     case preconditionRequired
     case tooManyRequests
     case requestHeaderFieldsTooLarge
+    case unavailableForLegalReasons
 
     case internalServerError
     case notImplemented
@@ -142,6 +143,7 @@ extension Status {
         case Status.preconditionRequired.statusCode:          self = .preconditionRequired
         case Status.tooManyRequests.statusCode:               self = .tooManyRequests
         case Status.requestHeaderFieldsTooLarge.statusCode:   self = .requestHeaderFieldsTooLarge
+        case Status.unavailableForLegalReasons.statusCode:    self = .unavailableForLegalReasons
 
         case Status.internalServerError.statusCode:           self = .internalServerError
         case Status.notImplemented.statusCode:                self = .notImplemented
@@ -222,6 +224,7 @@ extension Status {
         case .preconditionRequired:          return 428
         case .tooManyRequests:               return 429
         case .requestHeaderFieldsTooLarge:   return 431
+        case .unavailableForLegalReasons:    return 451
 
         case .internalServerError:           return 500
         case .notImplemented:                return 501
@@ -293,6 +296,7 @@ extension Status {
         case .preconditionRequired:          return "PreconditionR equired"
         case .tooManyRequests:               return "Too Many Requests"
         case .requestHeaderFieldsTooLarge:   return "Request Header Fields Too Large"
+        case .unavailableForLegalReasons:    return "Unavailable For Legal Reasons"
 
         case .internalServerError:           return "Internal Server Error"
         case .notImplemented:                return "Not Implemented"
