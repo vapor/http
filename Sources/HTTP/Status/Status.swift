@@ -69,6 +69,7 @@ public enum Status {
     case unprocessableEntity
     case locked
     case failedDependency
+    case upgradeRequired
     case preconditionRequired
     case tooManyRequests
     case requestHeaderFieldsTooLarge
@@ -137,6 +138,7 @@ extension Status {
         case Status.unprocessableEntity.statusCode:           self = .unprocessableEntity
         case Status.locked.statusCode:                        self = .locked
         case Status.failedDependency.statusCode:              self = .failedDependency
+        case Status.upgradeRequired.statusCode:               self = .upgradeRequired
         case Status.preconditionRequired.statusCode:          self = .preconditionRequired
         case Status.tooManyRequests.statusCode:               self = .tooManyRequests
         case Status.requestHeaderFieldsTooLarge.statusCode:   self = .requestHeaderFieldsTooLarge
@@ -216,6 +218,7 @@ extension Status {
         case .unprocessableEntity:           return 422
         case .locked:                        return 423
         case .failedDependency:              return 424
+        case .upgradeRequired:               return 426
         case .preconditionRequired:          return 428
         case .tooManyRequests:               return 429
         case .requestHeaderFieldsTooLarge:   return 431
@@ -286,6 +289,7 @@ extension Status {
         case .unprocessableEntity:           return "Unprocessable Entity"
         case .locked:                        return "Locked"
         case .failedDependency:              return "Failed Dependency"
+        case .upgradeRequired:               return "Upgrade Required"
         case .preconditionRequired:          return "PreconditionR equired"
         case .tooManyRequests:               return "Too Many Requests"
         case .requestHeaderFieldsTooLarge:   return "Request Header Fields Too Large"
