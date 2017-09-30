@@ -109,7 +109,11 @@ extension HeaderKey {
   static public var host: HeaderKey {
     return HeaderKey("Host")
   }
-
+    
+  static public var http2Settings: HeaderKey {
+    return HeaderKey("HTTP2-Settings")
+  }
+    
   static public var ifMatch: HeaderKey {
     return HeaderKey("If-Match")
   }
