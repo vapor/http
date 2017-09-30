@@ -93,6 +93,10 @@ extension HeaderKey {
   static public var date: HeaderKey {
     return HeaderKey("Date")
   }
+    
+  static public var dnt: HeaderKey {
+    return HeaderKey("DNT")
+  }
 
   static public var expect: HeaderKey {
     return HeaderKey("Expect")
