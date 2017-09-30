@@ -66,6 +66,7 @@ public enum Status {
     case imATeapot
     case authenticationTimeout
     case enhanceYourCalm
+    case misdirectedRequest
     case unprocessableEntity
     case locked
     case failedDependency
@@ -136,6 +137,7 @@ extension Status {
         case Status.imATeapot.statusCode:                     self = .imATeapot
         case Status.authenticationTimeout.statusCode:         self = .authenticationTimeout
         case Status.enhanceYourCalm.statusCode:               self = .enhanceYourCalm
+        case Status.misdirectedRequest.statusCode:            self = .misdirectedRequest
         case Status.unprocessableEntity.statusCode:           self = .unprocessableEntity
         case Status.locked.statusCode:                        self = .locked
         case Status.failedDependency.statusCode:              self = .failedDependency
@@ -217,6 +219,7 @@ extension Status {
         case .imATeapot:                     return 418
         case .authenticationTimeout:         return 419
         case .enhanceYourCalm:               return 420
+        case .misdirectedRequest:            return 421
         case .unprocessableEntity:           return 422
         case .locked:                        return 423
         case .failedDependency:              return 424
@@ -289,6 +292,7 @@ extension Status {
         case .imATeapot:                     return "I'm A Teapot"
         case .authenticationTimeout:         return "Authentication Timeout"
         case .enhanceYourCalm:               return "Enhance Your Calm"
+        case .misdirectedRequest:            return "Misdirected Request"
         case .unprocessableEntity:           return "Unprocessable Entity"
         case .locked:                        return "Locked"
         case .failedDependency:              return "Failed Dependency"
