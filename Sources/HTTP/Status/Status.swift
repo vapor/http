@@ -66,12 +66,15 @@ public enum Status {
     case imATeapot
     case authenticationTimeout
     case enhanceYourCalm
+    case misdirectedRequest
     case unprocessableEntity
     case locked
     case failedDependency
+    case upgradeRequired
     case preconditionRequired
     case tooManyRequests
     case requestHeaderFieldsTooLarge
+    case unavailableForLegalReasons
 
     case internalServerError
     case notImplemented
@@ -134,12 +137,15 @@ extension Status {
         case Status.imATeapot.statusCode:                     self = .imATeapot
         case Status.authenticationTimeout.statusCode:         self = .authenticationTimeout
         case Status.enhanceYourCalm.statusCode:               self = .enhanceYourCalm
+        case Status.misdirectedRequest.statusCode:            self = .misdirectedRequest
         case Status.unprocessableEntity.statusCode:           self = .unprocessableEntity
         case Status.locked.statusCode:                        self = .locked
         case Status.failedDependency.statusCode:              self = .failedDependency
+        case Status.upgradeRequired.statusCode:               self = .upgradeRequired
         case Status.preconditionRequired.statusCode:          self = .preconditionRequired
         case Status.tooManyRequests.statusCode:               self = .tooManyRequests
         case Status.requestHeaderFieldsTooLarge.statusCode:   self = .requestHeaderFieldsTooLarge
+        case Status.unavailableForLegalReasons.statusCode:    self = .unavailableForLegalReasons
 
         case Status.internalServerError.statusCode:           self = .internalServerError
         case Status.notImplemented.statusCode:                self = .notImplemented
@@ -213,12 +219,15 @@ extension Status {
         case .imATeapot:                     return 418
         case .authenticationTimeout:         return 419
         case .enhanceYourCalm:               return 420
+        case .misdirectedRequest:            return 421
         case .unprocessableEntity:           return 422
         case .locked:                        return 423
         case .failedDependency:              return 424
+        case .upgradeRequired:               return 426
         case .preconditionRequired:          return 428
         case .tooManyRequests:               return 429
         case .requestHeaderFieldsTooLarge:   return 431
+        case .unavailableForLegalReasons:    return 451
 
         case .internalServerError:           return 500
         case .notImplemented:                return 501
@@ -283,12 +292,15 @@ extension Status {
         case .imATeapot:                     return "I'm A Teapot"
         case .authenticationTimeout:         return "Authentication Timeout"
         case .enhanceYourCalm:               return "Enhance Your Calm"
+        case .misdirectedRequest:            return "Misdirected Request"
         case .unprocessableEntity:           return "Unprocessable Entity"
         case .locked:                        return "Locked"
         case .failedDependency:              return "Failed Dependency"
+        case .upgradeRequired:               return "Upgrade Required"
         case .preconditionRequired:          return "PreconditionR equired"
         case .tooManyRequests:               return "Too Many Requests"
         case .requestHeaderFieldsTooLarge:   return "Request Header Fields Too Large"
+        case .unavailableForLegalReasons:    return "Unavailable For Legal Reasons"
 
         case .internalServerError:           return "Internal Server Error"
         case .notImplemented:                return "Not Implemented"
