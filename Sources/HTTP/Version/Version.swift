@@ -21,7 +21,7 @@ public struct Version {
     }
 
     public init(_ string: String) {
-        let components = string.characters.split(separator: ".").map { String($0) }
+        let components = string.toCharacterSequence().split(separator: ".").map { String($0) }
 
         if components.count > 0, let major = Int(components[0]) {
             self.major = major
@@ -84,4 +84,16 @@ public func > (lhs: Version, rhs: Version) -> Bool {
     } else {
         return lhs.patch > rhs.patch
     }
+}
+
+extension String {
+    #if swift(>=4.0)
+    internal func toCharacterSequence() -> String {
+        return self
+    }
+    #else
+    internal func toCharacterSequence() -> CharacterView {
+        return self.characters
+    }
+    #endif  
 }
