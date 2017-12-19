@@ -33,12 +33,12 @@ class HTTPSerializerTests: XCTestCase {
         POST /foo HTTP/1.1\r
         Content-Length: 7\r
         \r
-
+        <vapor>
         """
 
         let serialized = try serializer.serialize()
         XCTAssert(serializer.ready)
-        XCTAssertEqual(serialized.count, 41)
+        XCTAssertEqual(serialized.count, 48)
         XCTAssertEqual(expected, String(data: serialized, encoding: .utf8))
     }
 
@@ -56,7 +56,7 @@ class HTTPSerializerTests: XCTestCase {
         POST /foo HTTP/1.1\r
         Content-Length: 7\r
         \r
-
+        <vapor>
         """
 
         var buffer = Data(count: 8) // small size here so we require multiple runs
@@ -65,7 +65,7 @@ class HTTPSerializerTests: XCTestCase {
             let serialized = try serializer.serialize(into: buffer.withMutableByteBuffer { $0 })
             output += Data(buffer[0..<serialized])
         }
-        XCTAssertEqual(output.count, 41)
+        XCTAssertEqual(output.count, 48)
         XCTAssertEqual(expected, String(data: output, encoding: .utf8))
     }
 
@@ -82,12 +82,12 @@ class HTTPSerializerTests: XCTestCase {
         HTTP/1.1 200 OK\r
         Content-Length: 7\r
         \r
-
+        <vapor>
         """
 
         let serialized = try serializer.serialize()
         XCTAssert(serializer.ready)
-        XCTAssertEqual(serialized.count, 38)
+        XCTAssertEqual(serialized.count, 45)
         XCTAssertEqual(expected, String(data: serialized, encoding: .utf8))
     }
 
@@ -104,7 +104,7 @@ class HTTPSerializerTests: XCTestCase {
         HTTP/1.1 200 OK\r
         Content-Length: 7\r
         \r
-
+        <vapor>
         """
 
         var buffer = Data(count: 8) // small size here so we require multiple runs
@@ -117,7 +117,7 @@ class HTTPSerializerTests: XCTestCase {
             }
         }
         
-        XCTAssertEqual(output.count, 38)
+        XCTAssertEqual(output.count, 45)
         XCTAssertEqual(expected, String(data: output, encoding: .utf8))
     }
     

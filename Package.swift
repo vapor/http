@@ -8,7 +8,7 @@ import PackageDescription
 #endif
 
 let package = Package(
-    name: "TLS",
+    name: "Engine",
     products: [
         .library(name: "FormURLEncoded", targets: ["FormURLEncoded"]),
         .library(name: "HTTP", targets: ["HTTP"]),

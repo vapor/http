@@ -37,17 +37,9 @@ class HTTPSerializerStreamTests: XCTestCase {
 
         /// there should only be one buffer since we
         /// called `.drain(1)`. this buffer should contain
-        /// the entire response sans body
+        /// the entire response
         XCTAssertEqual(output.count, 1)
-        XCTAssertEqual(output.first?.count, 38)
-
-        /// request another byte buffer
-        outputRequest?.request()
-
-        /// there should now be two outputted byte buffers
-        /// with the second one being the entire body
-        XCTAssertEqual(output.count, 2)
-        XCTAssertEqual(output.last?.count, body.count)
+        XCTAssertEqual(output.first?.count, 45)
     }
 
     func testResponseStreamingBody() throws {
@@ -142,7 +134,7 @@ class HTTPSerializerStreamTests: XCTestCase {
         mockApp.emit(response2)
         if output.count == 5 {
             let message = String(data: output[4], encoding: .utf8)
-            XCTAssertEqual(message, "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\n")
+            XCTAssertEqual(message, "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello")
         } else {
             XCTFail("Invalid output count: \(output.count)")
         }
