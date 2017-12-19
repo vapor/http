@@ -1,5 +1,6 @@
 import Async
 import Bits
+import Dispatch
 import HTTP
 import Foundation
 import TCP
