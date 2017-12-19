@@ -1,10 +1,9 @@
-import Core
 import Debugging
 import Foundation
-import libc
+import COperatingSystem
 
-/// Errors that can be thrown while working with TCP sockets.
-public struct Error: Traceable, Debuggable, Swift.Error {
+/// Errors that can be thrown while working with HTTP.
+public struct HTTPError: Traceable, Debuggable, Swift.Error, Encodable {
     public static let readableName = "HTTP Error"
     public let identifier: String
     public var reason: String
@@ -28,7 +27,7 @@ public struct Error: Traceable, Debuggable, Swift.Error {
         self.function = function
         self.line = line
         self.column = column
-        self.stackTrace = Error.makeStackTrace()
+        self.stackTrace = HTTPError.makeStackTrace()
     }
 
     public static func invalidMessage(
@@ -37,7 +36,7 @@ public struct Error: Traceable, Debuggable, Swift.Error {
         line: UInt = #line,
         column: UInt = #column
     ) -> Error {
-        return Error(
+        return HTTPError(
             identifier: "invalidMessage",
             reason: "Unable to parse invalid HTTP message.",
             file: file,
@@ -54,7 +53,7 @@ public struct Error: Traceable, Debuggable, Swift.Error {
         line: UInt = #line,
         column: UInt = #column
     ) -> Error {
-        return Error(
+        return HTTPError(
             identifier: "contentRequired",
             reason: "\(type) content required.",
             file: file,

@@ -129,7 +129,7 @@ public struct MediaType {
     /// media types in the collection.
     public func matches<C : Collection>(
         any mediaTypes: C
-        ) -> Bool where C.Iterator.Element == MediaType {
+    ) -> Bool where C.Iterator.Element == MediaType {
         for mediaType in mediaTypes {
             if matches(other: mediaType) {
                 return true
@@ -156,7 +156,11 @@ public struct MediaType {
 extension MediaType : CustomStringConvertible {
     /// :nodoc:
     public var description: String {
-        var string = "\(type)/\(subtype)"
+        var string = String()
+        string.reserveCapacity(type.count + subtype.count + 1)
+        string += type
+        string += "/"
+        string += subtype
 
         if !parameters.isEmpty {
             string += parameters.reduce(";") { $0 + " \($1.0)=\($1.1)" }
@@ -191,6 +195,8 @@ public extension MediaType {
     public static let css = MediaType(type: "text", subtype: "css", parameters: ["charset": "utf-8"])
     /// URL encoded form media type.
     public static let urlEncodedForm = MediaType(type: "application", subtype: "x-www-form-urlencoded", parameters: ["charset": "utf-8"])
+    /// URL encoded form media type.
+    public static let multipart = MediaType(type: "multipart", subtype: "form-data")
     /// JSON media type.
     public static let json = MediaType(type: "application", subtype: "json", parameters: ["charset": "utf-8"])
     /// XML media type.
