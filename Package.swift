@@ -1,12 +1,6 @@
 // swift-tools-version:4.0
 import PackageDescription
 
-#if os(macOS)
-    let ssl: Target.Dependency = "AppleTLS"
-#else
-    let ssl: Target.Dependency = "OpenSSL"
-#endif
-
 let package = Package(
     name: "Engine",
     products: [
@@ -49,26 +43,18 @@ let package = Package(
         .target(name: "TCP", dependencies: ["Async", "COperatingSystem", "Debugging", "Service"]),
         .testTarget(name: "TCPTests", dependencies: ["TCP"]),
         .target(name: "TLS", dependencies: ["Async", "Bits", "Debugging", "TCP"]),
-        .testTarget(name: "TLSTests", dependencies: [ssl, "TLS"]),
         .target(name: "WebSocket", dependencies: ["Debugging", "TCP", "TLS", "HTTP", "Crypto"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )
 
 #if os(macOS)
-   package.targets.append(
-        .target(name: "AppleTLS", dependencies: ["Async", "Bits", "Debugging", "TLS"])
-    )
-
-    package.products.append(
-        .library(name: "AppleTLS", targets: ["AppleTLS"])
-    )
+    package.products.append(.library(name: "AppleTLS", targets: ["AppleTLS"]))
+    package.targets.append(.target(name: "AppleTLS", dependencies: ["Async", "Bits", "Debugging", "TLS"]))
+    package.targets.append(.testTarget(name: "TLSTests", dependencies: ["AppleTLS", "TLS"]))
 #else
-    package.dependencies.append(
-        .package(url: "https://github.com/vapor/copenssl.git", .exact("1.0.0-alpha.1"))
-    )
-    
-    package.targets.append(
-        .target(name: "OpenSSL", dependencies: ["Async", "COpenSSL", "Debugging", "TLS"])
-    )
+    package.products.append(.library(name: "OpenSSL", targets: ["OpenSSL"]))
+    package.dependencies.append(.package(url: "https://github.com/vapor/copenssl.git", .exact("1.0.0-alpha.1")))
+    package.targets.append(.target(name: "OpenSSL", dependencies: ["Async", "COpenSSL", "Debugging", "TLS"]))
+    package.targets.append(.testTarget(name: "TLSTests", dependencies: ["OpenSSL", "TLS"]))
 #endif
