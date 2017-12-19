@@ -2,7 +2,6 @@ import Async
 import Bits
 import HTTP
 import Foundation
-import JunkDrawer
 import TCP
 import XCTest
 
