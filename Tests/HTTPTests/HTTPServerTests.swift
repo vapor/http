@@ -6,7 +6,7 @@ import TCP
 import XCTest
 
 struct EchoWorker: HTTPResponder, Worker {
-    let eventLoop: EventLoop = try! KqueueEventLoop(label: "codes.vapor.http.test.server.worker")
+    let eventLoop: EventLoop = DispatchEventLoop(label: "codes.vapor.http.test.server.worker")
 
     func respond(to req: HTTPRequest, on Worker: Worker) throws -> Future<HTTPResponse> {
         /// simple echo server
@@ -16,7 +16,7 @@ struct EchoWorker: HTTPResponder, Worker {
 
 class HTTPServerTests: XCTestCase {
     func testTCP() throws {
-        let accept = try! KqueueEventLoop(label: "codes.vapor.http.test.server.accept")
+        let accept = DispatchEventLoop(label: "codes.vapor.http.test.server.accept")
         let workers = [
             EchoWorker(),
             EchoWorker(),
