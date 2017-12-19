@@ -3,7 +3,11 @@
 import XCTest
 @testable import HTTPTests
 @testable import TCPTests
-
+@testable import RoutingTests
+@testable import MultipartTests
+@testable import FormURLEncodedTests
+@testable import WebSocketTests
+@testable import TLSTests
 XCTMain([
 	// MARK: HTTP
     testCase(HTTPClientTests.allTests),
