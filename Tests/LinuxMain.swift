@@ -6,10 +6,23 @@ import XCTest
 
 XCTMain([
 	// MARK: HTTP
-    testCase(ParserTests.allTests),
+    testCase(HTTPClientTests.allTests),
+    testCase(HTTPServerTests.allTests),
+    testCase(HTTPSerializerTests.allTests),
+    testCase(HTTPSerializerStreamTests.allTests),
+    testCase(UtilityTests.allTests),
+
+    testCase(FormURLEncodedCodableTests.allTests),
+    testCase(FormURLEncodedParserTests.allTests),
+    testCase(FormURLEncodedSerializerTests.allTests),
 
     // MARK: TCP
+    testCase(MultipartTests.allTests),
+    testCase(RouterTests.allTests),
     testCase(SocketsTests.allTests),
+    testCase(SSLTests.allTests),
+    testCase(SubProtocolMatcherTests.allTests),
+
 ])
 
 #endif
