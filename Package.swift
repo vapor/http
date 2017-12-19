@@ -15,6 +15,7 @@ let package = Package(
         // .library(name: "HTTP2", targets: ["HTTP2"]),
         .library(name: "Multipart", targets: ["Multipart"]),
         .library(name: "Routing", targets: ["Routing"]),
+        .library(name: "ServerSecurity", targets: ["ServerSecurity"]),
         .library(name: "TCP", targets: ["TCP"]),
         .library(name: "TLS", targets: ["TLS"]),
         .library(name: "WebSocket", targets: ["WebSocket"]),
