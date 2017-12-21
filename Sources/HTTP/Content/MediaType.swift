@@ -29,20 +29,27 @@ import Foundation
 /// https://en.wikipedia.org/wiki/Media_type
 /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
 public struct MediaType {
-
+    
     /// The type represents the category and can be a discrete or a multipart type.
-    public let type: String
-
+    public var type: String {
+        return String(bytes: typeBytes, encoding: .utf8) ?? ""
+    }
+    
     /// The subtype is specific to each type.
-    public let subtype: String
-
+    public var subtype: String {
+        return String(bytes: subtypeBytes, encoding: .utf8) ?? ""
+    }
+    
+    var typeBytes: [UInt8]
+    var subtypeBytes: [UInt8]
+    
     /// Key/value pair parameters for this type.
     public let parameters: [String: String]
-
+    
     /// Create a new custom media type.
     public init(type: String, subtype: String, parameters: [String: String] = [:]) {
-        self.type = type
-        self.subtype = subtype
+        self.typeBytes = Array(type.utf8)
+        self.subtypeBytes = Array(subtype.utf8)
         self.parameters = parameters
     }
 
@@ -153,27 +160,10 @@ public struct MediaType {
     }
 }
 
-extension MediaType : CustomStringConvertible {
-    /// :nodoc:
-    public var description: String {
-        var string = String()
-        string.reserveCapacity(type.count + subtype.count + 1)
-        string += type
-        string += "/"
-        string += subtype
-
-        if !parameters.isEmpty {
-            string += parameters.reduce(";") { $0 + " \($1.0)=\($1.1)" }
-        }
-
-        return string
-    }
-}
-
 extension MediaType : Hashable {
     /// :nodoc:
     public var hashValue: Int {
-        return type.hashValue ^ subtype.hashValue
+        return typeBytes.djb2 ^ subtypeBytes.djb2
     }
 }
 
@@ -181,6 +171,26 @@ extension MediaType : Equatable {
     /// :nodoc:
     public static func == (lhs: MediaType, rhs: MediaType) -> Bool {
         return lhs.hashValue == rhs.hashValue
+    }
+}
+
+extension HTTPMessage {
+    /// The MediaType inside the `Message` `Headers`' "Content-Type"
+    public var mediaType: MediaType? {
+        get {
+            guard let contentType = headers[.contentType] else {
+                return nil
+            }
+            
+            return MediaType(string: contentType)
+        }
+        set {
+            if let newValue = newValue {
+                headers.appendValue(newValue.bytes(), forName: .contentType)
+            } else {
+                headers.removeValues(forName: .contentType)
+            }
+        }
     }
 }
 

@@ -19,7 +19,7 @@ internal final class CParseResults {
     // message components
     var version: HTTPVersion?
     var headersIndexes: [HTTPHeaders.Index]
-    var headersData = Data()
+    var headersData = [UInt8]()
     
     var currentSize: Int = 0
     var maxSize: Int
@@ -31,8 +31,8 @@ internal final class CParseResults {
         return HTTPBody(bodyData)
     }
     
-    var url = Data()
-
+    var url = [UInt8]()
+    
     /// Creates a new results object
     init(maxSize: Int) {
         self.isComplete = false

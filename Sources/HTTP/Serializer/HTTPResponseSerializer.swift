@@ -46,17 +46,17 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
         self.state = .firstLine
         var headers = message.headers
         
-        switch message.body.storage {
-        case .outputStream:
+        headers[.contentLength] = nil
+        
+        if case .outputStream = message.body.storage {
             headers[.transferEncoding] = "chunked"
-            headers[.contentLength] = nil
-        case .data, .dispatchData, .staticString, .string:
-            headers[.contentLength] = message.body.count.description
-            headers[.transferEncoding] = nil
+            self.headersData = headers.clean()
+        } else {
+            headers.appendValue(message.body.count.description, forName: .contentLength)
+            self.headersData = headers.clean()
         }
         
         self.firstLine = message.firstLine
-        self.headersData = headers.storage + crlf
 
         switch message.body.storage {
         case .data(let data):
@@ -80,6 +80,8 @@ fileprivate extension HTTPResponse {
     var firstLine: [UInt8] {
         // First line
         var http1Line = http1Prefix
+        http1Line.reserveCapacity(128)
+        
         http1Line.append(contentsOf: self.status.code.description.utf8)
         http1Line.append(.space)
         http1Line.append(contentsOf: self.status.messageBytes)

@@ -97,15 +97,13 @@ public struct HTTPBody: Codable {
     
     /// Create a new body from the UTF-8 representation of a string
     public init(string: String) {
-        let data = string.data(using: .utf8) ?? Data()
-        
-        self.storage = .data(data)
+        self.storage = .string(string)
     }
-
+    
     /// Output the body stream to the chunk encoding stream
     /// When supplied in this closure
     typealias OutputStreamClosure  = (HTTPChunkEncodingStream) -> (HTTPChunkEncodingStream)
-
+    
     /// A chunked body stream
     public init<S>(chunked stream: S) where S: Async.OutputStream, S.Output == ByteBuffer {
         self.storage = .outputStream(stream.stream)
@@ -122,7 +120,7 @@ public struct HTTPBody: Codable {
     public func withUnsafeBytes<Return>(_ run: ((BytesPointer) throws -> (Return))) throws -> Return {
         return try self.storage.withUnsafeBytes(run)
     }
-
+    
     /// Get body data.
     public var data: Data? {
         switch storage {
@@ -139,7 +137,7 @@ public struct HTTPBody: Codable {
             return nil
         }
     }
-        
+    
     /// The size of the data buffer
     public var count: Int {
         return self.storage.count
@@ -161,3 +159,4 @@ extension String: HTTPBodyRepresentable {
         return HTTPBody(string: self)
     }
 }
+

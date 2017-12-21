@@ -71,7 +71,7 @@ public final class HTTPRequestParser: CHTTPParser {
         }
         
         // parse the uri from the url bytes.
-        var uri = URIParser.shared.parse(data: results.url)
+        var uri = URI(buffer: results.url)
         
         // if there is no scheme, use http by default
         if uri.scheme?.isEmpty == true {
