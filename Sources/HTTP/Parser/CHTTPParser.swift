@@ -124,7 +124,7 @@ extension CHTTPParser {
 
             // append the url bytes to the results
             chunkPointer.withMemoryRebound(to: UInt8.self, capacity: length) { chunkPointer in
-                results.url.append(chunkPointer, count: length)
+                results.url.append(contentsOf: ByteBuffer(start: chunkPointer, count: length))
             }
             
             return 0

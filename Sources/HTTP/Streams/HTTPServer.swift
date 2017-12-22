@@ -3,6 +3,12 @@ import Bits
 import class Foundation.Thread
 import TCP
 
+#if os(Linux)
+    import OpenSSL
+#else
+    import AppleTLS
+#endif
+
 /// Converts an output stream of byte streams (meta stream) to
 /// a stream of HTTP clients. These incoming clients are then
 /// streamed to the responder supplied during `.start()`.
@@ -59,6 +65,12 @@ public protocol ByteStreamRepresentable {
     func source(on worker: Worker) -> SourceStream
     func sink(on worker: Worker) -> SinkStream
 }
+
+#if os(Linux)
+    extension OpenSSLSocket: ByteStreamRepresentable {}
+#else
+    extension AppleTLSSocket: ByteStreamRepresentable {}
+#endif
 
 extension TCPClient: ByteStreamRepresentable {
     /// See ByteStreamRepresentable.source
