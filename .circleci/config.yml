@@ -19,7 +19,7 @@ jobs:
       - run: swift build
       - run: swift test
 
-  linux-4:
+  linux:
     docker:
       - image: swift:4.0.3
     steps:
@@ -34,4 +34,4 @@ workflows:
     jobs:
       - macos
       - linux-3
-      - linux-4
+      - linux
