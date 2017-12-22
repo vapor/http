@@ -265,6 +265,9 @@ extension URI: RawRepresentable, CustomStringConvertible {
 import Foundation
 
 extension URI: ExpressibleByStringLiteral {
+    public init(_ string: String) {
+        self = URI(buffer: Array(string.utf8))
+    }
     public init(stringLiteral value: String) {
         self = URI(buffer: Array(value.utf8))
     }
