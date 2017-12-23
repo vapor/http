@@ -54,15 +54,12 @@ extension URI {
                 return
             }
             
-            var component = component
-            
             let url = uriParser()
             
             while let previousComponent = component.previousComponent {
-                if let (_, end) = previousComponent.extract(from: url) {
-                    self.buffer.insert(contentsOf: string.utf8, at: end)
-                    return
-                }
+                let (_, end) = previousComponent.extract(from: url)
+                
+                self.buffer.insert(contentsOf: string.utf8, at: end)
             }
             
             self.buffer.insert(contentsOf: string.utf8, at: 0)
@@ -87,6 +84,8 @@ extension URI {
                 _ = http_parser_parse_url(pointer, buffer.count, 0, &url)
             }
         }
+        
+        return url
     }
     
     func boundaries(of component: URIComponent) -> (Int, Int)? {
