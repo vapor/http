@@ -108,6 +108,8 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
                 case .outputStream(let closure):
                     state = .streamingBodyReady(closure)
                 }
+                
+                self.update()
             }
             update()
         case .streamingBodyReady(let closure):
@@ -120,6 +122,7 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
                 self.update()
             }.catch { error in
                 self.downstream?.error(error)
+                self.close()
             }.finally {
                 self.state = .ready
                 self.update()
