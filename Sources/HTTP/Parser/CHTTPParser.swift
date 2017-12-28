@@ -124,7 +124,7 @@ extension CHTTPParser {
 
             // append the url bytes to the results
             chunkPointer.withMemoryRebound(to: UInt8.self, capacity: length) { chunkPointer in
-                results.url.append(chunkPointer, count: length)
+                results.url.append(contentsOf: ByteBuffer(start: chunkPointer, count: length))
             }
             
             return 0
@@ -162,7 +162,7 @@ extension CHTTPParser {
             }
             
             chunkPointer.withMemoryRebound(to: UInt8.self, capacity: length) { chunkPointer in
-                results.headersData.append(chunkPointer, count: length)
+                results.headersData.append(contentsOf: ByteBuffer(start: chunkPointer, count: length))
             }
 
             return 0
@@ -201,14 +201,14 @@ extension CHTTPParser {
                     nameEndIndex: key.endIndex,
                     valueStartIndex: results.headersData.count,
                     valueEndIndex: results.headersData.count + length,
-                    endIndex: results.headersData.count + length + 2
+                    invalidated: false
                 )
                 
                 results.headerState = .value(index)
             }
             
             chunkPointer.withMemoryRebound(to: UInt8.self, capacity: length) { chunkPointer in
-                results.headersData.append(chunkPointer, count: length)
+                results.headersData.append(contentsOf: ByteBuffer(start: chunkPointer, count: length))
             }
 
             return 0

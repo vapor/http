@@ -102,7 +102,11 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
             }
             update()
         case .error(let error): downstream?.error(error)
-        case .close: downstream?.close()
+        case .close:
+            for response in self.responseQueue {
+                response.fail(HTTPError(identifier: "client-closed", reason: "The remote connection was closed (or failed to connect)"))
+            }
+            downstream?.close()
         }
     }
 }

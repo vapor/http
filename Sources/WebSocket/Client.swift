@@ -7,6 +7,12 @@ import TCP
 import HTTP
 import TLS
 
+#if os(Linux)
+    import OpenSSL
+#else
+    import AppleTLS
+#endif
+    
 extension WebSocket {
     /// Create a new WebSocket client in a future.
     ///
@@ -28,37 +34,29 @@ extension WebSocket {
             throw WebSocketError(.invalidURI)
         }
         
+        // Create a new socket to the host
+        let socket = try TCPSocket()
+        
+        // The TCP Client that will be used by both HTTP and the WebSocket for communication
+        let client = try TCPClient(socket: socket)
+        
         if uri.scheme == "wss" {
             // FIXME: 
-            fatalError()
-//            let client = try container.make(TLSSocket.self, for: WebSocket.self)
-//
-//            DispatchSocketStream(client)
-//
-//            parser = client.output(to: HTTPResponseParser(maxSize: 50_000))
-//
-//            try client.connect(hostname: hostname, port: port).do {
-//                client.finally {
-//                    promise.fail(WebSocketError(.cannotConnect))
-//                }
-//
-//                serializer.stream(to: client)
-//
-//                WebSocket.complete(to: promise, with: parser, id: id) {
-//
-//                }
-//            }.catch(promise.fail)
-//
-//            serializer.onInput(request)
-//
-//            return WebSocket(socket: client, serverSide: false)
-        } else {
-            // Create a new socket to the host
-            let socket = try TCPSocket()
+            #if os(Linux)
+                let tlsClient = try OpenSSLClient(tcp: client, using: TLSClientSettings(peerDomainName: hostname))
+            #else
+                let tlsClient = try AppleTLSClient(tcp: client, using: TLSClientSettings(peerDomainName: hostname))
+            #endif
             
-            // The TCP Client that will be used by both HTTP and the WebSocket for communication
-            let client = try TCPClient(socket: socket)
-
+            try tlsClient.connect(hostname: hostname, port: port)
+            let socket = tlsClient.socket
+            
+            let source = socket.source(on: container.eventLoop)
+            let sink = socket.sink(on: container.eventLoop)
+            let websocket = WebSocket(source: .init(source), sink: .init(sink), server: false)
+            try client.connect(hostname: hostname, port: port)
+            return websocket
+        } else {
             let source = socket.source(on: container.eventLoop)
             let sink = socket.sink(on: container.eventLoop)
             let websocket = WebSocket(source: .init(source), sink: .init(sink), server: false)

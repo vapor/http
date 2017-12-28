@@ -1,4 +1,5 @@
 import Dispatch
+import Bits
 /*
  https://tools.ietf.org/html/rfc3986#section-3
  
@@ -17,18 +18,71 @@ import Dispatch
  [Learn More →](https://docs.vapor.codes/3.0/http/uri/)
  */
 public struct URI: Codable {
+    /// A lazy buffer
+    var buffer: [UInt8]
+    
     // https://tools.ietf.org/html/rfc3986#section-3.1
-    public var scheme: String?
+    public var scheme: String? {
+        get {
+            return self.parse(.scheme)
+        }
+        set {
+            update(.scheme, to: newValue?.description)
+        }
+    }
     
     // https://tools.ietf.org/html/rfc3986#section-3.2.1
-    public var userInfo: UserInfo?
+    public var userInfo: UserInfo? {
+        get {
+            guard let userInfo = self.parse(.userinfo)?.split(separator: ":") else {
+                return nil
+            }
+            
+            if userInfo.count == 2 {
+                return UserInfo(
+                    username: String(userInfo[0]),
+                    info: String(userInfo[1])
+                )
+            } else {
+                return UserInfo(
+                    username: String(userInfo[0])
+                )
+            }
+        }
+        set {
+            update(.hostname, to: newValue?.description)
+        }
+    }
+    
     // https://tools.ietf.org/html/rfc3986#section-3.2.2
-    public var hostname: String?
+    public var hostname: String? {
+        get {
+            return self.parse(.hostname)
+        }
+        set {
+            update(.hostname, to: newValue?.description)
+        }
+    }
+    
     // https://tools.ietf.org/html/rfc3986#section-3.2.3
-    public var port: Port?
+    public var port: Port? {
+        get {
+            guard let port = parse(.port) else { return nil }
+            return Port(port)
+        }
+        set {
+            update(.port, to: newValue?.description)
+        }
+    }
     
     // https://tools.ietf.org/html/rfc3986#section-3.3
-    public private(set) var pathBytes: [UInt8]
+    public var pathBytes: ArraySlice<UInt8> {
+        guard let (start, end) = self.boundaries(of: .path) else {
+            return []
+        }
+        
+        return self.buffer[start..<end]
+    }
     
     // https://tools.ietf.org/html/rfc3986#section-3.3
     public var path: String {
@@ -36,7 +90,7 @@ public struct URI: Codable {
             return String(bytes: pathBytes, encoding: .utf8) ?? ""
         }
         set {
-            self.pathBytes = [UInt8](newValue.utf8)
+            update(.path, to: newValue)
         }
     }
     
@@ -46,50 +100,8 @@ public struct URI: Codable {
     // https://tools.ietf.org/html/rfc3986#section-3.5
     public var fragment: String?
     
-    /// Creates a new URI
-    public init(
-        scheme: String? = nil,
-        userInfo: UserInfo? = nil,
-        hostname: String? = nil,
-        port: Port? = nil,
-        path: String = "/",
-        query: String? = nil,
-        fragment: String? = nil
-    ) {
-        let path = path.first == "/" ? path : "/" + path
-        
-        self.init(
-            scheme: scheme,
-            userInfo: userInfo,
-            hostname: hostname,
-            port: port,
-            pathBytes: Array(path.utf8),
-            query: query,
-            fragment: fragment
-        )
-    }
-    
-    internal init(
-        scheme: String? = nil,
-        userInfo: UserInfo? = nil,
-        hostname: String? = nil,
-        port: Port? = nil,
-        pathBytes: [UInt8],
-        query: String? = nil,
-        fragment: String? = nil
-    ) {
-        self.scheme = scheme?.lowercased()
-        self.userInfo = userInfo
-        self.hostname = hostname?.lowercased()
-        if let scheme = scheme {
-            self.port = port ?? URI.defaultPorts[scheme]
-        } else {
-            self.port = nil
-        }
-        
-        self.pathBytes = pathBytes
-        self.query = query
-        self.fragment = fragment
+    internal init(buffer: [UInt8]) {
+        self.buffer = buffer
     }
     
     /// Decodes URI from a String
@@ -103,6 +115,61 @@ public struct URI: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.rawValue)
+    }
+}
+
+extension URI {
+    /// Creates a new URI
+    public init(
+        scheme: String? = nil,
+        userInfo: UserInfo? = nil,
+        hostname: String? = nil,
+        port: Port? = nil,
+        path: String = "/",
+        query: String? = nil,
+        fragment: String? = nil
+        ) {
+        var buffer = [UInt8]()
+        buffer.reserveCapacity(256)
+        
+        if let scheme = scheme {
+            buffer.append(contentsOf: scheme.utf8)
+        }
+        
+        if let userInfo = userInfo {
+            buffer.append(contentsOf: userInfo.description.utf8)
+            buffer.append(.at)
+        }
+        
+        if let hostname = hostname {
+            buffer.append(contentsOf: hostname.utf8)
+        }
+        
+        if let port = port {
+            if hostname != nil {
+                buffer.append(.colon)
+            }
+            
+            buffer.append(contentsOf: port.description.utf8)
+        }
+        
+        if path.first != "/" {
+            buffer.append(.forwardSlash)
+        }
+        
+        buffer.append(contentsOf: path.utf8)
+        
+        if let query = query {
+            buffer.append(.questionMark)
+            buffer.append(contentsOf: query.utf8)
+        }
+        
+        if let fragment = fragment {
+            buffer.append(.numberSign)
+            buffer.append(contentsOf: fragment.utf8)
+        }
+        
+        self.init(buffer: buffer)
     }
 }
 
@@ -198,8 +265,11 @@ extension URI: RawRepresentable, CustomStringConvertible {
 import Foundation
 
 extension URI: ExpressibleByStringLiteral {
+    public init(_ string: String) {
+        self = URI(buffer: Array(string.utf8))
+    }
     public init(stringLiteral value: String) {
-        self = URIParser().parse(data: Data(value.utf8))
+        self = URI(buffer: Array(value.utf8))
     }
 }
 

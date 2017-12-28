@@ -14,19 +14,11 @@ public final class HTTPClient<SourceStream, SinkStream> where
     SinkStream: InputStream,
     SinkStream.Input == ByteBuffer
 {
-    /// Serializes requests into byte buffers.
-    private let serializerStream: HTTPSerializerStream<HTTPRequestSerializer>
-
-    /// Parses byte buffers into responses.
-    private let parserStream: HTTPParserStream<HTTPResponseParser>
-
     /// Inverse stream, takes in responses and outputs requests
     private let clientStream: HTTPClientStream<SourceStream, SinkStream>
 
     /// Creates a new Client wrapped around a `TCP.Client`
     public init(source: SourceStream, sink: SinkStream, maxResponseSize: Int = 10_000_000) {
-        self.serializerStream = HTTPRequestSerializer().stream()
-        self.parserStream = HTTPResponseParser(maxSize: maxResponseSize).stream()
         self.clientStream = HTTPClientStream<SourceStream, SinkStream>(
             source: source,
             sink: sink,

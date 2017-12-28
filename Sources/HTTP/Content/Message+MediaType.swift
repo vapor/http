@@ -1,17 +1,33 @@
 // MARK: Message
 
-extension HTTPMessage {
-    /// The MediaType inside the `Message` `Headers`' "Content-Type"
-    public var mediaType: MediaType? {
-        get {
-            guard let contentType = headers[.contentType] else {
-                return nil
+extension MediaType : CustomStringConvertible {
+    func bytes() -> [UInt8] {
+        var bytes = [UInt8]()
+        bytes.reserveCapacity(type.count + subtype.count + 128)
+        
+        bytes.append(contentsOf: typeBytes)
+        bytes.append(.forwardSlash)
+        bytes.append(contentsOf: subtypeBytes)
+        
+        var firstParameter = true
+        
+        for parameter in parameters {
+            bytes += Array(parameter.key.utf8)
+            bytes.append(.equals)
+            bytes += Array(parameter.value.utf8)
+            
+            if !firstParameter {
+                bytes.append(.semicolon)
             }
             
-            return MediaType(string: contentType)
+            firstParameter = false
         }
-        set {
-            headers[.contentType] = newValue?.description
-        }
+        
+        return bytes
+    }
+    
+    /// :nodoc:
+    public var description: String {
+        return String(bytes: bytes(), encoding: .utf8) ?? ""
     }
 }

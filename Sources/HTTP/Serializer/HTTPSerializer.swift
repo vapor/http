@@ -8,12 +8,14 @@ internal enum HTTPSerializerState {
     case noMessage
     case firstLine
     case headers
+    case crlf
     case staticBody
     
     mutating func next() {
         switch self {
         case .firstLine: self = .headers
-        case .headers: self = .staticBody
+        case .headers: self = .crlf
+        case .crlf: self = .staticBody
         default: self = .noMessage
         }
     }
@@ -94,11 +96,18 @@ extension _HTTPSerializer {
                 headersData.withByteBuffer { headerBuffer in
                     _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), headerBuffer.baseAddress!.advanced(by: offset), writeSize)
                 }
+            case .crlf:
+                bufferSize = 2
+                writeSize = min(outputSize, bufferSize - offset)
+                
+                crlf.withUnsafeBufferPointer { crlfBuffer in
+                    _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), crlfBuffer.baseAddress!.advanced(by: offset), writeSize)
+                }
             case .staticBody:
                 if let bodyData = self.staticBodyData {
                     bufferSize = bodyData.count
                     writeSize = min(outputSize, bufferSize - offset)
-
+                    
                     bodyData.withByteBuffer { bodyBuffer in
                         _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), bodyBuffer.baseAddress!.advanced(by: offset), writeSize)
                     }
@@ -122,3 +131,6 @@ extension _HTTPSerializer {
         return writeOffset
     }
 }
+
+fileprivate let crlf: [UInt8] = [.carriageReturn, .newLine]
+

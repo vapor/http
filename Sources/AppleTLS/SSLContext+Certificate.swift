@@ -36,4 +36,11 @@ extension SSLContext {
             throw AppleTLSError.secError(status)
         }
     }
+    
+    func setDomainName(to domain: String) throws {
+        let status = SSLSetPeerDomainName(self, domain, domain.utf8.count)
+        guard status == 0 else {
+            throw AppleTLSError.secError(status)
+        }
+    }
 }
