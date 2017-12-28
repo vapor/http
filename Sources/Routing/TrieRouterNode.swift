@@ -26,6 +26,7 @@ enum TrieRouterNodeKind {
     case root
     case parameter([UInt8])
     case constant([UInt8])
+    case anything
 }
 
 extension TrieRouterNode {
@@ -50,6 +51,18 @@ extension TrieRouterNode {
             }
         }
 
+        return nil
+    }
+    
+    func findAnyNode() -> TrieRouterNode? {
+        for child in children {
+            guard case .anything = child.kind else {
+                continue
+            }
+            
+            return child
+        }
+        
         return nil
     }
 

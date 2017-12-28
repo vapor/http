@@ -60,6 +60,18 @@ public final class TrieRouter<Output> {
                         current = new
                     }
                 }
+            case .anything:
+                if let node = current.findAnyNode() {
+                    // there can only ever be one parameter node at
+                    // a given node in the tree, so always overwrite the closure
+                    current = node
+                } else {
+                    // if no child node matches this constant,
+                    // we must create a new one
+                    let new = TrieRouterNode<Output>(kind: .anything)
+                    current.children.append(new)
+                    current = new
+                }
             }
         }
 
@@ -104,11 +116,21 @@ public final class TrieRouter<Output> {
     public func route(path: [PathComponent.Parameter], parameters: ParameterContainer) -> Output? {
         // always start at the root node
         var current: TrieRouterNode = root
+        var fallbackNode: TrieRouterNode<Output>?
 
         // traverse the constant path supplied
-        for component in path {
+        nextComponent: for component in path {
+            if let anyNode = current.findAnyNode() {
+                fallbackNode = anyNode
+            }
+            
             guard walk(node: &current, component: component, parameters: parameters) else {
-                return fallback
+                if let fallbackNode = fallbackNode {
+                    current = fallbackNode
+                    continue nextComponent
+                } else {
+                    return fallback
+                }
             }
         }
         

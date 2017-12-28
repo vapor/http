@@ -75,6 +75,9 @@ public enum PathComponent: ExpressibleByStringLiteral {
 
     /// A dynamic parameter component.
     case parameter(Parameter)
+    
+    /// Any set of components
+    case anything
 }
 
 /// Capable of being represented by a path component.
