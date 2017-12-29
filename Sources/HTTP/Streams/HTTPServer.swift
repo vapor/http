@@ -3,11 +3,11 @@ import Bits
 import class Foundation.Thread
 import TCP
 
-#if os(Linux)
-    import OpenSSL
-#else
-    import AppleTLS
-#endif
+//#if os(Linux)
+//    import OpenSSL
+//#else
+//    import AppleTLS
+//#endif
 
 /// Converts an output stream of byte streams (meta stream) to
 /// a stream of HTTP clients. These incoming clients are then
@@ -66,11 +66,11 @@ public protocol ByteStreamRepresentable {
     func sink(on worker: Worker) -> SinkStream
 }
 
-#if os(Linux)
-    extension OpenSSLSocket: ByteStreamRepresentable {}
-#else
-    extension AppleTLSSocket: ByteStreamRepresentable {}
-#endif
+//#if os(Linux)
+//    extension OpenSSLSocket: ByteStreamRepresentable {}
+//#else
+//    extension AppleTLSSocket: ByteStreamRepresentable {}
+//#endif
 
 extension TCPClient: ByteStreamRepresentable {
     /// See ByteStreamRepresentable.source

@@ -14,9 +14,9 @@ extension Cookies {
     }
     
     /// Seriaizes the `Cookies` for a `Response`
-    public func serialize(into request: inout HTTPResponse)  {
+    public func serialize(into response: inout HTTPResponse)  {
         guard !cookies.isEmpty else {
-            request.headers[.cookie] = nil
+            response.headers[.setCookie] = nil
             return
         }
         
@@ -24,7 +24,7 @@ extension Cookies {
             return cookie.serialized()
         }.joined(separator: "\r\nSet-Cookie: ")
         
-        request.headers[.cookie] = cookie
+        response.headers[.setCookie] = cookie
     }
 }
 

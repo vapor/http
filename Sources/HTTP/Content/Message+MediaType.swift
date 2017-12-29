@@ -9,18 +9,12 @@ extension MediaType : CustomStringConvertible {
         bytes.append(.forwardSlash)
         bytes.append(contentsOf: subtypeBytes)
         
-        var firstParameter = true
-        
         for parameter in parameters {
+            bytes.append(.semicolon)
+            bytes.append(.space)
             bytes += Array(parameter.key.utf8)
             bytes.append(.equals)
             bytes += Array(parameter.value.utf8)
-            
-            if !firstParameter {
-                bytes.append(.semicolon)
-            }
-            
-            firstParameter = false
         }
         
         return bytes
