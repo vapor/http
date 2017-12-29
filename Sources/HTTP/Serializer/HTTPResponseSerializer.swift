@@ -29,6 +29,7 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
             case .noMessage:
                 self.headersData = nil
                 self.firstLine = nil
+                self.staticBodyData = nil
             default: break
             }
         }
@@ -48,7 +49,7 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
         
         headers[.contentLength] = nil
         
-        if case .outputStream = message.body.storage {
+        if case .chunkedOutputStream = message.body.storage {
             headers[.transferEncoding] = "chunked"
             self.headersData = headers.clean()
         } else {
@@ -71,7 +72,8 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
             self.staticBodyData = Data(buffer)
         case .string(let string):
             self.staticBodyData = Data(string.utf8)
-        case .outputStream: break
+        case .chunkedOutputStream: break
+        case .binaryOutputStream(_): break
         }
     }
 }

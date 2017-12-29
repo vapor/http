@@ -96,40 +96,59 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
             /// the serializer indicates it is done
             let serialized = try! serializer.serialize(into: writeBuffer)
             let frame = ByteBuffer(start: writeBuffer.baseAddress, count: serialized)
-            downstream?.next(frame)
-            remainingByteBuffersRequested -= 1
+            
             /// the serializer indicates it is done w/ this message
             if serializer.ready {
                 /// handle the body separately
                 switch body.storage {
                 case .dispatchData, .data, .staticString, .string:
                     state = .ready
-                case .outputStream(let closure):
-                    state = .streamingBodyReady(closure)
+                case .chunkedOutputStream(let closure):
+                    state = .chunkedStreamingBodyReady(closure)
+                case .binaryOutputStream(_, let stream):
+                    state = .streamingBody(stream)
                 }
-                
-                self.update()
             }
+            
+            downstream?.next(frame)
+            remainingByteBuffersRequested -= 1
             update()
-        case .streamingBodyReady(let closure):
+        case .chunkedStreamingBodyReady(let closure):
             let stream = closure(HTTPChunkEncodingStream())
             
             stream.drain { req in
                 self.state = .bodyStreaming(req)
-                }.output { buffer in
-                    self.remainingByteBuffersRequested -= 1
-                    self.downstream?.next(buffer)
-                    self.update()
-                }.catch { error in
-                    self.downstream?.error(error)
-                    self.close()
-                }.finally {
-                    // TODO: Trailer headers
-                    self.state = .ready
-                    self.update()
+            }.output { buffer in
+                self.remainingByteBuffersRequested -= 1
+                self.downstream?.next(buffer)
+                self.update()
+            }.catch { error in
+                self.downstream?.error(error)
+                self.close()
+            }.finally {
+                // TODO: Trailer headers
+                self.state = .ready
+                self.update()
             }
             
             stream.request()
+        case .streamingBody(let stream):
+            stream.drain { req in
+                self.state = .bodyStreaming(req)
+            }.output { buffer in
+                self.remainingByteBuffersRequested -= 1
+                self.downstream?.next(buffer)
+                self.update()
+            }.catch { error in
+                self.downstream?.error(error)
+                self.close()
+            }.finally {
+                // TODO: Trailer headers
+                self.state = .ready
+                self.update()
+            }
+            
+            self.update()
         case .bodyStreaming(let req):
             req.request()
         }
@@ -146,7 +165,8 @@ enum HTTPSerializerStreamState<Message> {
     case awaitingMessage
     case messageReady(Message)
     case messageStreaming(HTTPBody)
-    case streamingBodyReady(HTTPBody.OutputStreamClosure)
+    case chunkedStreamingBodyReady(HTTPBody.OutputChunkedStreamClosure)
+    case streamingBody(AnyOutputStream<ByteBuffer>)
     case bodyStreaming(ConnectionContext)
 }
 

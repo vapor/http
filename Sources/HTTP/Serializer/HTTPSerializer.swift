@@ -123,8 +123,8 @@ extension _HTTPSerializer {
                 offset += writeSize
                 return writeOffset
             } else {
-                state.next()
                 offset = 0
+                state.next()
             }
         } while !self.ready
         

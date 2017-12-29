@@ -42,7 +42,7 @@ public final class HTTPRequestSerializer: _HTTPSerializer {
         
         headers[.contentLength] = nil
         
-        if case .outputStream = message.body.storage {
+        if case .chunkedOutputStream = message.body.storage {
             headers[.transferEncoding] = "chunked"
             self.headersData = headers.clean()
         } else {
@@ -65,7 +65,8 @@ public final class HTTPRequestSerializer: _HTTPSerializer {
             self.staticBodyData = Data(buffer)
         case .string(let string):
             self.staticBodyData = Data(string.utf8)
-        case .outputStream: break
+        case .chunkedOutputStream: break
+        case .binaryOutputStream(_): break
         }
     }
 
