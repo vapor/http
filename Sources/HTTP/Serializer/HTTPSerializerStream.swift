@@ -9,28 +9,28 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
 {
     /// See InputStream.Input
     public typealias Input = Serializer.Message
-
+    
     /// See OutputStream.Output
     public typealias Output = ByteBuffer
-
+    
     /// The underlying serializer
     private let serializer: Serializer
-
+    
     /// Use this to request more messages from upstream.
     private var upstream: ConnectionContext?
-
+    
     /// Amount of requested output remaining
     private var remainingByteBuffersRequested: UInt
-
+    
     /// The serializer's state
     private var state: HTTPSerializerStreamState<Serializer.Message>
-
+    
     /// A buffer used to store writes in temporarily
     private let writeBuffer: MutableByteBuffer
-
+    
     /// Downstream byte buffer input stream
     private var downstream: AnyInputStream<Output>?
-
+    
     /// Creates a new serializer stream. Use `HTTPSerializer.stream()` to call this method.
     internal init(serializer: Serializer, bufferSize: Int) {
         self.serializer = serializer
@@ -39,20 +39,19 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
         let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
         writeBuffer = MutableByteBuffer(start: pointer, count: bufferSize)
     }
-
+    
     /// See ConnectionContext.connection
     public func connection(_ event: ConnectionEvent) {
         switch event {
         case .request(let count):
-            let isSuspended = remainingByteBuffersRequested == 0
             remainingByteBuffersRequested += count
-            if isSuspended { update() }
+            update()
         case .cancel:
             /// FIXME: cancel
             break
         }
     }
-
+    
     /// See InputStream.input
     public func input(_ event: InputEvent<Serializer.Message>) {
         switch event {
@@ -68,20 +67,20 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
             update()
         }
     }
-
+    
     /// See OutputStream.onOutput
     public func output<I>(to inputStream: I) where I: Async.InputStream, Output == I.Input {
         downstream = AnyInputStream(inputStream)
         inputStream.connect(to: self)
     }
-
-
+    
+    
     /// Update based on state.
     private func update() {
         guard remainingByteBuffersRequested > 0 else {
             return
         }
-
+        
         switch state {
         case .ready:
             // we are ready for a message, request it
@@ -113,29 +112,29 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
             }
             update()
         case .streamingBodyReady(let closure):
-            var upstream: ConnectionContext?
+            let stream = closure(HTTPChunkEncodingStream())
             
-            closure(HTTPChunkEncodingStream()).drain { req in
+            stream.drain { req in
                 self.state = .bodyStreaming(req)
-                upstream = req
-            }.output { buffer in
-                self.remainingByteBuffersRequested -= 1
-                self.downstream?.next(buffer)
-                self.update()
-            }.catch { error in
-                self.downstream?.error(error)
-                self.close()
-            }.finally {
-                self.state = .ready
-                self.update()
+                }.output { buffer in
+                    self.remainingByteBuffersRequested -= 1
+                    self.downstream?.next(buffer)
+                    self.update()
+                }.catch { error in
+                    self.downstream?.error(error)
+                    self.close()
+                }.finally {
+                    // TODO: Trailer headers
+                    self.state = .ready
+                    self.update()
             }
             
-            upstream?.request()
+            stream.request()
         case .bodyStreaming(let req):
             req.request()
         }
     }
-
+    
     deinit {
         writeBuffer.baseAddress!.deinitialize(count: writeBuffer.count)
         writeBuffer.baseAddress!.deallocate(capacity: writeBuffer.count)
@@ -157,3 +156,4 @@ extension HTTPSerializer {
         return HTTPSerializerStream(serializer: self, bufferSize: bufferSize)
     }
 }
+
