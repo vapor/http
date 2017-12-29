@@ -118,9 +118,9 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
             closure(HTTPChunkEncodingStream()).drain { req in
                 self.state = .bodyStreaming(req)
                 upstream = req
-            }.output { _, buffer in
+            }.output { buffer in
                 self.remainingByteBuffersRequested -= 1
-                self.downstream!.next(buffer)
+                self.downstream?.next(buffer)
                 self.update()
             }.catch { error in
                 self.downstream?.error(error)

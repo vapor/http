@@ -58,7 +58,7 @@ public class WebSocket {
                 
             parser.drain { upstream in
                 self.parser.request(count: .max)
-            }.output { upstream, frame in
+            }.output { frame in
                 frame.unmask()
                 
                 switch frame.opCode {
@@ -99,7 +99,7 @@ public class WebSocket {
             
             HTTPSerializer.output(to: sink)
             
-            let drain = DrainStream<HTTPResponse>(onInput: { _, response in
+            let drain = DrainStream<HTTPResponse>(onInput: { response in
                 try WebSocket.upgrade(response: response, id: id)
                 
                 bindFrameStreams()
@@ -137,7 +137,7 @@ public class WebSocket {
     public func onData(_ run: @escaping (WebSocket, Data) throws -> ()) -> DrainStream<ByteBuffer> {
         return binaryOutputStream.drain { upstream in
             upstream.request(count: .max)
-        }.output { _, bytes in
+        }.output { bytes in
             let data = Data(buffer: bytes)
             try run(self, data)
         }
@@ -148,7 +148,7 @@ public class WebSocket {
     public func onByteBuffer(_ run: @escaping (WebSocket, ByteBuffer) throws -> ()) -> DrainStream<ByteBuffer> {
         return binaryOutputStream.drain { upstream in
             upstream.request(count: .max)
-        }.output { _, bytes in
+        }.output { bytes in
             try run(self, bytes)
         }
     }
@@ -157,7 +157,7 @@ public class WebSocket {
     public func onString(_ run: @escaping (WebSocket, String) throws -> ()) -> DrainStream<String> {
         return stringOutputStream.drain { upstream in
             upstream.request(count: .max)
-        }.output { _, string in
+        }.output { string in
             try run(self, string)
         }
     }
