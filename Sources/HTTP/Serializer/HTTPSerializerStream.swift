@@ -113,10 +113,12 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
             }
             update()
         case .streamingBodyReady(let closure):
+            var upstream: ConnectionContext?
+            
             closure(HTTPChunkEncodingStream()).drain { req in
                 self.state = .bodyStreaming(req)
-                self.update()
-            }.output { buffer in
+                upstream = req
+            }.output { _, buffer in
                 self.remainingByteBuffersRequested -= 1
                 self.downstream!.next(buffer)
                 self.update()
@@ -127,6 +129,8 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
                 self.state = .ready
                 self.update()
             }
+            
+            upstream?.request()
         case .bodyStreaming(let req):
             req.request()
         }
