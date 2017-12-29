@@ -96,8 +96,7 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
             /// the serializer indicates it is done
             let serialized = try! serializer.serialize(into: writeBuffer)
             let frame = ByteBuffer(start: writeBuffer.baseAddress, count: serialized)
-            downstream?.next(frame)
-            remainingByteBuffersRequested -= 1
+            
             /// the serializer indicates it is done w/ this message
             if serializer.ready {
                 /// handle the body separately
@@ -109,9 +108,10 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
                 case .binaryOutputStream(_, let stream):
                     state = .streamingBody(stream)
                 }
-                
-                self.update()
             }
+            
+            downstream?.next(frame)
+            remainingByteBuffersRequested -= 1
             update()
         case .chunkedStreamingBodyReady(let closure):
             let stream = closure(HTTPChunkEncodingStream())
@@ -132,14 +132,25 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
             }
             
             stream.request()
+        case .streamingBody(let stream):
+            stream.drain { req in
+                self.state = .bodyStreaming(req)
+            }.output { buffer in
+                self.remainingByteBuffersRequested -= 1
+                self.downstream?.next(buffer)
+                self.update()
+            }.catch { error in
+                self.downstream?.error(error)
+                self.close()
+            }.finally {
+                // TODO: Trailer headers
+                self.state = .ready
+                self.update()
+            }
+            
+            self.update()
         case .bodyStreaming(let req):
             req.request()
-        case .streamingBody(let stream):
-            // No way to throw an error, either
-            guard let downstream = self.downstream else { return }
-            
-            stream.output(to: downstream)
-            state = .ready
         }
     }
     

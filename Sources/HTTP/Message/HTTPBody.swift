@@ -116,8 +116,8 @@ public struct HTTPBody: Codable {
     }
     
     /// A chunked body stream
-    public init<S>(stream: S) where S: Async.OutputStream, S.Output == ByteBuffer {
-        self.storage = .chunkedOutputStream(stream.stream)
+    public init(size: Int, stream: AnyOutputStream<ByteBuffer>) {
+        self.storage = .binaryOutputStream(size: size, stream: stream)
     }
     
     /// Decodes a body from from a Decoder

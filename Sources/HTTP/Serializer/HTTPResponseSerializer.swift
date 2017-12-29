@@ -29,6 +29,7 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
             case .noMessage:
                 self.headersData = nil
                 self.firstLine = nil
+                self.staticBodyData = nil
             default: break
             }
         }

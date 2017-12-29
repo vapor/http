@@ -79,12 +79,9 @@ extension TCPSocket {
             
         if res != 0 {
             switch errno {
-            case EINTR:
+            case EINTR: break   // TODO: handle
                 // the connection will now be made async regardless of socket type
                 // http://www.madore.org/~david/computers/connect-intr.html
-                if !isNonBlocking {
-                    print("EINTR on a blocking socket")
-                }
             case EINPROGRESS:
                 if !isNonBlocking {
                     fatalError("EINPROGRESS on a blocking socket")
