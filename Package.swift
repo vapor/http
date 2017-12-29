@@ -43,7 +43,6 @@ let package = Package(
         .target(name: "TCP", dependencies: ["Async", "COperatingSystem", "Debugging", "Service"]),
         .testTarget(name: "TCPTests", dependencies: ["TCP"]),
         .target(name: "TLS", dependencies: ["Async", "Bits", "Debugging", "TCP"]),
-        .target(name: "WebSocket", dependencies: ["Debugging", "TCP", "TLS", "HTTP", "Crypto"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )
@@ -52,9 +51,13 @@ let package = Package(
     package.products.append(.library(name: "AppleTLS", targets: ["AppleTLS"]))
     package.targets.append(.target(name: "AppleTLS", dependencies: ["Async", "Bits", "Debugging", "TLS"]))
     package.targets.append(.testTarget(name: "TLSTests", dependencies: ["AppleTLS", "TLS"]))
+    
+    package.targets.append(.target(name: "WebSocket", dependencies: ["Debugging", "TCP", "AppleTLS", "HTTP", "Crypto"]))
 #else
     package.products.append(.library(name: "OpenSSL", targets: ["OpenSSL"]))
     package.dependencies.append(.package(url: "https://github.com/vapor/copenssl.git", .exact("1.0.0-alpha.1")))
     package.targets.append(.target(name: "OpenSSL", dependencies: ["Async", "COpenSSL", "Debugging", "TLS"]))
     package.targets.append(.testTarget(name: "TLSTests", dependencies: ["OpenSSL", "TLS"]))
+    
+    package.targets.append(.target(name: "WebSocket", dependencies: ["Debugging", "TCP", "OpenSSL", "HTTP", "Crypto"]))
 #endif

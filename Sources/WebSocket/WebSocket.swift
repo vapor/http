@@ -57,13 +57,9 @@ public class WebSocket {
             source.output(to: parser)
                 
             parser.drain { upstream in
-                self.parser.request()
+                self.parser.request(count: .max)
             }.output { frame in
                 frame.unmask()
-                
-                defer {
-                    self.parser.request()
-                }
                 
                 switch frame.opCode {
                 case .close:
