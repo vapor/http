@@ -43,7 +43,6 @@ let package = Package(
         .target(name: "TCP", dependencies: ["Async", "COperatingSystem", "Debugging", "Service"]),
         .testTarget(name: "TCPTests", dependencies: ["TCP"]),
         .target(name: "TLS", dependencies: ["Async", "Bits", "Debugging", "TCP"]),
-        .target(name: "WebSocket", dependencies: ["Debugging", "TCP", "TLS", "HTTP", "Crypto"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )
