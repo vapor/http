@@ -104,34 +104,42 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
                 switch body.storage {
                 case .dispatchData, .data, .staticString, .string:
                     state = .ready
-                case .outputStream(let closure):
-                    state = .streamingBodyReady(closure)
+                case .chunkedOutputStream(let closure):
+                    state = .chunkedStreamingBodyReady(closure)
+                case .binaryOutputStream(_, let stream):
+                    state = .streamingBody(stream)
                 }
                 
                 self.update()
             }
             update()
-        case .streamingBodyReady(let closure):
+        case .chunkedStreamingBodyReady(let closure):
             let stream = closure(HTTPChunkEncodingStream())
             
             stream.drain { req in
                 self.state = .bodyStreaming(req)
-                }.output { buffer in
-                    self.remainingByteBuffersRequested -= 1
-                    self.downstream?.next(buffer)
-                    self.update()
-                }.catch { error in
-                    self.downstream?.error(error)
-                    self.close()
-                }.finally {
-                    // TODO: Trailer headers
-                    self.state = .ready
-                    self.update()
+            }.output { buffer in
+                self.remainingByteBuffersRequested -= 1
+                self.downstream?.next(buffer)
+                self.update()
+            }.catch { error in
+                self.downstream?.error(error)
+                self.close()
+            }.finally {
+                // TODO: Trailer headers
+                self.state = .ready
+                self.update()
             }
             
             stream.request()
         case .bodyStreaming(let req):
             req.request()
+        case .streamingBody(let stream):
+            // No way to throw an error, either
+            guard let downstream = self.downstream else { return }
+            
+            stream.output(to: downstream)
+            state = .ready
         }
     }
     
@@ -146,7 +154,8 @@ enum HTTPSerializerStreamState<Message> {
     case awaitingMessage
     case messageReady(Message)
     case messageStreaming(HTTPBody)
-    case streamingBodyReady(HTTPBody.OutputStreamClosure)
+    case chunkedStreamingBodyReady(HTTPBody.OutputChunkedStreamClosure)
+    case streamingBody(AnyOutputStream<ByteBuffer>)
     case bodyStreaming(ConnectionContext)
 }
 
