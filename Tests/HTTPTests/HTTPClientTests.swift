@@ -69,9 +69,21 @@ class HTTPClientTests: XCTestCase {
         let res = try futureRes.blockingAwait(timeout: .seconds(5))
         XCTAssertEqual(res.status.code, 137)
     }
+    
+    func testURI() {
+        var uri: URI = "http://localhost:8081/test?q=1&b=4#test"
+        
+        XCTAssertEqual(uri.scheme, "http")
+        XCTAssertEqual(uri.hostname, "localhost")
+        XCTAssertEqual(uri.port, 8081)
+        XCTAssertEqual(uri.path, "/test")
+        XCTAssertEqual(uri.query, "q=1&b=4")
+        XCTAssertEqual(uri.fragment, "test")
+    }
 
     static let allTests = [
         ("testTCP", testTCP),
         ("testStream", testStream),
+        ("testURI", testURI),
     ]
 }
