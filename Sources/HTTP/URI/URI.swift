@@ -95,10 +95,24 @@ public struct URI: Codable {
     }
     
     // https://tools.ietf.org/html/rfc3986#section-3.4
-    public var query: String?
+    public var query: String? {
+        get {
+            return parse(.query)
+        }
+        set {
+            update(.query, to: newValue?.description)
+        }
+    }
     
     // https://tools.ietf.org/html/rfc3986#section-3.5
-    public var fragment: String?
+    public var fragment: String? {
+        get {
+            return parse(.fragment)
+        }
+        set {
+            update(.fragment, to: newValue?.description)
+        }
+    }
     
     internal init(buffer: [UInt8]) {
         self.buffer = buffer
