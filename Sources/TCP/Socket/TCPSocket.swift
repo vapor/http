@@ -5,6 +5,24 @@ import Foundation
 
 /// Any TCP socket. It doesn't specify being a server or client yet.
 public struct TCPSocket: Socket {
+    /// A reference wrapper to enforce close-once semantics without setting the
+    /// descriptor to -1 (which would require making almost everything mutating).
+    private class CloseOnceBehavior {
+        var latch = false
+        
+        init() {}
+        
+        func latchedClose(descriptor: Int32) {
+            if !latch {
+                _ = COperatingSystem.close(descriptor)
+                latch = true
+            }
+        }
+    }
+
+    /// One-off socket close semantic
+    private var closeOnceBehavior = CloseOnceBehavior()
+    
     /// The file descriptor related to this socket
     public let descriptor: Int32
 
@@ -134,11 +152,14 @@ public struct TCPSocket: Socket {
             case EINTR:
                 // try again
                 return try write(from: buffer)
-            case ECONNRESET, EBADF:
+            case ECONNRESET:
                 // closed by peer, need to close this side.
                 // Since this is not an error, no need to throw unless the close
                 // itself throws an error.
                 self.close()
+                fallthrough
+            case EBADF:
+                // closed by peer and already invalid, don't close again
                 return .wrote(count: 0)
             case EAGAIN, EWOULDBLOCK:
                 return .wouldBlock
@@ -149,9 +170,13 @@ public struct TCPSocket: Socket {
 
         return .wrote(count: sent)
     }
-
+    
     /// Closes the socket
     public func close() {
-        _ = COperatingSystem.close(descriptor)
+        // Using this reference wrapper to enforce only ever calling close()
+        // once per TCPSocket prevents accidental closing of descriptors which
+        // may be allocated to new objects between the first close() and
+        // subsequent calls.
+        closeOnceBehavior.latchedClose(descriptor: descriptor)
     }
 }
