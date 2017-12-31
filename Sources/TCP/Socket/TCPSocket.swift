@@ -5,26 +5,17 @@ import Foundation
 
 /// Any TCP socket. It doesn't specify being a server or client yet.
 public struct TCPSocket: Socket {
-    /// A reference wrapper to enforce close-once semantics without setting the
-    /// descriptor to -1 (which would require making almost everything mutating).
-    private final class CloseOnceBehavior {
-        var latch = false
-        
-        init() {}
-        
-        func latchedClose(descriptor: Int32) {
-            if !latch {
-                _ = COperatingSystem.close(descriptor)
-                latch = true
-            }
-        }
+    /// A reference wrapper to allow mutating the descriptor's value in an
+    /// otherwise immutable struct. (Think C++'s `mutable`. Sigh.)
+    private final class MutableDescriptor {
+        var value: Int32 = -1
     }
 
-    /// One-off socket close semantic
-    private var closeOnceBehavior = CloseOnceBehavior()
+    /// Underlying mutable storage for the descriptor
+    private let _descriptor = MutableDescriptor()
     
     /// The file descriptor related to this socket
-    public let descriptor: Int32
+    public var descriptor: Int32 { return _descriptor.value }
 
     /// The remote's address
     public var address: TCPAddress?
@@ -42,7 +33,7 @@ public struct TCPSocket: Socket {
         shouldReuseAddress: Bool,
         address: TCPAddress?
     ) {
-        self.descriptor = established
+        self._descriptor.value = established
         self.isNonBlocking = isNonBlocking
         self.shouldReuseAddress = shouldReuseAddress
         self.address = address
@@ -132,7 +123,7 @@ public struct TCPSocket: Socket {
             // attempt a close, no failure possible because throw indicates already closed
             // if already closed, no issue.
             // do NOT propogate as error
-            _ = close()
+            self.close()
             return .read(count: 0)
         }
 
@@ -157,9 +148,12 @@ public struct TCPSocket: Socket {
                 // Since this is not an error, no need to throw unless the close
                 // itself throws an error.
                 self.close()
-                fallthrough
+                return .wrote(count: 0)
             case EBADF:
-                // closed by peer and already invalid, don't close again
+                // closed by peer and already invalid, update the descriptor so
+                // we don't keep trying to reuse a stale value
+                _descriptor.value = -1
+                // - TODO: This should really throw, are there any actual cases where EBADF replaces ECONNRESET?
                 return .wrote(count: 0)
             case EAGAIN, EWOULDBLOCK:
                 return .wouldBlock
@@ -173,10 +167,10 @@ public struct TCPSocket: Socket {
     
     /// Closes the socket
     public func close() {
-        // Using this reference wrapper to enforce only ever calling close()
-        // once per TCPSocket prevents accidental closing of descriptors which
-        // may be allocated to new objects between the first close() and
-        // subsequent calls.
-        closeOnceBehavior.latchedClose(descriptor: descriptor)
+        // Don't waste a syscall on a known-invalid descriptor
+        if descriptor != -1 {
+            let _ = COperatingSystem.close(descriptor)
+            _descriptor.value = -1
+        }
     }
 }
