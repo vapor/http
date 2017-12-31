@@ -52,6 +52,7 @@ public struct TCPSocket: Socket {
         if isNonBlocking {
             // Set the socket to async/non blocking I/O
             guard fcntl(sockfd, F_SETFL, O_NONBLOCK) == 0 else {
+                let _ = COperatingSystem.close(sockfd)
                 throw TCPError.posix(errno, identifier: "setNonBlocking")
             }
         }
@@ -59,15 +60,12 @@ public struct TCPSocket: Socket {
         if shouldReuseAddress {
             var yes = 1
             let intSize = socklen_t(MemoryLayout<Int>.size)
-            guard setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &yes, intSize) == 0 else {
-                throw TCPError.posix(errno, identifier: "setReuseAddress")
-            }
-        }
 
-        if shouldReuseAddress {
-            var yes = 1
-            let intSize = socklen_t(MemoryLayout<Int>.size)
-            guard setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, intSize) == 0 else {
+            guard
+                setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &yes, intSize) == 0,
+                setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, intSize) == 0
+            else {
+                let _ = COperatingSystem.close(sockfd)
                 throw TCPError.posix(errno, identifier: "setReuseAddress")
             }
         }
@@ -173,4 +171,10 @@ public struct TCPSocket: Socket {
             _descriptor.value = -1
         }
     }
+    
+    // - FIXME: Does `TCPSocket` always own descriptors given it?
+    //deinit {
+    //    close()
+    //}
 }
+
