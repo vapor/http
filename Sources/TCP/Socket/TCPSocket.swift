@@ -7,7 +7,7 @@ import Foundation
 public struct TCPSocket: Socket {
     /// A reference wrapper to enforce close-once semantics without setting the
     /// descriptor to -1 (which would require making almost everything mutating).
-    private class CloseOnceBehavior {
+    private final class CloseOnceBehavior {
         var latch = false
         
         init() {}
