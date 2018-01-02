@@ -18,10 +18,11 @@ public final class HTTPClient<SourceStream, SinkStream> where
     private let clientStream: HTTPClientStream<SourceStream, SinkStream>
 
     /// Creates a new Client wrapped around a `TCP.Client`
-    public init(source: SourceStream, sink: SinkStream, maxResponseSize: Int = 10_000_000) {
+    public init(source: SourceStream, sink: SinkStream, worker: Worker, maxResponseSize: Int = 10_000_000) {
         self.clientStream = HTTPClientStream<SourceStream, SinkStream>(
             source: source,
             sink: sink,
+            worker: worker,
             maxResponseSize: maxResponseSize
         )
     }

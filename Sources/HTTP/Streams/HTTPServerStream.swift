@@ -61,7 +61,7 @@ internal final class HTTPServerStream<AcceptStream, Worker>: InputStream
                     defer {
                         if let onUpgrade = response.onUpgrade {
                             do {
-                                try onUpgrade.closure(.init(source), .init(sink))
+                                try onUpgrade.closure(.init(source), .init(sink), worker)
                             } catch {
                                 self.onError?(error)
                             }
