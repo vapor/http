@@ -31,7 +31,7 @@ public final class HTTPClient<SourceStream, SinkStream> where
         let promise = Promise(HTTPResponse.self)
         clientStream.requestQueue.insert(request, at: 0)
         clientStream.responseQueue.insert(promise, at: 0)
-        clientStream.upstream?.request()
+        clientStream.request()
         clientStream.update()
         return promise.future
     }

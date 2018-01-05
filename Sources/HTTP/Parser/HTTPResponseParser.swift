@@ -4,7 +4,10 @@ import Bits
 import Foundation
 
 /// Parses requests from a readable stream.
-public final class HTTPResponseParser: CHTTPParser {
+ public final class HTTPResponseParser: CHTTPParser {
+    public typealias Input = ByteBuffer
+    public typealias Output = Message
+    
     /// See HTTPParser.Message
     public typealias Message = HTTPResponse
 
@@ -18,6 +21,10 @@ public final class HTTPResponseParser: CHTTPParser {
     var parser: http_parser
     var settings: http_parser_settings
     var state:  CHTTPParserState
+    var upstream: ConnectionContext?
+    var downstream: AnyInputStream<HTTPResponse>?
+    var downstreamDemand: UInt
+    public var messageBodyCompleted: Bool
 
     /// The maxiumum possible body size
     /// larger sizes will result in an error
@@ -29,6 +36,8 @@ public final class HTTPResponseParser: CHTTPParser {
         self.settings = http_parser_settings()
         self.state = .ready
         self.maxSize = maxSize
+        self.downstreamDemand = 0
+        self.messageBodyCompleted = false
         reset()
     }
 

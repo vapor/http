@@ -6,6 +6,8 @@ import Foundation
 
 /// Parses requests from a readable stream.
 public final class HTTPRequestParser: CHTTPParser {
+    public typealias Output = Message
+    
     /// See CParser.Message
     public typealias Message = HTTPRequest
 
@@ -22,7 +24,11 @@ public final class HTTPRequestParser: CHTTPParser {
     /// larger sizes will result in an error
     internal let maxSize: Int
 
+    var upstream: ConnectionContext?
+    var downstream: AnyInputStream<HTTPRequest>?
+    var downstreamDemand: UInt
     public var message: Message?
+    public var messageBodyCompleted: Bool
 
     /// Creates a new Request parser.
     public init(maxSize: Int) {
@@ -30,6 +36,8 @@ public final class HTTPRequestParser: CHTTPParser {
         self.settings = http_parser_settings()
         self.state = .ready
         self.maxSize = maxSize
+        self.downstreamDemand = 0
+        self.messageBodyCompleted = false
         reset()
     }
 

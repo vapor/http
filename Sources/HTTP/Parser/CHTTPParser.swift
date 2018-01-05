@@ -18,6 +18,11 @@ internal protocol CHTTPParser: HTTPParser {
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
     var maxSize: Int { get }
+    
+    var upstream: ConnectionContext? { get set }
+    var downstreamDemand: UInt { get set }
+    var downstream: AnyInputStream<Message>? { get set }
+    
     var state: CHTTPParserState { get set }
     func makeMessage(from results: CParseResults) throws -> Message
 }
@@ -31,6 +36,42 @@ enum CHTTPParserState {
 /// MARK: HTTPParser conformance
 
 extension CHTTPParser {
+    public func connection(_ event: ConnectionEvent) {
+        switch event {
+        case .cancel:
+            self.close()
+        case .request(let amount):
+            self.downstreamDemand += amount
+        }
+    }
+    
+    public func input(_ event: InputEvent<ByteBuffer>) {
+        switch event {
+        case .connect(let upstream):
+            self.upstream = upstream
+        case .error(let error):
+            self.downstream?.error(error)
+            self.close()
+        case .next(let next):
+            do {
+                let parsed = try self.parse(from: next)
+                
+                guard parsed == next.count else {
+                    throw HTTPError(identifier: "too-much-data", reason: "HTTP received more data than could be parsed in a single HTTP message (according to spec)")
+                }
+            } catch {
+                self.downstream?.error(error)
+            }
+        case .close:
+            self.downstream?.close()
+        }
+    }
+    
+    public func output<S>(to inputStream: S) where S : Async.InputStream, Output == S.Input {
+        self.downstream = AnyInputStream(inputStream)
+        inputStream.connect(to: self)
+    }
+    
     /// Parses a Request from the stream.
     public func parse(from buffer: ByteBuffer) throws -> Int {
         guard let results = getResults() else {
@@ -62,7 +103,6 @@ extension CHTTPParser {
     public func reset() {
         reset(Self.parserType)
     }
-
 }
 
 /// MARK: CHTTP integration
@@ -300,7 +340,7 @@ extension UnsafeBufferPointer where Element == Byte {
     }
 }
 
-fileprivate let headerSeparator = Data([.colon, .space])
+fileprivate let headerSeparator: [UInt8] = [.colon, .space]
 
 extension Data {
     fileprivate var cPointer: UnsafePointer<CChar> {

@@ -72,6 +72,7 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
         case .request(let count):
             let isSuspended = remainingDownstreamRequests == 0
             remainingDownstreamRequests += count
+            upstream?.request(count: count)
             if isSuspended { update() }
         case .cancel:
             /// FIXME: better cancel support
