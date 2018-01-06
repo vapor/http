@@ -40,10 +40,11 @@ public class WebSocket {
     init(
         source: AnyOutputStream<ByteBuffer>,
         sink: AnyInputStream<ByteBuffer>,
+        worker: Worker,
         server: Bool = true
     ) {
         self.backlog = []
-        self.parser = source.stream(to: FrameParser())
+        self.parser = source.stream(to: FrameParser(worker: worker))
         self.serializer = FrameSerializer(masking: !server)
         self.source = source
         self.sink = sink
@@ -57,13 +58,19 @@ public class WebSocket {
             source.output(to: parser)
                 
             parser.drain { upstream in
-                self.parser.request(count: .max)
+                self.parser.request()
             }.output { frame in
+                defer {
+                    self.parser.request()
+                }
+                
                 frame.unmask()
                 
                 switch frame.opCode {
                 case .close:
                     sink.close()
+                    self.stringOutputStream.close()
+                    self.binaryOutputStream.close()
                 case .text:
                     let data = Data(buffer: frame.payload)
                     
