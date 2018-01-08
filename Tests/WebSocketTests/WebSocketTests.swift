@@ -15,23 +15,19 @@ final class WebSocketTests : XCTestCase {
     let serverLoop = DispatchEventLoop(label: "codes.vapor.test.server")
     
     func testTextStream() throws {
-        let connected = Promise<Void>()
         let quit = Promise<Void>()
         
         let serverSocket = try TCPSocket(isNonBlocking: true)
         let server = try TCPServer(socket: serverSocket)
-        
         
         let container = BasicContainer(config: Config(), environment: .development, services: Services(), on: clientLoop)
         
         final class WebSocketResponder: HTTPResponder, Worker {
             var eventLoop: EventLoop
             var serverSide: WebSocket?
-            let connected: Promise<Void>
             
-            init(worker: Worker, completing connected: Promise<Void>) {
+            init(worker: Worker) {
                 self.eventLoop = worker.eventLoop
-                self.connected = connected
             }
             
             func respond(to req: HTTPRequest, on worker: Worker) throws -> Future<HTTPResponse> {
@@ -43,13 +39,12 @@ final class WebSocketTests : XCTestCase {
                     self.serverSide = websocket
                 }
                 
-                connected.complete()
                 return Future(response)
             }
         }
         
         let responders = [
-            WebSocketResponder(worker: worker, completing: connected),
+            WebSocketResponder(worker: worker),
         ]
         
         let webserver = HTTPServer(acceptStream: server.stream(on: serverLoop), workers: responders)
@@ -72,8 +67,6 @@ final class WebSocketTests : XCTestCase {
         }
         
         let websocket = try WebSocket.connect(to: "ws://localhost:8090", using: container)
-        
-        try connected.future.blockingAwait(timeout: .seconds(5))
         
         var messages = ["hello", "world", "!"]
         
