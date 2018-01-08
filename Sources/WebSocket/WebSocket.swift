@@ -27,6 +27,9 @@ public class WebSocket {
     
     var errorCallback: (Error) -> () = { _ in }
     
+    /// Keeps track of sent pings that await a response
+    var pings = [Data: Promise<Void>]()
+    
     /// The underlying communication layer
     let source: AnyOutputStream<ByteBuffer>
     let sink: AnyInputStream<ByteBuffer>
@@ -119,7 +122,9 @@ public class WebSocket {
             case .ping:
                 let frame = Frame(op: .pong, payload: frame.payload, mask: self.nextMask)
                 self.serializer.next(frame)
-            case .pong: break
+            case .pong:
+                let data = Data(frame.payload)
+                self.pings[data]?.complete()
             }
         }.catch(onError: self.errorCallback).finally {
             self.sink.close()
@@ -151,6 +156,20 @@ public class WebSocket {
         serializer.next(frame)
     }
     
+    @discardableResult
+    public func ping() -> Signal {
+        let promise = Promise<Void>()
+        let data = OSRandom().data(count: 32)
+        
+        self.pings[data] = promise
+        
+        data.withByteBuffer { bytes in
+            let frame = Frame(op: .ping, payload: bytes, mask: nextMask)
+            serializer.next(frame)
+        }
+        
+        return promise.future
+    }
     
     @discardableResult
     public func onData(_ run: @escaping (WebSocket, Data) throws -> ()) -> DrainStream<ByteBuffer> {
