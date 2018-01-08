@@ -13,7 +13,7 @@ class HTTPClientTests: XCTestCase {
         let eventLoop = DispatchEventLoop(label: "codes.vapor.http.test.client")
         let tcpSource = tcpSocket.source(on: eventLoop)
         let tcpSink = tcpSocket.sink(on: eventLoop)
-        let client = HTTPClient(source: tcpSource, sink: tcpSink)
+        let client = HTTPClient(source: tcpSource, sink: tcpSink, worker: eventLoop)
 
         let req = HTTPRequest(method: .get, uri: "/html", headers: [.host: "httpbin.org"])
         let res = client.send(req)
@@ -34,6 +34,7 @@ class HTTPClientTests: XCTestCase {
         var dataRequest: ConnectionContext?
         var output: [Data] = []
         var parserStream: AnyInputStream<ByteBuffer>?
+        let eventLoop = DispatchEventLoop(label: "codes.vapor.http.test.client")
 
         let byteStream = ClosureStream<ByteBuffer>.init(
             onInput: { event in
@@ -51,7 +52,7 @@ class HTTPClientTests: XCTestCase {
                 print(event)
             }
         )
-        let client = HTTPClient(source: byteStream, sink: byteStream)
+        let client = HTTPClient(source: byteStream, sink: byteStream, worker: eventLoop)
         let req = HTTPRequest(method: .get, uri: "/html", headers: [.host: "httpbin.org"])
         let futureRes = client.send(req)
 

@@ -27,6 +27,8 @@ XCTMain([
     testCase(SSLTests.allTests),
     testCase(SubProtocolMatcherTests.allTests),
 
+    testCase(WebSocketTests.allTests),)
+    testCase(SubProtocolMatcherTests.allTests),)
 ])
 
 #endif

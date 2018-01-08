@@ -55,7 +55,7 @@ internal final class HTTPServerStream<AcceptStream, Worker>: InputStream
             let sink = input.sink(on: worker)
             source
                 .stream(to: parserStream)
-                .stream(to: worker.stream(on: worker))
+                .stream(to: worker.stream(on: worker).stream())
                 .map(to: HTTPResponse.self) { response in
                     /// map the responder adding http upgrade support
                     defer {
