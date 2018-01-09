@@ -6,7 +6,7 @@ struct ArrayKey {
 }
 
 extension ArrayKey: CodingKey {
-    var stringValue: String { fatalError() }
+    var stringValue: String { return String(index) }
     init?(stringValue: String) { fatalError() }
     var intValue: Int? { return index }
     init?(intValue: Int) { fatalError() }

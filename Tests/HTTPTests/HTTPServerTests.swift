@@ -1,5 +1,6 @@
 import Async
 import Bits
+import Dispatch
 import HTTP
 import Foundation
 import TCP
@@ -36,18 +37,11 @@ class HTTPServerTests: XCTestCase {
         )
         server.onError = { XCTFail("\($0)") }
 
-        if #available(OSX 10.12, *) {
-            Thread.detachNewThread {
-                accept.run()
-            }
-            for worker in workers {
-                Thread.detachNewThread {
-                    worker.eventLoop.run()
-                }
-            }
-        } else {
-            fatalError()
-        }
+        let acceptItem = DispatchWorkItem(block: accept.run)
+        let workerItems = workers.map { DispatchWorkItem(block: $0.eventLoop.run) }
+
+        DispatchQueue.global().async(execute: acceptItem)
+        workerItems.forEach { DispatchQueue.global().async(execute: $0) }
 
         // beyblades let 'er rip
         try tcpServer.start(hostname: "localhost", port: 8123, backlog: 128)
@@ -71,6 +65,9 @@ class HTTPServerTests: XCTestCase {
 
 
         waitForExpectations(timeout: 5)
+
+        acceptItem.cancel()
+        workerItems.forEach { $0.cancel() }
         tcpServer.stop()
     }
 
