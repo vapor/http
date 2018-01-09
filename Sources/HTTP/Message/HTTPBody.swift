@@ -133,22 +133,35 @@ public struct HTTPBody: Codable {
     }
     
     /// Get body data.
-    public var data: Data? {
+    public func makeData(max: Int) -> Future<Data> {
         switch storage {
         case .data(let data):
-            return data
+            return Future(data)
         case .dispatchData(let dispatch):
-            return Data(dispatch)
-        case .staticString(_):
-            return nil
+            return Future(Data(dispatch))
+        case .staticString(let string):
+            return Future(Data(bytes: string.utf8Start, count: string.utf8CodeUnitCount))
         case .string(let string):
-            return Data(string.utf8)
+            return Future(Data(string.utf8))
         case .chunkedOutputStream(_):
-            /// FIXME: collect output stream into data?
-            return nil
-        case .binaryOutputStream(_):
-            /// FIXME: collect output stream into data?
-            return nil
+            return Future(error: HTTPError(identifier: "chunked-output-stream", reason: "Cannot convert a chunked output stream to a `Data` buffer"))
+        case .binaryOutputStream(let size, let stream):
+            let promise = Promise<Data>()
+            var data = Data()
+            
+            if let size = size {
+                data.reserveCapacity(size)
+            }
+            
+            stream.drain { upstream in
+                upstream.request(count: .max)
+            }.output { buffer in
+                data.append(Data(buffer: buffer))
+            }.catch(onError: promise.fail).finally {
+                promise.complete(data)
+            }
+            
+            return promise.future
         }
     }
     

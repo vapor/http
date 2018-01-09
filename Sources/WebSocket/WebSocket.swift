@@ -18,10 +18,10 @@ public class WebSocket {
     var backlog: [Frame]
     
     /// Serializes data into frames
-    let serializer: FrameSerializer
+    let serializer: TranslatingStreamWrapper<FrameSerializer>
     
     /// Parses frames from data
-    let parser: FrameParser
+    let parser: TranslatingStreamWrapper<FrameParser>
     
     let server: Bool
     
@@ -44,7 +44,7 @@ public class WebSocket {
         server: Bool = true
     ) {
         self.backlog = []
-        self.parser = source.stream(to: FrameParser(worker: worker))
+        self.parser = source.stream(to: FrameParser(worker: worker).stream(on: worker))
         self.serializer = FrameSerializer(masking: !server)
         self.source = source
         self.sink = sink

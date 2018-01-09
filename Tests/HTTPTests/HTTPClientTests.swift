@@ -21,7 +21,7 @@ class HTTPClientTests: XCTestCase {
 
         let exp = expectation(description: "response")
         res.do { res in
-            XCTAssertTrue(String(data: res.body.data!, encoding: .utf8)!.contains("Moby-Dick"))
+            try XCTAssertTrue(String(data: res.body.makeData(max: 100_000), encoding: .utf8)!.contains("Moby-Dick"))
             XCTAssertEqual(res.body.count, 3741)
             exp.fulfill()
         }.catch { error in
