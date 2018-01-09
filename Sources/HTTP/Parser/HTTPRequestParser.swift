@@ -97,7 +97,7 @@ public final class HTTPRequestParser: CHTTPParser {
             uri: uri,
             version: version,
             headers: headers,
-            body: results.body
+            body: results.body ?? HTTPBody()
         )
     }
 }

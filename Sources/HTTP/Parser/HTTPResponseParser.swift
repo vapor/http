@@ -33,7 +33,7 @@ import Foundation
     public var maxBodySize: Int?
     
     /// Creates a new Request parser.
-    public init(maxSize: Int) {
+    public init() {
         self.maxMessageSize = 10_000_000
         self.maxHeaderSize = 100_000
         self.maxBodySize = 10_000_000
@@ -64,7 +64,7 @@ import Foundation
             version: version,
             status: status,
             headers: headers,
-            body: results.body
+            body: results.body ?? HTTPBody()
         )
     }
 }

@@ -19,7 +19,7 @@ class ParserTests : XCTestCase {
         hello
         """.data(using: .utf8) ?? Data()
 
-        let parser = HTTPRequestParser(maxSize: 100_000)
+        let parser = HTTPRequestParser()
         parser.request()
         XCTAssertNil(parser.message)
         data.withByteBuffer(parser.next)
@@ -58,7 +58,7 @@ class ParserTests : XCTestCase {
         <vapor>
         """.data(using: .utf8) ?? Data()
         
-        let parser = HTTPResponseParser(maxSize: 100_000)
+        let parser = HTTPResponseParser()
         parser.request()
         XCTAssertNil(parser.message)
         data.withByteBuffer(parser.next)
@@ -98,7 +98,9 @@ class ParserTests : XCTestCase {
         """.data(using: .utf8) ?? Data()
         
         var error = false
-        let parser = HTTPRequestParser(maxSize: data.count - 2)
+        let parser = HTTPRequestParser()
+        parser.maxMessageSize = data.count - 2
+        
         XCTAssertNil(parser.message)
         parser.drain { upstream in
             upstream.request()
@@ -126,7 +128,8 @@ class ParserTests : XCTestCase {
         """.data(using: .utf8) ?? Data()
         
         var error = false
-        let parser = HTTPResponseParser(maxSize: data.count - 2)
+        let parser = HTTPResponseParser()
+        parser.maxMessageSize = data.count - 2
         XCTAssertNil(parser.message)
         parser.drain { upstream in
             upstream.request()

@@ -19,7 +19,7 @@ public struct HTTPBody: Codable {
         case dispatchData(DispatchData)
         case string(String)
         case chunkedOutputStream(OutputChunkedStreamClosure)
-        case binaryOutputStream(size: Int, stream: AnyOutputStream<ByteBuffer>)
+        case binaryOutputStream(size: Int?, stream: AnyOutputStream<ByteBuffer>)
         
         func encode(to encoder: Encoder) throws {
             switch self {
@@ -55,7 +55,7 @@ public struct HTTPBody: Codable {
                 /// FIXME: convert to data then return count?
                 return 0
             case .binaryOutputStream(let size, _):
-                return size
+                return size ?? 0
             }
         }
         
@@ -116,7 +116,7 @@ public struct HTTPBody: Codable {
     }
     
     /// A chunked body stream
-    public init(size: Int, stream: AnyOutputStream<ByteBuffer>) {
+    public init(size: Int?, stream: AnyOutputStream<ByteBuffer>) {
         self.storage = .binaryOutputStream(size: size, stream: stream)
     }
     

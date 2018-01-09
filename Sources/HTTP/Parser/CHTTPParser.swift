@@ -287,7 +287,7 @@ extension CHTTPParser {
                         }
                     }
                     
-                    results.bodyData.reserveCapacity(length)
+                    results.body = HTTPBody(size: length, stream: AnyOutputStream(results.bodyStream))
                 }
                 
                 results.headers = headers
@@ -315,7 +315,7 @@ extension CHTTPParser {
             }
 
             return chunk.withMemoryRebound(to: UInt8.self, capacity: length) { pointer -> Int32 in
-                results.bodyData.append(pointer, count: length)
+                results.bodyStream.push(ByteBuffer(start: pointer, count: length))
                 
                 return 0
             }

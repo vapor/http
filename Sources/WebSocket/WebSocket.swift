@@ -102,7 +102,11 @@ public class WebSocket {
             // Creates an HTTP client for the handshake
             let HTTPSerializer = HTTPRequestSerializer().stream()
             
-            let HTTPParser = HTTPResponseParser(maxSize: 50_000).stream()
+            let HTTPParser = HTTPResponseParser()
+            HTTPParser.maxBodySize = 0
+            HTTPParser.maxMessageSize = 50_000
+                
+            let HTTPParserStream = HTTPParser.stream()
             
             HTTPSerializer.output(to: sink)
             
