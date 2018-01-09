@@ -16,7 +16,7 @@ let package = Package(
     ],
     dependencies: [
         // Swift Promises, Futures, and Streams.
-        .package(url: "https://github.com/vapor/async.git", .branch("beta")),
+        .package(url: "https://github.com/vapor/async.git", .branch("protocol-helpers")),
 
         // Core extensions, type-aliases, and functions that facilitate common tasks.
         .package(url: "https://github.com/vapor/core.git", .branch("beta")),

@@ -4,6 +4,14 @@ import COperatingSystem
 import Bits
 
 final class FrameParser: ByteParserStream {
+    func parseBytes(from buffer: ByteBuffer, partial: FrameParser.PartialFrame?) throws -> ByteParserResult<FrameParser> {
+        if let partial = partial {
+            return try self.continueParsing(partial, from: buffer)
+        } else {
+            return try self.startParsing(from: buffer)
+        }
+    }
+    
     enum PartialFrame {
         case header([UInt8])
         case body(header: Frame.Header, totalFilled: Int)
@@ -37,7 +45,7 @@ final class FrameParser: ByteParserStream {
         self.bufferBuilder = MutableBytesPointer.allocate(capacity: 15 + self.maximumPayloadSize)
     }
     
-    func startParsing(from buffer: ByteBuffer) throws -> ByteParserResult<PartialFrame, Frame> {
+    func startParsing(from buffer: ByteBuffer) throws -> ByteParserResult<FrameParser> {
         let pointer = buffer.baseAddress!
         
         guard let header = try FrameParser.parseFrameHeader(from: pointer, length: buffer.count) else {
@@ -70,7 +78,7 @@ final class FrameParser: ByteParserStream {
         return Frame(op: header.op, payload: buffer, mask: header.mask, isMasked: true, isFinal: header.final)
     }
     
-    func continueParsing(_ partial: PartialFrame, from buffer: ByteBuffer) throws -> ByteParserResult<PartialFrame, Frame> {
+    func continueParsing(_ partial: PartialFrame, from buffer: ByteBuffer) throws -> ByteParserResult<FrameParser> {
         switch partial {
         case .header(var headerBytes):
             let previouslyConsumed = headerBytes.count
