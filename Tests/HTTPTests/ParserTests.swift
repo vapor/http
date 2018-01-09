@@ -6,7 +6,7 @@ import XCTest
 
 class ParserTests : XCTestCase {
     func testRequest() throws {
-        let data = """
+        var data = """
         POST /cgi-bin/process.cgi HTTP/1.1\r
         User-Agent: Mozilla/4.0 (compatible; MSIE5.01; Windows NT)\r
         Host: www.tutorialspoint.com\r
@@ -39,14 +39,12 @@ class ParserTests : XCTestCase {
         XCTAssertEqual(req.headers[.acceptEncoding], "gzip, deflate")
         XCTAssertEqual(req.headers[.connection], "Keep-Alive")
         
-        try req.body.withUnsafeBytes { (pointer: BytesPointer) in
-            let buffer = ByteBuffer(start: pointer, count: req.body.count)
-            XCTAssertEqual(String(bytes: buffer, encoding: .utf8), "hello")
-        }
+        data = try req.body.makeData(max: 100_000).blockingAwait()
+        XCTAssertEqual(String(data: data, encoding: .utf8), "hello")
     }
 
     func testResponse() throws {
-        let data = """
+        var data = """
         HTTP/1.1 200 OK\r
         Date: Mon, 27 Jul 2009 12:28:53 GMT\r
         Server: Apache/2.2.14 (Win32)\r
@@ -77,10 +75,8 @@ class ParserTests : XCTestCase {
         XCTAssertEqual(res.mediaType, .html)
         XCTAssertEqual(res.headers[.connection], "Closed")
         
-        try res.body.withUnsafeBytes { (pointer: BytesPointer) in
-            let buffer = ByteBuffer(start: pointer, count: res.body.count)
-            XCTAssertEqual(String(bytes: buffer, encoding: .utf8), "<vapor>")
-        }
+        data = try res.body.makeData(max: 100_000).blockingAwait()
+        XCTAssertEqual(String(data: data, encoding: .utf8), "<vapor>")
     }
     
     func testTooLargeRequest() throws {

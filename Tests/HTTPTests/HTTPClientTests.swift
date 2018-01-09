@@ -20,9 +20,11 @@ class HTTPClientTests: XCTestCase {
         let res = client.send(req)
 
         let exp = expectation(description: "response")
-        res.do { res in
-            try XCTAssertTrue(String(data: res.body.makeData(max: 100_000), encoding: .utf8)!.contains("Moby-Dick"))
-            XCTAssertEqual(res.body.count, 3741)
+        res.flatMap(to: Data.self) { res in
+            return res.body.makeData(max: 100_000)
+        }.map(to: Void.self) { data in
+            XCTAssertTrue(String(data: data, encoding: .utf8)!.contains("Moby-Dick"))
+            XCTAssertEqual(data.count, 3741)
             exp.fulfill()
         }.catch { error in
             XCTFail("\(error)")
@@ -35,6 +37,7 @@ class HTTPClientTests: XCTestCase {
         var dataRequest: ConnectionContext?
         var output: [Data] = []
         var parserStream: AnyInputStream<ByteBuffer>?
+        let eventLoop = DispatchEventLoop(label: "codes.vapor.http.test.client")
 
         let byteStream = ClosureStream<ByteBuffer>.init(
             onInput: { event in

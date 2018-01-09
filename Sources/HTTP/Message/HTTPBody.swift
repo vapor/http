@@ -1,4 +1,4 @@
-import Async
+     import Async
 import Foundation
 import Dispatch
 import Bits
@@ -153,13 +153,17 @@ public struct HTTPBody: Codable {
                 data.reserveCapacity(size)
             }
             
-            stream.drain { upstream in
-                upstream.request(count: .max)
+            var upstream: ConnectionContext?
+            
+            stream.drain { _upstream in
+                upstream = _upstream
             }.output { buffer in
                 data.append(Data(buffer: buffer))
             }.catch(onError: promise.fail).finally {
                 promise.complete(data)
             }
+            
+            upstream?.request(count: .max)
             
             return promise.future
         }

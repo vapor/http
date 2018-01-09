@@ -9,10 +9,13 @@ internal final class ByteBufferPushStream: Async.OutputStream, ConnectionContext
     var downstream: AnyInputStream<ByteBuffer>?
     var backlog = [Data]()
     var writing: Data?
-    var flushedBacklog = 0
+    var flushedBacklog: Int
+    var closed: Bool
     
     init() {
         downstreamDemand = 0
+        flushedBacklog = 0
+        closed = false
     }
     
     func connection(_ event: ConnectionEvent) {
@@ -23,7 +26,12 @@ internal final class ByteBufferPushStream: Async.OutputStream, ConnectionContext
             flushBacklog()
         case .cancel:
             self.downstreamDemand = 0
+            downstream?.close()
         }
+    }
+    
+    func eof() {
+        self.closed = true
     }
     
     func output<S>(to inputStream: S) where S : Async.InputStream, Output == S.Input {

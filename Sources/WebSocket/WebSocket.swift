@@ -18,7 +18,7 @@ public class WebSocket {
     var backlog: [Frame]
     
     /// Serializes data into frames
-    let serializer: TranslatingStreamWrapper<FrameSerializer>
+    let serializer: FrameSerializer
     
     /// Parses frames from data
     let parser: TranslatingStreamWrapper<FrameParser>
@@ -26,6 +26,9 @@ public class WebSocket {
     let server: Bool
     
     var errorCallback: (Error) -> () = { _ in }
+    
+    /// Keeps track of sent pings that await a response
+    var pings = [Data: Promise<Void>]()
     
     /// The underlying communication layer
     let source: AnyOutputStream<ByteBuffer>
@@ -49,75 +52,88 @@ public class WebSocket {
         self.source = source
         self.sink = sink
         self.server = server
-        serializer.output(to: sink)
         
         self.stringOutputStream = EmitterStream<String>()
         self.binaryOutputStream = EmitterStream<ByteBuffer>()
         
-        func bindFrameStreams() {
-            source.output(to: parser)
-                
-            parser.drain { upstream in
-                self.parser.request()
-            }.output { frame in
-                defer {
-                    self.parser.request()
-                }
-                
-                frame.unmask()
-                
-                switch frame.opCode {
-                case .close:
-                    sink.close()
-                    self.stringOutputStream.close()
-                    self.binaryOutputStream.close()
-                case .text:
-                    let data = Data(buffer: frame.payload)
-                    
-                    guard let string = String(data: data, encoding: .utf8) else {
-                        throw WebSocketError(.invalidFrame)
-                    }
-                    
-                    self.stringOutputStream.emit(string)
-                case .continuation, .binary:
-                    let buffer = ByteBuffer(start: frame.buffer.baseAddress, count: frame.buffer.count)
-                    
-                    self.binaryOutputStream.emit(buffer)
-                case .ping:
-                    let frame = Frame(op: .pong, payload: frame.payload, mask: self.nextMask)
-                    self.serializer.queue(frame)
-                case .pong: break
-                }
-            }.catch(onError: self.errorCallback).finally {
-                sink.close()
-            }
-        }
-        
         if server {
             bindFrameStreams()
-        } else {
-            // Generates the UUID that will make up the WebSocket-Key
-            let id = OSRandom().data(count: 16).base64EncodedString()
-            
-            // Creates an HTTP client for the handshake
-            let HTTPSerializer = HTTPRequestSerializer().stream()
-            
-            let HTTPParser = HTTPResponseParser()
-            HTTPParser.maxBodySize = 0
-            HTTPParser.maxMessageSize = 50_000
-                
-            let HTTPParserStream = HTTPParser.stream()
-            
-            HTTPSerializer.output(to: sink)
-            
-            let drain = DrainStream<HTTPResponse>(onInput: { response in
-                try WebSocket.upgrade(response: response, id: id)
-                
-                bindFrameStreams()
-            })
-            
-            source.stream(to: HTTPParser).output(to: drain)
         }
+    }
+    
+    func upgrade(uri: URI) {
+        // Generates the UUID that will make up the WebSocket-Key
+        let id = OSRandom().data(count: 16).base64EncodedString()
+        
+        // Creates an HTTP client for the handshake
+        let serializer = HTTPRequestSerializer().stream()
+        
+        let responseParser = HTTPResponseParser()
+        responseParser.maxMessageSize = 50_000
+        
+        let parser = responseParser.stream()
+        
+        serializer.output(to: sink)
+        
+        let drain = DrainStream<HTTPResponse>(onInput: { response in
+            try WebSocket.upgrade(response: response, id: id)
+            
+            self.bindFrameStreams()
+        })
+        
+        source.stream(to: parser).output(to: drain)
+        
+        parser.request()
+        
+        let request = HTTPRequest(method: .get, uri: uri, headers: [
+            .connection: "Upgrade",
+            .upgrade: "websocket",
+            .secWebSocketKey: id,
+            .secWebSocketVersion: "13"
+        ], body: HTTPBody())
+        
+        serializer.next(request)
+    }
+    
+    func bindFrameStreams() {
+        source.stream(to: parser).drain { upstream in
+            upstream.request()
+        }.output { frame in
+            defer {
+                self.parser.request()
+            }
+            
+            frame.unmask()
+            
+            switch frame.opCode {
+            case .close:
+                self.sink.close()
+                self.stringOutputStream.close()
+                self.binaryOutputStream.close()
+            case .text:
+                let data = Data(buffer: frame.payload)
+                
+                guard let string = String(data: data, encoding: .utf8) else {
+                    throw WebSocketError(.invalidFrame)
+                }
+                
+                self.stringOutputStream.emit(string)
+            case .continuation, .binary:
+                let buffer = ByteBuffer(start: frame.buffer.baseAddress, count: frame.buffer.count)
+                
+                self.binaryOutputStream.emit(buffer)
+            case .ping:
+                let frame = Frame(op: .pong, payload: frame.payload, mask: self.nextMask)
+                self.serializer.next(frame)
+            case .pong:
+                let data = Data(frame.payload)
+                self.pings[data]?.complete()
+            }
+        }.catch(onError: self.errorCallback).finally {
+            self.sink.close()
+        }
+        
+        self.serializer.output(to: self.sink)
     }
     
     var nextMask: [UInt8]? {
@@ -127,22 +143,36 @@ public class WebSocket {
     public func send(string: String) {
         Data(string.utf8).withByteBuffer { bytes in
             let frame = Frame(op: .text, payload: bytes, mask: nextMask)
-            serializer.queue(frame)
+            serializer.next(frame)
         }
     }
     
     public func send(data: Data) {
         data.withByteBuffer { bytes in
             let frame = Frame(op: .binary, payload: bytes, mask: nextMask)
-            serializer.queue(frame)
+            serializer.next(frame)
         }
     }
     
     public func send(bytes: ByteBuffer) {
         let frame = Frame(op: .binary, payload: bytes, mask: nextMask)
-        serializer.queue(frame)
+        serializer.next(frame)
     }
     
+    @discardableResult
+    public func ping() -> Signal {
+        let promise = Promise<Void>()
+        let data = OSRandom().data(count: 32)
+        
+        self.pings[data] = promise
+        
+        data.withByteBuffer { bytes in
+            let frame = Frame(op: .ping, payload: bytes, mask: nextMask)
+            serializer.next(frame)
+        }
+        
+        return promise.future
+    }
     
     @discardableResult
     public func onData(_ run: @escaping (WebSocket, Data) throws -> ()) -> DrainStream<ByteBuffer> {
