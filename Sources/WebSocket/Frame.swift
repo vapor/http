@@ -123,13 +123,6 @@ final class Frame {
     
     /// Creates a new payload by referencing the original payload.
     init(op: OpCode, payload: ByteBuffer, mask: [UInt8]?, isMasked: Bool = false, isFinal: Bool = true) {
-        if !isFinal {
-            // Only binary and continuation frames can be not final
-            guard op == .binary || op == .continuation else {
-                fatalError("Only binary frames can be non-final")
-            }
-        }
-        
         self.opCode = op
         self.isFinal = isFinal
         

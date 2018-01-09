@@ -65,15 +65,22 @@ final class FrameParser: ByteParserStream {
             let consumed = header.consumed &+ numericCast(header.size)
             memcpy(bufferBuilder, pointer, consumed)
             
-            return .completed(consuming: consumed, result: makeFrame(header: header))
+            return .completed(consuming: consumed, result: try makeFrame(header: header))
         } else {
             memcpy(bufferBuilder, pointer, buffer.count)
             return .uncompleted(.body(header: header, totalFilled: buffer.count))
         }
     }
     
-    private func makeFrame(header: Frame.Header) -> Frame {
+    private func makeFrame(header: Frame.Header) throws -> Frame {
         let buffer = ByteBuffer(start: bufferBuilder.advanced(by: header.consumed), count: numericCast(header.size))
+        
+        if !header.final {
+            // Only binary and continuation frames can be not final
+            guard header.op == .binary || header.op == .continuation else {
+                throw WebSocketError(.invalidFrame)
+            }
+        }
         
         return Frame(op: header.op, payload: buffer, mask: header.mask, isMasked: true, isFinal: header.final)
     }
@@ -115,7 +122,7 @@ final class FrameParser: ByteParserStream {
             
             if buffer.count &- offset >= numericCast(header.size) {
                 memcpy(bufferBuilder.advanced(by: header.consumed), pointer, numericCast(header.size))
-                return .completed(consuming: offset &+ numericCast(header.size), result: makeFrame(header: header))
+                return .completed(consuming: offset &+ numericCast(header.size), result: try makeFrame(header: header))
             } else {
                 return .uncompleted(
                     .body(header: header, totalFilled: previouslyConsumed &+ buffer.count)
@@ -129,14 +136,14 @@ final class FrameParser: ByteParserStream {
                 return .uncompleted(.body(header: header, totalFilled: filled &+ buffer.count))
             } else {
                 memcpy(self.bufferBuilder.advanced(by: filled), buffer.baseAddress!, needed)
-                return .completed(consuming: needed, result: makeFrame(header: header))
+                return .completed(consuming: needed, result: try makeFrame(header: header))
             }
         }
     }
     
     static func parseFrameHeader(from base: UnsafePointer<UInt8>, length: Int) throws -> Frame.Header? {
         guard
-            length > 3,
+            length >= 3,
             let code = Frame.OpCode(rawValue: base[0] & 0b00001111)
         else {
             throw WebSocketError(.invalidFrame)
