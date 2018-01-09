@@ -15,9 +15,10 @@ public class WebSocket {
     /// A stream of binary data received from the remote
     let binaryOutputStream: EmitterStream<ByteBuffer>
     
-    var backlog: [Frame]
+    /// Allows push stream access to the frame serializer
+    let serializerStream: PushStream<Frame>
     
-    /// Serializes data into frames
+    /// Serializes frames into data
     let serializer: FrameSerializer
     
     /// Parses frames from data
@@ -46,7 +47,6 @@ public class WebSocket {
         worker: Worker,
         server: Bool = true
     ) {
-        self.backlog = []
         self.parser = source.stream(to: FrameParser(worker: worker).stream(on: worker))
         self.serializer = FrameSerializer(masking: !server)
         self.source = source
@@ -56,11 +56,16 @@ public class WebSocket {
         self.stringOutputStream = EmitterStream<String>()
         self.binaryOutputStream = EmitterStream<ByteBuffer>()
         
+        self.serializerStream = PushStream<Frame>()
+        
+        serializerStream.stream(to: self.serializer.stream(on: worker)).output(to: self.sink)
+        
         if server {
             bindFrameStreams()
         }
     }
     
+    /// Upgrades the connection over HTTP
     func upgrade(uri: URI) {
         // Generates the UUID that will make up the WebSocket-Key
         let id = OSRandom().data(count: 16).base64EncodedString()
@@ -124,7 +129,7 @@ public class WebSocket {
                 self.binaryOutputStream.emit(buffer)
             case .ping:
                 let frame = Frame(op: .pong, payload: frame.payload, mask: self.nextMask)
-                self.serializer.next(frame)
+                self.serializerStream.next(frame)
             case .pong:
                 let data = Data(frame.payload)
                 self.pings[data]?.complete()
@@ -132,8 +137,6 @@ public class WebSocket {
         }.catch(onError: self.errorCallback).finally {
             self.sink.close()
         }
-        
-        self.serializer.output(to: self.sink)
     }
     
     var nextMask: [UInt8]? {
@@ -143,20 +146,20 @@ public class WebSocket {
     public func send(string: String) {
         Data(string.utf8).withByteBuffer { bytes in
             let frame = Frame(op: .text, payload: bytes, mask: nextMask)
-            serializer.next(frame)
+            self.serializerStream.next(frame)
         }
     }
     
     public func send(data: Data) {
         data.withByteBuffer { bytes in
             let frame = Frame(op: .binary, payload: bytes, mask: nextMask)
-            serializer.next(frame)
+            self.serializerStream.next(frame)
         }
     }
     
     public func send(bytes: ByteBuffer) {
         let frame = Frame(op: .binary, payload: bytes, mask: nextMask)
-        serializer.next(frame)
+        self.serializerStream.next(frame)
     }
     
     @discardableResult
@@ -168,7 +171,7 @@ public class WebSocket {
         
         data.withByteBuffer { bytes in
             let frame = Frame(op: .ping, payload: bytes, mask: nextMask)
-            serializer.next(frame)
+            self.serializerStream.next(frame)
         }
         
         return promise.future
