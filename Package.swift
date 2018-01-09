@@ -1,4 +1,4 @@
-// swift-tools-version:4.0
+z// swift-tools-version:4.0
 import PackageDescription
 
 let package = Package(
@@ -16,7 +16,7 @@ let package = Package(
     ],
     dependencies: [
         // Swift Promises, Futures, and Streams.
-        .package(url: "https://github.com/vapor/async.git", .branch("protocol-helpers")),
+        .package(url: "https://github.com/vapor/async.git", .branch("async")),
 
         // Core extensions, type-aliases, and functions that facilitate common tasks.
         .package(url: "https://github.com/vapor/core.git", .branch("beta")),
