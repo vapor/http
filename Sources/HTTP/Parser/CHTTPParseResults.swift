@@ -22,9 +22,9 @@ internal final class CParseResults {
     var headersData = [UInt8]()
     
     var currentSize: Int = 0
-    var maxMessageSize: Int
-    var maxHeaderSize: Int
-    var maxBodySize: Int
+    var maxMessageSize: Int?
+    var maxHeaderSize: Int?
+    var maxBodySize: Int?
     
     var headers: HTTPHeaders?
     var bodyData = Data()

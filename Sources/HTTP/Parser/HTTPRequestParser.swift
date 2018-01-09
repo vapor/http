@@ -22,9 +22,9 @@ public final class HTTPRequestParser: CHTTPParser {
 
     /// The maxiumum possible body size
     /// larger sizes will result in an error
-    public var maxMessageSize: Int
-    public var maxHeaderSize: Int
-    public var maxBodySize: Int
+    public var maxMessageSize: Int?
+    public var maxHeaderSize: Int?
+    public var maxBodySize: Int?
 
     var upstream: ConnectionContext?
     var downstream: AnyInputStream<HTTPRequest>?

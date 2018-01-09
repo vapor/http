@@ -28,9 +28,9 @@ import Foundation
 
     /// The maxiumum possible body size
     /// larger sizes will result in an error
-    public var maxMessageSize: Int
-    public var maxHeaderSize: Int
-    public var maxBodySize: Int
+    public var maxMessageSize: Int?
+    public var maxHeaderSize: Int?
+    public var maxBodySize: Int?
     
     /// Creates a new Request parser.
     public init(maxSize: Int) {
