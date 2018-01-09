@@ -331,7 +331,7 @@ extension CHTTPParser {
                 return 1
             }
 
-            results.bodyStream.cancel()
+            results.bodyStream.eof()
             
             // mark the results as complete
             results.isComplete = true

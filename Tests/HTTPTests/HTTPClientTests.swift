@@ -30,7 +30,7 @@ class HTTPClientTests: XCTestCase {
             XCTFail("\(error)")
         }
 
-        waitForExpectations(timeout: 5)
+        waitForExpectations(timeout: 5) 
     }
 
     func testStream() throws {

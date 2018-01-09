@@ -31,6 +31,10 @@ internal final class ByteBufferPushStream: Async.OutputStream, ConnectionContext
     }
     
     func eof() {
+        if backlog.count == 0 {
+            downstream?.close()
+        }
+        
         self.closed = true
     }
     
@@ -48,12 +52,20 @@ internal final class ByteBufferPushStream: Async.OutputStream, ConnectionContext
         } else {
             backlog.append(Data(buffer: buffer))
         }
+        
+        if closed && backlog.count == 0 {
+            downstream?.close()
+        }
     }
     
     fileprivate func flushBacklog() {
         defer {
             backlog.removeFirst(flushedBacklog)
             flushedBacklog = 0
+            
+            if closed && backlog.count == 0 {
+                downstream?.close()
+            }
         }
         
         while backlog.count - flushedBacklog > 0, downstreamDemand > 0 {
