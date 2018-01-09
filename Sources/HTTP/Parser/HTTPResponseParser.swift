@@ -28,14 +28,19 @@ import Foundation
 
     /// The maxiumum possible body size
     /// larger sizes will result in an error
-    internal let maxSize: Int
+    public var maxMessageSize: Int
+    public var maxHeaderSize: Int
+    public var maxBodySize: Int
     
     /// Creates a new Request parser.
     public init(maxSize: Int) {
+        self.maxMessageSize = 10_000_000
+        self.maxHeaderSize = 100_000
+        self.maxBodySize = 10_000_000
+        
         self.parser = http_parser()
         self.settings = http_parser_settings()
         self.state = .ready
-        self.maxSize = maxSize
         self.downstreamDemand = 0
         self.messageBodyCompleted = false
         reset()

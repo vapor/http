@@ -13,11 +13,13 @@ enum HeaderState {
 
 
 /// Internal CHTTP parser protocol
-internal protocol CHTTPParser: HTTPParser {
+internal protocol CHTTPParser: Async.Stream, ConnectionContext, HTTPParser {
     static var parserType: http_parser_type { get }
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
-    var maxSize: Int { get }
+    var maxMessageSize: Int { get set }
+    var maxHeaderSize: Int { get set }
+    var maxBodySize: Int { get set }
     
     var upstream: ConnectionContext? { get set }
     var downstreamDemand: UInt { get set }
@@ -67,7 +69,7 @@ extension CHTTPParser {
         }
     }
     
-    public func output<S>(to inputStream: S) where S : Async.InputStream, Output == S.Input {
+    public func output<S>(to inputStream: S) where S : Async.InputStream, Message == S.Input {
         self.downstream = AnyInputStream(inputStream)
         inputStream.connect(to: self)
     }
@@ -79,8 +81,8 @@ extension CHTTPParser {
         }
 
         results.currentSize += buffer.count
-        guard results.currentSize < results.maxSize else {
-            throw HTTPError(identifier: "messageTooLarge", reason: "The HTTP message's size exceeded set maximum: \(maxSize)")
+        guard results.currentSize < results.maxMessageSize else {
+            throw HTTPError(identifier: "messageTooLarge", reason: "The HTTP message's size exceeded set maximum: \(maxMessageSize)")
         }
 
         /// parse the message using the C HTTP parser.
@@ -136,7 +138,7 @@ extension CHTTPParser {
         case .ready:
             // create a new results object and set
             // a reference to it on the parser
-            let newResults = CParseResults.set(on: &parser, maxSize: maxSize)
+            let newResults = CParseResults.set(on: &parser, swiftParser: self)
             results = newResults
             state = .parsing
         case .parsing:
@@ -276,7 +278,7 @@ extension CHTTPParser {
                 let headers = HTTPHeaders(storage: results.headersData, indexes: results.headersIndexes)
                 
                 if let contentLength = headers[.contentLength], let length = Int(contentLength) {
-                    guard length < results.maxSize &- results.currentSize else {
+                    guard length < results.maxBodySize &- results.currentSize else {
                         return 1
                     }
                     

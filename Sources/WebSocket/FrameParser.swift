@@ -114,7 +114,15 @@ final class FrameParser: ByteParserStream {
                 )
             }
         case .body(let header, let filled):
-            fatalError()
+            let needed = numericCast(header.size) &- filled
+            
+            if buffer.count < needed {
+                memcpy(self.bufferBuilder.advanced(by: filled), buffer.baseAddress!, buffer.count)
+                return .uncompleted(.body(header: header, totalFilled: filled &+ buffer.count))
+            } else {
+                memcpy(self.bufferBuilder.advanced(by: filled), buffer.baseAddress!, needed)
+                return .completed(consuming: needed, result: makeFrame(header: header))
+            }
         }
     }
     

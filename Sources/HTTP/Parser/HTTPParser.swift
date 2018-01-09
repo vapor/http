@@ -3,7 +3,7 @@ import Bits
 import Foundation
 
 /// HTTP message parser.
-public protocol HTTPParser : Async.Stream, ConnectionContext where Output == Message, Input == ByteBuffer {
+public protocol HTTPParser: class {
     /// The message the parser handles.
     associatedtype Message: HTTPMessage
 
