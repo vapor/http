@@ -83,18 +83,10 @@ public final class HTTPRequestParser: CHTTPParser {
             method = HTTPMethod(string)
         }
         
-        // parse the uri from the url bytes.
-        var uri = URI(buffer: results.url)
-        
-        // if there is no scheme, use http by default
-        if uri.scheme?.isEmpty == true {
-            uri.scheme = "http"
-        }
-        
         // create the request
         return HTTPRequest(
             method: method,
-            uri: uri,
+            uri: URI(buffer: results.url),
             version: version,
             headers: headers,
             body: results.body ?? HTTPBody()

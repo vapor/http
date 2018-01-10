@@ -47,7 +47,7 @@ internal protocol _HTTPSerializer: HTTPSerializer {
     var headersData: Data? { get set }
 
     /// Body data
-    var staticBodyData: Data? { get set }
+    var staticBodyData: HTTPBody? { get set }
     
     /// The current offset of the currently serializing entity
     var offset: Int { get set }
@@ -107,9 +107,8 @@ extension _HTTPSerializer {
                 if let bodyData = self.staticBodyData {
                     bufferSize = bodyData.count
                     writeSize = min(outputSize, bufferSize - offset)
-                    
-                    bodyData.withByteBuffer { bodyBuffer in
-                        _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), bodyBuffer.baseAddress!.advanced(by: offset), writeSize)
+                    try bodyData.withUnsafeBytes { pointer in
+                        _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), pointer.advanced(by: offset), writeSize)
                     }
                 } else {
                     state.next()

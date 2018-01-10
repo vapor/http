@@ -14,6 +14,7 @@ public struct HTTPBody: Codable {
     ///
     /// NOTE: This is an implementation detail
     enum Storage: Codable {
+        case none
         case data(Data)
         case staticString(StaticString)
         case dispatchData(DispatchData)
@@ -37,6 +38,8 @@ public struct HTTPBody: Codable {
             case .binaryOutputStream(_):
                 /// FIXME: properly encode stream
                 return
+            case .none:
+                return
             }
         }
         
@@ -56,6 +59,8 @@ public struct HTTPBody: Codable {
                 return 0
             case .binaryOutputStream(let size, _):
                 return size ?? 0
+            case .none:
+                return 0
             }
         }
         
@@ -68,6 +73,8 @@ public struct HTTPBody: Codable {
                 return try data.withUnsafeBytes(body: run)
             case .staticString(let staticString):
                 return try run(staticString.utf8Start)
+            case .none:
+                throw HTTPError(identifier: "no-data", reason: "An empty buffer was attempted to be serialized")
             case .string(let string):
                 return try string.withCString { pointer in
                     return try pointer.withMemoryRebound(to: UInt8.self, capacity: self.count, run)
@@ -83,7 +90,7 @@ public struct HTTPBody: Codable {
     
     /// Creates an empty body
     public init() {
-        self.init(Data())
+        storage = .none
     }
     
     /// Create a new body wrapping `Data`.
@@ -135,6 +142,7 @@ public struct HTTPBody: Codable {
     /// Get body data.
     public func makeData(max: Int) -> Future<Data> {
         switch storage {
+        case .none: return Future(Data())
         case .data(let data):
             return Future(data)
         case .dispatchData(let dispatch):
