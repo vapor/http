@@ -110,8 +110,8 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
                 }
             }
             
-            downstream?.next(frame)
             remainingByteBuffersRequested -= 1
+            downstream?.next(frame)
             update()
         case .chunkedStreamingBodyReady(let closure):
             let stream = closure(HTTPChunkEncodingStream())
