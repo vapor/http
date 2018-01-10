@@ -3,14 +3,14 @@ import Async
 import Bits
 
 /// Serializes frames to binary
-final class FrameSerializer: Async.ByteSerializerStream {
+final class FrameSerializer: Async.ByteSerializer {
     // Unused
     typealias SerializationState = ()
     
     typealias Input = Frame
     typealias Output = ByteBuffer
     
-    var state: ByteSerializerStreamState<FrameSerializer>
+    var state: ByteSerializerState<FrameSerializer>
     var serializing: Frame?
     let masking: Bool
     
@@ -19,7 +19,7 @@ final class FrameSerializer: Async.ByteSerializerStream {
         self.masking = masking
     }
     
-    func serialize(_ input: Frame, state: ()?) -> ByteSerializerStreamResult<FrameSerializer> {
+    func serialize(_ input: Frame, state: ()?) -> ByteSerializerResult<FrameSerializer> {
         if masking {
             input.mask()
         } else {

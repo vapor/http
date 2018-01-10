@@ -3,7 +3,7 @@ import Foundation
 import COperatingSystem
 import Bits
 
-final class FrameParser: ByteParserStream {
+final class FrameParser: ByteParser {
     func parseBytes(from buffer: ByteBuffer, partial: FrameParser.PartialFrame?) throws -> ByteParserResult<FrameParser> {
         if let partial = partial {
             return try self.continueParsing(partial, from: buffer)
@@ -29,7 +29,7 @@ final class FrameParser: ByteParserStream {
     
     var accumulated = 0
     
-    var state: ByteParserStreamState<FrameParser>
+    var state: ByteParserState<FrameParser>
 
     /// The maximum accepted payload size (to prevent memory attacks)
     let maximumPayloadSize: Int
@@ -39,7 +39,7 @@ final class FrameParser: ByteParserStream {
         assert(maximumPayloadSize > 0, "The maximum WebSocket payload size is negative or 0")
         
         self.maximumPayloadSize = numericCast(maximumPayloadSize)
-        self.state = .init(worker: worker)
+        self.state = .init()
         
         // 2 for the header, 9 for the length, 4 for the mask
         self.bufferBuilder = MutableBytesPointer.allocate(capacity: 15 + self.maximumPayloadSize)
