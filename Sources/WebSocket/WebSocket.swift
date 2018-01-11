@@ -74,7 +74,7 @@ public class WebSocket {
         let serializerStream = PushStream<HTTPRequest>()
         
         let responseParser = HTTPResponseParser()
-        responseParser.maxMessageSize = 50_000
+        responseParser.maxHeaderSize = 50_000
         
         let parser = responseParser.stream(on: worker)
         
