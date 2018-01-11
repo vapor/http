@@ -17,9 +17,7 @@ internal protocol CHTTPParser: class, HTTPParser {
     static var parserType: http_parser_type { get }
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
-    var maxMessageSize: Int? { get set }
     var maxHeaderSize: Int? { get set }
-    var maxBodySize: Int? { get set }
     
     var httpState: CHTTPParserState { get set }
     func makeMessage(from results: CParseResults) throws -> Output
@@ -118,6 +116,10 @@ extension CHTTPParser {
                 // signal an error
                 return 1
             }
+            
+            guard results.addSize(length) else {
+                return 1
+            }
 
             // append the url bytes to the results
             chunkPointer.withMemoryRebound(to: UInt8.self, capacity: length) { chunkPointer in
@@ -134,6 +136,10 @@ extension CHTTPParser {
                 let chunkPointer = chunkPointer
             else {
                 // signal an error
+                return 1
+            }
+            
+            guard results.addSize(length + 4) else { // + ": \r\n"
                 return 1
             }
             
@@ -172,6 +178,10 @@ extension CHTTPParser {
                 let chunkPointer = chunkPointer
             else {
                 // signal an error
+                return 1
+            }
+            
+            guard results.addSize(length + 2) else { // + "\r\n"
                 return 1
             }
 
@@ -233,12 +243,6 @@ extension CHTTPParser {
                 let headers = HTTPHeaders(storage: results.headersData, indexes: results.headersIndexes)
                 
                 if let contentLength = headers[.contentLength], let length = Int(contentLength) {
-                    if let maxBodySize = results.maxBodySize {
-                        guard length < maxBodySize &- results.currentSize else {
-                            return 1
-                        }
-                    }
-                    
                     results.body = HTTPBody(size: length, stream: AnyOutputStream(results.bodyStream))
                 }
                 

@@ -23,9 +23,7 @@ internal final class CParseResults {
     var headersData = [UInt8]()
     
     var currentSize: Int = 0
-    var maxMessageSize: Int?
     var maxHeaderSize: Int?
-    var maxBodySize: Int?
     
     var headers: HTTPHeaders?
     
@@ -41,12 +39,22 @@ internal final class CParseResults {
         headersData.reserveCapacity(4096)
         headersIndexes.reserveCapacity(64)
         url.reserveCapacity(128)
-        self.maxMessageSize = parser.maxMessageSize
         self.maxHeaderSize = parser.maxHeaderSize
-        self.maxBodySize = parser.maxBodySize
         self.bodyStream = ByteBufferPushStream()
         
         self.headerState = .none
+    }
+    
+    func addSize(_ n: Int) -> Bool {
+        if let maxHeaderSize = maxHeaderSize {
+            guard currentSize + n <= maxHeaderSize else {
+                return false
+            }
+            
+            self.currentSize += n
+        }
+        
+        return true
     }
 }
 

@@ -79,12 +79,12 @@ class ParserTests : XCTestCase {
         
         parser.drain { upstream in
             upstream.request()
-            }.output { _message in
-                message = _message
-            }.catch { error in
-                XCTFail("\(error)")
-            }.finally {
-                completed = true
+        }.output { _message in
+            message = _message
+        }.catch { error in
+            XCTFail("\(error)")
+        }.finally {
+            completed = true
         }
         
         parser.request()
@@ -127,7 +127,7 @@ class ParserTests : XCTestCase {
         
         var error = false
         let p = HTTPRequestParser()
-        p.maxMessageSize = data.count - 2
+        p.maxHeaderSize = data.count - 20 // body
         let parser = p.stream(on: loop)
         
         var completed = false
@@ -162,7 +162,7 @@ class ParserTests : XCTestCase {
         
         var error = false
         let p = HTTPResponseParser()
-        p.maxMessageSize = data.count - 2
+        p.maxHeaderSize = data.count - 20 // body
         let parser = p.stream(on: loop)
         
         var completed = false

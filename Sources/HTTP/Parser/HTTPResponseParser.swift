@@ -23,18 +23,14 @@ import Foundation
     var httpState:  CHTTPParserState
     public var messageBodyCompleted: Bool
 
-    /// The maxiumum possible body size
+    /// The maxiumum possible header size
     /// larger sizes will result in an error
-    public var maxMessageSize: Int?
     public var maxHeaderSize: Int?
-    public var maxBodySize: Int?
     public let state: ByteParserState<HTTPResponseParser>
     
     /// Creates a new Request parser.
     public init() {
-        self.maxMessageSize = 10_000_000
         self.maxHeaderSize = 100_000
-        self.maxBodySize = 10_000_000
         
         self.parser = http_parser()
         self.settings = http_parser_settings()
