@@ -70,13 +70,13 @@ public class WebSocket {
         let id = OSRandom().data(count: 16).base64EncodedString()
         
         // Creates an HTTP client for the handshake
-        let serializer = HTTPRequestSerializer().stream()
+        let serializer = HTTPRequestSerializer().stream(on: worker)
         let serializerStream = PushStream<HTTPRequest>()
         
         let responseParser = HTTPResponseParser()
         responseParser.maxMessageSize = 50_000
         
-        let parser = responseParser.stream()
+        let parser = responseParser.stream(on: worker)
         
         serializerStream.stream(to: serializer).output(to: sink)
         

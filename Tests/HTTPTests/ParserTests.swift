@@ -5,6 +5,8 @@ import HTTP
 import XCTest
 
 class ParserTests : XCTestCase {
+    let loop = try! DefaultEventLoop(label: "test")
+    
     func testRequest() throws {
         var data = """
         POST /cgi-bin/process.cgi HTTP/1.1\r
@@ -19,12 +21,26 @@ class ParserTests : XCTestCase {
         hello
         """.data(using: .utf8) ?? Data()
 
-        let parser = HTTPRequestParser()
-        parser.request()
-        XCTAssertNil(parser.message)
-        data.withByteBuffer(parser.next)
+        let parser = HTTPRequestParser().stream(on: loop)
+        var message: HTTPRequest?
+        var completed = false
         
-        guard let req = parser.message else {
+        parser.drain { upstream in
+            upstream.request()
+        }.output { _message in
+            message = _message
+        }.catch { error in
+            XCTFail("\(error)")
+        }.finally {
+            completed = true
+        }
+        
+        parser.request()
+        XCTAssertNil(message)
+        data.withByteBuffer(parser.next)
+        parser.close()
+        
+        guard let req = message else {
             XCTFail("No request parsed")
             return
         }
@@ -41,6 +57,7 @@ class ParserTests : XCTestCase {
         
         data = try req.body.makeData(max: 100_000).blockingAwait()
         XCTAssertEqual(String(data: data, encoding: .utf8), "hello")
+        XCTAssert(completed)
     }
 
     func testResponse() throws {
@@ -56,12 +73,26 @@ class ParserTests : XCTestCase {
         <vapor>
         """.data(using: .utf8) ?? Data()
         
-        let parser = HTTPResponseParser()
-        parser.request()
-        XCTAssertNil(parser.message)
-        data.withByteBuffer(parser.next)
+        let parser = HTTPResponseParser().stream(on: loop)
+        var message: HTTPResponse?
+        var completed = false
         
-        guard let res = parser.message else {
+        parser.drain { upstream in
+            upstream.request()
+            }.output { _message in
+                message = _message
+            }.catch { error in
+                XCTFail("\(error)")
+            }.finally {
+                completed = true
+        }
+        
+        parser.request()
+        XCTAssertNil(message)
+        data.withByteBuffer(parser.next)
+        parser.close()
+        
+        guard let res = message else {
             XCTFail("No request parsed")
             return
         }
@@ -77,6 +108,7 @@ class ParserTests : XCTestCase {
         
         data = try res.body.makeData(max: 100_000).blockingAwait()
         XCTAssertEqual(String(data: data, encoding: .utf8), "<vapor>")
+        XCTAssert(completed)
     }
     
     func testTooLargeRequest() throws {
@@ -94,20 +126,25 @@ class ParserTests : XCTestCase {
         """.data(using: .utf8) ?? Data()
         
         var error = false
-        let parser = HTTPRequestParser()
-        parser.maxMessageSize = data.count - 2
+        let p = HTTPRequestParser()
+        p.maxMessageSize = data.count - 2
+        let parser = p.stream(on: loop)
         
-        XCTAssertNil(parser.message)
-        parser.drain { upstream in
-            upstream.request()
-        }.output { _ in
+        var completed = false
+        
+        parser.drain { _ in }.output { _ in
             XCTFail()
         }.catch { _ in
             error = true
-        }.finally {}
+        }.finally {
+            completed = true
+        }
         
+        parser.request()
         data.withByteBuffer(parser.next)
+        parser.close()
         XCTAssert(error)
+        XCTAssert(completed)
     }
     
     func testTooLargeResponse() throws {
@@ -124,19 +161,27 @@ class ParserTests : XCTestCase {
         """.data(using: .utf8) ?? Data()
         
         var error = false
-        let parser = HTTPResponseParser()
-        parser.maxMessageSize = data.count - 2
-        XCTAssertNil(parser.message)
-        parser.drain { upstream in
-            upstream.request()
-        }.output { _ in
+        let p = HTTPResponseParser()
+        p.maxMessageSize = data.count - 2
+        let parser = p.stream(on: loop)
+        
+        var completed = false
+        
+        parser.drain { _ in }.output { _ in
             XCTFail()
         }.catch { _ in
             error = true
-        }.finally {}
+        }.finally {
+            completed = true
+        }
+        
+        parser.request()
         
         data.withByteBuffer(parser.next)
+        data.withByteBuffer(parser.next)
+        parser.close()
         XCTAssert(error)
+        XCTAssert(completed)
     }
 
     static let allTests = [
