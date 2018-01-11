@@ -5,8 +5,6 @@ import Foundation
 import XCTest
 
 class HTTPSerializerStreamTests: XCTestCase {
-    let loop = try! DefaultEventLoop(label: "test")
-    
     func testResponse() throws {
         /// output and output request for later in test
         var output: [ByteBuffer] = []
@@ -14,7 +12,7 @@ class HTTPSerializerStreamTests: XCTestCase {
 
         /// setup the mock app
         let mockApp = EmitterStream(HTTPResponse.self)
-        mockApp.stream(to: HTTPResponseSerializer().stream(on: loop)).drain { req in
+        mockApp.stream(to: HTTPResponseSerializer().stream()).drain { req in
             outputRequest = req
         }.output { buffer in
             output.append(buffer)
@@ -52,7 +50,7 @@ class HTTPSerializerStreamTests: XCTestCase {
 
         /// setup the mock app
         let mockApp = EmitterStream(HTTPResponse.self)
-        mockApp.stream(to: HTTPResponseSerializer().stream(on: loop)).drain { req in
+        mockApp.stream(to: HTTPResponseSerializer().stream()).drain { req in
             outputRequest = req
         }.output { buffer in
             output.append(Data(buffer))

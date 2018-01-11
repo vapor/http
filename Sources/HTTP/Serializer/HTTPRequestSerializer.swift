@@ -5,9 +5,7 @@ import Foundation
 
 /// Converts requests to DispatchData.
 public final class HTTPRequestSerializer: _HTTPSerializer {
-    public typealias SerializationState = HTTPSerializerState
-    public typealias Input = HTTPRequest
-    public typealias Output = ByteBuffer
+    public typealias Message = HTTPRequest
     
     /// Serialized message
     var firstLine: [UInt8]?
@@ -18,19 +16,28 @@ public final class HTTPRequestSerializer: _HTTPSerializer {
     /// Static body data
     var staticBodyData: Data?
     
-    public let state: ByteSerializerState<HTTPRequestSerializer>
-    let buffer: MutableByteBuffer
+    /// The current offset
+    var offset: Int
     
-    /// Create a new HTTPResponseSerializer
-    public init(bufferSize: Int = 2048) {
-        self.state = .init()
-        
-        let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
-        self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
+    /// The current serialization taking place
+    var state = HTTPSerializerState.noMessage {
+        didSet {
+            switch self.state {
+            case .headers:
+                self.firstLine = nil
+            case .noMessage:
+                self.headersData = nil
+                self.firstLine = nil
+            default: break
+            }
+        }
     }
     
     /// Set up the variables for Message serialization
-    public func setMessage(to message: HTTPRequest) {
+    public func setMessage(to message: Message) {
+        offset = 0
+        
+        self.state = .firstLine
         var headers = message.headers
         
         headers[.contentLength] = nil
@@ -62,9 +69,10 @@ public final class HTTPRequestSerializer: _HTTPSerializer {
         case .binaryOutputStream(_): break
         }
     }
-    
-    deinit {
-        self.buffer.baseAddress?.deallocate(capacity: self.buffer.count)
+
+    /// Create a new HTTPRequestSerializer
+    public init() {
+        offset = 0
     }
 }
 

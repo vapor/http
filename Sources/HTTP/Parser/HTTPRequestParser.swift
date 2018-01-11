@@ -18,13 +18,19 @@ public final class HTTPRequestParser: CHTTPParser {
     // to the C HTTP parser protocol.
     var parser: http_parser
     var settings: http_parser_settings
-    var httpState:  CHTTPParserState
+    var state:  CHTTPParserState
 
     /// The maxiumum possible header size
     /// larger sizes will result in an error
     public var maxHeaderSize: Int?
     
-    public let state: ByteParserState<HTTPRequestParser>
+    public var maxBodySize: Int?
+
+    var upstream: ConnectionContext?
+    var downstream: AnyInputStream<HTTPRequest>?
+    var downstreamDemand: UInt
+    public var message: Message?
+    public var messageBodyCompleted: Bool
 
     /// Creates a new Request parser.
     public init() {
@@ -32,8 +38,9 @@ public final class HTTPRequestParser: CHTTPParser {
         
         self.parser = http_parser()
         self.settings = http_parser_settings()
-        self.httpState = .ready
-        self.state = .init()
+        self.state = .ready
+        self.downstreamDemand = 0
+        self.messageBodyCompleted = false
         reset()
     }
 

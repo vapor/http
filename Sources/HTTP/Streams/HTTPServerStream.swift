@@ -41,15 +41,15 @@ internal final class HTTPServerStream<AcceptStream, Worker>: InputStream
             /// never stop accepting
             upstream.request(count: .max)
         case .next(let input):
+            let serializerStream = HTTPResponseSerializer().stream()
+            let parserStream = HTTPRequestParser().stream()
+
             let worker: Worker
             workerOffset += 1
             if workerOffset >= workers.count {
                 workerOffset = 0
             }
             worker = workers[workerOffset]
-            
-            let serializerStream = HTTPResponseSerializer().stream(on: worker)
-            let parserStream = HTTPRequestParser().stream(on: worker)
 
             let source = input.source(on: worker)
             let sink = input.sink(on: worker)

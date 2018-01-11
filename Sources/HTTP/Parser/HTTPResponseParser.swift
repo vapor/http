@@ -20,13 +20,15 @@ import Foundation
     // to the C HTTP parser protocol.
     var parser: http_parser
     var settings: http_parser_settings
-    var httpState:  CHTTPParserState
+    var state:  CHTTPParserState
+    var upstream: ConnectionContext?
+    var downstream: AnyInputStream<HTTPResponse>?
+    var downstreamDemand: UInt
     public var messageBodyCompleted: Bool
 
     /// The maxiumum possible header size
     /// larger sizes will result in an error
     public var maxHeaderSize: Int?
-    public let state: ByteParserState<HTTPResponseParser>
     
     /// Creates a new Request parser.
     public init() {
@@ -34,8 +36,8 @@ import Foundation
         
         self.parser = http_parser()
         self.settings = http_parser_settings()
-        self.state = .init()
-        self.httpState = .ready
+        self.state = .ready
+        self.downstreamDemand = 0
         self.messageBodyCompleted = false
         reset()
     }
