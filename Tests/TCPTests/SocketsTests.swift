@@ -25,7 +25,6 @@ class SocketsTests: XCTestCase {
             serverStream.drain { req in
                 req.request(count: .max)
             }.output { client in
-                print(DefaultEventLoop.current.label)
                 let clientSource = client.socket.source(on: workerLoop)
                 let clientSink = client.socket.sink(on: workerLoop)
                 clientSource.output(to: clientSink)
