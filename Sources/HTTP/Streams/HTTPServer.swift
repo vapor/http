@@ -12,30 +12,47 @@ import TCP
 /// Converts an output stream of byte streams (meta stream) to
 /// a stream of HTTP clients. These incoming clients are then
 /// streamed to the responder supplied during `.start()`.
-public final class HTTPServer<AcceptStream, Worker>
-    where AcceptStream: OutputStream,
-    AcceptStream.Output: ByteStreamRepresentable,
-    Worker: HTTPResponder,
-    Worker: Async.Worker
-{
-    /// The underlying server stream.
-    private let serverStream: HTTPServerStream<AcceptStream, Worker>
-
+public final class HTTPServer {
     /// Handles any uncaught errors
     public typealias ErrorHandler = (Error) -> ()
 
     /// Sets this servers error handler.
-    public var onError: ErrorHandler? {
-        get { return serverStream.onError }
-        set { serverStream.onError = newValue}
-    }
+    public var onError: ErrorHandler?
 
     /// Create a new HTTP server with the supplied accept stream.
-    public init(acceptStream: AcceptStream, worker: Worker) {
-        self.serverStream = HTTPServerStream(
-            acceptStream: acceptStream,
-            worker: worker
-        )
+    public init<AcceptStream>(acceptStream: AcceptStream, worker: Worker, responder: HTTPResponder)
+        where AcceptStream: OutputStream, AcceptStream.Output: ByteStreamRepresentable
+    {
+        /// set up the server stream
+        acceptStream.drain { req in
+            req.request(count: .max)
+        }.output { client in
+            let serializerStream = HTTPResponseSerializer().stream(on: worker)
+            let parserStream = HTTPRequestParser().stream(on: worker)
+
+            let source = client.source(on: worker)
+            let sink = client.sink(on: worker)
+            source
+                .stream(to: parserStream)
+                .stream(to: responder.stream(on: worker).stream())
+                .map(to: HTTPResponse.self) { response in
+                    /// map the responder adding http upgrade support
+                    if let onUpgrade = response.onUpgrade {
+                        do {
+                            try onUpgrade.closure(.init(source), .init(sink), worker)
+                        } catch {
+                            self.onError?(error)
+                        }
+                    }
+                    return response
+                }
+                .stream(to: serializerStream)
+                .output(to: sink)
+        }.catch { err in
+            self.onError?(err)
+        }.finally {
+            // closed
+        }
     }
 }
 
