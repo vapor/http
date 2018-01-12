@@ -13,18 +13,14 @@ enum HeaderState {
 
 
 /// Internal CHTTP parser protocol
-internal protocol CHTTPParser: Async.Stream, ConnectionContext, HTTPParser {
+internal protocol CHTTPParser: class, HTTPParser {
     static var parserType: http_parser_type { get }
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
     var maxHeaderSize: Int? { get set }
     
-    var upstream: ConnectionContext? { get set }
-    var downstreamDemand: UInt { get set }
-    var downstream: AnyInputStream<Message>? { get set }
-    
-    var state: CHTTPParserState { get set }
-    func makeMessage(from results: CParseResults) throws -> Message
+    var httpState: CHTTPParserState { get set }
+    func makeMessage(from results: CParseResults) throws -> Output
 }
 
 
@@ -36,64 +32,26 @@ enum CHTTPParserState {
 /// MARK: HTTPParser conformance
 
 extension CHTTPParser {
-    public func connection(_ event: ConnectionEvent) {
-        switch event {
-        case .cancel:
-            self.close()
-        case .request(let amount):
-            self.downstreamDemand += amount
-        }
-    }
-    
-    public func input(_ event: InputEvent<ByteBuffer>) {
-        switch event {
-        case .connect(let upstream):
-            self.upstream = upstream
-        case .error(let error):
-            self.downstream?.error(error)
-            self.close()
-        case .next(let next):
-            do {
-                let parsed = try self.parse(from: next)
-                
-                guard parsed == next.count else {
-                    throw HTTPError(identifier: "too-much-data", reason: "HTTP received more data than could be parsed in a single HTTP message (according to spec)")
-                }
-            } catch {
-                self.downstream?.error(error)
-            }
-        case .close:
-            self.downstream?.close()
-        }
-    }
-    
-    public func output<S>(to inputStream: S) where S : Async.InputStream, Message == S.Input {
-        self.downstream = AnyInputStream(inputStream)
-        inputStream.connect(to: self)
-    }
-    
-    /// Parses a Request from the stream.
-    public func parse(from buffer: ByteBuffer) throws -> Int {
+    public func parseBytes(from buffer: ByteBuffer, partial: CParseResults?) throws -> ByteParserResult<Self> {
         guard let results = getResults() else {
-            return 0
+            throw HTTPError(identifier: "no-parser-results", reason: "An internal HTTP Parser state became invalid")
         }
-
-        results.currentSize += buffer.count
-
+        
         /// parse the message using the C HTTP parser.
         try executeParser(from: buffer)
-
+        
         guard results.isComplete else {
-            return buffer.count
+            return .uncompleted(results)
         }
-
+        
         // the results have completed, so we are ready
         // for a new request to come in
-        state = .ready
+        httpState = .ready
         CParseResults.remove(from: &parser)
-
-        message = try makeMessage(from: results)
-        return buffer.count
+        
+        let message = try makeMessage(from: results)
+        
+        return .completed(consuming: buffer.count, result: message)
     }
 
     /// Resets the parser
@@ -129,13 +87,13 @@ extension CHTTPParser {
     func getResults() -> CParseResults? {
         let results: CParseResults
         
-        switch state {
+        switch httpState {
         case .ready:
             // create a new results object and set
             // a reference to it on the parser
             let newResults = CParseResults.set(on: &parser, swiftParser: self)
             results = newResults
-            state = .parsing
+            httpState = .parsing
         case .parsing:
             // get the current parse results object
             guard let existingResults = CParseResults.get(from: &parser) else {

@@ -5,8 +5,14 @@ import Foundation
 
 /// Converts responses to Data.
 public final class HTTPResponseSerializer: _HTTPSerializer {
+    let buffer: MutableByteBuffer
+    
+    public var state: ByteSerializerState<HTTPResponseSerializer>
+    
     /// See HTTPSerializer.Message
-    public typealias Message = HTTPResponse
+    public typealias Input = HTTPResponse
+    public typealias SerializationState = HTTPSerializerState
+    public typealias Output = ByteBuffer
 
     /// Serialized message
     var firstLine: [UInt8]?
@@ -16,35 +22,17 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
 
     /// Body data
     var staticBodyData: Data?
-
-    /// The current offset
-    var offset: Int
     
-    /// The current serialization taking place
-    var state = HTTPSerializerState.noMessage {
-        didSet {
-            switch self.state {
-            case .headers:
-                self.firstLine = nil
-            case .noMessage:
-                self.headersData = nil
-                self.firstLine = nil
-                self.staticBodyData = nil
-            default: break
-            }
-        }
-    }
-
     /// Create a new HTTPResponseSerializer
-    public init() {
-        offset = 0
+    public init(bufferSize: Int = 2048) {
+        self.state = .init()
+        
+        let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
+        self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
     }
     
     /// Set up the variables for Message serialization
-    public func setMessage(to message: Message) {
-        offset = 0
-        
-        self.state = .firstLine
+    public func setMessage(to message: HTTPResponse) {
         var headers = message.headers
         
         headers[.contentLength] = nil
@@ -75,6 +63,10 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
         case .chunkedOutputStream: break
         case .binaryOutputStream(_): break
         }
+    }
+    
+    deinit {
+        self.buffer.baseAddress?.deallocate(capacity: self.buffer.count)
     }
 }
 

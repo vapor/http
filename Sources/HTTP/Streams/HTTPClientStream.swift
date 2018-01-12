@@ -47,9 +47,9 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
         self.sink = sink
         self.worker = worker
 
-        let serializerStream = HTTPRequestSerializer().stream()
+        let serializerStream = HTTPRequestSerializer().stream(on: worker)
         let parser = HTTPResponseParser()
-        let parserStream = parser.stream()
+        let parserStream = parser.stream(on: worker)
 
         source
             .stream(to: parserStream)
