@@ -23,7 +23,7 @@ class SSLTests: XCTestCase {
             let tlsClient = try AppleTLSClient(tcp: tcpClient, using: tlsSettings)
         #endif
         try tlsClient.connect(hostname: "google.com", port: 443)
-        // try tlsClient.socket.handshake()
+        try tlsClient.socket.prepareSocket()
         let req = "GET /robots.txt HTTP/1.1\r\nContent-Length: 0\r\nHost: www.google.com\r\nUser-Agent: hi\r\n\r\n".data(using: .utf8)!
         _ = try tlsClient.socket.write(from: req.withByteBuffer { $0 })
         var res = Data(count: 4096)
