@@ -6,7 +6,13 @@ import TCP
 import XCTest
 
 struct EchoWorker: HTTPResponder, Worker {
-    let eventLoop: EventLoop = DispatchEventLoop(label: "codes.vapor.http.test.server.worker")
+    let eventLoop: EventLoop
+
+    init() throws {
+        let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.server.worker")
+        self.eventLoop = eventLoop
+        Thread.async { eventLoop.runLoop() }
+    }
 
     func respond(to req: HTTPRequest, on Worker: Worker) throws -> Future<HTTPResponse> {
         /// simple echo server
@@ -16,8 +22,9 @@ struct EchoWorker: HTTPResponder, Worker {
 
 class HTTPServerTests: XCTestCase {
     func testTCP() throws {
-        let accept = DispatchEventLoop(label: "codes.vapor.http.test.server.accept")
-        let workers = [
+        let accept = try DefaultEventLoop(label: "codes.vapor.http.test.server.accept")
+        Thread.async { accept.runLoop() }
+        let workers = try [
             EchoWorker(),
             EchoWorker(),
             EchoWorker(),
@@ -35,19 +42,6 @@ class HTTPServerTests: XCTestCase {
             workers: workers
         )
         server.onError = { XCTFail("\($0)") }
-
-        if #available(OSX 10.12, *) {
-            Thread.detachNewThread {
-                accept.run()
-            }
-            for worker in workers {
-                Thread.detachNewThread {
-                    worker.eventLoop.run()
-                }
-            }
-        } else {
-            fatalError()
-        }
 
         // beyblades let 'er rip
         try tcpServer.start(hostname: "localhost", port: 8123, backlog: 128)

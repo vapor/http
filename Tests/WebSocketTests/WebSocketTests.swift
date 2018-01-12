@@ -10,11 +10,15 @@ final class WebSocketTests : XCTestCase {
         ("testTextStream", testTextStream),
     ]
     
-    let worker = DispatchEventLoop(label: "codes.vapor.test.worker.1")
-    let clientLoop = DispatchEventLoop(label: "codes.vapor.test.client")
-    let serverLoop = DispatchEventLoop(label: "codes.vapor.test.server")
-    
     func testTextStream() throws {
+        let worker = try DefaultEventLoop(label: "codes.vapor.test.worker.1")
+        let clientLoop = try DefaultEventLoop(label: "codes.vapor.test.client")
+        let serverLoop = try DefaultEventLoop(label: "codes.vapor.test.server")
+
+        Thread.async { worker.runLoop() }
+        Thread.async { clientLoop.runLoop() }
+        Thread.async { serverLoop.runLoop() }
+
         let quit = Promise<Void>()
         
         let serverSocket = try TCPSocket(isNonBlocking: true)
@@ -51,21 +55,6 @@ final class WebSocketTests : XCTestCase {
         webserver.onError = { XCTFail("\($0)") }
         
         try server.start(hostname: "localhost", port: 8090, backlog: 128)
-        
-        if #available(OSX 10.12, *) {
-            Thread.detachNewThread {
-                self.serverLoop.run()
-            }
-            Thread.detachNewThread {
-                self.worker.run()
-            }
-            Thread.detachNewThread {
-                self.clientLoop.run()
-            }
-        } else {
-            fatalError()
-        }
-        
         let websocket = try WebSocket.connect(to: "ws://localhost:8090", using: container)
         
         var messages = ["hello", "world", "!"]

@@ -6,9 +6,10 @@ import TCP
 import XCTest
 
 class HTTPClientTests: XCTestCase {
-    let eventLoop = DispatchEventLoop(label: "codes.vapor.http.test.client")
-    
     func testTCP() throws {
+        let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
+        Thread.async { eventLoop.runLoop() }
+
         let tcpSocket = try TCPSocket(isNonBlocking: true)
         let tcpClient = try TCPClient(socket: tcpSocket)
         try tcpClient.connect(hostname: "httpbin.org", port: 80)
@@ -34,10 +35,12 @@ class HTTPClientTests: XCTestCase {
     }
 
     func testStream() throws {
+        let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
+        Thread.async { eventLoop.runLoop() }
+
         var dataRequest: ConnectionContext?
         var output: [Data] = []
         var parserStream: AnyInputStream<ByteBuffer>?
-        let eventLoop = DispatchEventLoop(label: "codes.vapor.http.test.client")
 
         let byteStream = ClosureStream<ByteBuffer>.init(
             onInput: { event in

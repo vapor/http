@@ -45,11 +45,14 @@ class SSLTests: XCTestCase {
 
         let exp = expectation(description: "read data")
 
-        let tlsStream = tlsClient.socket.source(on: DispatchEventLoop(label: "codes.vapor.tls.client"))
-        let tlsSink = tlsClient.socket.sink(on: DispatchEventLoop(label: "codes.vapor.tls.client"))
-        
+        let clientLoop = try DefaultEventLoop(label: "codes.vapor.tls.client")
+        Thread.async { clientLoop.runLoop() }
+        let tlsStream = tlsClient.socket.source(on: clientLoop)
+        let tlsSink = tlsClient.socket.sink(on: clientLoop)
+
+        var upstream: ConnectionContext?
         tlsStream.drain { req in
-            req.request(count: 1)
+            upstream = req
         }.output { buffer in
             let res = Data(buffer)
             XCTAssertTrue(String(data: res, encoding: .utf8)!.contains("User-agent: *"))
@@ -59,6 +62,7 @@ class SSLTests: XCTestCase {
         }.finally {
             // closed
         }
+        upstream!.request(count: 1)
 
         let source = EmitterStream(ByteBuffer.self)
         source.output(to: tlsSink)

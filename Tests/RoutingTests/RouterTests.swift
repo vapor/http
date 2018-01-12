@@ -15,7 +15,12 @@ class RouterTests: XCTestCase {
         let route = Route<Int>(path: [.constants(path), .parameter(.string(User.uniqueSlug))], output: 42)
         router.register(route: route)
 
-        let container = BasicContainer(config: Config(), environment: .development, services: Services(), on: DispatchEventLoop(label: "unit-test"))
+        let container = try BasicContainer(
+            config: Config(),
+            environment: .development,
+            services: Services(),
+            on: DefaultEventLoop(label: "unit-test")
+        )
         let params = Params()
         XCTAssertEqual(router.route(path: path + [.string("Tanner")], parameters: params), 42)
         try XCTAssertEqual(params.parameter(User.self, using: container).blockingAwait().name, "Tanner")
