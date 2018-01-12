@@ -72,7 +72,7 @@ extension _HTTPSerializer {
             state = .firstLine(offset: 0)
         }
         
-        repeat {
+        while !state.ready {
             let _offset: Int
             let writeSize: Int
             let outputSize = buffer.count - writeOffset
@@ -144,7 +144,7 @@ extension _HTTPSerializer {
                 }
             case .streaming(let stream):
                 state.next()
-                return .awaiting(stream)
+                return .awaiting(stream, state: nil)
             }
             
             writeOffset += writeSize
@@ -155,7 +155,7 @@ extension _HTTPSerializer {
             } else {
                 state.next()
             }
-        } while !state.ready
+        }
         
         return .complete(ByteBuffer(start: buffer.baseAddress, count: writeOffset))
     }
