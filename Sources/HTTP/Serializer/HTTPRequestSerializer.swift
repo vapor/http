@@ -13,7 +13,7 @@ public final class HTTPRequestSerializer: _HTTPSerializer {
     var firstLine: [UInt8]?
     
     /// Headers
-    var headersData: Data?
+    var headersData: [UInt8]?
 
     /// Static body data
     var body: HTTPBody?
@@ -37,11 +37,11 @@ public final class HTTPRequestSerializer: _HTTPSerializer {
         
         if case .chunkedOutputStream = message.body.storage {
             headers[.transferEncoding] = "chunked"
-            self.headersData = headers.clean()
         } else {
             headers.appendValue(message.body.count.description, forName: .contentLength)
-            self.headersData = headers.clean()
         }
+        
+        self.headersData = headers.storage
         
         self.firstLine = message.firstLine
         

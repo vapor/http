@@ -50,7 +50,7 @@ internal protocol _HTTPSerializer: HTTPSerializer where SerializationState == HT
     var firstLine: [UInt8]? { get }
     
     /// Headers
-    var headersData: Data? { get }
+    var headersData: [UInt8]? { get }
 
     /// Body data
     var body: HTTPBody? { get }
@@ -101,7 +101,7 @@ extension _HTTPSerializer {
                 bufferSize = headersData.count
                 writeSize = min(outputSize, bufferSize - offset)
                 
-                headersData.withByteBuffer { headerBuffer in
+                headersData.withUnsafeBufferPointer { headerBuffer in
                     _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), headerBuffer.baseAddress!.advanced(by: offset), writeSize)
                 }
             case .crlf(let offset):
@@ -121,6 +121,8 @@ extension _HTTPSerializer {
                 }
                 
                 switch body.storage {
+                case .none:
+                    return .complete(ByteBuffer(start: buffer.baseAddress, count: writeOffset))
                 case .chunkedOutputStream(let streamBuilder):
                     let stream = HTTPChunkEncodingStream()
                     let result = AnyOutputStream(streamBuilder(stream))

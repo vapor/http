@@ -1,3 +1,4 @@
+import COperatingSystem
 import Async
 import Bits
 import Dispatch
@@ -18,7 +19,7 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
     var firstLine: [UInt8]?
     
     /// Headers
-    var headersData: Data?
+    var headersData: [UInt8]?
 
     /// Body data
     var body: HTTPBody?
@@ -39,11 +40,11 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
         
         if case .chunkedOutputStream = message.body.storage {
             headers[.transferEncoding] = "chunked"
-            self.headersData = headers.clean()
         } else {
             headers.appendValue(message.body.count.description, forName: .contentLength)
-            self.headersData = headers.clean()
         }
+        
+        self.headersData = headers.storage
         
         self.firstLine = message.firstLine
 
@@ -60,6 +61,7 @@ fileprivate extension HTTPResponse {
         // First line
         var http1Line = http1Prefix
         http1Line.reserveCapacity(128)
+        
         
         http1Line.append(contentsOf: self.status.code.description.utf8)
         http1Line.append(.space)

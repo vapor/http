@@ -14,6 +14,7 @@ public struct HTTPBody: Codable {
     ///
     /// NOTE: This is an implementation detail
     enum Storage: Codable {
+        case none
         case data(Data)
         case staticString(StaticString)
         case dispatchData(DispatchData)
@@ -23,6 +24,7 @@ public struct HTTPBody: Codable {
         
         func encode(to encoder: Encoder) throws {
             switch self {
+            case .none: return
             case .data(let data):
                 try data.encode(to: encoder)
             case .dispatchData(let data):
@@ -51,7 +53,7 @@ public struct HTTPBody: Codable {
             case .dispatchData(let data): return data.count
             case .staticString(let staticString): return staticString.utf8CodeUnitCount
             case .string(let string): return string.utf8.count
-            case .chunkedOutputStream(_):
+            case .chunkedOutputStream, .none:
                 /// FIXME: convert to data then return count?
                 return 0
             case .binaryOutputStream(let size, _):
@@ -72,7 +74,7 @@ public struct HTTPBody: Codable {
                 return try string.withCString { pointer in
                     return try pointer.withMemoryRebound(to: UInt8.self, capacity: self.count, run)
                 }
-            case .chunkedOutputStream(_), .binaryOutputStream(_):
+            case .none, .chunkedOutputStream(_), .binaryOutputStream(_):
                 throw HTTPError(identifier: "invalid-stream-acccess", reason: "A BodyStream was being accessed as a sequential byte buffer, which is impossible.")
             }
         }
@@ -83,7 +85,7 @@ public struct HTTPBody: Codable {
     
     /// Creates an empty body
     public init() {
-        self.init(Data())
+        storage = .none
     }
     
     /// Create a new body wrapping `Data`.
@@ -135,6 +137,8 @@ public struct HTTPBody: Codable {
     /// Get body data.
     public func makeData(max: Int) -> Future<Data> {
         switch storage {
+        case .none:
+            return Future(Data())
         case .data(let data):
             return Future(data)
         case .dispatchData(let dispatch):
