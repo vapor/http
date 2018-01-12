@@ -47,11 +47,11 @@ final class WebSocketTests : XCTestCase {
             }
         }
         
-        let responders = [
-            WebSocketResponder(worker: worker),
-        ]
-        
-        let webserver = HTTPServer(acceptStream: server.stream(on: serverLoop), workers: responders)
+        let webserver = HTTPServer(
+            acceptStream: server.stream(on: serverLoop),
+            worker: serverLoop,
+            responder: WebSocketResponder(worker: worker)
+        )
         webserver.onError = { XCTFail("\($0)") }
         
         try server.start(hostname: "localhost", port: 8090, backlog: 128)
