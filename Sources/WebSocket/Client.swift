@@ -53,14 +53,16 @@ extension WebSocket {
             
             let source = socket.source(on: container.eventLoop)
             let sink = socket.sink(on: container.eventLoop)
-            let websocket = WebSocket(source: .init(source), sink: .init(sink), server: false)
+            let websocket = WebSocket(source: .init(source), sink: .init(sink), worker: container, server: false)
             try client.connect(hostname: hostname, port: port)
+            websocket.upgrade(uri: uri)
             return websocket
         } else {
             let source = socket.source(on: container.eventLoop)
             let sink = socket.sink(on: container.eventLoop)
-            let websocket = WebSocket(source: .init(source), sink: .init(sink), server: false)
+            let websocket = WebSocket(source: .init(source), sink: .init(sink), worker: container, server: false)
             try client.connect(hostname: hostname, port: port)
+            websocket.upgrade(uri: uri)
             return websocket
         }
     }

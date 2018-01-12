@@ -45,8 +45,8 @@ extension WebSocket {
     ) throws -> HTTPResponse {
         var response = try upgradeResponse(for: request, with: settings)
 
-        response.onUpgrade = HTTPOnUpgrade { source, sink in
-            let websocket = WebSocket(source: source, sink: sink)
+        response.onUpgrade = HTTPOnUpgrade { source, sink, worker in
+            let websocket = WebSocket(source: source, sink: sink, worker: worker)
             // Does it make sense to be defined here? If someone calls the above method, the websocket won't be set according to the given settings.
             try settings.apply(on: websocket, request: request, response: response)
             try onUpgrade(websocket)
@@ -66,7 +66,7 @@ extension WebSocket {
         }
 
         let data = Base64Encoder().encode(data: SHA1.hash(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
-        let hash = String(bytes: data, encoding: .utf8) ?? ""
+        let hash = String(data: data, encoding: .utf8) ?? ""
 
         var headers: HTTPHeaders = [
             .upgrade: "websocket",
