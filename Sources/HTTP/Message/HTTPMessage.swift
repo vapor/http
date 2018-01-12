@@ -50,7 +50,7 @@ public struct HTTPOnUpgrade: Codable {
     public typealias Sink = AnyInputStream<ByteBuffer>
 
     /// Accepts the byte stream underlying the HTTP connection.
-    public typealias Closure = (Source, Sink) throws -> ()
+    public typealias Closure = (Source, Sink, Worker) throws -> ()
 
     /// Internal storage
     public let closure: Closure
@@ -67,7 +67,7 @@ public struct HTTPOnUpgrade: Codable {
 
     /// See Decodable.init
     public init(from decoder: Decoder) throws {
-        self.init { _, _ in }
+        self.init { _, _, _ in }
     }
 }
 

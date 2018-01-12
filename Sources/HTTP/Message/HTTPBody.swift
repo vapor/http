@@ -1,4 +1,4 @@
-import Async
+     import Async
 import Foundation
 import Dispatch
 import Bits
@@ -14,15 +14,17 @@ public struct HTTPBody: Codable {
     ///
     /// NOTE: This is an implementation detail
     enum Storage: Codable {
+        case none
         case data(Data)
         case staticString(StaticString)
         case dispatchData(DispatchData)
         case string(String)
         case chunkedOutputStream(OutputChunkedStreamClosure)
-        case binaryOutputStream(size: Int, stream: AnyOutputStream<ByteBuffer>)
+        case binaryOutputStream(size: Int?, stream: AnyOutputStream<ByteBuffer>)
         
         func encode(to encoder: Encoder) throws {
             switch self {
+            case .none: return
             case .data(let data):
                 try data.encode(to: encoder)
             case .dispatchData(let data):
@@ -51,11 +53,11 @@ public struct HTTPBody: Codable {
             case .dispatchData(let data): return data.count
             case .staticString(let staticString): return staticString.utf8CodeUnitCount
             case .string(let string): return string.utf8.count
-            case .chunkedOutputStream(_):
+            case .chunkedOutputStream, .none:
                 /// FIXME: convert to data then return count?
                 return 0
             case .binaryOutputStream(let size, _):
-                return size
+                return size ?? 0
             }
         }
         
@@ -72,7 +74,7 @@ public struct HTTPBody: Codable {
                 return try string.withCString { pointer in
                     return try pointer.withMemoryRebound(to: UInt8.self, capacity: self.count, run)
                 }
-            case .chunkedOutputStream(_), .binaryOutputStream(_):
+            case .none, .chunkedOutputStream(_), .binaryOutputStream(_):
                 throw HTTPError(identifier: "invalid-stream-acccess", reason: "A BodyStream was being accessed as a sequential byte buffer, which is impossible.")
             }
         }
@@ -83,7 +85,7 @@ public struct HTTPBody: Codable {
     
     /// Creates an empty body
     public init() {
-        self.init(Data())
+        storage = .none
     }
     
     /// Create a new body wrapping `Data`.
@@ -116,7 +118,7 @@ public struct HTTPBody: Codable {
     }
     
     /// A chunked body stream
-    public init(size: Int, stream: AnyOutputStream<ByteBuffer>) {
+    public init(size: Int?, stream: AnyOutputStream<ByteBuffer>) {
         self.storage = .binaryOutputStream(size: size, stream: stream)
     }
     
@@ -133,22 +135,41 @@ public struct HTTPBody: Codable {
     }
     
     /// Get body data.
-    public var data: Data? {
+    public func makeData(max: Int) -> Future<Data> {
         switch storage {
+        case .none:
+            return Future(Data())
         case .data(let data):
-            return data
+            return Future(data)
         case .dispatchData(let dispatch):
-            return Data(dispatch)
-        case .staticString(_):
-            return nil
+            return Future(Data(dispatch))
+        case .staticString(let string):
+            return Future(Data(bytes: string.utf8Start, count: string.utf8CodeUnitCount))
         case .string(let string):
-            return Data(string.utf8)
+            return Future(Data(string.utf8))
         case .chunkedOutputStream(_):
-            /// FIXME: collect output stream into data?
-            return nil
-        case .binaryOutputStream(_):
-            /// FIXME: collect output stream into data?
-            return nil
+            return Future(error: HTTPError(identifier: "chunked-output-stream", reason: "Cannot convert a chunked output stream to a `Data` buffer"))
+        case .binaryOutputStream(let size, let stream):
+            let promise = Promise<Data>()
+            var data = Data()
+            
+            if let size = size {
+                data.reserveCapacity(size)
+            }
+            
+            var upstream: ConnectionContext?
+            
+            stream.drain { _upstream in
+                upstream = _upstream
+            }.output { buffer in
+                data.append(Data(buffer: buffer))
+            }.catch(onError: promise.fail).finally {
+                promise.complete(data)
+            }
+            
+            upstream?.request(count: .max)
+            
+            return promise.future
         }
     }
     

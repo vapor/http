@@ -45,7 +45,7 @@ public final class TCPClient {
 extension TCPSocket {
     /// connect - initiate a connection on a socket
     /// http://man7.org/linux/man-pages/man2/connect.2.html
-    fileprivate mutating func connect(hostname: String, port: UInt16) throws {
+    fileprivate func connect(hostname: String, port: UInt16) throws {
         var hints = addrinfo()
 
         // Support both IPv4 and IPv6

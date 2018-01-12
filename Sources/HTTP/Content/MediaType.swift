@@ -42,6 +42,7 @@ public struct MediaType {
     
     var typeBytes: [UInt8]
     var subtypeBytes: [UInt8]
+    var bytes: [UInt8]
     
     /// Key/value pair parameters for this type.
     public let parameters: [String: String]
@@ -51,6 +52,23 @@ public struct MediaType {
         self.typeBytes = Array(type.utf8)
         self.subtypeBytes = Array(subtype.utf8)
         self.parameters = parameters
+        
+        var bytes = [UInt8]()
+        bytes.reserveCapacity(typeBytes.count + subtypeBytes.count + 128)
+        
+        bytes.append(contentsOf: typeBytes)
+        bytes.append(.forwardSlash)
+        bytes.append(contentsOf: subtypeBytes)
+        
+        for parameter in parameters {
+            bytes.append(.semicolon)
+            bytes.append(.space)
+            bytes += Array(parameter.key.utf8)
+            bytes.append(.equals)
+            bytes += Array(parameter.value.utf8)
+        }
+        
+        self.bytes = bytes
     }
 
     /// Parse a MediaType from a String.
@@ -186,7 +204,7 @@ extension HTTPMessage {
         }
         set {
             if let newValue = newValue {
-                headers.appendValue(newValue.bytes(), forName: .contentType)
+                headers.appendValue(newValue.bytes, forName: .contentType)
             } else {
                 headers.removeValues(forName: .contentType)
             }

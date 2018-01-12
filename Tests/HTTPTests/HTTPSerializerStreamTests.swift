@@ -5,6 +5,8 @@ import Foundation
 import XCTest
 
 class HTTPSerializerStreamTests: XCTestCase {
+    let loop = try! DefaultEventLoop(label: "test")
+    
     func testResponse() throws {
         /// output and output request for later in test
         var output: [ByteBuffer] = []
@@ -12,7 +14,7 @@ class HTTPSerializerStreamTests: XCTestCase {
 
         /// setup the mock app
         let mockApp = EmitterStream(HTTPResponse.self)
-        mockApp.stream(to: HTTPResponseSerializer().stream()).drain { req in
+        mockApp.stream(to: HTTPResponseSerializer().stream(on: loop)).drain { req in
             outputRequest = req
         }.output { buffer in
             output.append(buffer)
@@ -50,7 +52,7 @@ class HTTPSerializerStreamTests: XCTestCase {
 
         /// setup the mock app
         let mockApp = EmitterStream(HTTPResponse.self)
-        mockApp.stream(to: HTTPResponseSerializer().stream()).drain { req in
+        mockApp.stream(to: HTTPResponseSerializer().stream(on: loop)).drain { req in
             outputRequest = req
         }.output { buffer in
             output.append(Data(buffer))
@@ -81,7 +83,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             let message = String(bytes: output[0], encoding: .utf8)
             XCTAssertEqual(message, "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n")
         } else {
-            XCTFail("Invalid output count: \(output.count)")
+            XCTFail("Invalid output count: \(output.count) != 1")
         }
 
         /// request another byte buffer
@@ -99,7 +101,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             let message = String(data: output[1], encoding: .utf8)
             XCTAssertEqual(message, "5\r\nhello\r\n")
         } else {
-            XCTFail("Invalid output count: \(output.count)")
+            XCTFail("Invalid output count: \(output.count) != 2")
         }
 
         /// Request and emit additional output
@@ -110,7 +112,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             let message = String(data: output[2], encoding: .utf8)
             XCTAssertEqual(message, "4\r\ntest\r\n")
         } else {
-            XCTFail("Invalid output count: \(output.count)")
+            XCTFail("Invalid output count: \(output.count) != 3")
         }
 
         outputRequest?.request()
@@ -120,7 +122,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             let message = String(data: output[3], encoding: .utf8)
             XCTAssertEqual(message, "0\r\n\r\n")
         } else {
-            XCTFail("Invalid output count: \(output.count)")
+            XCTFail("Invalid output count: \(output.count) != 4")
         }
         /// parsing stream should remain open, just ready for another message
         XCTAssertTrue(!closed)
@@ -136,7 +138,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             let message = String(data: output[4], encoding: .utf8)
             XCTAssertEqual(message, "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello")
         } else {
-            XCTFail("Invalid output count: \(output.count)")
+            XCTFail("Invalid output count: \(output.count) != 5")
         }
     }
 

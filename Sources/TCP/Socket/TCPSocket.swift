@@ -4,7 +4,7 @@ import COperatingSystem
 import Foundation
 
 /// Any TCP socket. It doesn't specify being a server or client yet.
-public struct TCPSocket: Socket {
+public final class TCPSocket: Socket {
     /// The file descriptor related to this socket
     public let descriptor: Int32
 
@@ -16,6 +16,9 @@ public struct TCPSocket: Socket {
 
     /// True if the socket should re-use addresses
     public let shouldReuseAddress: Bool
+
+    /// True if the socket has been closed.
+    public var isClosed = false
 
     /// Creates a TCP socket around an existing descriptor
     public init(
@@ -31,7 +34,7 @@ public struct TCPSocket: Socket {
     }
 
     /// Creates a new TCP socket
-    public init(
+    public convenience init(
         isNonBlocking: Bool = true,
         shouldReuseAddress: Bool = true
     ) throws {
@@ -101,7 +104,8 @@ public struct TCPSocket: Socket {
                 // itself throws an error.
                 _ = close()
                 return .read(count: 0)
-            case EAGAIN, EWOULDBLOCK:
+            case EAGAIN: return try read(into: buffer)
+            case EWOULDBLOCK:
                 // no data yet
                 return .wouldBlock
             default:
@@ -134,11 +138,13 @@ public struct TCPSocket: Socket {
             case EINTR:
                 // try again
                 return try write(from: buffer)
-            case ECONNRESET, EBADF:
+            case ECONNRESET:
+                self.close()
+                return .wrote(count: 0)
+            case EBADF:
                 // closed by peer, need to close this side.
                 // Since this is not an error, no need to throw unless the close
                 // itself throws an error.
-                self.close()
                 return .wrote(count: 0)
             case EAGAIN, EWOULDBLOCK:
                 return .wouldBlock
@@ -152,6 +158,10 @@ public struct TCPSocket: Socket {
 
     /// Closes the socket
     public func close() {
+        guard !isClosed else {
+            return
+        }
         _ = COperatingSystem.close(descriptor)
+        isClosed = true
     }
 }
