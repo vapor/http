@@ -13,11 +13,18 @@ class UtilityTests : XCTestCase {
         XCTAssertEqual(string, "Fri, 12 Feb 2010 05:23:03 GMT")
     }
     
-    func HTTPURIs() {
+    func testHTTPURIs() {
         XCTAssertEqual(URI.defaultPorts["ws"], 80)
         XCTAssertEqual(URI.defaultPorts["wss"], 443)
         XCTAssertEqual(URI.defaultPorts["http"], 80)
         XCTAssertEqual(URI.defaultPorts["https"], 443)
+    }
+    
+    func testURIConstruction() throws {
+        XCTAssertEqual(URI(scheme: "http", hostname: "localhost", port: 80).rawValue, "http://localhost:80/")
+        XCTAssertEqual(URI(scheme: "http://", hostname: "localhost", port: 80).rawValue, "http://localhost:80/")
+        XCTAssertEqual(URI(scheme: "http", hostname: "localhost").rawValue, "http://localhost/")
+        XCTAssertEqual(URI(scheme: "http://", hostname: "localhost").rawValue, "http://localhost/")
     }
     
     func testMethod() {
@@ -73,7 +80,8 @@ class UtilityTests : XCTestCase {
     
     static let allTests = [
         ("testRFC1123", testRFC1123),
-        ("HTTPURIs", HTTPURIs),
+        ("testHTTPURIs", testHTTPURIs),
+        ("testURIConstruction", testURIConstruction),
         ("testMethod", testMethod),
         ("testCookie", testCookie),
         ("testCookies", testCookies),
