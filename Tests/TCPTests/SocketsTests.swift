@@ -14,27 +14,33 @@ class SocketsTests: XCTestCase {
     func _testServer() throws {
         let serverSocket = try TCPSocket(isNonBlocking: true)
         let server = try TCPServer(socket: serverSocket)
-
-
-        let workerLoop = try DefaultEventLoop(label: "codes.vapor.test.worker")
-        let serverStream = server.stream(on: workerLoop)
-
-        /// set up the server stream
-        serverStream.drain { req in
-            req.request(count: .max)
-        }.output { client in
-            let clientSource = client.socket.source(on: workerLoop)
-            let clientSink = client.socket.sink(on: workerLoop)
-            clientSource.output(to: clientSink)
-        }.catch { err in
-            XCTFail("\(err)")
-        }.finally {
-            // closed
-        }
-
-        // beyblades let 'er rip
         try server.start(port: 8338)
-        Thread.async { workerLoop.runLoop() }
+
+
+        for i in 1...4 {
+            let workerLoop = try DefaultEventLoop(label: "codes.vapor.test.worker.\(i)")
+            let serverStream = server.stream(on: workerLoop)
+
+            /// set up the server stream
+            serverStream.drain { req in
+                req.request(count: .max)
+            }.output { client in
+                print(DefaultEventLoop.current.label)
+                let clientSource = client.socket.source(on: workerLoop)
+                let clientSink = client.socket.sink(on: workerLoop)
+                clientSource.output(to: clientSink)
+            }.catch { err in
+                XCTFail("\(err)")
+            }.finally {
+                // closed
+            }
+
+            // beyblades let 'er rip
+            Thread.async { workerLoop.runLoop() }
+        }
+        let group = DispatchGroup()
+        group.enter()
+        group.wait()
 
         let exp = expectation(description: "all requests complete")
         var num = 1024
