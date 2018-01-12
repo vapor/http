@@ -31,20 +31,11 @@ public final class HTTPServer<AcceptStream, Worker>
     }
 
     /// Create a new HTTP server with the supplied accept stream.
-    public init(acceptStream: AcceptStream, workers: [Worker]) {
+    public init(acceptStream: AcceptStream, worker: Worker) {
         self.serverStream = HTTPServerStream(
             acceptStream: acceptStream,
-            workers: workers
+            worker: worker
         )
-        for worker in workers {
-            if #available(OSX 10.12, *) {
-                Thread.detachNewThread {
-                    worker.eventLoop.runLoop()
-                }
-            } else {
-                fatalError("macOS 10.12 required")
-            }
-        }
     }
 }
 

@@ -20,20 +20,42 @@ struct EchoWorker: HTTPResponder, Worker {
 
 class HTTPServerTests: XCTestCase {
     func testTCP() throws {
-        let accept = try DefaultEventLoop(label: "codes.vapor.http.test.server.accept")
-        let workers = [EchoWorker(eventLoop: accept)]
-
         let tcpSocket = try TCPSocket(isNonBlocking: true)
         let tcpServer = try TCPServer(socket: tcpSocket)
-        let server = HTTPServer<TCPClientStream, EchoWorker>(
-            acceptStream: tcpServer.stream(on: accept),
-            workers: workers
-        )
-        server.onError = { XCTFail("\($0)") }
 
         // beyblades let 'er rip
         try tcpServer.start(hostname: "localhost", port: 8123, backlog: 128)
-        Thread.async { accept.runLoop() }
+
+        for i in 1...ProcessInfo.processInfo.activeProcessorCount {
+            let workerLoop = try DefaultEventLoop(label: "codes.vapor.test.worker.\(i)")
+            let serverStream = tcpServer.stream(on: workerLoop)
+
+            /// set up the server stream
+            serverStream.drain { req in
+                req.request(count: .max)
+            }.output { client in
+                let serializerStream = HTTPResponseSerializer().stream(on: workerLoop)
+                let parserStream = HTTPRequestParser().stream(on: workerLoop)
+
+                let source = client.source(on: workerLoop)
+                let sink = client.sink(on: workerLoop)
+                source
+                    .stream(to: parserStream)
+                    .map(to: HTTPResponse.self) { req in
+                        return HTTPResponse(body: req.body)
+                    }
+                    .stream(to: serializerStream)
+                    .output(to: sink)
+            }.catch { err in
+                XCTFail("\(err)")
+            }.finally {
+                // closed
+            }
+
+            Thread.async {
+                workerLoop.runLoop()
+            }
+        }
         
         let exp = expectation(description: "all requests complete")
         var num = 1024
@@ -52,7 +74,6 @@ class HTTPServerTests: XCTestCase {
                 exp.fulfill()
             }
         }
-
 
         waitForExpectations(timeout: 5)
         tcpServer.stop()

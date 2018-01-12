@@ -15,10 +15,9 @@ class SocketsTests: XCTestCase {
         let serverSocket = try TCPSocket(isNonBlocking: true)
         let server = try TCPServer(socket: serverSocket)
 
-        let workerLoop = try DefaultEventLoop(label: "codes.vapor.test.worker.1")
-        // let serverLoop = try DefaultEventLoop(label: "codes.vapor.test.server")
-        let serverStream = server.stream(on: workerLoop)
 
+        let workerLoop = try DefaultEventLoop(label: "codes.vapor.test.worker")
+        let serverStream = server.stream(on: workerLoop)
 
         /// set up the server stream
         serverStream.drain { req in
@@ -36,8 +35,6 @@ class SocketsTests: XCTestCase {
         // beyblades let 'er rip
         try server.start(port: 8338)
         Thread.async { workerLoop.runLoop() }
-        // Thread.async { serverLoop.runLoop() }
-        // serverLoop.runLoop()
 
         let exp = expectation(description: "all requests complete")
         var num = 1024

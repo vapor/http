@@ -18,19 +18,14 @@ internal final class HTTPServerStream<AcceptStream, Worker>: InputStream
     private var upstream: ConnectionContext?
 
     /// HTTP responder
-    private let workers: [Worker]
-
-    /// The current worker.
-    /// A new worker is chosen (round robin) for each connection.
-    private var workerOffset: Int
+    private let worker: Worker
 
     /// Create a new HTTP server stream.
     init(
         acceptStream: AcceptStream,
-        workers: [Worker]
+        worker: Worker
     ) {
-        self.workers = workers
-        workerOffset = 0
+        self.worker = worker
         acceptStream.output(to: self)
     }
 
@@ -41,13 +36,6 @@ internal final class HTTPServerStream<AcceptStream, Worker>: InputStream
             /// never stop accepting
             upstream.request(count: .max)
         case .next(let input):
-            let worker: Worker
-            workerOffset += 1
-            if workerOffset >= workers.count {
-                workerOffset = 0
-            }
-            worker = workers[workerOffset]
-            
             let serializerStream = HTTPResponseSerializer().stream(on: worker)
             let parserStream = HTTPRequestParser().stream(on: worker)
 
@@ -61,7 +49,7 @@ internal final class HTTPServerStream<AcceptStream, Worker>: InputStream
                     defer {
                         if let onUpgrade = response.onUpgrade {
                             do {
-                                try onUpgrade.closure(.init(source), .init(sink), worker)
+                                try onUpgrade.closure(.init(source), .init(sink), self.worker)
                             } catch {
                                 self.onError?(error)
                             }

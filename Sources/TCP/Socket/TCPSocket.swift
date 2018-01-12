@@ -17,8 +17,8 @@ public final class TCPSocket: Socket {
     /// True if the socket should re-use addresses
     public let shouldReuseAddress: Bool
 
-    /// Prevents double closing.
-    private var isClosed = false
+    /// True if the socket has been closed.
+    public var isClosed = false
 
     /// Creates a TCP socket around an existing descriptor
     public init(
