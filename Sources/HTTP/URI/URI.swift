@@ -148,6 +148,9 @@ extension URI {
         
         if let scheme = scheme {
             buffer.append(contentsOf: scheme.utf8)
+            if scheme.last != "/" && scheme.last != ":" {
+                buffer.append(contentsOf: [.colon, .forwardSlash, .forwardSlash])
+            }
         }
         
         if let userInfo = userInfo {
