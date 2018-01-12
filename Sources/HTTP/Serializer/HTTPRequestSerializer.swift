@@ -16,7 +16,7 @@ public final class HTTPRequestSerializer: _HTTPSerializer {
     var headersData: Data?
 
     /// Static body data
-    var staticBodyData: Data?
+    var body: HTTPBody?
     
     public let state: ByteSerializerState<HTTPRequestSerializer>
     let buffer: MutableByteBuffer
@@ -45,22 +45,7 @@ public final class HTTPRequestSerializer: _HTTPSerializer {
         
         self.firstLine = message.firstLine
         
-        switch message.body.storage {
-        case .data(let data):
-            self.staticBodyData = data
-        case .dispatchData(let dispatchData):
-            self.staticBodyData = Data(dispatchData)
-        case .staticString(let staticString):
-            let buffer = UnsafeBufferPointer(
-                start: staticString.utf8Start,
-                count: staticString.utf8CodeUnitCount
-            )
-            self.staticBodyData = Data(buffer)
-        case .string(let string):
-            self.staticBodyData = Data(string.utf8)
-        case .chunkedOutputStream: break
-        case .binaryOutputStream(_): break
-        }
+        self.body = message.body
     }
     
     deinit {

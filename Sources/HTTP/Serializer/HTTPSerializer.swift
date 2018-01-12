@@ -10,6 +10,7 @@ public enum HTTPSerializerState {
     case headers(offset: Int)
     case crlf(offset: Int)
     case staticBody(offset: Int)
+    case streaming(AnyOutputStream<ByteBuffer>)
     
     mutating func next() {
         switch self {
@@ -46,13 +47,13 @@ public protocol HTTPSerializer: class, ByteSerializer where Input: HTTPMessage {
 
 internal protocol _HTTPSerializer: HTTPSerializer where SerializationState == HTTPSerializerState {
     /// Serialized message
-    var firstLine: [UInt8]? { get set }
+    var firstLine: [UInt8]? { get }
     
     /// Headers
-    var headersData: Data? { get set }
+    var headersData: Data? { get }
 
     /// Body data
-    var staticBodyData: Data? { get set }
+    var body: HTTPBody? { get }
     
     var buffer: MutableByteBuffer { get }
 }
@@ -113,17 +114,37 @@ extension _HTTPSerializer {
                 }
             case .staticBody(let offset):
                 _offset = offset
-                if let bodyData = self.staticBodyData {
-                    bufferSize = bodyData.count
-                    writeSize = min(outputSize, bufferSize - offset)
-                    
-                    bodyData.withByteBuffer { bodyBuffer in
-                        _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), bodyBuffer.baseAddress!.advanced(by: offset), writeSize)
-                    }
-                } else {
+                
+                guard let body = self.body else {
                     state.next()
                     continue
                 }
+                
+                switch body.storage {
+                case .chunkedOutputStream(let streamBuilder):
+                    let stream = HTTPChunkEncodingStream()
+                    let result = AnyOutputStream(streamBuilder(stream))
+                    
+                    return .incomplete(
+                        ByteBuffer(start: buffer.baseAddress, count: writeOffset),
+                        state: .streaming(result)
+                    )
+                case .binaryOutputStream(_, let stream):
+                    return .incomplete(
+                        ByteBuffer(start: buffer.baseAddress, count: writeOffset),
+                        state: .streaming(stream)
+                    )
+                default:
+                    bufferSize = body.count
+                    writeSize = min(outputSize, bufferSize - offset)
+                    
+                    try body.withUnsafeBytes { pointer in
+                        _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), pointer.advanced(by: offset), writeSize)
+                    }
+                }
+            case .streaming(let stream):
+                state.next()
+                return .awaiting(stream)
             }
             
             writeOffset += writeSize
