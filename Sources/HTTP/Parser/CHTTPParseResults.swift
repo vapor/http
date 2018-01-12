@@ -25,6 +25,8 @@ internal final class CParseResults {
     var currentSize: Int = 0
     var maxHeaderSize: Int?
     
+    var contentLength: Int?
+    
     var headers: HTTPHeaders?
     
     var body: HTTPBody?

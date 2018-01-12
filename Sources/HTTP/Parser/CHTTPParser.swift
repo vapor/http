@@ -157,6 +157,21 @@ extension CHTTPParser {
                 results.headersData.append(.carriageReturn)
                 results.headersData.append(.newLine)
                 
+                if results.contentLength == nil {
+                    let namePointer = UnsafePointer(results.headersData).advanced(by: index.nameStartIndex)
+                    let nameLength = index.nameEndIndex - index.nameStartIndex
+                    let nameBuffer = ByteBuffer(start: namePointer, count: nameLength)
+                    
+                    if lowercasedContentLength.caseInsensitiveEquals(to: nameBuffer) {
+                        let pointer = UnsafePointer(results.headersData).advanced(by: index.valueStartIndex)
+                        let length = index.valueEndIndex - index.valueStartIndex
+                        
+                        pointer.withMemoryRebound(to: Int8.self, capacity: length) { pointer in
+                            results.contentLength = numericCast(strtol(pointer, nil, 10))
+                        }
+                    }
+                }
+                
                 // start a new key
                 results.headerState = .key(startIndex: results.headersData.count, endIndex: results.headersData.count + length)
             case .key(let start, let end):
@@ -242,8 +257,8 @@ extension CHTTPParser {
                 results.headersData.append(.newLine)
                 let headers = HTTPHeaders(storage: results.headersData, indexes: results.headersIndexes)
                 
-                if let contentLength = headers[.contentLength], let length = Int(contentLength) {
-                    results.body = HTTPBody(size: length, stream: AnyOutputStream(results.bodyStream))
+                if let contentLength = results.contentLength {
+                    results.body = HTTPBody(size: contentLength, stream: AnyOutputStream(results.bodyStream))
                 }
                 
                 results.headers = headers
@@ -306,14 +321,15 @@ extension UnsafeBufferPointer where Element == Byte {
 }
 
 fileprivate let headerSeparator: [UInt8] = [.colon, .space]
+fileprivate let lowercasedContentLength = HTTPHeaders.Name.contentLength.lowercased
 
-extension Data {
+fileprivate extension Data {
     fileprivate var cPointer: UnsafePointer<CChar> {
         return withUnsafeBytes { $0 }
     }
 }
 
-extension UnsafePointer where Pointee == CChar {
+fileprivate extension UnsafePointer where Pointee == CChar {
     /// Creates a Bytes array from a C pointer
     fileprivate func makeBuffer(length: Int) -> UnsafeRawBufferPointer {
         let pointer = UnsafeBufferPointer(start: self, count: length)
@@ -327,4 +343,5 @@ extension UnsafePointer where Pointee == CChar {
         }
     }
 }
+
 
