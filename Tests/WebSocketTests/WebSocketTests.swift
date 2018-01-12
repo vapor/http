@@ -6,55 +6,23 @@ import Async
 import XCTest
 
 final class WebSocketTests : XCTestCase {
-    static let allTests = [
-        ("testTextStream", testTextStream),
-    ]
-    
     func testTextStream() throws {
-        let worker = try DefaultEventLoop(label: "codes.vapor.test.worker.1")
-        let clientLoop = try DefaultEventLoop(label: "codes.vapor.test.client")
-        let serverLoop = try DefaultEventLoop(label: "codes.vapor.test.server")
-
-        Thread.async { worker.runLoop() }
-        Thread.async { clientLoop.runLoop() }
-        Thread.async { serverLoop.runLoop() }
-
+        let worker = try DefaultEventLoop(label: "codes.vapor.test.worker")
         let quit = Promise<Void>()
-        
         let serverSocket = try TCPSocket(isNonBlocking: true)
         let server = try TCPServer(socket: serverSocket)
-        
-        let container = BasicContainer(config: Config(), environment: .development, services: Services(), on: clientLoop)
-        
-        final class WebSocketResponder: HTTPResponder, Worker {
-            var eventLoop: EventLoop
-            var serverSide: WebSocket?
-            
-            init(worker: Worker) {
-                self.eventLoop = worker.eventLoop
-            }
-            
-            func respond(to req: HTTPRequest, on worker: Worker) throws -> Future<HTTPResponse> {
-                let response = try WebSocket.upgradeResponse(for: req, with: WebSocketSettings()) { websocket in
-                    websocket.onString { ws, text in
-                        ws.send(string: String(text.reversed()))
-                    }
-                    
-                    self.serverSide = websocket
-                }
-                
-                return Future(response)
-            }
-        }
-        
+        let container = BasicContainer(config: Config(), environment: .development, services: Services(), on: worker)
+
         let webserver = HTTPServer(
-            acceptStream: server.stream(on: serverLoop),
-            worker: serverLoop,
-            responder: WebSocketResponder(worker: worker)
+            acceptStream: server.stream(on: worker),
+            worker: worker,
+            responder: WebSocketResponder()
         )
         webserver.onError = { XCTFail("\($0)") }
         
         try server.start(hostname: "localhost", port: 8090, backlog: 128)
+        Thread.async { worker.runLoop() }
+        
         let websocket = try WebSocket.connect(to: "ws://localhost:8090", using: container)
         
         var messages = ["hello", "world", "!"]
@@ -83,5 +51,27 @@ final class WebSocketTests : XCTestCase {
         websocket.close()
         server.stop()
         _ = webserver
+    }
+
+    static let allTests = [
+        ("testTextStream", testTextStream),
+    ]
+}
+
+final class WebSocketResponder: HTTPResponder {
+    var serverSide: WebSocket?
+
+    init() {}
+
+    func respond(to req: HTTPRequest, on worker: Worker) throws -> Future<HTTPResponse> {
+        let response = try WebSocket.upgradeResponse(for: req, with: WebSocketSettings()) { websocket in
+            websocket.onString { ws, text in
+                ws.send(string: String(text.reversed()))
+            }
+
+            self.serverSide = websocket
+        }
+
+        return Future(response)
     }
 }
