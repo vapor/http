@@ -12,8 +12,6 @@ import XCTest
 class SSLTests: XCTestCase {
     func testClientBlocking() { do { try _testClientBlocking() } catch { XCTFail("\(error)") } }
     func _testClientBlocking() throws {
-
-
         let tcpSocket = try TCPSocket(isNonBlocking: false)
         let tcpClient = try TCPClient(socket: tcpSocket)
         let tlsSettings = TLSClientSettings()
