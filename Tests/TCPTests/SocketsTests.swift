@@ -15,23 +15,27 @@ class SocketsTests: XCTestCase {
         let serverSocket = try TCPSocket(isNonBlocking: true)
         let server = try TCPServer(socket: serverSocket)
 
-        let worker = DispatchEventLoop(label: "codes.vapor.test.worker.1")
-        let serverStream = server.stream(
-            on: DispatchEventLoop(label: "codes.vapor.test.server")
-        )
+        let workerLoop = try DefaultEventLoop(label: "codes.vapor.test.worker.1")
+        let serverLoop = try DefaultEventLoop(label: "codes.vapor.test.server")
+        let serverStream = server.stream(on: serverLoop)
+
+        Thread.async { workerLoop.runLoop() }
+        Thread.async { serverLoop.runLoop() }
 
         /// set up the server stream
         serverStream.drain { req in
             req.request(count: .max)
         }.output { client in
-            let clientSource = client.socket.source(on: worker)
-            let clientSink = client.socket.sink(on: worker)
+            let clientSource = client.socket.source(on: workerLoop)
+            let clientSink = client.socket.sink(on: workerLoop)
             
             var clientReq: ConnectionContext?
             clientSource.drain { req in
                 clientReq = req
-                clientReq!.request()
             }.output { buffer in
+                // print("output:")
+                // print("    " + DefaultEventLoop.current.label)
+                // print("    " + buffer.debugDescription)
                 /// simple echo server
                 clientSink.next(buffer)
                 /// after we write data, we are ready to read more
@@ -48,6 +52,7 @@ class SocketsTests: XCTestCase {
                 // we requested .max, so we will never run out
                 // serverReq.requestOutput()
             }
+            clientReq!.request()
         }.catch { err in
             XCTFail("\(err)")
         }.finally {
