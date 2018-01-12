@@ -8,10 +8,8 @@ import XCTest
 struct EchoWorker: HTTPResponder, Worker {
     let eventLoop: EventLoop
 
-    init() throws {
-        let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.server.worker")
+    init(eventLoop: EventLoop) {
         self.eventLoop = eventLoop
-        Thread.async { eventLoop.runLoop() }
     }
 
     func respond(to req: HTTPRequest, on Worker: Worker) throws -> Future<HTTPResponse> {
@@ -23,17 +21,7 @@ struct EchoWorker: HTTPResponder, Worker {
 class HTTPServerTests: XCTestCase {
     func testTCP() throws {
         let accept = try DefaultEventLoop(label: "codes.vapor.http.test.server.accept")
-        Thread.async { accept.runLoop() }
-        let workers = try [
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker()
-        ]
+        let workers = [EchoWorker(eventLoop: accept)]
 
         let tcpSocket = try TCPSocket(isNonBlocking: true)
         let tcpServer = try TCPServer(socket: tcpSocket)
@@ -45,6 +33,8 @@ class HTTPServerTests: XCTestCase {
 
         // beyblades let 'er rip
         try tcpServer.start(hostname: "localhost", port: 8123, backlog: 128)
+        Thread.async { accept.runLoop() }
+        
         let exp = expectation(description: "all requests complete")
         var num = 1024
         for _ in 0..<num {
