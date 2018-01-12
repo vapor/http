@@ -8,10 +8,8 @@ import XCTest
 final class WebSocketTests : XCTestCase {
     func testTextStream() throws {
         let worker = try DefaultEventLoop(label: "codes.vapor.test.worker")
-        let quit = Promise<Void>()
         let serverSocket = try TCPSocket(isNonBlocking: true)
         let server = try TCPServer(socket: serverSocket)
-        let container = BasicContainer(config: Config(), environment: .development, services: Services(), on: worker)
 
         let webserver = HTTPServer(
             acceptStream: server.stream(on: worker),
@@ -21,49 +19,43 @@ final class WebSocketTests : XCTestCase {
         webserver.onError = { XCTFail("\($0)") }
         
         try server.start(hostname: "localhost", port: 8090, backlog: 128)
-        // fixme: websocket
-        return;
         Thread.async { worker.runLoop() }
 
-        let tcpSocket = try TCPSocket(isNonBlocking: false)
-        let tcpClient = try TCPClient(socket: tcpSocket)
-        try tcpClient.connect(hostname: "localhost", port: 8090)
-        let clientSource = tcpSocket.source(on: container)
-        let clientSink = tcpSocket.sink(on: container)
-        let websocket = WebSocket(
-            source: .init(clientSource),
-            sink: .init(clientSink),
-            worker: container,
-            server: false
-        )
-        websocket.upgrade(uri: "ws://localhost:8090")
+        let clientSocket = try TCPSocket(isNonBlocking: false)
+        let client = try TCPClient(socket: clientSocket)
+        try client.connect(hostname: "localhost", port: 8090)
+        let write = Data("""
+        GET / HTTP/1.1\r
+        Connection: Upgrade\r
+        Upgrade: websocket\r
+        Sec-WebSocket-Key: yQWympdS3/3+7EXhPH+P/A==\r
+        Sec-WebSocket-Version: 13\r
+        Content-Length: 0\r
+        \r
 
-        var messages = ["hello", "world", "!"]
-        
-        websocket.onString { ws, text in
-            guard messages.count > 0 else {
-                XCTFail("Invalid message received")
-                return
-            }
-            
-            let expectation = String(messages.removeFirst().reversed())
-            
-            XCTAssertEqual(expectation, text)
-            
-            if messages.count > 0 {
-                ws.send(string: messages[0])
-            } else {
-                quit.complete()
-            }
-        }
-        
-        websocket.send(string: messages[0])
-        
-        try quit.future.blockingAwait(timeout: .seconds(10))
-        XCTAssertEqual(messages.count, 0)
-        websocket.close()
+        """.utf8)
+        _ = try client.socket.write(write)
+        let read = try client.socket.read(max: 512)
+        let string = String(data: read, encoding: .utf8)
+        XCTAssertEqual(string, """
+        HTTP/1.1 101 \r
+        Upgrade: websocket\r
+        Connection: Upgrade\r
+        Sec-WebSocket-Accept: U5ZWHrbsu7snP3DY1Q5P3e8AkOk=\r
+        Content-Length: 0\r
+        \r
+
+        """)
+
+        let payload = "hi".data(using: .utf8)!.withByteBuffer { $0 }
+        let hi = Frame(op: .text, payload: payload, mask: [1, 2, 3, 4])
+        _ = try client.socket.write(Data(hi.buffer))
+
+        let read2 = try client.socket.read(max: 512)
+        XCTAssertEqual(read2.count, 4)
+
+        client.close()
         server.stop()
-        _ = webserver
     }
 
     static let allTests = [
