@@ -42,7 +42,7 @@ internal final class HTTPServerStream<AcceptStream, Worker>: InputStream
             upstream.request(count: .max)
         case .next(let input):
             let serializerStream = HTTPResponseSerializer().stream()
-            let parserStream = HTTPRequestParser(maxSize: 10_000_000).stream()
+            let parserStream = HTTPRequestParser().stream()
 
             let worker: Worker
             workerOffset += 1
@@ -61,7 +61,7 @@ internal final class HTTPServerStream<AcceptStream, Worker>: InputStream
                     defer {
                         if let onUpgrade = response.onUpgrade {
                             do {
-                                try onUpgrade.closure(.init(source), .init(sink))
+                                try onUpgrade.closure(.init(source), .init(sink), worker)
                             } catch {
                                 self.onError?(error)
                             }

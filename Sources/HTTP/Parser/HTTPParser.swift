@@ -1,3 +1,4 @@
+import Async
 import Bits
 import Foundation
 
@@ -10,6 +11,10 @@ public protocol HTTPParser: class {
     /// Becomes non-nil after completely parsed.
     /// Seeting this property to `nil` resets the parser.
     var message: Message? { get set }
+    
+    /// Indicates that the `message`'s body has completely been serialized
+    /// and a new message can be parsed
+    var messageBodyCompleted: Bool { get set}
 
     /// Parses data from the supplied buffer.
     /// Returns the number of bytes parsed.

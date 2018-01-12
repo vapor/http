@@ -13,11 +13,18 @@ enum HeaderState {
 
 
 /// Internal CHTTP parser protocol
-internal protocol CHTTPParser: HTTPParser {
+internal protocol CHTTPParser: Async.Stream, ConnectionContext, HTTPParser {
     static var parserType: http_parser_type { get }
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
-    var maxSize: Int { get }
+    var maxMessageSize: Int? { get set }
+    var maxHeaderSize: Int? { get set }
+    var maxBodySize: Int? { get set }
+    
+    var upstream: ConnectionContext? { get set }
+    var downstreamDemand: UInt { get set }
+    var downstream: AnyInputStream<Message>? { get set }
+    
     var state: CHTTPParserState { get set }
     func makeMessage(from results: CParseResults) throws -> Message
 }
@@ -31,6 +38,42 @@ enum CHTTPParserState {
 /// MARK: HTTPParser conformance
 
 extension CHTTPParser {
+    public func connection(_ event: ConnectionEvent) {
+        switch event {
+        case .cancel:
+            self.close()
+        case .request(let amount):
+            self.downstreamDemand += amount
+        }
+    }
+    
+    public func input(_ event: InputEvent<ByteBuffer>) {
+        switch event {
+        case .connect(let upstream):
+            self.upstream = upstream
+        case .error(let error):
+            self.downstream?.error(error)
+            self.close()
+        case .next(let next):
+            do {
+                let parsed = try self.parse(from: next)
+                
+                guard parsed == next.count else {
+                    throw HTTPError(identifier: "too-much-data", reason: "HTTP received more data than could be parsed in a single HTTP message (according to spec)")
+                }
+            } catch {
+                self.downstream?.error(error)
+            }
+        case .close:
+            self.downstream?.close()
+        }
+    }
+    
+    public func output<S>(to inputStream: S) where S : Async.InputStream, Message == S.Input {
+        self.downstream = AnyInputStream(inputStream)
+        inputStream.connect(to: self)
+    }
+    
     /// Parses a Request from the stream.
     public func parse(from buffer: ByteBuffer) throws -> Int {
         guard let results = getResults() else {
@@ -38,8 +81,11 @@ extension CHTTPParser {
         }
 
         results.currentSize += buffer.count
-        guard results.currentSize < results.maxSize else {
-            throw HTTPError(identifier: "messageTooLarge", reason: "The HTTP message's size exceeded set maximum: \(maxSize)")
+        
+        if let maxMessageSize = results.maxMessageSize {
+            guard results.currentSize < maxMessageSize else {
+                throw HTTPError(identifier: "messageTooLarge", reason: "The HTTP message's size exceeded set maximum: \(maxMessageSize)")
+            }
         }
 
         /// parse the message using the C HTTP parser.
@@ -62,7 +108,6 @@ extension CHTTPParser {
     public func reset() {
         reset(Self.parserType)
     }
-
 }
 
 /// MARK: CHTTP integration
@@ -96,7 +141,7 @@ extension CHTTPParser {
         case .ready:
             // create a new results object and set
             // a reference to it on the parser
-            let newResults = CParseResults.set(on: &parser, maxSize: maxSize)
+            let newResults = CParseResults.set(on: &parser, swiftParser: self)
             results = newResults
             state = .parsing
         case .parsing:
@@ -236,11 +281,13 @@ extension CHTTPParser {
                 let headers = HTTPHeaders(storage: results.headersData, indexes: results.headersIndexes)
                 
                 if let contentLength = headers[.contentLength], let length = Int(contentLength) {
-                    guard length < results.maxSize &- results.currentSize else {
-                        return 1
+                    if let maxBodySize = results.maxBodySize {
+                        guard length < maxBodySize &- results.currentSize else {
+                            return 1
+                        }
                     }
                     
-                    results.bodyData.reserveCapacity(length)
+                    results.body = HTTPBody(size: length, stream: AnyOutputStream(results.bodyStream))
                 }
                 
                 results.headers = headers
@@ -268,7 +315,7 @@ extension CHTTPParser {
             }
 
             return chunk.withMemoryRebound(to: UInt8.self, capacity: length) { pointer -> Int32 in
-                results.bodyData.append(pointer, count: length)
+                results.bodyStream.push(ByteBuffer(start: pointer, count: length))
                 
                 return 0
             }
@@ -284,6 +331,8 @@ extension CHTTPParser {
                 return 1
             }
 
+            results.bodyStream.eof()
+            
             // mark the results as complete
             results.isComplete = true
             
@@ -300,7 +349,7 @@ extension UnsafeBufferPointer where Element == Byte {
     }
 }
 
-fileprivate let headerSeparator = Data([.colon, .space])
+fileprivate let headerSeparator: [UInt8] = [.colon, .space]
 
 extension Data {
     fileprivate var cPointer: UnsafePointer<CChar> {

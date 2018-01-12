@@ -6,34 +6,38 @@ import TCP
 import XCTest
 
 class HTTPClientTests: XCTestCase {
+    let eventLoop = DispatchEventLoop(label: "codes.vapor.http.test.client")
+    
     func testTCP() throws {
         let tcpSocket = try TCPSocket(isNonBlocking: true)
         let tcpClient = try TCPClient(socket: tcpSocket)
         try tcpClient.connect(hostname: "httpbin.org", port: 80)
-        let eventLoop = DispatchEventLoop(label: "codes.vapor.http.test.client")
         let tcpSource = tcpSocket.source(on: eventLoop)
         let tcpSink = tcpSocket.sink(on: eventLoop)
-        let client = HTTPClient(source: tcpSource, sink: tcpSink)
+        let client = HTTPClient(source: tcpSource, sink: tcpSink, worker: eventLoop)
 
         let req = HTTPRequest(method: .get, uri: "/html", headers: [.host: "httpbin.org"])
         let res = client.send(req)
 
         let exp = expectation(description: "response")
-        res.do { res in
-            XCTAssertTrue(String(data: res.body.data!, encoding: .utf8)!.contains("Moby-Dick"))
-            XCTAssertEqual(res.body.count, 3741)
+        res.flatMap(to: Data.self) { res in
+            return res.body.makeData(max: 100_000)
+        }.map(to: Void.self) { data in
+            XCTAssertTrue(String(data: data, encoding: .utf8)!.contains("Moby-Dick"))
+            XCTAssertEqual(data.count, 3741)
             exp.fulfill()
         }.catch { error in
             XCTFail("\(error)")
         }
 
-        waitForExpectations(timeout: 5)
+        waitForExpectations(timeout: 5) 
     }
 
     func testStream() throws {
         var dataRequest: ConnectionContext?
         var output: [Data] = []
         var parserStream: AnyInputStream<ByteBuffer>?
+        let eventLoop = DispatchEventLoop(label: "codes.vapor.http.test.client")
 
         let byteStream = ClosureStream<ByteBuffer>.init(
             onInput: { event in
@@ -51,7 +55,7 @@ class HTTPClientTests: XCTestCase {
                 print(event)
             }
         )
-        let client = HTTPClient(source: byteStream, sink: byteStream)
+        let client = HTTPClient(source: byteStream, sink: byteStream, worker: eventLoop)
         let req = HTTPRequest(method: .get, uri: "/html", headers: [.host: "httpbin.org"])
         let futureRes = client.send(req)
 

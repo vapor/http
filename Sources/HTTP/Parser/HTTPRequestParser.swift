@@ -6,6 +6,8 @@ import Foundation
 
 /// Parses requests from a readable stream.
 public final class HTTPRequestParser: CHTTPParser {
+    public typealias Output = Message
+    
     /// See CParser.Message
     public typealias Message = HTTPRequest
 
@@ -20,16 +22,27 @@ public final class HTTPRequestParser: CHTTPParser {
 
     /// The maxiumum possible body size
     /// larger sizes will result in an error
-    internal let maxSize: Int
+    public var maxMessageSize: Int?
+    public var maxHeaderSize: Int?
+    public var maxBodySize: Int?
 
+    var upstream: ConnectionContext?
+    var downstream: AnyInputStream<HTTPRequest>?
+    var downstreamDemand: UInt
     public var message: Message?
+    public var messageBodyCompleted: Bool
 
     /// Creates a new Request parser.
-    public init(maxSize: Int) {
+    public init() {
+        self.maxMessageSize = 10_000_000
+        self.maxHeaderSize = 100_000
+        self.maxBodySize = 10_000_000
+        
         self.parser = http_parser()
         self.settings = http_parser_settings()
         self.state = .ready
-        self.maxSize = maxSize
+        self.downstreamDemand = 0
+        self.messageBodyCompleted = false
         reset()
     }
 
@@ -70,21 +83,13 @@ public final class HTTPRequestParser: CHTTPParser {
             method = HTTPMethod(string)
         }
         
-        // parse the uri from the url bytes.
-        var uri = URI(buffer: results.url)
-        
-        // if there is no scheme, use http by default
-        if uri.scheme?.isEmpty == true {
-            uri.scheme = "http"
-        }
-        
         // create the request
         return HTTPRequest(
             method: method,
-            uri: uri,
+            uri: URI(buffer: results.url),
             version: version,
             headers: headers,
-            body: results.body
+            body: results.body ?? HTTPBody()
         )
     }
 }

@@ -37,11 +37,10 @@ class MultipartTests: XCTestCase {
         """
         
         let data = Data(string.utf8)
-        let body = HTTPBody(data)
         
         XCTAssertEqual(Array("----WebKitFormBoundaryPVOZifB9OqEwP2fn".utf8), try MultipartParser.boundary(for: data))
         
-        let form = try MultipartParser(body: body, boundary: Array("----WebKitFormBoundaryPVOZifB9OqEwP2fn".utf8)).parse()
+        let form = try MultipartParser(data: data, boundary: Array("----WebKitFormBoundaryPVOZifB9OqEwP2fn".utf8)).parse()
         
         XCTAssertEqual(form.parts.count, 3)
         
@@ -71,9 +70,8 @@ class MultipartTests: XCTestCase {
         """
         
         let data = Data(string.utf8)
-        let body = HTTPBody(data)
         
-        let multipart = try MultipartParser(body: body, boundary: Array("----WebKitFormBoundaryPVOZifB9OqEwP2fn".utf8)).parse()
+        let multipart = try MultipartParser(data: data, boundary: Array("----WebKitFormBoundaryPVOZifB9OqEwP2fn".utf8)).parse()
         
         let files = try multipart.getFiles(named: "multinamed[]")
         

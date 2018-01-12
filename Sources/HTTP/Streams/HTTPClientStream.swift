@@ -35,17 +35,21 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
 
     /// The sink bytestream
     let sink: SinkStream
+    
+    let worker: Worker
 
     /// Creates a new HTTP client stream
-    init(source: SourceStream, sink: SinkStream, maxResponseSize: Int = 10_000_000) {
+    init(source: SourceStream, sink: SinkStream, worker: Worker, maxResponseSize: Int = 10_000_000) {
         self.responseQueue = []
         self.requestQueue = []
         self.remainingDownstreamRequests = 0
         self.source = source
         self.sink = sink
+        self.worker = worker
 
         let serializerStream = HTTPRequestSerializer().stream()
-        let parserStream = HTTPResponseParser(maxSize: maxResponseSize).stream()
+        let parser = HTTPResponseParser()
+        let parserStream = parser.stream()
 
         source
             .stream(to: parserStream)
@@ -72,6 +76,7 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
         case .request(let count):
             let isSuspended = remainingDownstreamRequests == 0
             remainingDownstreamRequests += count
+            upstream?.request(count: count)
             if isSuspended { update() }
         case .cancel:
             /// FIXME: better cancel support
@@ -95,7 +100,7 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
             promise.complete(input)
             if let onUpgrade = input.onUpgrade {
                 do {
-                    try onUpgrade.closure(.init(source), .init(sink))
+                    try onUpgrade.closure(.init(source), .init(sink), worker)
                 } catch {
                     downstream?.error(error)
                 }

@@ -101,7 +101,7 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
             if serializer.ready {
                 /// handle the body separately
                 switch body.storage {
-                case .dispatchData, .data, .staticString, .string:
+                case .none, .dispatchData, .data, .staticString, .string:
                     state = .ready
                 case .chunkedOutputStream(let closure):
                     state = .chunkedStreamingBodyReady(closure)
@@ -110,8 +110,8 @@ public final class HTTPSerializerStream<Serializer>: Async.Stream, ConnectionCon
                 }
             }
             
-            downstream?.next(frame)
             remainingByteBuffersRequested -= 1
+            downstream?.next(frame)
             update()
         case .chunkedStreamingBodyReady(let closure):
             let stream = closure(HTTPChunkEncodingStream())

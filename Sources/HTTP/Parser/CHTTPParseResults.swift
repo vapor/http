@@ -1,3 +1,4 @@
+import Async
 import CHTTP
 import Dispatch
 import Foundation
@@ -22,25 +23,28 @@ internal final class CParseResults {
     var headersData = [UInt8]()
     
     var currentSize: Int = 0
-    var maxSize: Int
+    var maxMessageSize: Int?
+    var maxHeaderSize: Int?
+    var maxBodySize: Int?
     
     var headers: HTTPHeaders?
-    var bodyData = Data()
     
-    var body: HTTPBody {
-        return HTTPBody(bodyData)
-    }
+    var body: HTTPBody?
+    var bodyStream: ByteBufferPushStream
     
     var url = [UInt8]()
     
     /// Creates a new results object
-    init(maxSize: Int) {
+    init<Parser: CHTTPParser>(parser: Parser) {
         self.isComplete = false
         self.headersIndexes = []
         headersData.reserveCapacity(4096)
         headersIndexes.reserveCapacity(64)
         url.reserveCapacity(128)
-        self.maxSize = maxSize
+        self.maxMessageSize = parser.maxMessageSize
+        self.maxHeaderSize = parser.maxHeaderSize
+        self.maxBodySize = parser.maxBodySize
+        self.bodyStream = ByteBufferPushStream()
         
         self.headerState = .none
     }
@@ -50,9 +54,9 @@ internal final class CParseResults {
 
 extension CParseResults {
     /// Sets the parse results object on a C parser
-    static func set(on parser: inout http_parser, maxSize: Int) -> CParseResults {
+    static func set<Parser: CHTTPParser>(on parser: inout http_parser, swiftParser: Parser) -> CParseResults {
         let results = UnsafeMutablePointer<CParseResults>.allocate(capacity: 1)
-        let new = CParseResults(maxSize: maxSize)
+        let new = CParseResults(parser: swiftParser)
         results.initialize(to: new)
         parser.data = UnsafeMutableRawPointer(results)
         return new

@@ -1,3 +1,4 @@
+import Async
 import Foundation
 import HTTP
 
@@ -10,23 +11,27 @@ public final class FormURLDecoder {
 
     /// If true, flags will be omitted
     public var omitFlags: Bool
+    
+    /// The maximum amount of data to decode
+    ///
+    /// Used to prevent memory buffer attacks
+    public var maxBodySize: Int
 
     /// Create a new form-urlencoded decoder.
     public init(omitEmptyValues: Bool = false, omitFlags: Bool = false) {
         self.parser = FormURLEncodedParser()
         self.omitFlags = omitFlags
         self.omitEmptyValues = omitEmptyValues
+        self.maxBodySize = 100_000
     }
 
     /// Decodes a decodable type from form-urlencoded data
-    public func decode<D>(_ type: D.Type, from body: HTTPBody) throws -> D where D: Decodable {
-        guard let data = body.data else {
-            throw FormURLError(identifier: "unsupported-body", reason: "FormURLDecoder doesn't support streaming bodies yet")
+    public func decode<D>(_ type: D.Type, from body: HTTPBody) throws -> Future<D> where D: Decodable {
+        return body.makeData(max: maxBodySize).map(to: D.self) { data in
+            let formURLData = try self.parser.parse(data, omitEmptyValues: self.omitEmptyValues, omitFlags: self.omitFlags)
+            let decoder = _FormURLDecoder(data: .dictionary(formURLData), codingPath: [])
+            return try D(from: decoder)
         }
-        
-        let formURLData = try parser.parse(data, omitEmptyValues: omitEmptyValues, omitFlags: omitFlags)
-        let decoder = _FormURLDecoder(data: .dictionary(formURLData), codingPath: [])
-        return try D(from: decoder)
     }
 }
 
