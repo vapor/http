@@ -62,8 +62,7 @@ fileprivate extension HTTPResponse {
         var http1Line = http1Prefix
         http1Line.reserveCapacity(128)
         
-        
-        http1Line.append(contentsOf: self.status.code.description.utf8)
+        http1Line.append(contentsOf: self.status.code.bytes(reserving: 3))
         http1Line.append(.space)
         http1Line.append(contentsOf: self.status.messageBytes)
         http1Line.append(contentsOf: crlf)
