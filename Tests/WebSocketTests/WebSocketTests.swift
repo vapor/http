@@ -80,7 +80,11 @@ final class WebSocketResponder: HTTPResponder {
         let response = try WebSocket.upgradeResponse(for: req, with: WebSocketSettings()) { websocket in
             websocket.onString { ws, text in
                 ws.send(string: String(text.reversed()))
-            }
+            }.catch { error in
+                XCTFail("\(error)")
+            }.finally {
+                print("closed")
+            }.request(count: .max)
 
             self.serverSide = websocket
         }

@@ -25,15 +25,13 @@ class ParserTests : XCTestCase {
         var message: HTTPRequest?
         var completed = false
         
-        parser.drain { upstream in
-            upstream.request()
-        }.output { _message in
+        parser.drain { _message, upstream in
             message = _message
         }.catch { error in
             XCTFail("\(error)")
         }.finally {
             completed = true
-        }
+        }.request()
         
         parser.request()
         XCTAssertNil(message)
@@ -77,15 +75,13 @@ class ParserTests : XCTestCase {
         var message: HTTPResponse?
         var completed = false
         
-        parser.drain { upstream in
-            upstream.request()
-        }.output { _message in
+        parser.drain { _message, upstream in
             message = _message
         }.catch { error in
             XCTFail("\(error)")
         }.finally {
             completed = true
-        }
+        }.request()
         
         parser.request()
         XCTAssertNil(message)
@@ -132,7 +128,7 @@ class ParserTests : XCTestCase {
         
         var completed = false
         
-        parser.drain { _ in }.output { _ in
+        _ = parser.drain { _, _ in
             XCTFail()
         }.catch { _ in
             error = true
@@ -167,7 +163,7 @@ class ParserTests : XCTestCase {
         
         var completed = false
         
-        parser.drain { _ in }.output { _ in
+        _ = parser.drain { _, _ in
             XCTFail()
         }.catch { _ in
             error = true

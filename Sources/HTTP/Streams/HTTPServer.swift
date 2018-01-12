@@ -24,9 +24,7 @@ public final class HTTPServer {
         where AcceptStream: OutputStream, AcceptStream.Output: ByteStreamRepresentable
     {
         /// set up the server stream
-        acceptStream.drain { req in
-            req.request(count: .max)
-        }.output { client in
+        acceptStream.drain { client, upstream in
             let serializerStream = HTTPResponseSerializer().stream(on: worker)
             let parserStream = HTTPRequestParser().stream(on: worker)
 
@@ -52,7 +50,7 @@ public final class HTTPServer {
             self.onError?(err)
         }.finally {
             // closed
-        }
+        }.request(count: .max)
     }
 }
 

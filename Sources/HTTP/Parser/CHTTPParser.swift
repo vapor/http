@@ -32,7 +32,11 @@ enum CHTTPParserState {
 /// MARK: HTTPParser conformance
 
 extension CHTTPParser {
-    public func parseBytes(from buffer: ByteBuffer, partial: CParseResults?) throws -> ByteParserResult<Self> {
+    public func parseBytes(from buffer: ByteBuffer, partial: CParseResults?) throws -> Future<ByteParserResult<Self>> {
+        return Future(try _parseBytes(from: buffer, partial: partial))
+    }
+
+    private func _parseBytes(from buffer: ByteBuffer, partial: CParseResults?) throws -> ByteParserResult<Self> {
         guard let results = getResults() else {
             throw HTTPError(identifier: "no-parser-results", reason: "An internal HTTP Parser state became invalid")
         }

@@ -22,9 +22,7 @@ class SocketsTests: XCTestCase {
             let serverStream = server.stream(on: workerLoop)
 
             /// set up the server stream
-            serverStream.drain { req in
-                req.request(count: .max)
-            }.output { client in
+            let drain = serverStream.drain { client, upstream in
                 let clientSource = client.socket.source(on: workerLoop)
                 let clientSink = client.socket.sink(on: workerLoop)
                 clientSource.output(to: clientSink)
@@ -33,6 +31,7 @@ class SocketsTests: XCTestCase {
             }.finally {
                 // closed
             }
+            drain.request(count: .max)
 
             // beyblades let 'er rip
             Thread.async { workerLoop.runLoop() }

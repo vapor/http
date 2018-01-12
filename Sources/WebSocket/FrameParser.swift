@@ -4,7 +4,11 @@ import COperatingSystem
 import Bits
 
 final class FrameParser: ByteParser {
-    func parseBytes(from buffer: ByteBuffer, partial: FrameParser.PartialFrame?) throws -> ByteParserResult<FrameParser> {
+    func parseBytes(from buffer: ByteBuffer, partial: FrameParser.PartialFrame?) throws -> Future<ByteParserResult<FrameParser>> {
+        return try Future(_parseBytes(from: buffer, partial: partial))
+    }
+
+    private func _parseBytes(from buffer: ByteBuffer, partial: FrameParser.PartialFrame?) throws -> ByteParserResult<FrameParser> {
         if let partial = partial {
             return try self.continueParsing(partial, from: buffer)
         } else {

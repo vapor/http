@@ -51,10 +51,7 @@ class SSLTests: XCTestCase {
         let tlsStream = tlsClient.socket.source(on: clientLoop)
         let tlsSink = tlsClient.socket.sink(on: clientLoop)
 
-        var upstream: ConnectionContext?
-        tlsStream.drain { req in
-            upstream = req
-        }.output { buffer in
+        tlsStream.drain { buffer, upstream in
             let res = Data(buffer)
             XCTAssertTrue(String(data: res, encoding: .utf8)!.contains("User-agent: *"))
             exp.fulfill()
@@ -62,8 +59,7 @@ class SSLTests: XCTestCase {
             XCTFail("\(err)")
         }.finally {
             // closed
-        }
-        upstream!.request(count: 1)
+        }.request(count: 1)
 
         let source = EmitterStream(ByteBuffer.self)
         source.output(to: tlsSink)
