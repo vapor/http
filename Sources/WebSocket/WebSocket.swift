@@ -66,41 +66,39 @@ public class WebSocket {
     
     /// Upgrades the connection over HTTP
     func upgrade(uri: URI) {
-        worker.eventLoop.async {
-            // Generates the UUID that will make up the WebSocket-Key
-            let id = OSRandom().data(count: 16).base64EncodedString()
+        // Generates the UUID that will make up the WebSocket-Key
+        let id = OSRandom().data(count: 16).base64EncodedString()
+        
+        // Creates an HTTP client for the handshake
+        let serializer = HTTPRequestSerializer().stream(on: self.worker)
+        let serializerStream = PushStream<HTTPRequest>()
+        
+        let responseParser = HTTPResponseParser()
+        responseParser.maxHeaderSize = 50_000
+        
+        let parser = responseParser.stream(on: self.worker)
+        
+        serializerStream.stream(to: serializer).output(to: self.sink)
+        
+        let drain = DrainStream<HTTPResponse>(onInput: { response in
+            try WebSocket.upgrade(response: response, id: id)
             
-            // Creates an HTTP client for the handshake
-            let serializer = HTTPRequestSerializer().stream(on: self.worker)
-            let serializerStream = PushStream<HTTPRequest>()
-            
-            let responseParser = HTTPResponseParser()
-            responseParser.maxHeaderSize = 50_000
-            
-            let parser = responseParser.stream(on: self.worker)
-            
-            serializerStream.stream(to: serializer).output(to: self.sink)
-            
-            let drain = DrainStream<HTTPResponse>(onInput: { response in
-                try WebSocket.upgrade(response: response, id: id)
-                
-                self.bindFrameStreams()
-            })
-            
-            self.source.stream(to: parser).output(to: drain)
-            
-            parser.request()
-            
-            let request = HTTPRequest(method: .get, uri: uri, headers: [
-                .connection: "Upgrade",
-                .upgrade: "websocket",
-                .secWebSocketKey: id,
-                .secWebSocketVersion: "13"
-            ], body: HTTPBody())
-            
-            self.httpSerializerStream = serializerStream
-            serializerStream.next(request)
-        }
+            self.bindFrameStreams()
+        })
+        
+        self.source.stream(to: parser).output(to: drain)
+        
+        parser.request()
+        
+        let request = HTTPRequest(method: .get, uri: uri, headers: [
+            .connection: "Upgrade",
+            .upgrade: "websocket",
+            .secWebSocketKey: id,
+            .secWebSocketVersion: "13"
+        ], body: HTTPBody())
+        
+        self.httpSerializerStream = serializerStream
+        serializerStream.next(request)
     }
     
     func bindFrameStreams() {

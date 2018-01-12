@@ -35,7 +35,7 @@ extension WebSocket {
         }
         
         // Create a new socket to the host
-        let socket = try TCPSocket()
+        let socket = try TCPSocket(isNonBlocking: true)
         
         // The TCP Client that will be used by both HTTP and the WebSocket for communication
         let client = try TCPClient(socket: socket)

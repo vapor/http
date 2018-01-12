@@ -45,6 +45,7 @@ class SSLTests: XCTestCase {
 
         let clientLoop = try DefaultEventLoop(label: "codes.vapor.tls.client")
         Thread.async { clientLoop.runLoop() }
+
         let tlsStream = tlsClient.socket.source(on: clientLoop)
         let tlsSink = tlsClient.socket.sink(on: clientLoop)
 
@@ -72,6 +73,7 @@ class SSLTests: XCTestCase {
     }
 
     static let allTests = [
+        ("testClientBlocking", testClientBlocking),
         ("testClient", testClient)
     ]
 }
