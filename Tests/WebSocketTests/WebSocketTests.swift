@@ -7,8 +7,6 @@ import XCTest
 
 final class WebSocketTests : XCTestCase {
     func testTextStream() throws {
-        // FIXME: tests are overproducing input buffers
-        return;
         let worker = try DefaultEventLoop(label: "codes.vapor.test.worker")
         let quit = Promise<Void>()
         let serverSocket = try TCPSocket(isNonBlocking: true)
