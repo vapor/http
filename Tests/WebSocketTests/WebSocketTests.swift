@@ -47,21 +47,6 @@ final class WebSocketTests : XCTestCase {
 
         """)
 
-        let payload = "hi".data(using: .utf8)!.withByteBuffer { $0 }
-        let hi = Frame(op: .text, payload: payload, mask: [1, 2, 3, 4])
-        _ = try client.socket.write(Data(hi.buffer))
-
-
-        let ih = try client.socket.read(max: 512)
-        if ih.count == 4 {
-            XCTAssertEqual(ih[0], 129)
-            XCTAssertEqual(ih[1], 2)
-            XCTAssertEqual(ih[2], 2)
-            XCTAssertEqual(ih[3], 1)
-        } else {
-            XCTFail("invalid count")
-        }
-
         client.close()
         server.stop()
     }
