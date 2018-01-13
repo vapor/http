@@ -35,7 +35,7 @@ extension WebSocket {
         }
         
         // Create a new socket to the host
-        let socket = try TCPSocket()
+        let socket = try TCPSocket(isNonBlocking: true)
         
         // The TCP Client that will be used by both HTTP and the WebSocket for communication
         let client = try TCPClient(socket: socket)
@@ -53,14 +53,16 @@ extension WebSocket {
             
             let source = socket.source(on: container.eventLoop)
             let sink = socket.sink(on: container.eventLoop)
-            let websocket = WebSocket(source: .init(source), sink: .init(sink), server: false)
+            let websocket = WebSocket(source: .init(source), sink: .init(sink), worker: container, server: false)
             try client.connect(hostname: hostname, port: port)
+            websocket.upgrade(uri: uri)
             return websocket
         } else {
             let source = socket.source(on: container.eventLoop)
             let sink = socket.sink(on: container.eventLoop)
-            let websocket = WebSocket(source: .init(source), sink: .init(sink), server: false)
+            let websocket = WebSocket(source: .init(source), sink: .init(sink), worker: container, server: false)
             try client.connect(hostname: hostname, port: port)
+            websocket.upgrade(uri: uri)
             return websocket
         }
     }

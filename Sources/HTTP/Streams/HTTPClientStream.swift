@@ -3,23 +3,18 @@ import Bits
 
 /// An inverse client stream accepting responses and outputting requests.
 /// Used to implement HTTPClient. Should be kept internal
-internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, ConnectionContext where
-    SourceStream: OutputStream,
-    SourceStream.Output == ByteBuffer,
-    SinkStream: InputStream,
-    SinkStream.Input == ByteBuffer
-{
+internal final class QueueStream<I, O>: Stream, ConnectionContext {
     /// See InputStream.Input
-    typealias Input = HTTPResponse
+    typealias Input = I
 
     /// See OutputStream.Output
-    typealias Output = HTTPRequest
+    typealias Output = O
 
     /// Queue of promised responses
-    var responseQueue: [Promise<HTTPResponse>]
+    var inputQueue: [Promise<Input>]
 
     /// Queue of requests to be serialized
-    var requestQueue: [HTTPRequest]
+    var outputQueue: [Output]
 
     /// Accepts serialized requests
     var downstream: AnyInputStream<Output>?
@@ -30,28 +25,19 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
     /// Parsed responses
     var upstream: ConnectionContext?
 
-    /// The source bytestream
-    let source: SourceStream
-
-    /// The sink bytestream
-    let sink: SinkStream
-
     /// Creates a new HTTP client stream
-    init(source: SourceStream, sink: SinkStream, maxResponseSize: Int = 10_000_000) {
-        self.responseQueue = []
-        self.requestQueue = []
+    init() {
+        self.inputQueue = []
+        self.outputQueue = []
         self.remainingDownstreamRequests = 0
-        self.source = source
-        self.sink = sink
+    }
 
-        let serializerStream = HTTPRequestSerializer().stream()
-        let parserStream = HTTPResponseParser(maxSize: maxResponseSize).stream()
-
-        source
-            .stream(to: parserStream)
-            .stream(to: self)
-            .stream(to: serializerStream)
-            .output(to: sink)
+    public func queue(_ output: Output) -> Future<Input> {
+        let promise = Promise(Input.self)
+        self.outputQueue.append(output)
+        self.inputQueue.append(promise)
+        update()
+        return promise.future
     }
 
     /// Updates the stream's state. If there are outstanding
@@ -60,9 +46,9 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
         guard remainingDownstreamRequests > 0 else {
             return
         }
-        while let request = requestQueue.popLast() {
+        while let output = outputQueue.popLast() {
             remainingDownstreamRequests -= 1
-            downstream?.next(request)
+            downstream?.next(output)
         }
     }
 
@@ -72,6 +58,7 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
         case .request(let count):
             let isSuspended = remainingDownstreamRequests == 0
             remainingDownstreamRequests += count
+            upstream?.request(count: count)
             if isSuspended { update() }
         case .cancel:
             /// FIXME: better cancel support
@@ -80,32 +67,22 @@ internal final class HTTPClientStream<SourceStream, SinkStream>: Stream, Connect
     }
 
     /// See OutputStream.output
-    func output<S>(to inputStream: S) where S : InputStream, S.Input == HTTPRequest {
+    func output<S>(to inputStream: S) where S : InputStream, S.Input == Output {
         downstream = AnyInputStream(inputStream)
         inputStream.connect(to: self)
     }
 
     /// See InputStream.input
-    func input(_ event: InputEvent<HTTPResponse>) {
+    func input(_ event: InputEvent<Input>) {
         switch event {
         case .connect(let upstream):
             self.upstream = upstream
         case .next(let input):
-            let promise = responseQueue.popLast()!
+            let promise = inputQueue.popLast()!
             promise.complete(input)
-            if let onUpgrade = input.onUpgrade {
-                do {
-                    try onUpgrade.closure(.init(source), .init(sink))
-                } catch {
-                    downstream?.error(error)
-                }
-            }
             update()
         case .error(let error): downstream?.error(error)
         case .close:
-            for response in self.responseQueue {
-                response.fail(HTTPError(identifier: "client-closed", reason: "The remote connection was closed (or failed to connect)"))
-            }
             downstream?.close()
         }
     }

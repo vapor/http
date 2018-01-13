@@ -1,4 +1,5 @@
 import Async
+import COperatingSystem
 
 /// Stream representation of a TCP server.
 public final class TCPClientStream: OutputStream, ConnectionContext {
@@ -25,6 +26,9 @@ public final class TCPClientStream: OutputStream, ConnectionContext {
         self.eventLoop = eventLoop
         self.server = server
         self.requestedOutputRemaining = 0
+        let source = eventLoop.onReadable(descriptor: server.socket.descriptor, accept)
+        source.resume()
+        acceptSource = source
     }
 
     /// See OutputStream.output
@@ -56,27 +60,13 @@ public final class TCPClientStream: OutputStream, ConnectionContext {
     /// Resumes accepting clients if currently suspended
     /// and count is greater than 0
     private func request(_ accepting: UInt) {
-        let isSuspended = requestedOutputRemaining == 0
-        if accepting == .max {
-            requestedOutputRemaining = .max
-        } else {
-            requestedOutputRemaining += accepting
-        }
-
-        if isSuspended && requestedOutputRemaining > 0 {
-            ensureAcceptSource().resume()
-        }
+        assert(accepting == .max)
     }
 
     /// Cancels the stream
     private func cancel() {
         server.stop()
         downstream?.close()
-        if requestedOutputRemaining == 0 {
-            /// dispatch sources must be resumed before
-            /// deinitializing
-            acceptSource?.resume()
-        }
         acceptSource = nil
     }
 
@@ -84,39 +74,12 @@ public final class TCPClientStream: OutputStream, ConnectionContext {
     private func accept(isCancelled: Bool) {
         do {
             guard let client = try server.accept() else {
-                // the client was rejected
+                // the client was rejected or not available
                 return
             }
-
-            //            let eventLoop = eventLoopsIterator.next()
-
             downstream?.next(client)
-
-            /// decrement remaining and check if
-            /// we need to suspend accepting
-            if requestedOutputRemaining != .max {
-                requestedOutputRemaining -= 1
-                if requestedOutputRemaining == 0 {
-                    ensureAcceptSource().suspend()
-                    requestedOutputRemaining = 0
-                }
-            }
         } catch {
             downstream?.error(error)
         }
-    }
-
-    /// Returns the existing accept source or creates
-    /// and stores a new one
-    private func ensureAcceptSource() -> EventSource {
-        guard let existing = acceptSource else {
-            /// create a new accept source
-            let source = eventLoop.onReadable(descriptor: server.socket.descriptor, accept)
-            acceptSource = source
-            return source
-        }
-
-        /// return the existing source
-        return existing
     }
 }

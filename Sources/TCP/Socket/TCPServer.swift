@@ -40,7 +40,9 @@ public struct TCPServer {
     /// important: the socket _must_ be ready to accept a client
     /// as indicated by a read source.
     public mutating func accept() throws -> TCPClient? {
-        let accepted = try socket.accept()
+        guard let accepted = try socket.accept() else {
+            return nil
+        }
 
         /// init a tcp client with the socket and assign it an event loop
         let client = try TCPClient(socket: accepted)
@@ -132,21 +134,28 @@ extension TCPSocket {
 
     /// accept, accept4 - accept a connection on a socket
     /// http://man7.org/linux/man-pages/man2/accept.2.html
-    fileprivate func accept() throws -> TCPSocket {
-        let (clientfd, address) = try TCPAddress.withSockaddrPointer { address -> Int32 in
+    fileprivate func accept() throws -> TCPSocket? {
+        let (clientfd, address) = try TCPAddress.withSockaddrPointer { address -> Int32? in
             var size = socklen_t(MemoryLayout<sockaddr>.size)
 
             let descriptor = COperatingSystem.accept(self.descriptor, address, &size)
 
             guard descriptor > 0 else {
-                throw TCPError.posix(errno, identifier: "accept")
+                switch errno {
+                case EAGAIN: return nil // FIXME: enum return
+                default: throw TCPError.posix(errno, identifier: "accept")
+                }
             }
 
             return descriptor
         }
 
+        guard let c = clientfd else {
+            return nil
+        }
+
         let socket = TCPSocket(
-            established: clientfd,
+            established: c,
             isNonBlocking: isNonBlocking,
             shouldReuseAddress: shouldReuseAddress,
             address: address

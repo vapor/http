@@ -12,7 +12,6 @@ XCTMain([
 	// MARK: HTTP
     testCase(HTTPClientTests.allTests),
     testCase(HTTPServerTests.allTests),
-    testCase(HTTPSerializerTests.allTests),
     testCase(HTTPSerializerStreamTests.allTests),
     testCase(UtilityTests.allTests),
 
@@ -27,6 +26,8 @@ XCTMain([
     testCase(SSLTests.allTests),
     testCase(SubProtocolMatcherTests.allTests),
 
+    testCase(WebSocketTests.allTests),
+    testCase(SubProtocolMatcherTests.allTests),
 ])
 
 #endif

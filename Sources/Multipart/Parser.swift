@@ -24,8 +24,8 @@ public final class MultipartParser {
     var multipart: MultipartForm
     
     /// Creates a new parser for a Multipart form
-    public init(body: HTTPBody, boundary: [UInt8]) {
-        self.data = body.data ?? Data()
+    public init(data: Data, boundary: [UInt8]) {
+        self.data = data
         self.boundary = boundary
         self.multipart = MultipartForm(parts: [], boundary: boundary)
         self.fullBoundary = [.carriageReturn, .newLine, .hyphen, .hyphen] + boundary

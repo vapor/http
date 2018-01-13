@@ -13,13 +13,14 @@ enum HeaderState {
 
 
 /// Internal CHTTP parser protocol
-internal protocol CHTTPParser: HTTPParser {
+internal protocol CHTTPParser: class, HTTPParser {
     static var parserType: http_parser_type { get }
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
-    var maxSize: Int { get }
-    var state: CHTTPParserState { get set }
-    func makeMessage(from results: CParseResults) throws -> Message
+    var maxHeaderSize: Int? { get set }
+    
+    var httpState: CHTTPParserState { get set }
+    func makeMessage(from results: CParseResults) throws -> Output
 }
 
 
@@ -31,38 +32,36 @@ enum CHTTPParserState {
 /// MARK: HTTPParser conformance
 
 extension CHTTPParser {
-    /// Parses a Request from the stream.
-    public func parse(from buffer: ByteBuffer) throws -> Int {
+    public func parseBytes(from buffer: ByteBuffer, partial: CParseResults?) throws -> Future<ByteParserResult<Self>> {
+        return Future(try _parseBytes(from: buffer, partial: partial))
+    }
+
+    private func _parseBytes(from buffer: ByteBuffer, partial: CParseResults?) throws -> ByteParserResult<Self> {
         guard let results = getResults() else {
-            return 0
+            throw HTTPError(identifier: "no-parser-results", reason: "An internal HTTP Parser state became invalid")
         }
-
-        results.currentSize += buffer.count
-        guard results.currentSize < results.maxSize else {
-            throw HTTPError(identifier: "messageTooLarge", reason: "The HTTP message's size exceeded set maximum: \(maxSize)")
-        }
-
+        
         /// parse the message using the C HTTP parser.
         try executeParser(from: buffer)
-
+        
         guard results.isComplete else {
-            return buffer.count
+            return .uncompleted(results)
         }
-
+        
         // the results have completed, so we are ready
         // for a new request to come in
-        state = .ready
+        httpState = .ready
         CParseResults.remove(from: &parser)
-
-        message = try makeMessage(from: results)
-        return buffer.count
+        
+        let message = try makeMessage(from: results)
+        
+        return .completed(consuming: buffer.count, result: message)
     }
 
     /// Resets the parser
     public func reset() {
         reset(Self.parserType)
     }
-
 }
 
 /// MARK: CHTTP integration
@@ -92,13 +91,13 @@ extension CHTTPParser {
     func getResults() -> CParseResults? {
         let results: CParseResults
         
-        switch state {
+        switch httpState {
         case .ready:
             // create a new results object and set
             // a reference to it on the parser
-            let newResults = CParseResults.set(on: &parser, maxSize: maxSize)
+            let newResults = CParseResults.set(on: &parser, swiftParser: self)
             results = newResults
-            state = .parsing
+            httpState = .parsing
         case .parsing:
             // get the current parse results object
             guard let existingResults = CParseResults.get(from: &parser) else {
@@ -121,6 +120,10 @@ extension CHTTPParser {
                 // signal an error
                 return 1
             }
+            
+            guard results.addSize(length) else {
+                return 1
+            }
 
             // append the url bytes to the results
             chunkPointer.withMemoryRebound(to: UInt8.self, capacity: length) { chunkPointer in
@@ -140,6 +143,10 @@ extension CHTTPParser {
                 return 1
             }
             
+            guard results.addSize(length + 4) else { // + ": \r\n"
+                return 1
+            }
+            
             // check current header parsing state
             switch results.headerState {
             case .none:
@@ -153,6 +160,21 @@ extension CHTTPParser {
                 
                 results.headersData.append(.carriageReturn)
                 results.headersData.append(.newLine)
+                
+                if results.contentLength == nil {
+                    let namePointer = UnsafePointer(results.headersData).advanced(by: index.nameStartIndex)
+                    let nameLength = index.nameEndIndex - index.nameStartIndex
+                    let nameBuffer = ByteBuffer(start: namePointer, count: nameLength)
+                    
+                    if lowercasedContentLength.caseInsensitiveEquals(to: nameBuffer) {
+                        let pointer = UnsafePointer(results.headersData).advanced(by: index.valueStartIndex)
+                        let length = index.valueEndIndex - index.valueStartIndex
+                        
+                        pointer.withMemoryRebound(to: Int8.self, capacity: length) { pointer in
+                            results.contentLength = numericCast(strtol(pointer, nil, 10))
+                        }
+                    }
+                }
                 
                 // start a new key
                 results.headerState = .key(startIndex: results.headersData.count, endIndex: results.headersData.count + length)
@@ -175,6 +197,10 @@ extension CHTTPParser {
                 let chunkPointer = chunkPointer
             else {
                 // signal an error
+                return 1
+            }
+            
+            guard results.addSize(length + 2) else { // + "\r\n"
                 return 1
             }
 
@@ -235,12 +261,8 @@ extension CHTTPParser {
                 results.headersData.append(.newLine)
                 let headers = HTTPHeaders(storage: results.headersData, indexes: results.headersIndexes)
                 
-                if let contentLength = headers[.contentLength], let length = Int(contentLength) {
-                    guard length < results.maxSize &- results.currentSize else {
-                        return 1
-                    }
-                    
-                    results.bodyData.reserveCapacity(length)
+                if let contentLength = results.contentLength {
+                    results.body = HTTPBody(size: contentLength, stream: AnyOutputStream(results.bodyStream))
                 }
                 
                 results.headers = headers
@@ -268,7 +290,7 @@ extension CHTTPParser {
             }
 
             return chunk.withMemoryRebound(to: UInt8.self, capacity: length) { pointer -> Int32 in
-                results.bodyData.append(pointer, count: length)
+                results.bodyStream.push(ByteBuffer(start: pointer, count: length))
                 
                 return 0
             }
@@ -284,6 +306,8 @@ extension CHTTPParser {
                 return 1
             }
 
+            results.bodyStream.eof()
+            
             // mark the results as complete
             results.isComplete = true
             
@@ -300,15 +324,16 @@ extension UnsafeBufferPointer where Element == Byte {
     }
 }
 
-fileprivate let headerSeparator = Data([.colon, .space])
+fileprivate let headerSeparator: [UInt8] = [.colon, .space]
+fileprivate let lowercasedContentLength = HTTPHeaders.Name.contentLength.lowercased
 
-extension Data {
+fileprivate extension Data {
     fileprivate var cPointer: UnsafePointer<CChar> {
         return withUnsafeBytes { $0 }
     }
 }
 
-extension UnsafePointer where Pointee == CChar {
+fileprivate extension UnsafePointer where Pointee == CChar {
     /// Creates a Bytes array from a C pointer
     fileprivate func makeBuffer(length: Int) -> UnsafeRawBufferPointer {
         let pointer = UnsafeBufferPointer(start: self, count: length)
@@ -322,4 +347,5 @@ extension UnsafePointer where Pointee == CChar {
         }
     }
 }
+
 
