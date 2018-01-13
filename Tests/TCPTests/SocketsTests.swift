@@ -36,6 +36,7 @@ class SocketsTests: XCTestCase {
             // beyblades let 'er rip
             Thread.async { workerLoop.runLoop() }
         }
+
 //        let group = DispatchGroup()
 //        group.enter()
 //        group.wait()
