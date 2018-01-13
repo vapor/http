@@ -20,11 +20,14 @@ class FormURLEncodedCodableTests: XCTestCase {
 
     func testEncode() throws {
         let user = User(name: "Tanner", age: 23, pets: ["Zizek", "Foo"], dict: ["a": 1, "b": 2])
-        let expected = """
-        pets[]=Zizek&pets[]=Foo&name=Tanner&age=23&dict[b]=2&dict[a]=1
-        """
         let data = try FormURLEncoder().encodeBody(from: user).makeData(max: 100_000).blockingAwait()
-        XCTAssertEqual(String(data: data, encoding: .utf8)!, expected)
+        let result = String(data: data, encoding: .utf8)!
+        XCTAssert(result.contains("pets[]=Zizek"))
+        XCTAssert(result.contains("pets[]=Foo"))
+        XCTAssert(result.contains("age=23"))
+        XCTAssert(result.contains("name=Tanner"))
+        XCTAssert(result.contains("dict[a]=1"))
+        XCTAssert(result.contains("dict[b]=2"))
     }
 
     func testCodable() throws {
