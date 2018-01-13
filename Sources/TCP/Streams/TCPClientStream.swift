@@ -1,4 +1,5 @@
 import Async
+import COperatingSystem
 
 /// Stream representation of a TCP server.
 public final class TCPClientStream: OutputStream, ConnectionContext {
@@ -25,7 +26,8 @@ public final class TCPClientStream: OutputStream, ConnectionContext {
         self.eventLoop = eventLoop
         self.server = server
         self.requestedOutputRemaining = 0
-        let source = eventLoop.onReadable(descriptor: server.socket.descriptor, accept)
+        let fd = dup(server.socket.descriptor)
+        let source = eventLoop.onReadable(descriptor: fd, accept)
         source.resume()
         acceptSource = source
     }
