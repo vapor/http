@@ -69,7 +69,7 @@ final class WebSocketResponder: HTTPResponder {
                 XCTFail("\(error)")
             }.finally {
                 print("closed")
-            }.request(count: .max)
+            }.upstream!.request(count: .max)
 
             self.serverSide = websocket
         }

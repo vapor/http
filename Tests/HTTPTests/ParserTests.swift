@@ -31,7 +31,7 @@ class ParserTests : XCTestCase {
             XCTFail("\(error)")
         }.finally {
             completed = true
-        }.request()
+        }.upstream!.request()
         
         parser.request()
         XCTAssertNil(message)
@@ -81,7 +81,7 @@ class ParserTests : XCTestCase {
             XCTFail("\(error)")
         }.finally {
             completed = true
-        }.request()
+        }.upstream!.request()
         
         parser.request()
         XCTAssertNil(message)

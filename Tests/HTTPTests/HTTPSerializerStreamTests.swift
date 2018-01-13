@@ -33,7 +33,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             body: body
         )
         XCTAssertEqual(output.count, 0)
-        outputRequest.request()
+        outputRequest.upstream!.request()
         mockApp.emit(response)
 
         /// there should only be one buffer since we
@@ -71,7 +71,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             status: .ok,
             body: HTTPBody(chunked: bodyEmitter)
         )
-        outputRequest.request()
+        outputRequest.upstream!.request()
         mockApp.emit(response)
 
         /// there should only be one buffer since we
@@ -92,7 +92,7 @@ class HTTPSerializerStreamTests: XCTestCase {
         XCTAssertEqual(output.count, 1)
 
         /// Request and emit additional output
-        outputRequest.request()
+        outputRequest.upstream!.request()
         let a = "hello".data(using: .utf8)!
         a.withByteBuffer(bodyEmitter.emit)
         if output.count == 2 {
@@ -103,7 +103,7 @@ class HTTPSerializerStreamTests: XCTestCase {
         }
 
         /// Request and emit additional output
-        outputRequest.request()
+        outputRequest.upstream!.request()
         let b = "test".data(using: .utf8)!
         b.withByteBuffer(bodyEmitter.emit)
         if output.count == 3 {
@@ -113,7 +113,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             XCTFail("Invalid output count: \(output.count) != 3")
         }
 
-        outputRequest.request()
+        outputRequest.upstream!.request()
         XCTAssertEqual(output.count, 3)
         bodyEmitter.close()
         if output.count == 4 {
@@ -130,7 +130,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             status: .ok,
             body: "hello"
         )
-        outputRequest.request()
+        outputRequest.upstream!.request()
         mockApp.emit(response2)
         if output.count == 5 {
             let message = String(data: output[4], encoding: .utf8)

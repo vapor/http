@@ -50,7 +50,7 @@ public final class HTTPServer {
             self.onError?(err)
         }.finally {
             // closed
-        }.request(count: .max)
+        }.upstream!.request(count: .max)
     }
 }
 

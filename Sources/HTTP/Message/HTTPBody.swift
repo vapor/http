@@ -161,7 +161,7 @@ public struct HTTPBody: Codable {
                 data.append(Data(buffer: buffer))
             }.catch(onError: promise.fail).finally {
                 promise.complete(data)
-            }.request(count: .max)
+            }.upstream!.request(count: .max)
             
             return promise.future
         }

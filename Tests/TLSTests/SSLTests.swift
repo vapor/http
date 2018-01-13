@@ -59,7 +59,7 @@ class SSLTests: XCTestCase {
             XCTFail("\(err)")
         }.finally {
             // closed
-        }.request(count: 1)
+        }.upstream!.request(count: 1)
 
         let source = EmitterStream(ByteBuffer.self)
         source.output(to: tlsSink)

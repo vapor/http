@@ -31,7 +31,7 @@ class SocketsTests: XCTestCase {
             }.finally {
                 // closed
             }
-            drain.request(count: .max)
+            drain.upstream!.request(count: .max)
 
             // beyblades let 'er rip
             Thread.async { workerLoop.runLoop() }
