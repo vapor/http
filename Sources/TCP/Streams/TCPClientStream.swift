@@ -26,7 +26,10 @@ public final class TCPClientStream: OutputStream, ConnectionContext {
         self.eventLoop = eventLoop
         self.server = server
         self.requestedOutputRemaining = 0
-        let source = eventLoop.onReadable(descriptor: server.socket.descriptor, accept)
+        let source = eventLoop.onReadable(
+            descriptor: server.socket.descriptor,
+            accept
+        )
         source.resume()
         acceptSource = source
     }

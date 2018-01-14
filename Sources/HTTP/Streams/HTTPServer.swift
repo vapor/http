@@ -28,8 +28,8 @@ public final class HTTPServer {
             let serializerStream = HTTPResponseSerializer().stream(on: worker)
             let parserStream = HTTPRequestParser().stream(on: worker)
 
-            let source = client.source(on: worker)
             let sink = client.sink(on: worker)
+            let source = client.source(on: worker)
             source
                 .stream(to: parserStream)
                 .stream(to: responder.stream(on: worker).stream())
