@@ -148,8 +148,7 @@ public final class TCPSocket: Socket {
                 return .wrote(count: 0)
             case EAGAIN, EWOULDBLOCK:
                 return .wouldBlock
-            default:
-                throw TCPError.posix(errno, identifier: "write")
+            default: throw TCPError.posix(errno, identifier: "write")
             }
         }
 

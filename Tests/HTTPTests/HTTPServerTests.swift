@@ -1,6 +1,7 @@
 import Async
 import Bits
 import HTTP
+import Dispatch
 import Foundation
 import TCP
 import XCTest
@@ -20,7 +21,7 @@ class HTTPServerTests: XCTestCase {
         let tcpServer = try TCPServer(socket: tcpSocket)
 
         // beyblades let 'er rip
-        try tcpServer.start(hostname: "localhost", port: 8123, backlog: 128)
+        try tcpServer.start(hostname: "0.0.0.0", port: 8123, backlog: 128)
 
         let echo = EchoResponder()
 
@@ -39,10 +40,6 @@ class HTTPServerTests: XCTestCase {
                 worker.runLoop()
             }
         }
-
-//        let group = DispatchGroup()
-//        group.enter()
-//        group.wait()
 
         let exp = expectation(description: "all requests complete")
         var num = 1024
