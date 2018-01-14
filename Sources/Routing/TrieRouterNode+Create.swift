@@ -71,7 +71,7 @@ extension TrieRouterNode {
         return nil
     }
     
-//    fileprivate func set(component: PathComponent, to node: TrieRouterNode<Output>) {
+    fileprivate func set(component: PathComponent, to node: TrieRouterNode<Output>) {
         switch component {
         case .constants(let constants):
             if constants.count == 0 {
