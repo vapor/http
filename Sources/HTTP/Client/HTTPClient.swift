@@ -12,12 +12,21 @@ public final class HTTPClient {
     /// Inverse stream, takes in responses and outputs requests
     private let queueStream: QueueStream<HTTPResponse, HTTPRequest>
 
-    /// Response map
+    /// Store the response map here, so it can capture
+    /// the sink and source variables.
     private let responseMap: (HTTPResponse) throws -> HTTPResponse
 
     /// Creates a new Client wrapped around a `TCP.Client`
-    public init<SourceStream, SinkStream>(source: SourceStream, sink: SinkStream, worker: Worker, maxResponseSize: Int = 10_000_000)
-        where SourceStream: OutputStream, SourceStream.Output == ByteBuffer, SinkStream: InputStream, SinkStream.Input == ByteBuffer
+    public init<SourceStream, SinkStream>(
+        source: SourceStream,
+        sink: SinkStream,
+        worker: Worker,
+        maxResponseSize: Int = 10_000_000
+    )
+        where SourceStream: OutputStream,
+            SourceStream.Output == ByteBuffer,
+            SinkStream: InputStream,
+            SinkStream.Input == ByteBuffer
     {
         let queueStream = QueueStream<HTTPResponse, HTTPRequest>()
 
