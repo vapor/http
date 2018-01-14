@@ -17,30 +17,22 @@ public final class HTTPClient {
     private let responseMap: (HTTPResponse) throws -> HTTPResponse
 
     /// Creates a new Client wrapped around a `TCP.Client`
-    public init<SourceStream, SinkStream>(
-        source: SourceStream,
-        sink: SinkStream,
-        worker: Worker,
-        maxResponseSize: Int = 10_000_000
-    )
-        where SourceStream: OutputStream,
-            SourceStream.Output == ByteBuffer,
-            SinkStream: InputStream,
-            SinkStream.Input == ByteBuffer
+    public init<Stream>(stream: Stream, on worker: Worker, maxResponseSize: Int = 10_000_000)
+        where Stream: ByteStream
     {
         let queueStream = QueueStream<HTTPResponse, HTTPRequest>()
 
         let serializerStream = HTTPRequestSerializer().stream(on: worker)
         let parserStream = HTTPResponseParser().stream(on: worker)
 
-        source.stream(to: parserStream)
+        stream.stream(to: parserStream)
             .stream(to: queueStream)
             .stream(to: serializerStream)
-            .output(to: sink)
+            .output(to: stream)
 
         self.responseMap = { res in
             if let onUpgrade = res.onUpgrade {
-                try onUpgrade.closure(.init(source), .init(sink), worker)
+                try onUpgrade.closure(.init(stream), .init(stream), worker)
             }
             return res
         }

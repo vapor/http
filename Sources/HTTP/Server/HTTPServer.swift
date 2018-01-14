@@ -21,23 +21,21 @@ public final class HTTPServer {
 
     /// Create a new HTTP server with the supplied accept stream.
     public init<AcceptStream>(acceptStream: AcceptStream, worker: Worker, responder: HTTPResponder)
-        where AcceptStream: OutputStream, AcceptStream.Output: ByteStreamRepresentable
+        where AcceptStream: OutputStream, AcceptStream.Output: ByteStream
     {
         /// set up the server stream
         acceptStream.drain { client, upstream in
             let serializerStream = HTTPResponseSerializer().stream(on: worker)
             let parserStream = HTTPRequestParser().stream(on: worker)
 
-            let source = client.source(on: worker)
-            let sink = client.sink(on: worker)
-            source
+            client
                 .stream(to: parserStream)
                 .stream(to: responder.stream(on: worker).stream())
                 .map(to: HTTPResponse.self) { response in
                     /// map the responder adding http upgrade support
                     if let onUpgrade = response.onUpgrade {
                         do {
-                            try onUpgrade.closure(.init(source), .init(sink), worker)
+                            try onUpgrade.closure(.init(client), .init(client), worker)
                         } catch {
                             self.onError?(error)
                         }
@@ -45,47 +43,11 @@ public final class HTTPServer {
                     return response
                 }
                 .stream(to: serializerStream)
-                .output(to: sink)
+                .output(to: client)
         }.catch { err in
             self.onError?(err)
         }.finally {
             // closed
         }.upstream!.request(count: .max)
-    }
-}
-
-/// Representable by an associated byte stream.
-public protocol ByteStreamRepresentable {
-    /// The associated byte stream type.
-    associatedtype SourceStream
-        where
-            SourceStream: OutputStream,
-            SourceStream.Output == ByteBuffer
-
-    associatedtype SinkStream
-        where
-            SinkStream: InputStream,
-            SinkStream.Input == ByteBuffer
-
-    /// Convert to the associated byte stream.
-    func source(on worker: Worker) -> SourceStream
-    func sink(on worker: Worker) -> SinkStream
-}
-
-//#if os(Linux)
-//    extension OpenSSLSocket: ByteStreamRepresentable {}
-//#else
-//    extension AppleTLSSocket: ByteStreamRepresentable {}
-//#endif
-
-extension TCPClient: ByteStreamRepresentable {
-    /// See ByteStreamRepresentable.source
-    public func source(on eventLoop: Worker) -> SocketSource<TCPSocket> {
-        return socket.source(on: eventLoop.eventLoop)
-    }
-
-    /// See ByteStreamRepresentable.sink
-    public func sink(on eventLoop: Worker) -> SocketSink<TCPSocket> {
-        return socket.sink(on: eventLoop.eventLoop)
     }
 }

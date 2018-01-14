@@ -12,7 +12,7 @@ final class WebSocketTests : XCTestCase {
         let server = try TCPServer(socket: serverSocket)
 
         let webserver = HTTPServer(
-            acceptStream: server.stream(on: worker),
+            acceptStream: server.stream(on: worker).map(to: SocketStream<TCPSocket>.self) { $0.socket.stream(on: worker) },
             worker: worker,
             responder: WebSocketResponder()
         )
