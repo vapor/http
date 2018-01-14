@@ -8,7 +8,7 @@ import TCP
 /// A websocket connection. Can be either the client or server side of the connection
 ///
 /// [Learn More →](https://docs.vapor.codes/3.0/websocket/websocket/)
-public class WebSocket {
+public final class WebSocket {
     /// A stream of strings received from the remote
     let stringOutputStream: EmitterStream<String>
     

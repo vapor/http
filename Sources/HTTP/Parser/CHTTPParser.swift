@@ -13,7 +13,7 @@ enum HeaderState {
 
 
 /// Internal CHTTP parser protocol
-internal protocol CHTTPParser: class, HTTPParser {
+internal protocol CHTTPParser: class, HTTPParser where Partial == CHTTPParserState {
     static var parserType: http_parser_type { get }
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
@@ -23,7 +23,6 @@ internal protocol CHTTPParser: class, HTTPParser {
     func makeMessage(from results: CParseResults) throws -> Output
 }
 
-
 enum CHTTPParserState {
     case ready
     case parsing
@@ -32,11 +31,11 @@ enum CHTTPParserState {
 /// MARK: HTTPParser conformance
 
 extension CHTTPParser {
-    public func parseBytes(from buffer: ByteBuffer, partial: CParseResults?) throws -> Future<ByteParserResult<Self>> {
+    public func parseBytes(from buffer: ByteBuffer, partial: CHTTPParserState?) throws -> Future<ByteParserResult<Self>> {
         return Future(try _parseBytes(from: buffer, partial: partial))
     }
 
-    private func _parseBytes(from buffer: ByteBuffer, partial: CParseResults?) throws -> ByteParserResult<Self> {
+    private func _parseBytes(from buffer: ByteBuffer, partial: CHTTPParserState?) throws -> ByteParserResult<Self> {
         guard let results = getResults() else {
             throw HTTPError(identifier: "no-parser-results", reason: "An internal HTTP Parser state became invalid")
         }
@@ -45,7 +44,7 @@ extension CHTTPParser {
         try executeParser(from: buffer)
         
         guard results.isComplete else {
-            return .uncompleted(results)
+            return .uncompleted(httpState)
         }
         
         // the results have completed, so we are ready

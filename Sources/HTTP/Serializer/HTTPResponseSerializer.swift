@@ -70,6 +70,6 @@ fileprivate extension HTTPResponse {
     }
 }
 
-private let http1Prefix = [UInt8]("HTTP/1.1 ".utf8)
+private let http1Prefix = [UInt8]("HTTP/1.1 000 ".utf8)
 private let crlf = [UInt8]("\r\n".utf8)
 private let headerKeyValueSeparator = [UInt8](": ".utf8)
