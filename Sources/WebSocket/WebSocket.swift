@@ -141,6 +141,8 @@ public final class WebSocket {
             }
         }.catch(onError: self.errorCallback).finally {
             self.serializerStream.close()
+            self.binaryOutputStream.close()
+            self.stringOutputStream.close()
             self.closeListener()
         }
         
