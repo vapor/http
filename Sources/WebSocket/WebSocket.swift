@@ -8,7 +8,10 @@ import TCP
 /// A websocket connection. Can be either the client or server side of the connection
 ///
 /// [Learn More →](https://docs.vapor.codes/3.0/websocket/websocket/)
-public class WebSocket {
+public final class WebSocket {
+    // Gets called on WebSocket close
+    public typealias OnClose = () -> ()
+    
     /// A stream of strings received from the remote
     let stringOutputStream: EmitterStream<String>
     
@@ -17,6 +20,9 @@ public class WebSocket {
     
     /// Allows push stream access to the frame serializer
     let serializerStream: PushStream<Frame>
+    
+    // Gets called on WebSocket close
+    var closeListener: OnClose = { }
     
     /// Serializes frames into data
     let serializer: FrameSerializer
@@ -135,6 +141,7 @@ public class WebSocket {
             }
         }.catch(onError: self.errorCallback).finally {
             self.serializerStream.close()
+            self.closeListener()
         }
         
         parser.request()
@@ -179,7 +186,6 @@ public class WebSocket {
         return promise.future
     }
     
-    @discardableResult
     public func onData(_ run: @escaping (WebSocket, Data) throws -> ()) -> DrainStream<ByteBuffer> {
         return binaryOutputStream.drain { bytes, upstream in
             let data = Data(buffer: bytes)
@@ -187,8 +193,6 @@ public class WebSocket {
         }
     }
     
-    
-    @discardableResult
     public func onByteBuffer(_ run: @escaping (WebSocket, ByteBuffer) throws -> ()) -> DrainStream<ByteBuffer> {
         return binaryOutputStream.drain { bytes, upstream in
             try run(self, bytes)
@@ -199,6 +203,10 @@ public class WebSocket {
         return stringOutputStream.drain { string, upstream in
             try run(self, string)
         }
+    }
+    
+    public func onClose(_ run: @escaping OnClose) {
+        self.closeListener = run
     }
     
     /// Closes the connection to the other side by sending a `close` frame and closing the TCP connection
