@@ -24,9 +24,13 @@ public final class TrieRouter<Output> {
     /// See Router.register()
     public func register(route: Route<Output>) {
         self.routes.append(route)
+        var current = root
         
-        // always start at the root node
-        root[route.path].output = route.output
+        for component in route.path {
+            current = current[component]
+        }
+        
+        current.output = route.output
     }
 
     /// See Router.route()
@@ -70,6 +74,7 @@ public final class TrieRouter<Output> {
                 let lazy = ParameterValue(slug: parameter, value: component.bytes)
                 parameters.parameters.append(lazy)
                 current = node
+                continue nextComponent
             }
             
             guard let fallbackNode = fallbackNode else {
