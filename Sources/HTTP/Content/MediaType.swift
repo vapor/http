@@ -28,8 +28,7 @@ import Foundation
 ///
 /// https://en.wikipedia.org/wiki/Media_type
 /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
-public struct MediaType {
-    
+public struct MediaType: Hashable {
     /// The type represents the category and can be a discrete or a multipart type.
     public var type: String {
         return String(bytes: typeBytes, encoding: .utf8) ?? ""
@@ -43,6 +42,7 @@ public struct MediaType {
     var typeBytes: [UInt8]
     var subtypeBytes: [UInt8]
     var bytes: [UInt8]
+    public let hashValue: Int
     
     /// Key/value pair parameters for this type.
     public let parameters: [String: String]
@@ -69,6 +69,7 @@ public struct MediaType {
         }
         
         self.bytes = bytes
+        self.hashValue = typeBytes.djb2
     }
 
     /// Parse a MediaType from a String.
@@ -175,13 +176,6 @@ public struct MediaType {
         }
 
         return MediaType(string: mediaType)
-    }
-}
-
-extension MediaType : Hashable {
-    /// :nodoc:
-    public var hashValue: Int {
-        return typeBytes.djb2 ^ subtypeBytes.djb2
     }
 }
 
