@@ -1,4 +1,5 @@
 import Async
+import Bits
 import Foundation
 import Bits
 import HTTP
@@ -22,10 +23,16 @@ public final class WebSocket {
     public typealias OnBinary = (WebSocket, ByteBuffer) throws -> ()
     
     /// A stream of strings received from the remote
-    public let textStream: EmitterStream<String>
+    let _textStream: EmitterStream<String>
     
     /// A stream of binary data received from the remote
-    public let binaryStream: EmitterStream<ByteBuffer>
+    let _binaryStream: EmitterStream<ByteBuffer>
+    
+    /// A stream of strings received from the remote
+    public let textStream: AnyOutputStream<String>
+    
+    /// A stream of binary data received from the remote
+    public let binaryStream: AnyOutputStream<ByteBuffer>
     
     /// Allows push stream access to the frame serializer
     let serializerStream: PushStream<Frame>
@@ -80,8 +87,10 @@ public final class WebSocket {
         self.worker = worker
         self.server = server
         
-        self.textStream = EmitterStream<String>()
-        self.binaryStream = EmitterStream<ByteBuffer>()
+        self._textStream = EmitterStream<String>()
+        self._binaryStream = EmitterStream<ByteBuffer>()
+        self.textStream = AnyOutputStream(self._textStream)
+        self.binaryStream = AnyOutputStream(self._binaryStream)
         
         self.serializerStream = PushStream<Frame>()
     }
@@ -135,8 +144,8 @@ public final class WebSocket {
             case .close:
                 try self.closeListener(self, frame.payload)
                 self.parser.close()
-                self.textStream.close()
-                self.binaryStream.close()
+                self._textStream.close()
+                self._binaryStream.close()
             case .text:
                 let data = Data(buffer: frame.payload)
                 
@@ -145,10 +154,10 @@ public final class WebSocket {
                 }
                 
                 try self.textListener(self, string)
-                self.textStream.emit(string)
+                self._textStream.emit(string)
             case .continuation, .binary:
                 try self.binaryListener(self, frame.payload)
-                self.binaryStream.emit(frame.payload)
+                self._binaryStream.emit(frame.payload)
             case .ping:
                 let frame = Frame(op: .pong, payload: frame.payload, mask: self.nextMask)
                 self.serializerStream.next(frame)
@@ -160,8 +169,8 @@ public final class WebSocket {
             self.errorListener(self, error)
         }.finally {
             self.serializerStream.close()
-            self.textStream.close()
-            self.binaryStream.close()
+            self._textStream.close()
+            self._binaryStream.close()
         }
         
         parser.request()
