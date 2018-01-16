@@ -10,19 +10,37 @@ import TCP
 /// [Learn More →](https://docs.vapor.codes/3.0/websocket/websocket/)
 public final class WebSocket {
     // Gets called on WebSocket close
-    public typealias OnClose = () -> ()
+    public typealias OnClose = (WebSocket, ByteBuffer) throws -> ()
+    
+    // Gets called on WebSocket error
+    public typealias OnError = (WebSocket, Error) -> ()
+    
+    // Gets called on WebSocket text
+    public typealias OnText = (WebSocket, String) throws -> ()
+    
+    // Gets called on WebSocket binary
+    public typealias OnBinary = (WebSocket, ByteBuffer) throws -> ()
     
     /// A stream of strings received from the remote
-    let stringOutputStream: EmitterStream<String>
+    public let textStream: EmitterStream<String>
     
     /// A stream of binary data received from the remote
-    let binaryOutputStream: EmitterStream<ByteBuffer>
+    public let binaryStream: EmitterStream<ByteBuffer>
     
     /// Allows push stream access to the frame serializer
     let serializerStream: PushStream<Frame>
     
     // Gets called on WebSocket close
-    var closeListener: OnClose = { }
+    var closeListener: OnClose = { _, _ in }
+    
+    // Gets called on WebSocket error
+    var errorListener: OnError = { _, _ in }
+    
+    // Gets called on WebSocket text data
+    var textListener: OnText = { _, _ in }
+    
+    // Gets called on WebSocket binary data
+    var binaryListener: OnBinary = { _, _ in }
     
     /// Serializes frames into data
     let serializer: FrameSerializer
@@ -31,8 +49,6 @@ public final class WebSocket {
     let parser: TranslatingStreamWrapper<FrameParser>
     
     let server: Bool
-    
-    var errorCallback: (Error) -> () = { _ in }
     
     var worker: Worker
     
@@ -64,8 +80,8 @@ public final class WebSocket {
         self.worker = worker
         self.server = server
         
-        self.stringOutputStream = EmitterStream<String>()
-        self.binaryOutputStream = EmitterStream<ByteBuffer>()
+        self.textStream = EmitterStream<String>()
+        self.binaryStream = EmitterStream<ByteBuffer>()
         
         self.serializerStream = PushStream<Frame>()
     }
@@ -117,9 +133,10 @@ public final class WebSocket {
             
             switch frame.opCode {
             case .close:
+                try self.closeListener(self, frame.payload)
                 self.parser.close()
-                self.stringOutputStream.close()
-                self.binaryOutputStream.close()
+                self.textStream.close()
+                self.binaryStream.close()
             case .text:
                 let data = Data(buffer: frame.payload)
                 
@@ -127,11 +144,11 @@ public final class WebSocket {
                     throw WebSocketError(.invalidFrame)
                 }
                 
-                self.stringOutputStream.emit(string)
+                try self.textListener(self, string)
+                self.textStream.emit(string)
             case .continuation, .binary:
-                let buffer = ByteBuffer(start: frame.buffer.baseAddress, count: frame.buffer.count)
-                
-                self.binaryOutputStream.emit(buffer)
+                try self.binaryListener(self, frame.payload)
+                self.binaryStream.emit(frame.payload)
             case .ping:
                 let frame = Frame(op: .pong, payload: frame.payload, mask: self.nextMask)
                 self.serializerStream.next(frame)
@@ -139,11 +156,12 @@ public final class WebSocket {
                 let data = Data(frame.payload)
                 self.pings[data]?.complete()
             }
-        }.catch(onError: self.errorCallback).finally {
+        }.catch { error in
+            self.errorListener(self, error)
+        }.finally {
             self.serializerStream.close()
-            self.binaryOutputStream.close()
-            self.stringOutputStream.close()
-            self.closeListener()
+            self.textStream.close()
+            self.binaryStream.close()
         }
         
         parser.request()
@@ -188,23 +206,22 @@ public final class WebSocket {
         return promise.future
     }
     
-    public func onData(_ run: @escaping (WebSocket, Data) throws -> ()) -> DrainStream<ByteBuffer> {
-        return binaryOutputStream.drain { bytes, upstream in
-            let data = Data(buffer: bytes)
-            try run(self, data)
+    public func onData(_ run: @escaping (WebSocket, Data) throws -> ()) {
+        self.binaryListener = { websocket, buffer in
+            try run(websocket, Data(buffer: buffer))
         }
     }
     
-    public func onByteBuffer(_ run: @escaping (WebSocket, ByteBuffer) throws -> ()) -> DrainStream<ByteBuffer> {
-        return binaryOutputStream.drain { bytes, upstream in
-            try run(self, bytes)
-        }
+    public func onByteBuffer(_ run: @escaping OnBinary) {
+        self.binaryListener = run
     }
 
-    public func onString(_ run: @escaping (WebSocket, String) throws -> ()) -> DrainStream<String> {
-        return stringOutputStream.drain { string, upstream in
-            try run(self, string)
-        }
+    public func onString(_ run: @escaping OnText) {
+        self.textListener = run
+    }
+    
+    public func onError(_ run: @escaping OnError) {
+        self.errorListener = run
     }
     
     public func onClose(_ run: @escaping OnClose) {
