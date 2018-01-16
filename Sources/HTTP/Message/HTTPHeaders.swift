@@ -50,14 +50,17 @@ public struct HTTPHeaders: Codable {
     }
     
     public func encode(to encoder: Encoder) throws {
-        fatalError()
-        // TODO
+        try Array(self).encode(to: encoder)
     }
     
     public init(from decoder: Decoder) throws {
-        //        self.storage = try Data(from: decoder)
-        fatalError()
-        // TODO
+        let headers = try [Name: String](from: decoder)
+        
+        self.init()
+        
+        for (name, value) in headers {
+            self[name] = value
+        }
     }
     
     /// Accesses the (first) value associated with the `Name` if any
@@ -183,13 +186,24 @@ public struct HTTPHeaders: Codable {
     public subscript(name: Name, attribute: String) -> String? {
         get {
             guard let header = self[name] else { return nil }
-            guard let range = header.range(of: "\(attribute)=\"") else { return nil }
+            guard let range = header.range(of: "\(attribute)=") else { return nil }
             
             let remainder = header[range.upperBound...]
             
-            guard let end = remainder.index(of: "\"") else { return nil }
+            var string: String
             
-            return String(remainder[remainder.startIndex..<end])
+            if let end = remainder.index(of: ";") {
+                string = String(remainder[remainder.startIndex..<end])
+            } else {
+                string = String(remainder[remainder.startIndex...])
+            }
+            
+            if string.first == "\"", string.last == "\"", string.count > 1 {
+                string.removeFirst()
+                string.removeLast()
+            }
+            
+            return string
         }
     }
     
