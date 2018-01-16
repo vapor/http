@@ -42,7 +42,7 @@ public final class HTTPClient {
 
     /// Sends an HTTP request.
     public func send(_ request: HTTPRequest) -> Future<HTTPResponse> {
-        return queueStream.queue(request).map(to: HTTPResponse.self) { res in
+        return queueStream.enqueue(request).map(to: HTTPResponse.self) { res in
             return try self.responseMap(res)
         }
     }

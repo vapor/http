@@ -29,7 +29,6 @@ import Foundation
 /// https://en.wikipedia.org/wiki/Media_type
 /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
 public struct MediaType: Hashable {
-    
     /// The type represents the category and can be a discrete or a multipart type.
     public var type: String {
         return String(bytes: typeBytes, encoding: .utf8) ?? ""
@@ -70,7 +69,7 @@ public struct MediaType: Hashable {
         }
         
         self.bytes = bytes
-        self.hashValue = bytes.djb2
+        self.hashValue = typeBytes.djb2
     }
 
     /// Parse a MediaType from a String.
