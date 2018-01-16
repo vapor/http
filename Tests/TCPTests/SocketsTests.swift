@@ -61,8 +61,37 @@ class SocketsTests: XCTestCase {
         waitForExpectations(timeout: 5)
         server.stop()
     }
+    
+    func testMultipleTCPSocketClose() throws {
+        let socket = try TCPSocket(isNonBlocking: false, shouldReuseAddress: false)
+        let socketDescriptor = socket.descriptor
+        let nullHandle = FileHandle.standardError
+        let nullDescriptor = nullHandle.fileDescriptor
+        
+        // This test is a bit tricky. It's necessary to set up a situation where
+        // a given descriptor will be reassigned to a different object after the
+        // TCPSocket is done with it. The easiest way to do this is to force the
+        // issue with dup2().
+        
+        // Check that the socket was, in fact, open and then closed.
+        XCTAssertNotEqual(fcntl(socketDescriptor, F_GETFL), -1)
+        socket.close()
+        XCTAssertEqual(fcntl(socketDescriptor, F_GETFL), -1)
+        XCTAssertEqual(errno, EBADF)
+        
+        // Duplicate another descriptor to the closed one's value and check that
+        // it is now a valid descriptor.
+        XCTAssertEqual(dup2(nullDescriptor, socketDescriptor), socketDescriptor)
+        XCTAssertNotEqual(fcntl(socketDescriptor, F_GETFL), -1)
+        
+        // Try closing the socket a second time and check that the reassigned
+        // descriptor is still valid.
+        socket.close()
+        XCTAssertNotEqual(fcntl(socketDescriptor, F_GETFL), -1)
+    }
 
     static let allTests = [
         ("testServer", testServer),
+        ("testMultipleTCPSocketClose", testMultipleTCPSocketClose),
     ]
 }
