@@ -87,6 +87,25 @@ extension CHTTPParser {
     }
 }
 
+extension CParseResults {
+    func parseContentLength(index: HTTPHeaders.Index) {
+        if self.contentLength == nil {
+            let namePointer = UnsafePointer(self.headersData).advanced(by: index.nameStartIndex)
+            let nameLength = index.nameEndIndex - index.nameStartIndex
+            let nameBuffer = ByteBuffer(start: namePointer, count: nameLength)
+            
+            if lowercasedContentLength.caseInsensitiveEquals(to: nameBuffer) {
+                let pointer = UnsafePointer(self.headersData).advanced(by: index.valueStartIndex)
+                let length = index.valueEndIndex - index.valueStartIndex
+                
+                pointer.withMemoryRebound(to: Int8.self, capacity: length) { pointer in
+                    self.contentLength = numericCast(strtol(pointer, nil, 10))
+                }
+            }
+        }
+    }
+}
+
 extension CHTTPParser {
     func getResults() -> CParseResults? {
         let results: CParseResults
@@ -161,20 +180,7 @@ extension CHTTPParser {
                 results.headersData.append(.carriageReturn)
                 results.headersData.append(.newLine)
                 
-                if results.contentLength == nil {
-                    let namePointer = UnsafePointer(results.headersData).advanced(by: index.nameStartIndex)
-                    let nameLength = index.nameEndIndex - index.nameStartIndex
-                    let nameBuffer = ByteBuffer(start: namePointer, count: nameLength)
-                    
-                    if lowercasedContentLength.caseInsensitiveEquals(to: nameBuffer) {
-                        let pointer = UnsafePointer(results.headersData).advanced(by: index.valueStartIndex)
-                        let length = index.valueEndIndex - index.valueStartIndex
-                        
-                        pointer.withMemoryRebound(to: Int8.self, capacity: length) { pointer in
-                            results.contentLength = numericCast(strtol(pointer, nil, 10))
-                        }
-                    }
-                }
+                results.parseContentLength(index: index)
                 
                 // start a new key
                 results.headerState = .key(startIndex: results.headersData.count, endIndex: results.headersData.count + length)
@@ -259,6 +265,9 @@ extension CHTTPParser {
                 results.headersIndexes.append(index)
                 results.headersData.append(.carriageReturn)
                 results.headersData.append(.newLine)
+                
+                results.parseContentLength(index: index)
+                
                 let headers = HTTPHeaders(storage: results.headersData, indexes: results.headersIndexes)
                 
                 if let contentLength = results.contentLength {
