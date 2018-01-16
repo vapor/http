@@ -17,9 +17,6 @@ public final class TCPSocket: Socket {
     /// True if the socket should re-use addresses
     public let shouldReuseAddress: Bool
 
-    /// True if the socket has been closed.
-    public var isClosed = false
-
     /// Creates a TCP socket around an existing descriptor
     public init(
         established: Int32,
@@ -156,11 +153,10 @@ public final class TCPSocket: Socket {
     
     /// Closes the socket
     public func close() {
-        guard !isClosed else {
+        guard descriptor != -1 else {
             return
         }
         _ = COperatingSystem.close(descriptor)
         descriptor = -1
-        isClosed = true
     }
 }
