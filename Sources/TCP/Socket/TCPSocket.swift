@@ -150,7 +150,7 @@ public final class TCPSocket: Socket {
 
         return .wrote(count: sent)
     }
-    
+
     /// Closes the socket
     public func close() {
         guard descriptor != -1 else {
