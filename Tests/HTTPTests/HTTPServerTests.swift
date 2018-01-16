@@ -28,8 +28,6 @@ class HTTPServerTests: XCTestCase {
             }
         }
 
-        RunLoop.main.run()
-
         let exp = expectation(description: "all requests complete")
         var num = 1024
         for _ in 0..<num {
