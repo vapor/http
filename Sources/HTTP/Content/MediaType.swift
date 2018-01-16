@@ -69,7 +69,7 @@ public struct MediaType: Hashable {
         }
         
         self.bytes = bytes
-        self.hashValue = typeBytes.djb2
+        self.hashValue = typeBytes.djb2 &+ subtypeBytes.djb2
     }
 
     /// Parse a MediaType from a String.
@@ -182,7 +182,7 @@ public struct MediaType: Hashable {
 extension MediaType : Equatable {
     /// :nodoc:
     public static func == (lhs: MediaType, rhs: MediaType) -> Bool {
-        return lhs.hashValue == rhs.hashValue
+        return lhs.matches(other: rhs)
     }
 }
 
