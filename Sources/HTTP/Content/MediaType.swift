@@ -28,8 +28,7 @@ import Foundation
 ///
 /// https://en.wikipedia.org/wiki/Media_type
 /// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
-public struct MediaType {
-    
+public struct MediaType: Hashable {
     /// The type represents the category and can be a discrete or a multipart type.
     public var type: String {
         return String(bytes: typeBytes, encoding: .utf8) ?? ""
@@ -42,6 +41,8 @@ public struct MediaType {
     
     var typeBytes: [UInt8]
     var subtypeBytes: [UInt8]
+    var bytes: [UInt8]
+    public let hashValue: Int
     
     /// Key/value pair parameters for this type.
     public let parameters: [String: String]
@@ -51,6 +52,24 @@ public struct MediaType {
         self.typeBytes = Array(type.utf8)
         self.subtypeBytes = Array(subtype.utf8)
         self.parameters = parameters
+        
+        var bytes = [UInt8]()
+        bytes.reserveCapacity(typeBytes.count + subtypeBytes.count + 128)
+        
+        bytes.append(contentsOf: typeBytes)
+        bytes.append(.forwardSlash)
+        bytes.append(contentsOf: subtypeBytes)
+        
+        for parameter in parameters {
+            bytes.append(.semicolon)
+            bytes.append(.space)
+            bytes += Array(parameter.key.utf8)
+            bytes.append(.equals)
+            bytes += Array(parameter.value.utf8)
+        }
+        
+        self.bytes = bytes
+        self.hashValue = typeBytes.djb2 &+ subtypeBytes.djb2
     }
 
     /// Parse a MediaType from a String.
@@ -160,17 +179,10 @@ public struct MediaType {
     }
 }
 
-extension MediaType : Hashable {
-    /// :nodoc:
-    public var hashValue: Int {
-        return typeBytes.djb2 ^ subtypeBytes.djb2
-    }
-}
-
 extension MediaType : Equatable {
     /// :nodoc:
     public static func == (lhs: MediaType, rhs: MediaType) -> Bool {
-        return lhs.hashValue == rhs.hashValue
+        return lhs.matches(other: rhs)
     }
 }
 
@@ -186,7 +198,7 @@ extension HTTPMessage {
         }
         set {
             if let newValue = newValue {
-                headers.appendValue(newValue.bytes(), forName: .contentType)
+                headers.appendValue(newValue.bytes, forName: .contentType)
             } else {
                 headers.removeValues(forName: .contentType)
             }

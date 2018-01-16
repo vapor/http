@@ -40,7 +40,7 @@ let package = Package(
         .target(name: "Routing", dependencies: ["Debugging", "HTTP", "WebSocket"]),
         .testTarget(name: "RoutingTests", dependencies: ["Routing"]),
         .target(name: "ServerSecurity", dependencies: ["COperatingSystem", "TCP"]),
-        .target(name: "TCP", dependencies: ["Async", "COperatingSystem", "Debugging", "Service"]),
+        .target(name: "TCP", dependencies: ["Async", "Bits", "COperatingSystem", "Debugging", "Service"]),
         .testTarget(name: "TCPTests", dependencies: ["TCP"]),
         .target(name: "TLS", dependencies: ["Async", "Bits", "Debugging", "TCP"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),

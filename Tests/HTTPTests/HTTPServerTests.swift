@@ -5,52 +5,29 @@ import Foundation
 import TCP
 import XCTest
 
-struct EchoWorker: HTTPResponder, Worker {
-    let eventLoop: EventLoop = DispatchEventLoop(label: "codes.vapor.http.test.server.worker")
-
-    func respond(to req: HTTPRequest, on Worker: Worker) throws -> Future<HTTPResponse> {
-        /// simple echo server
-        return Future(.init(body: req.body))
-    }
-}
-
 class HTTPServerTests: XCTestCase {
     func testTCP() throws {
-        let accept = DispatchEventLoop(label: "codes.vapor.http.test.server.accept")
-        let workers = [
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker(),
-            EchoWorker()
-        ]
-
         let tcpSocket = try TCPSocket(isNonBlocking: true)
         let tcpServer = try TCPServer(socket: tcpSocket)
-        let server = HTTPServer<TCPClientStream, EchoWorker>(
-            acceptStream: tcpServer.stream(on: accept),
-            workers: workers
-        )
-        server.onError = { XCTFail("\($0)") }
-
-        if #available(OSX 10.12, *) {
-            Thread.detachNewThread {
-                accept.run()
-            }
-            for worker in workers {
-                Thread.detachNewThread {
-                    worker.eventLoop.run()
-                }
-            }
-        } else {
-            fatalError()
-        }
 
         // beyblades let 'er rip
         try tcpServer.start(hostname: "localhost", port: 8123, backlog: 128)
+
+        for i in 1...ProcessInfo.processInfo.activeProcessorCount {
+            let worker = try DefaultEventLoop(label: "codes.vapor.test.worker.\(i)")
+            let serverStream = tcpServer.stream(on: worker)
+
+            _ = HTTPServer(
+                acceptStream: serverStream.map(to: SocketStream<TCPSocket>.self) { $0.socket.stream(on: worker) },
+                worker: worker,
+                responder: EchoResponder()
+            )
+
+            Thread.async {
+                worker.runLoop()
+            }
+        }
+
         let exp = expectation(description: "all requests complete")
         var num = 1024
         for _ in 0..<num {
@@ -69,7 +46,6 @@ class HTTPServerTests: XCTestCase {
             }
         }
 
-
         waitForExpectations(timeout: 5)
         tcpServer.stop()
     }
@@ -77,4 +53,13 @@ class HTTPServerTests: XCTestCase {
     static let allTests = [
         ("testTCP", testTCP),
     ]
+}
+
+struct EchoResponder: HTTPResponder {
+    init() {}
+
+    func respond(to req: HTTPRequest, on Worker: Worker) throws -> Future<HTTPResponse> {
+        /// simple echo server
+        return Future(.init(body: req.body))
+    }
 }
