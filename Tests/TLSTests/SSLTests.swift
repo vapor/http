@@ -31,8 +31,6 @@ class SSLTests: XCTestCase {
 
     func testClient() { do { try _testClient() } catch { XCTFail("\(error)") } }
     func _testClient() throws {
-        // FIXME: problem with wouldblock.
-        return;
         let tcpSocket = try TCPSocket(isNonBlocking: true)
         let tcpClient = try TCPClient(socket: tcpSocket)
         let tlsSettings = TLSClientSettings()
@@ -61,11 +59,11 @@ class SSLTests: XCTestCase {
             // closed
         }.upstream!.request(count: 1)
 
-        let source = EmitterStream(ByteBuffer.self)
+        let source = PushStream<ByteBuffer>()
         source.output(to: tlsSink)
 
         let req = "GET /robots.txt HTTP/1.1\r\nContent-Length: 0\r\nHost: www.google.com\r\nUser-Agent: hi\r\n\r\n".data(using: .utf8)!
-        source.emit(req.withByteBuffer { $0 })
+        source.push(req.withByteBuffer { $0 })
 
         waitForExpectations(timeout: 10)
     }
