@@ -90,17 +90,3 @@ public final class TrieRouter<Output> {
         return current.output ?? fallback
     }
 }
-
-extension TrieRouterNode {
-    fileprivate func find(constants: [[UInt8]]) -> TrieRouterNode<Output>? {
-        let constant = constants[0]
-        
-        let node = self.findConstant(constant)
-        
-        if constants.count > 1 {
-            return node?.find(constants: Array(constants[1...]))
-        } else {
-            return node
-        }
-    }
-}

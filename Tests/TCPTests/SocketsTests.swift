@@ -62,6 +62,13 @@ class SocketsTests: XCTestCase {
         server.stop()
     }
     
+    func testInvalidHost() throws {
+        let clientSocket = try TCPSocket(isNonBlocking: false)
+        let client = try TCPClient(socket: clientSocket)
+        
+        XCTAssertThrowsError(try client.connect(hostname: "dasdj2132.34.ew,sdfa142", port: 41141))
+    }
+    
     func testMultipleTCPSocketClose() throws {
         let socket = try TCPSocket(isNonBlocking: false, shouldReuseAddress: false)
         let socketDescriptor = socket.descriptor
@@ -93,5 +100,6 @@ class SocketsTests: XCTestCase {
     static let allTests = [
         ("testServer", testServer),
         ("testMultipleTCPSocketClose", testMultipleTCPSocketClose),
+        ("testInvalidHost", testInvalidHost),
     ]
 }

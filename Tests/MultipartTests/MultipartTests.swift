@@ -199,6 +199,14 @@ class MultipartTests: XCTestCase {
     
     static let allTests = [
         ("testBasics", testBasics),
-        ("testMultifile", testMultifile)
+        ("testPartReading", testPartReading),
+        ("testMultifile", testMultifile),
+        ("testInvalidBoundaryState", testInvalidBoundaryState),
+        ("testMissingBoundaryState", testMissingBoundaryState),
+        ("testInconsistentBoundary", testInconsistentBoundary),
+        ("testMissingEndOfMultipart", testMissingEndOfMultipart),
+        ("testMissingPart", testMissingPart),
+        ("testMissingNewline", testMissingNewline),
+        ("testFormBoundary", testFormBoundary),
     ]
 }
