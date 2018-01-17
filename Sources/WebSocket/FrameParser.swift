@@ -150,7 +150,7 @@ final class FrameParser: ByteParser {
             length >= 3,
             let code = Frame.OpCode(rawValue: base[0] & 0b00001111)
         else {
-            throw WebSocketError(.invalidFrame)
+            return nil
         }
         
         // If the FIN bit is set
