@@ -2,6 +2,8 @@ import Async
 import Bits
 import Foundation
 
+// FIXME: TranslatingStream
+
 /// Applies HTTP/1 chunk encoding to a stream of data
 final class HTTPChunkEncodingStream: Async.Stream, ConnectionContext {
     /// See InputStream.Input

@@ -83,7 +83,6 @@ class ParserTests : XCTestCase {
             completed = true
         }.upstream!.request()
         
-        parser.request()
         XCTAssertNil(message)
         data.withByteBuffer(parser.next)
         parser.close()
@@ -128,15 +127,14 @@ class ParserTests : XCTestCase {
         
         var completed = false
         
-        _ = parser.drain { _, _ in
+        parser.drain { _, _ in
             XCTFail()
         }.catch { _ in
             error = true
         }.finally {
             completed = true
-        }
+        }.upstream?.request()
         
-        parser.request()
         data.withByteBuffer(parser.next)
         parser.close()
         XCTAssert(error)
@@ -163,15 +161,13 @@ class ParserTests : XCTestCase {
         
         var completed = false
         
-        _ = parser.drain { _, _ in
+        parser.drain { _, _ in
             XCTFail()
         }.catch { _ in
             error = true
         }.finally {
             completed = true
-        }
-        
-        parser.request()
+        }.upstream?.request()
         
         data.withByteBuffer(parser.next)
         data.withByteBuffer(parser.next)
@@ -179,12 +175,41 @@ class ParserTests : XCTestCase {
         XCTAssert(error)
         XCTAssert(completed)
     }
+    
+    func testContentLengthLastHeader() throws {
+        let data = """
+        HTTP/1.1 200 OK\r
+        Date: Mon, 27 Jul 2009 12:28:53 GMT\r
+        Server: Apache/2.2.14 (Win32)\r
+        Last-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r
+        Content-Length: 7\r
+        Content-Type: text/html\r
+        Content-Length: 7\r
+        \r
+        <vapor>
+        """.data(using: .utf8) ?? Data()
+        
+        let promise = Promise<Data>()
+        
+        let parser = HTTPRequestParser().stream(on: loop)
+        
+        parser.drain { req, _ in
+            req.body.makeData(max: 5).chain(to: promise)
+        }.catch { error in
+            promise.fail(error)
+        }.upstream?.request()
+        
+        data.withByteBuffer(parser.next)
+        parser.close()
+        XCTAssertThrowsError(try promise.future.blockingAwait())
+    }
 
     static let allTests = [
         ("testRequest", testRequest),
         ("testResponse", testResponse),
         ("testTooLargeRequest", testTooLargeRequest),
         ("testTooLargeResponse", testTooLargeResponse),
+        ("testContentLengthLastHeader", testContentLengthLastHeader),
     ]
 }
 
