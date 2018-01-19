@@ -208,7 +208,7 @@ final class FrameParser: ByteParser {
                 return nil
             }
             
-            guard consumed &+ 4 < length else {
+            guard consumed &+ 4 <= length else {
                 // throw an invalidFrame for a missing mask buffer
                 throw WebSocketError(.invalidMask)
             }
