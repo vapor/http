@@ -52,8 +52,13 @@ extension CHTTPParser {
             let message = try makeMessage(from: results)
             return .sufficient(message)
         } else {
+            input.close()
             // EOF
             http_parser_execute(&parser, &settings, nil, 0)
+            
+            guard results.isComplete else {
+                return .insufficient()
+            }
             
             let message = try makeMessage(from: results)
             return .sufficient(message)
