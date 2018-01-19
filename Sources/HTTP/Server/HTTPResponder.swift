@@ -8,8 +8,8 @@ public protocol HTTPResponder {
 
 extension HTTPResponder {
     /// Converts an HTTPResponder to an HTTPRequest -> HTTPResponse stream.
-    public func stream(on worker: Worker) -> FutureStream<HTTPRequest, HTTPResponse> {
-        return FutureStream { req in
+    public func stream(on worker: Worker) -> MapStream<HTTPRequest, HTTPResponse> {
+        return MapStream { req in
             return try self.respond(to: req, on: worker)
         }
     }
