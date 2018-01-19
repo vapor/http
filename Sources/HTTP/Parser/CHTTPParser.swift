@@ -13,7 +13,7 @@ enum HeaderState {
 
 
 /// Internal CHTTP parser protocol
-internal protocol CHTTPParser: class, HTTPParser where Partial == CHTTPParserState {
+internal protocol CHTTPParser: class, HTTPParser where Input == ByteBuffer {
     static var parserType: http_parser_type { get }
     var parser: http_parser { get set }
     var settings: http_parser_settings { get set }
@@ -31,30 +31,33 @@ enum CHTTPParserState {
 /// MARK: HTTPParser conformance
 
 extension CHTTPParser {
-    public func parseBytes(from buffer: ByteBuffer, partial: CHTTPParserState?) throws -> Future<ByteParserResult<Self>> {
-        return Future(try _parseBytes(from: buffer, partial: partial))
-    }
-
-    private func _parseBytes(from buffer: ByteBuffer, partial: CHTTPParserState?) throws -> ByteParserResult<Self> {
+    public func translate(input: inout TranslatingStreamInput<ByteBuffer>) throws -> TranslatingStreamOutput<Output> {
         guard let results = getResults() else {
             throw HTTPError(identifier: "no-parser-results", reason: "An internal HTTP Parser state became invalid")
         }
         
-        /// parse the message using the C HTTP parser.
-        try executeParser(from: buffer)
-        
-        guard results.isComplete else {
-            return .uncompleted(httpState)
+        if let buffer = input.input {
+            /// parse the message using the C HTTP parser.
+            try executeParser(from: buffer)
+            
+            guard results.isComplete else {
+                return .insufficient()
+            }
+            
+            // the results have completed, so we are ready
+            // for a new request to come in
+            httpState = .ready
+            CParseResults.remove(from: &parser)
+            
+            let message = try makeMessage(from: results)
+            return .sufficient(message)
+        } else {
+            // EOF
+            http_parser_execute(&parser, &settings, nil, 0)
+            
+            let message = try makeMessage(from: results)
+            return .sufficient(message)
         }
-        
-        // the results have completed, so we are ready
-        // for a new request to come in
-        httpState = .ready
-        CParseResults.remove(from: &parser)
-        
-        let message = try makeMessage(from: results)
-        
-        return .completed(consuming: buffer.count, result: message)
     }
 
     /// Resets the parser

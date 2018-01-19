@@ -19,6 +19,18 @@ class HTTPClientTests: XCTestCase {
         XCTAssertEqual(res.count, 3741)
     }
     
+    func testConnectionClose() throws {
+        let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
+        let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop)
+        
+        let req = HTTPRequest(method: .get, uri: "/status/418", headers: [.host: "httpbin.org"])
+        let res = try client.send(req).flatMap(to: Data.self) { res in
+            return res.body.makeData(max: 100_000)
+        }.await(on: eventLoop)
+        
+        XCTAssertEqual(res.count, 135)
+    }
+    
     func testURI() {
         var uri: URI = "http://localhost:8081/test?q=1&b=4#test"
         XCTAssertEqual(uri.scheme, "http")
