@@ -202,15 +202,15 @@ final class FrameParser: ByteParser {
         let mask: [UInt8]?
         
         if isMasked {
+            guard consumed &+ 4 <= length else {
+                // throw an invalidFrame for a missing mask buffer
+                throw WebSocketError(.invalidMask)
+            }
+
             // Ensure the minimum length is available
             guard length &- consumed >= payloadLength &+ 4, payloadLength < Int.max else {
                 // throw an invalidFrame for incomplete/invalid
                 return nil
-            }
-            
-            guard consumed &+ 4 <= length else {
-                // throw an invalidFrame for a missing mask buffer
-                throw WebSocketError(.invalidMask)
             }
             
             mask = [base[0], base[1], base[2], base[3]]
