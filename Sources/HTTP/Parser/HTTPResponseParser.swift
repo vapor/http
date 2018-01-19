@@ -6,10 +6,7 @@ import Foundation
 /// Parses requests from a readable stream.
  public final class HTTPResponseParser: CHTTPParser {
     public typealias Input = ByteBuffer
-    public typealias Output = Message
-    
-    /// See HTTPParser.Message
-    public typealias Message = HTTPResponse
+    public typealias Output = HTTPResponse
 
     /// See CHTTPParser.parserType
     static let parserType: http_parser_type = HTTP_RESPONSE
@@ -26,7 +23,6 @@ import Foundation
     /// The maxiumum possible header size
     /// larger sizes will result in an error
     public var maxHeaderSize: Int?
-    public let state: ByteParserState<HTTPResponseParser>
     
     /// Creates a new Request parser.
     public init() {
@@ -34,7 +30,6 @@ import Foundation
         
         self.parser = http_parser()
         self.settings = http_parser_settings()
-        self.state = .init()
         self.httpState = .ready
         self.messageBodyCompleted = false
         reset()
