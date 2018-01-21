@@ -2,7 +2,7 @@ import Async
 import Bits
 import Foundation
 
-internal final class ByteBufferPushStream: Async.OutputStream, ConnectionContext {
+internal final class ByteBufferPushStream: Async.OutputStream {
     typealias Output = ByteBuffer
     
     var downstreamDemand: UInt
@@ -18,18 +18,6 @@ internal final class ByteBufferPushStream: Async.OutputStream, ConnectionContext
         closed = false
     }
     
-    func connection(_ event: ConnectionEvent) {
-        switch event {
-        case .request(let amount):
-            self.downstreamDemand += amount
-            
-            flushBacklog()
-        case .cancel:
-            self.downstreamDemand = 0
-            downstream?.close()
-        }
-    }
-    
     func eof() {
         if backlog.count == 0 {
             downstream?.close()
@@ -40,7 +28,6 @@ internal final class ByteBufferPushStream: Async.OutputStream, ConnectionContext
     
     func output<S>(to inputStream: S) where S : Async.InputStream, Output == S.Input {
         self.downstream = AnyInputStream(inputStream)
-        inputStream.connect(to: self)
     }
     
     func push(_ buffer: ByteBuffer) {
@@ -48,7 +35,9 @@ internal final class ByteBufferPushStream: Async.OutputStream, ConnectionContext
         
         if downstreamDemand > 0 {
             downstreamDemand -= 1
-            downstream?.next(buffer)
+            downstream?.next(buffer) {
+                // ignore, fixme
+            }
         } else {
             backlog.append(Data(buffer: buffer))
         }
@@ -75,7 +64,9 @@ internal final class ByteBufferPushStream: Async.OutputStream, ConnectionContext
             self.writing = data
             
             data.withByteBuffer { buffer in
-                self.downstream?.next(buffer)
+                self.downstream?.next(buffer) {
+                    // ignore, fixme
+                }
             }
         }
     }

@@ -31,11 +31,12 @@ class ParserTests : XCTestCase {
             XCTFail("\(error)")
         }.finally {
             completed = true
-        }.upstream!.request()
-        
-        parser.request()
+        }
+
         XCTAssertNil(message)
-        data.withByteBuffer(parser.next)
+        parser.next(data.withByteBuffer { $0 }) {
+            // done
+        }
         parser.close()
         
         guard let req = message else {
@@ -81,11 +82,12 @@ class ParserTests : XCTestCase {
             XCTFail("\(error)")
         }.finally {
             completed = true
-        }.upstream!.request()
-        
-        parser.request()
+        }
+
         XCTAssertNil(message)
-        data.withByteBuffer(parser.next)
+        parser.next(data.withByteBuffer { $0 }) {
+            // done
+        }
         parser.close()
         
         guard let res = message else {
@@ -135,9 +137,10 @@ class ParserTests : XCTestCase {
         }.finally {
             completed = true
         }
-        
-        parser.request()
-        data.withByteBuffer(parser.next)
+
+        parser.next(data.withByteBuffer { $0 }) {
+            // done
+        }
         parser.close()
         XCTAssert(error)
         XCTAssert(completed)
@@ -170,11 +173,14 @@ class ParserTests : XCTestCase {
         }.finally {
             completed = true
         }
-        
-        parser.request()
-        
-        data.withByteBuffer(parser.next)
-        data.withByteBuffer(parser.next)
+
+
+        parser.next(data.withByteBuffer { $0 }) {
+            // done
+        }
+        parser.next(data.withByteBuffer { $0 }) {
+            // done
+        }
         parser.close()
         XCTAssert(error)
         XCTAssert(completed)

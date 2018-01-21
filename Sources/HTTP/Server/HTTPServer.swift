@@ -48,6 +48,6 @@ public final class HTTPServer {
             self.onError?(err)
         }.finally {
             // closed
-        }.upstream!.request(count: .max)
+        }
     }
 }

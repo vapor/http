@@ -169,10 +169,9 @@ public struct HTTPBody: Codable {
                 }
                 
                 data.append(Data(buffer: buffer))
-                upstream.request()
             }.catch(onError: promise.fail).finally {
                 promise.complete(data)
-            }.upstream!.request()
+            }
             
             return promise.future
         }
