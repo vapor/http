@@ -57,7 +57,7 @@ public final class TCPClientStream: OutputStream {
                 return
             }
             downstream?.next(client) {
-                print("Ready to accept another...")
+                // ignore, this is a fire-hose stream
             }
         } catch {
             downstream?.error(error)

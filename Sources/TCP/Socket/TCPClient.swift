@@ -40,6 +40,10 @@ public final class TCPClient {
         willClose?()
         socket.close()
     }
+
+    deinit {
+        // print("\(type(of: self)).\(#function)")
+    }
 }
 
 extension TCPSocket {

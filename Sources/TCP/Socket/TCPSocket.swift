@@ -158,4 +158,8 @@ public final class TCPSocket: Socket {
         _ = COperatingSystem.close(descriptor)
         descriptor = -1
     }
+
+    deinit {
+        // print("\(type(of: self)).\(#function)")
+    }
 }

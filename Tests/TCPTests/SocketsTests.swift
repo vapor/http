@@ -8,7 +8,6 @@ let _data = """
 HTTP/1.1 200 OK\r
 Content-Length: 0\r
 \r
-\r
 
 """.data(using: .utf8)!
 
@@ -30,17 +29,19 @@ class SocketsTests: XCTestCase {
             let serverStream = server.stream(on: workerLoop)
 
             /// set up the server stream
-            let drain = serverStream.drain { client, upstream in
+            serverStream.drain { client, done in
                 let clientSource = client.socket.source(on: workerLoop)
                 let clientSink = client.socket.sink(on: workerLoop)
                 clientSource.map(to: ByteBuffer.self) { input in
-                    print(String(data: Data(input), encoding: .utf8)!)
+                    // print(String(data: Data(input), encoding: .utf8)!)
                     return _data.withByteBuffer { $0 }
                 }.output(to: clientSink)
+                // clientSource.output(to: clientSink)
+                done()
             }.catch { err in
                 XCTFail("\(err)")
             }.finally {
-                // closed
+                // server closed, should never happen
             }
             
             // beyblades let 'er rip
