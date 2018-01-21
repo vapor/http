@@ -1,4 +1,5 @@
 import Async
+import Bits
 import Dispatch
 import TCP
 import XCTest
@@ -32,8 +33,8 @@ class SocketsTests: XCTestCase {
             let drain = serverStream.drain { client, upstream in
                 let clientSource = client.socket.source(on: workerLoop)
                 let clientSink = client.socket.sink(on: workerLoop)
-
-                clientSource.map(to: UnsafeBufferPointer<UInt8>.self) { buffer in
+                clientSource.map(to: ByteBuffer.self) { input in
+                    print(String(data: Data(input), encoding: .utf8)!)
                     return _data.withByteBuffer { $0 }
                 }.output(to: clientSink)
             }.catch { err in
