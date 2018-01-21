@@ -99,8 +99,7 @@ public final class TCPSocket: Socket {
                 // itself throws an error.
                 _ = close()
                 return .read(count: 0)
-            case EAGAIN: return try read(into: buffer)
-            case EWOULDBLOCK:
+            case EAGAIN, EWOULDBLOCK:
                 // no data yet
                 return .wouldBlock
             default:

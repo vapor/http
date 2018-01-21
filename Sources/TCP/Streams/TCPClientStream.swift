@@ -2,7 +2,7 @@ import Async
 import COperatingSystem
 
 /// Stream representation of a TCP server.
-public final class TCPClientStream: OutputStream, ConnectionContext {
+public final class TCPClientStream: OutputStream {
     /// See OutputStream.Output
     public typealias Output = TCPClient
 
@@ -34,27 +34,6 @@ public final class TCPClientStream: OutputStream, ConnectionContext {
     /// See OutputStream.output
     public func output<S>(to inputStream: S) where S: InputStream, S.Input == Output {
         downstream = AnyInputStream(inputStream)
-        inputStream.connect(to: self)
-    }
-
-    /// See ConnectionContext.connection
-    public func connection(_ event: ConnectionEvent) {
-        switch event {
-        case.request(let count):
-            /// handle downstream requesting data
-            /// suspend will be called automatically if the
-            /// remaining requested output count ever
-            /// reaches zero.
-            /// the downstream is expected to continue
-            /// requesting additional output as it is ready.
-            /// the server will automatically resume if
-            /// additional clients are requested after
-            /// suspend has been called
-            self.request(count)
-        case .cancel:
-            /// handle downstream canceling output requests
-            self.cancel()
-        }
     }
 
     /// Resumes accepting clients if currently suspended
@@ -77,7 +56,9 @@ public final class TCPClientStream: OutputStream, ConnectionContext {
                 // the client was rejected or not available
                 return
             }
-            downstream?.next(client)
+            downstream?.next(client) {
+                print("Ready to accept another...")
+            }
         } catch {
             downstream?.error(error)
         }

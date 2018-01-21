@@ -3,6 +3,14 @@ import Dispatch
 import TCP
 import XCTest
 
+let _data = """
+HTTP/1.1 200 OK\r
+Content-Length: 0\r
+\r
+\r
+
+""".data(using: .utf8)!
+
 class SocketsTests: XCTestCase {
     func testServer() {
         do {
@@ -16,7 +24,6 @@ class SocketsTests: XCTestCase {
         let server = try TCPServer(socket: serverSocket)
         try server.start(port: 8338)
 
-
         for i in 1...4 {
             let workerLoop = try DefaultEventLoop(label: "codes.vapor.test.worker.\(i)")
             let serverStream = server.stream(on: workerLoop)
@@ -25,21 +32,23 @@ class SocketsTests: XCTestCase {
             let drain = serverStream.drain { client, upstream in
                 let clientSource = client.socket.source(on: workerLoop)
                 let clientSink = client.socket.sink(on: workerLoop)
-                clientSource.output(to: clientSink)
+
+                clientSource.map(to: UnsafeBufferPointer<UInt8>.self) { buffer in
+                    return _data.withByteBuffer { $0 }
+                }.output(to: clientSink)
             }.catch { err in
                 XCTFail("\(err)")
             }.finally {
                 // closed
             }
-            drain.upstream!.request(count: .max)
-
+            
             // beyblades let 'er rip
             Thread.async { workerLoop.runLoop() }
         }
 
-//        let group = DispatchGroup()
-//        group.enter()
-//        group.wait()
+        let group = DispatchGroup()
+        group.enter()
+        group.wait()
 
         let exp = expectation(description: "all requests complete")
         var num = 1024
