@@ -10,16 +10,17 @@ final class WebSocketTests : XCTestCase {
         let worker = try DefaultEventLoop(label: "codes.vapor.test.worker")
         let serverSocket = try TCPSocket(isNonBlocking: true)
         let server = try TCPServer(socket: serverSocket)
-
-        let webserver = HTTPServer(
-            acceptStream: server.stream(on: worker).map(to: SocketStream<TCPSocket>.self) { $0.socket.stream(on: worker) },
-            worker: worker,
-            responder: WebSocketResponder()
-        )
-        webserver.onError = { XCTFail("\($0)") }
         
         try server.start(hostname: "localhost", port: 8090, backlog: 128)
-        Thread.async { worker.runLoop() }
+        Thread.async {
+            let webserver = HTTPServer(
+                acceptStream: server.stream(on: worker).map(to: SocketStream<TCPSocket>.self) { $0.socket.stream(on: worker) },
+                worker: worker,
+                responder: WebSocketResponder()
+            )
+            webserver.onError = { XCTFail("\($0)") }
+            worker.runLoop()
+        }
 
         let clientSocket = try TCPSocket(isNonBlocking: false)
         let client = try TCPClient(socket: clientSocket)

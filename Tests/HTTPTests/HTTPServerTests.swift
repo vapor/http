@@ -28,9 +28,9 @@ class HTTPServerTests: XCTestCase {
             }
         }
 
-        let group = DispatchGroup()
-        group.enter()
-        group.wait()
+//        let group = DispatchGroup()
+//        group.enter()
+//        group.wait()
 
         let exp = expectation(description: "all requests complete")
         var num = 1024
