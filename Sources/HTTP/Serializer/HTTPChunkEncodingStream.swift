@@ -53,7 +53,8 @@ final class HTTPChunkEncodingStream: Async.Stream {
             downstream?.error(error)
         case .close:
             isClosed = true
-            /// FIXME: send closing chunk
+            _ = downstream?.next(eof.withByteBuffer { $0 })
+            downstream?.close()
         }
     }
     
@@ -61,29 +62,6 @@ final class HTTPChunkEncodingStream: Async.Stream {
     func output<I>(to inputStream: I) where I : Async.InputStream, Output == I.Input {
         downstream = AnyInputStream(inputStream)
     }
-    
-//    /// Update the chunk encoders state
-//    private func update() {
-//        if remainingOutputRequested > 0 {
-//            guard let downstream = downstream else {
-//                return
-//            }
-//
-//            switch closeState {
-//            case .notClosing:
-//                if let chunk = self.chunk {
-//                    remainingOutputRequested -= 1
-//                    chunk.withByteBuffer(downstream.next)
-//                }
-//            case .closing:
-//                self.closeState = .closed
-//                self.remainingOutputRequested -= 1
-//                eof.withByteBuffer(downstream.next)
-//            case .closed:
-//                downstream.close()
-//            }
-//        }
-//    }
 }
 
 private let crlf = Data([.carriageReturn, .newLine])
