@@ -1,4 +1,5 @@
 import Async
+import Bits
 import CHTTP
 import Dispatch
 import Foundation
@@ -30,7 +31,7 @@ internal final class CParseResults {
     var headers: HTTPHeaders?
     
     var body: HTTPBody?
-    var bodyStream: ByteBufferPushStream
+    var bodyStream: PushStream<ByteBuffer>
     
     var url = [UInt8]()
     
@@ -42,7 +43,7 @@ internal final class CParseResults {
         headersIndexes.reserveCapacity(64)
         url.reserveCapacity(128)
         self.maxHeaderSize = parser.maxHeaderSize
-        self.bodyStream = ByteBufferPushStream()
+        self.bodyStream = .init()
         
         self.headerState = .none
     }

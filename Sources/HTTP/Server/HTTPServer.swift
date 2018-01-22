@@ -24,7 +24,7 @@ public final class HTTPServer {
         where AcceptStream: OutputStream, AcceptStream.Output: ByteStream
     {
         /// set up the server stream
-        acceptStream.drain { client, upstream in
+        acceptStream.drain { client in
             let serializerStream = HTTPResponseSerializer().stream(on: worker)
             let parserStream = HTTPRequestParser().stream(on: worker)
 

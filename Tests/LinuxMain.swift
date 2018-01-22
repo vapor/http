@@ -7,7 +7,6 @@ import XCTest
 @testable import MultipartTests
 @testable import FormURLEncodedTests
 @testable import WebSocketTests
-@testable import TLSTests
 XCTMain([
 	// MARK: HTTP
     testCase(HTTPClientTests.allTests),
@@ -23,7 +22,6 @@ XCTMain([
     testCase(MultipartTests.allTests),
     testCase(RouterTests.allTests),
     testCase(SocketsTests.allTests),
-    testCase(SSLTests.allTests),
     testCase(SubProtocolMatcherTests.allTests),
 
     testCase(WebSocketTests.allTests),

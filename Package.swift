@@ -9,8 +9,6 @@ let package = Package(
         // .library(name: "HTTP2", targets: ["HTTP2"]),
         .library(name: "Multipart", targets: ["Multipart"]),
         .library(name: "Routing", targets: ["Routing"]),
-        .library(name: "ServerSecurity", targets: ["ServerSecurity"]),
-        .library(name: "TLS", targets: ["TLS"]),
         .library(name: "WebSocket", targets: ["WebSocket"]),
     ],
     dependencies: [
@@ -21,13 +19,16 @@ let package = Package(
         .package(url: "https://github.com/vapor/core.git", .branch("stream-refactor")),
 
         // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/crypto.git", .branch("beta")),
+        .package(url: "https://github.com/vapor/crypto.git", .branch("stream-refactor")),
 
         // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/service.git", .branch("beta")),
+        .package(url: "https://github.com/vapor/service.git", .branch("stream-refactor")),
 
-        // Core extensions, type-aliases, and functions that facilitate common tasks.
+        // Pure Swift (POSIX) TCP and UDP non-blocking socket layer, with event-driven Server and Client.
         .package(url: "https://github.com/vapor/sockets.git", .branch("stream-refactor")),
+
+        // Swift OpenSSL & macOS Security TLS wrapper
+        .package(url: "https://github.com/vapor/tls.git", .branch("stream-refactor")),
     ],
     targets: [
         .target(name: "CHTTP"),
@@ -41,23 +42,12 @@ let package = Package(
         .testTarget(name: "MultipartTests", dependencies: ["Multipart"]),
         .target(name: "Routing", dependencies: ["Debugging", "HTTP", "WebSocket"]),
         .testTarget(name: "RoutingTests", dependencies: ["Routing"]),
-        .target(name: "ServerSecurity", dependencies: ["COperatingSystem", "TCP"]),
-        .target(name: "TLS", dependencies: ["Async", "Bits", "Debugging", "TCP"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )
 
 #if os(macOS)
-    package.products.append(.library(name: "AppleTLS", targets: ["AppleTLS"]))
-    package.targets.append(.target(name: "AppleTLS", dependencies: ["Async", "Bits", "Debugging", "TLS"]))
-    package.targets.append(.testTarget(name: "TLSTests", dependencies: ["AppleTLS", "TLS"]))
-    
     package.targets.append(.target(name: "WebSocket", dependencies: ["Debugging", "TCP", "AppleTLS", "HTTP", "Crypto"]))
 #else
-    package.products.append(.library(name: "OpenSSL", targets: ["OpenSSL"]))
-    package.dependencies.append(.package(url: "https://github.com/vapor/copenssl.git", .exact("1.0.0-alpha.1")))
-    package.targets.append(.target(name: "OpenSSL", dependencies: ["Async", "COpenSSL", "Debugging", "TLS"]))
-    package.targets.append(.testTarget(name: "TLSTests", dependencies: ["OpenSSL", "TLS"]))
-    
     package.targets.append(.target(name: "WebSocket", dependencies: ["Debugging", "TCP", "OpenSSL", "HTTP", "Crypto"]))
 #endif

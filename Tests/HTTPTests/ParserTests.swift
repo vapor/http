@@ -25,7 +25,7 @@ class ParserTests : XCTestCase {
         var message: HTTPRequest?
         var completed = false
         
-        parser.drain { _message, upstream in
+        parser.drain { _message in
             message = _message
         }.catch { error in
             XCTFail("\(error)")
@@ -34,9 +34,7 @@ class ParserTests : XCTestCase {
         }
 
         XCTAssertNil(message)
-        parser.next(data.withByteBuffer { $0 }) {
-            // done
-        }
+        try parser.next(data.withByteBuffer { $0 }).await(on: loop)
         parser.close()
         
         guard let req = message else {
@@ -54,7 +52,7 @@ class ParserTests : XCTestCase {
         XCTAssertEqual(req.headers[.acceptEncoding], "gzip, deflate")
         XCTAssertEqual(req.headers[.connection], "Keep-Alive")
         
-        data = try req.body.makeData(max: 100_000).blockingAwait()
+        data = try req.body.makeData(max: 100_000).await(on: loop)
         XCTAssertEqual(String(data: data, encoding: .utf8), "hello")
         XCTAssert(completed)
     }
@@ -76,7 +74,7 @@ class ParserTests : XCTestCase {
         var message: HTTPResponse?
         var completed = false
         
-        parser.drain { _message, upstream in
+        parser.drain { _message in
             message = _message
         }.catch { error in
             XCTFail("\(error)")
@@ -85,9 +83,7 @@ class ParserTests : XCTestCase {
         }
 
         XCTAssertNil(message)
-        parser.next(data.withByteBuffer { $0 }) {
-            // done
-        }
+        try parser.next(data.withByteBuffer { $0 }).await(on: loop)
         parser.close()
         
         guard let res = message else {
@@ -130,7 +126,7 @@ class ParserTests : XCTestCase {
         
         var completed = false
         
-        _ = parser.drain { _, _ in
+        _ = parser.drain { _ in
             XCTFail()
         }.catch { _ in
             error = true
@@ -138,9 +134,7 @@ class ParserTests : XCTestCase {
             completed = true
         }
 
-        parser.next(data.withByteBuffer { $0 }) {
-            // done
-        }
+        try parser.next(data.withByteBuffer { $0 }).await(on: loop)
         parser.close()
         XCTAssert(error)
         XCTAssert(completed)
@@ -166,7 +160,7 @@ class ParserTests : XCTestCase {
         
         var completed = false
         
-        _ = parser.drain { _, _ in
+        _ = parser.drain { _ in
             XCTFail()
         }.catch { _ in
             error = true
@@ -175,12 +169,8 @@ class ParserTests : XCTestCase {
         }
 
 
-        parser.next(data.withByteBuffer { $0 }) {
-            // done
-        }
-        parser.next(data.withByteBuffer { $0 }) {
-            // done
-        }
+        try parser.next(data.withByteBuffer { $0 }).await(on: loop)
+        try parser.next(data.withByteBuffer { $0 }).await(on: loop)
         parser.close()
         XCTAssert(error)
         XCTAssert(completed)
