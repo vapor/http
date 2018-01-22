@@ -1,5 +1,4 @@
 import Async
-import Service
 import Crypto
 import Dispatch
 import Foundation
@@ -24,7 +23,7 @@ extension WebSocket {
     /// [Learn More →](https://docs.vapor.codes/3.0/websocket/client/#connecting-a-websocket-client)
     public static func connect(
         to uri: URI,
-        using container: Container
+        on worker: Worker
     ) throws -> WebSocket {
         guard
             uri.scheme == "ws" || uri.scheme == "wss",
@@ -51,16 +50,16 @@ extension WebSocket {
             try tlsClient.connect(hostname: hostname, port: port)
             let socket = tlsClient.socket
             
-            let source = socket.source(on: container.eventLoop)
-            let sink = socket.sink(on: container.eventLoop)
-            let websocket = WebSocket(source: .init(source), sink: .init(sink), worker: container, server: false)
+            let source = socket.source(on: worker)
+            let sink = socket.sink(on: worker)
+            let websocket = WebSocket(source: .init(source), sink: .init(sink), worker: worker, server: false)
             try client.connect(hostname: hostname, port: port)
             websocket.upgrade(uri: uri)
             return websocket
         } else {
-            let source = socket.source(on: container.eventLoop)
-            let sink = socket.sink(on: container.eventLoop)
-            let websocket = WebSocket(source: .init(source), sink: .init(sink), worker: container, server: false)
+            let source = socket.source(on: worker)
+            let sink = socket.sink(on: worker)
+            let websocket = WebSocket(source: .init(source), sink: .init(sink), worker: worker, server: false)
             try client.connect(hostname: hostname, port: port)
             websocket.upgrade(uri: uri)
             return websocket

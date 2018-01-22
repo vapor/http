@@ -23,10 +23,10 @@ public final class WebSocket {
     public typealias OnBinary = (WebSocket, ByteBuffer) throws -> ()
     
     /// A stream of strings received from the remote
-    let _textStream: EmitterStream<String>
+    let _textStream: PushStream<String>
     
     /// A stream of binary data received from the remote
-    let _binaryStream: EmitterStream<ByteBuffer>
+    let _binaryStream: PushStream<ByteBuffer>
     
     /// A stream of strings received from the remote
     public let textStream: AnyOutputStream<String>
@@ -87,8 +87,8 @@ public final class WebSocket {
         self.worker = worker
         self.server = server
         
-        self._textStream = EmitterStream<String>()
-        self._binaryStream = EmitterStream<ByteBuffer>()
+        self._textStream = .init()
+        self._binaryStream = .init()
         self.textStream = AnyOutputStream(self._textStream)
         self.binaryStream = AnyOutputStream(self._binaryStream)
         
@@ -111,16 +111,14 @@ public final class WebSocket {
         
         serializerStream.stream(to: serializer).output(to: self.sink)
         
-        let drain = DrainStream<HTTPResponse>(onInput: { response, upstream in
+        let drain = DrainStream<HTTPResponse>(onInput: { response in
             try WebSocket.upgrade(response: response, id: id)
             
             self.bindFrameStreams()
         })
         
         self.source.stream(to: parser).output(to: drain)
-        
-        parser.request()
-        
+
         let request = HTTPRequest(method: .get, uri: uri, headers: [
             .connection: "Upgrade",
             .upgrade: "websocket",
@@ -129,15 +127,11 @@ public final class WebSocket {
         ], body: HTTPBody())
         
         self.httpSerializerStream = serializerStream
-        serializerStream.next(request)
+        serializerStream.push(request)
     }
     
     func bindFrameStreams() {
-         _ = source.stream(to: parser).drain { frame, upstream in
-            defer {
-                self.parser.request()
-            }
-            
+         _ = source.stream(to: parser).drain { frame in
             frame.unmask()
             
             switch frame.opCode {
@@ -154,13 +148,13 @@ public final class WebSocket {
                 }
                 
                 try self.textListener(self, string)
-                self._textStream.emit(string)
+                self._textStream.push(string)
             case .continuation, .binary:
                 try self.binaryListener(self, frame.payload)
-                self._binaryStream.emit(frame.payload)
+                self._binaryStream.push(frame.payload)
             case .ping:
                 let frame = Frame(op: .pong, payload: frame.payload, mask: self.nextMask)
-                self.serializerStream.next(frame)
+                self.serializerStream.push(frame)
             case .pong:
                 let data = Data(frame.payload)
                 self.pings[data]?.complete()
@@ -172,8 +166,7 @@ public final class WebSocket {
             self._textStream.close()
             self._binaryStream.close()
         }
-        
-        parser.request()
+
         serializerStream.stream(to: self.serializer.stream(on: self.worker)).output(to: self.sink)
     }
     
@@ -184,20 +177,20 @@ public final class WebSocket {
     public func send(string: String) {
         Data(string.utf8).withByteBuffer { bytes in
             let frame = Frame(op: .text, payload: bytes, mask: nextMask)
-            self.serializerStream.next(frame)
+            self.serializerStream.push(frame)
         }
     }
     
     public func send(data: Data) {
         data.withByteBuffer { bytes in
             let frame = Frame(op: .binary, payload: bytes, mask: nextMask)
-            self.serializerStream.next(frame)
+            self.serializerStream.push(frame)
         }
     }
     
     public func send(bytes: ByteBuffer) {
         let frame = Frame(op: .binary, payload: bytes, mask: nextMask)
-        self.serializerStream.next(frame)
+        self.serializerStream.push(frame)
     }
     
     @discardableResult
@@ -209,7 +202,7 @@ public final class WebSocket {
         
         data.withByteBuffer { bytes in
             let frame = Frame(op: .ping, payload: bytes, mask: nextMask)
-            self.serializerStream.next(frame)
+            self.serializerStream.push(frame)
         }
         
         return promise.future
@@ -241,7 +234,7 @@ public final class WebSocket {
     public func close(_ data: Data = Data()) {
         data.withByteBuffer { bytes in
             let frame = Frame(op: .close, payload: bytes, mask: nextMask)
-            self.serializerStream.next(frame)
+            self.serializerStream.push(frame)
             self.serializerStream.close()
         }
     }

@@ -12,10 +12,10 @@ class HTTPSerializerStreamTests: XCTestCase {
         var output: [ByteBuffer] = []
 
         /// setup the mock app
-        let mockApp = EmitterStream(HTTPResponse.self)
-        let outputRequest = mockApp.stream(
+        let mockApp = PushStream(HTTPResponse.self)
+        mockApp.stream(
             to: HTTPResponseSerializer().stream(on: loop)
-        ).drain { buffer, upstream in
+        ).drain { buffer in
             output.append(buffer)
         }.catch { err in
             XCTFail("\(err)")
@@ -33,8 +33,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             body: body
         )
         XCTAssertEqual(output.count, 0)
-        outputRequest.upstream!.request()
-        mockApp.emit(response)
+        mockApp.push(response)
 
         /// there should only be one buffer since we
         /// called `.drain(1)`. this buffer should contain
@@ -49,10 +48,10 @@ class HTTPSerializerStreamTests: XCTestCase {
         var closed = false
 
         /// setup the mock app
-        let mockApp = EmitterStream(HTTPResponse.self)
-        let outputRequest = mockApp.stream(
+        let mockApp = PushStream(HTTPResponse.self)
+        mockApp.stream(
             to: HTTPResponseSerializer().stream(on: loop)
-        ).drain { buffer, upstream in
+        ).drain { buffer in
             output.append(Data(buffer))
         }.catch { err in
             XCTFail("\(err)")
@@ -64,15 +63,14 @@ class HTTPSerializerStreamTests: XCTestCase {
         XCTAssertEqual(output.count, 0)
 
         /// create a streaming body
-        let bodyEmitter = EmitterStream(ByteBuffer.self)
+        let bodyEmitter = PushStream(ByteBuffer.self)
 
         /// emit response
         let response = HTTPResponse(
             status: .ok,
             body: HTTPBody(chunked: bodyEmitter)
         )
-        outputRequest.upstream!.request()
-        mockApp.emit(response)
+        mockApp.push(response)
 
         /// there should only be one buffer since we
         /// called `.drain(1)`. this buffer should contain
@@ -83,18 +81,13 @@ class HTTPSerializerStreamTests: XCTestCase {
         } else {
             XCTFail("Invalid output count: \(output.count) != 1")
         }
-
-        /// request another byte buffer
-        XCTAssertNotNil(outputRequest)
-
         /// the count should still be one, we are
         /// waiting on the body now
         XCTAssertEqual(output.count, 1)
 
         /// Request and emit additional output
-        outputRequest.upstream!.request()
         let a = "hello".data(using: .utf8)!
-        a.withByteBuffer(bodyEmitter.emit)
+        a.withByteBuffer(bodyEmitter.push)
         if output.count == 2 {
             let message = String(data: output[1], encoding: .utf8)
             XCTAssertEqual(message, "5\r\nhello\r\n")
@@ -103,9 +96,8 @@ class HTTPSerializerStreamTests: XCTestCase {
         }
 
         /// Request and emit additional output
-        outputRequest.upstream!.request()
         let b = "test".data(using: .utf8)!
-        b.withByteBuffer(bodyEmitter.emit)
+        b.withByteBuffer(bodyEmitter.push)
         if output.count == 3 {
             let message = String(data: output[2], encoding: .utf8)
             XCTAssertEqual(message, "4\r\ntest\r\n")
@@ -113,7 +105,6 @@ class HTTPSerializerStreamTests: XCTestCase {
             XCTFail("Invalid output count: \(output.count) != 3")
         }
 
-        outputRequest.upstream!.request()
         XCTAssertEqual(output.count, 3)
         bodyEmitter.close()
         if output.count == 4 {
@@ -130,8 +121,7 @@ class HTTPSerializerStreamTests: XCTestCase {
             status: .ok,
             body: "hello"
         )
-        outputRequest.upstream!.request()
-        mockApp.emit(response2)
+        mockApp.push(response2)
         if output.count == 5 {
             let message = String(data: output[4], encoding: .utf8)
             XCTAssertEqual(message, "HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhello")
@@ -145,3 +135,4 @@ class HTTPSerializerStreamTests: XCTestCase {
         ("testResponseStreamingBody", testResponseStreamingBody),
     ]
 }
+

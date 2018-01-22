@@ -156,24 +156,23 @@ public struct HTTPBody: Codable {
             if let size = size {
                 data.reserveCapacity(size)
             }
-            
-            stream.drain { buffer, upstream in
+
+            let drain = DrainStream(ByteBuffer.self, onInput: { buffer in
                 if let size = size {
                     guard data.count + buffer.count <= size else {
                         throw HTTPError(identifier: "body-size", reason: "The body was larger than the request.")
                     }
                 }
-                
+
                 guard data.count + buffer.count <= max else {
                     throw HTTPError(identifier: "body-size", reason: "The body was larger than the limit")
                 }
-                
+
                 data.append(Data(buffer: buffer))
-                upstream.request()
-            }.catch(onError: promise.fail).finally {
+            }, onError: promise.fail, onClose: {
                 promise.complete(data)
-            }.upstream!.request()
-            
+            })
+            stream.output(to: drain)
             return promise.future
         }
     }
