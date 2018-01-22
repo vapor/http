@@ -40,7 +40,7 @@ let package = Package(
         // .testTarget(name: "HTTP2Tests", dependencies: ["HTTP2"]),
         .target(name: "Multipart", dependencies: ["Debugging", "HTTP"]),
         .testTarget(name: "MultipartTests", dependencies: ["Multipart"]),
-        .target(name: "Routing", dependencies: ["Debugging", "HTTP", "WebSocket"]),
+        .target(name: "Routing", dependencies: ["Debugging", "HTTP", "Service", "WebSocket"]),
         .testTarget(name: "RoutingTests", dependencies: ["Routing"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]

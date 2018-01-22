@@ -31,13 +31,6 @@ extension Parameter {
     }
 }
 
-extension Parameter where Self: ContainerFindable {
-    /// See Parameter.make
-    public static func make(for parameter: String, using container: Container) throws -> ContainerFindableResult {
-        return try find(identifier: parameter, using: container)
-    }
-}
-
 extension String: Parameter {
     /// Reads the raw parameter
     public static func make(for parameter: String, using container: Container) throws -> String {
