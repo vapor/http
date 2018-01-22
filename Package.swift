@@ -10,22 +10,24 @@ let package = Package(
         .library(name: "Multipart", targets: ["Multipart"]),
         .library(name: "Routing", targets: ["Routing"]),
         .library(name: "ServerSecurity", targets: ["ServerSecurity"]),
-        .library(name: "TCP", targets: ["TCP"]),
         .library(name: "TLS", targets: ["TLS"]),
         .library(name: "WebSocket", targets: ["WebSocket"]),
     ],
     dependencies: [
         // Swift Promises, Futures, and Streams.
-        .package(url: "https://github.com/vapor/async.git", .branch("beta")),
+        .package(url: "https://github.com/vapor/async.git", .branch("stream-refactor")),
 
         // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/core.git", .branch("beta")),
+        .package(url: "https://github.com/vapor/core.git", .branch("stream-refactor")),
 
         // Core extensions, type-aliases, and functions that facilitate common tasks.
         .package(url: "https://github.com/vapor/crypto.git", .branch("beta")),
 
         // Core extensions, type-aliases, and functions that facilitate common tasks.
         .package(url: "https://github.com/vapor/service.git", .branch("beta")),
+
+        // Core extensions, type-aliases, and functions that facilitate common tasks.
+        .package(url: "https://github.com/vapor/sockets.git", .branch("stream-refactor")),
     ],
     targets: [
         .target(name: "CHTTP"),
@@ -40,8 +42,6 @@ let package = Package(
         .target(name: "Routing", dependencies: ["Debugging", "HTTP", "WebSocket"]),
         .testTarget(name: "RoutingTests", dependencies: ["Routing"]),
         .target(name: "ServerSecurity", dependencies: ["COperatingSystem", "TCP"]),
-        .target(name: "TCP", dependencies: ["Async", "Bits", "COperatingSystem", "Debugging", "Service"]),
-        .testTarget(name: "TCPTests", dependencies: ["TCP"]),
         .target(name: "TLS", dependencies: ["Async", "Bits", "Debugging", "TCP"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
