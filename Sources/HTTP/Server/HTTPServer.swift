@@ -26,7 +26,7 @@ public final class HTTPServer {
         /// set up the server stream
         acceptStream.drain { client in
             let serializerStream = HTTPResponseSerializer().stream(on: worker)
-            let parserStream = HTTPRequestParser().stream(on: worker)
+            let parserStream = HTTPRequestParser()
 
             client
                 .stream(to: parserStream)

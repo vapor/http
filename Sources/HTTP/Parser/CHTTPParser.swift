@@ -4,79 +4,193 @@ import CHTTP
 import Dispatch
 import Foundation
 
+/// Internal CHTTP parser protocol
+internal protocol CHTTPParser: HTTPParser where Input == ByteBuffer {
+    /// This parser's type (request or response)
+    static var parserType: http_parser_type { get }
+
+    /// If set, header data exceeding the specified size will result in an error.
+    var maxHeaderSize: Int? { get set }
+
+    /// Holds the CHTTP parser's internal state.
+    var chttp: CHTTPParserContext<Output> { get set }
+
+    /// Converts the CHTTP parser results and body to HTTP message.
+    func makeMessage(from results: CParseResults, using body: HTTPBody) throws -> Output
+}
+
 /// Possible header states
-enum HeaderState {
+enum CHTTPHeaderState {
     case none
     case value(HTTPHeaders.Index)
     case key(startIndex: Int, endIndex: Int)
 }
 
-
-/// Internal CHTTP parser protocol
-internal protocol CHTTPParser: class, HTTPParser where Input == ByteBuffer {
-    static var parserType: http_parser_type { get }
-    var parser: http_parser { get set }
-    var settings: http_parser_settings { get set }
-    var maxHeaderSize: Int? { get set }
-    
-    var httpState: CHTTPParserState { get set }
-    func makeMessage(from results: CParseResults) throws -> Output
-}
-
-enum CHTTPParserState {
-    case ready
+enum CHTTPMessageState<Message> {
     case parsing
+    case streaming(Message, Future<Void>)
+    case waiting(Future<Void>)
 }
 
-/// MARK: HTTPParser conformance
+/// Possible body states
+enum CHTTPBodyState {
+    case none
+    case buffer(ByteBuffer)
+    case stream(CHTTPBodyStream)
+    case readyStream(CHTTPBodyStream, Promise<Void>)
+}
+
+/// Maintains the CHTTP parser's internal state.
+struct CHTTPParserContext<Message> {
+    /// Whether the parser is currently parsing or hasn't started yet
+    var isParsing: Bool
+
+    /// Parser's message
+    var messageState: CHTTPMessageState<Message>
+
+    /// The CHTTP parser's C struct
+    var parser: http_parser
+
+    /// The CHTTP parer's C settings
+    var settings: http_parser_settings
+
+    /// Current downstream.
+    var downstream: AnyInputStream<Message>?
+
+    /// Creates a new `CHTTPParserContext`
+    init() {
+        self.parser = http_parser()
+        self.settings = http_parser_settings()
+        self.isParsing = false
+        self.messageState = .parsing
+    }
+}
+
+/// MARK: CHTTPParser OutputStream
 
 extension CHTTPParser {
-    public func translate(input: inout TranslatingStreamInput<ByteBuffer>) throws -> TranslatingStreamOutput<Output> {
-        guard let results = getResults() else {
-            throw HTTPError(identifier: "no-parser-results", reason: "An internal HTTP Parser state became invalid")
+    /// See `OutputStream.output(to:)`
+    public func output<S>(to inputStream: S) where S: Async.InputStream, Self.Output == S.Input {
+        chttp.downstream = .init(inputStream)
+    }
+}
+
+/// MARK: CHTTPParser InputStream
+
+extension CHTTPParser {
+    /// See `InputStream.input(_:)`
+    public func input(_ event: InputEvent<ByteBuffer>) {
+        switch event {
+        case .close: chttp.downstream!.close()
+        case .error(let error): chttp.downstream!.error(error)
+        case .next(let input, let ready): try! handleNext(input, ready)
         }
-        
-        if let buffer = input.input {
-            /// parse the message using the C HTTP parser.
-            try executeParser(from: buffer)
-            
-            guard results.isComplete else {
-                return .insufficient()
+    }
+
+    /// See `InputEvent.next`
+    private func handleNext(_ buffer: ByteBuffer, _ ready: Promise<Void>) throws {
+        guard let results = chttp.getResults() else {
+            throw HTTPError(identifier: "getResults", reason: "An internal HTTP Parser state became invalid")
+        }
+
+        switch chttp.messageState {
+        case .parsing:
+            /// Parse the message using the CHTTP parser.
+            try chttp.execute(from: buffer)
+
+            /// Check if we have received all of the messages headers
+            if results.headersComplete {
+                /// Either streaming or static will be decided
+                let body: HTTPBody
+
+                /// The message is ready to move downstream, check to see
+                /// if we already have the HTTPBody in its entirety
+                if results.messageComplete {
+                    switch results.bodyState {
+                    case .buffer(let buffer): body = HTTPBody(Data(buffer))
+                    case .none: body = HTTPBody()
+                    case .stream: fatalError("Illegal state")
+                    case .readyStream: fatalError("Illegal state")
+                    }
+
+                    let message = try makeMessage(from: results, using: body)
+                    chttp.downstream!.next(message, ready)
+
+                    // the results have completed, so we are ready
+                    // for a new request to come in
+                    chttp.isParsing = false
+                    CParseResults.remove(from: &chttp.parser)
+                } else {
+                    // Convert body to a stream
+                    let stream = CHTTPBodyStream() // FIX, this shouldn't backlog
+                    switch results.bodyState {
+                    case .buffer(let buffer): stream.push(buffer, ready)
+                    case .none: break // push nothing
+                    case .stream: fatalError("Illegal state")
+                    case .readyStream: fatalError("Illegal state")
+                    }
+                    results.bodyState = .stream(stream)
+                    body = HTTPBody(size: results.contentLength, stream: .init(stream))
+                    let message = try makeMessage(from: results, using: body)
+                    let future = chttp.downstream!.next(message)
+                    chttp.messageState = .streaming(message, future)
+                }
+            } else {
+                /// Headers not complete, request more input
+                ready.complete()
             }
-            
+        case .streaming(_, let future):
+            let stream: CHTTPBodyStream
+
+            /// Close the body stream now
+            switch results.bodyState {
+            case .none: fatalError("Illegal state")
+            case .buffer: fatalError("Illegal state")
+            case .readyStream: fatalError("Illegal state")
+            case .stream(let s):
+                stream = s
+                // replace body state w/ new ready
+                results.bodyState = .readyStream(s, ready)
+            }
+
+            /// Parse the message using the CHTTP parser.
+            try chttp.execute(from: buffer)
+
+            if results.messageComplete {
+                /// Close the body stream now
+                stream.close()
+                chttp.messageState = .waiting(future)
+            }
+        case .waiting(let future):
             // the results have completed, so we are ready
             // for a new request to come in
-            httpState = .ready
-            CParseResults.remove(from: &parser)
-            
-            let message = try makeMessage(from: results)
-            return .sufficient(message)
-        } else {
-            input.close()
-            // EOF
-            http_parser_execute(&parser, &settings, nil, 0)
-            
-            guard results.isComplete else {
-                return .insufficient()
+            chttp.isParsing = false
+            CParseResults.remove(from: &chttp.parser)
+            chttp.messageState = .parsing
+            future.do {
+                try! self.handleNext(buffer, ready)
+            }.catch { error in
+                fatalError("\(error)")
             }
-            
-            let message = try makeMessage(from: results)
-            return .sufficient(message)
         }
+
+
+        //            // EOF
+        //            http_parser_execute(&parser, &settings, nil, 0)
     }
 
     /// Resets the parser
     public func reset() {
-        reset(Self.parserType)
+        chttp.reset(Self.parserType)
     }
 }
 
 /// MARK: CHTTP integration
 
-extension CHTTPParser {
+extension CHTTPParserContext {
     /// Parses a generic CHTTP message, filling the
     /// ParseResults object attached to the C praser.
-    internal func executeParser(from buffer: ByteBuffer) throws {
+    internal mutating func execute(from buffer: ByteBuffer) throws {
         // call the CHTTP parser
         let parsedCount = http_parser_execute(&parser, &settings, buffer.cPointer, buffer.count)
 
@@ -88,9 +202,10 @@ extension CHTTPParser {
         }
     }
 
-    internal func reset(_ type: http_parser_type) {
+    /// Resets the parser
+    internal mutating func reset(_ type: http_parser_type) {
         http_parser_init(&parser, type)
-        initialize(&settings)
+        initialize()
     }
 }
 
@@ -113,32 +228,31 @@ extension CParseResults {
     }
 }
 
-extension CHTTPParser {
-    func getResults() -> CParseResults? {
+extension CHTTPParserContext {
+    /// Fetches `CParseResults` from the praser.
+    mutating func getResults() -> CParseResults? {
         let results: CParseResults
-        
-        switch httpState {
-        case .ready:
-            // create a new results object and set
-            // a reference to it on the parser
-            let newResults = CParseResults.set(on: &parser, swiftParser: self)
-            results = newResults
-            httpState = .parsing
-        case .parsing:
+        if isParsing {
             // get the current parse results object
             guard let existingResults = CParseResults.get(from: &parser) else {
                 return nil
             }
             results = existingResults
+        } else {
+            // create a new results object and set
+            // a reference to it on the parser
+            let newResults = CParseResults.set(on: &parser)
+            results = newResults
+            isParsing = true
         }
-        
         return results
     }
     
     /// Initializes the http parser settings with appropriate callbacks.
-    func initialize(_ settings: inout http_parser_settings) {
+    mutating func initialize() {
         // called when chunks of the url have been read
         settings.on_url = { parser, chunkPointer, length in
+            print("chttp: on_url '\(String(data: Data(chunkPointer!.makeBuffer(length: length)), encoding: .ascii)!)' (\(length)) ")
             guard
                 let results = CParseResults.get(from: parser),
                 let chunkPointer = chunkPointer
@@ -161,6 +275,7 @@ extension CHTTPParser {
 
         // called when chunks of a header field have been read
         settings.on_header_field = { parser, chunkPointer, length in
+            print("chttp: on_header_field '\(String(data: Data(chunkPointer!.makeBuffer(length: length)), encoding: .ascii)!)' (\(length)) ")
             guard
                 let results = CParseResults.get(from: parser),
                 let chunkPointer = chunkPointer
@@ -205,6 +320,7 @@ extension CHTTPParser {
 
         // called when chunks of a header value have been read
         settings.on_header_value = { parser, chunkPointer, length in
+            print("chttp: on_header_value '\(String(data: Data(chunkPointer!.makeBuffer(length: length)), encoding: .ascii)!)' (\(length)) ")
             guard
                 let results = CParseResults.get(from: parser),
                 let chunkPointer = chunkPointer
@@ -255,10 +371,8 @@ extension CHTTPParser {
 
         // called when header parsing has completed
         settings.on_headers_complete = { parser in
-            guard
-                let parser = parser,
-                let results = CParseResults.get(from: parser)
-            else {
+            print("chttp: on_headers_complete")
+            guard let parser = parser, let results = CParseResults.get(from: parser) else {
                 // signal an error
                 return 1
             }
@@ -276,11 +390,12 @@ extension CHTTPParser {
                 results.parseContentLength(index: index)
                 
                 let headers = HTTPHeaders(storage: results.headersData, indexes: results.headersIndexes)
-                
-                if let contentLength = results.contentLength {
-                    results.body = HTTPBody(size: contentLength, stream: AnyOutputStream(results.bodyStream))
-                }
-                
+
+                /// FIXME: what was this doing?
+//                if let contentLength = results.contentLength {
+//                    results.body = HTTPBody(size: contentLength, stream: AnyOutputStream(results.bodyStream))
+//                }
+
                 results.headers = headers
             default:
                 // no other cases need to be handled.
@@ -291,41 +406,47 @@ extension CHTTPParser {
             let major = Int(parser.pointee.http_major)
             let minor = Int(parser.pointee.http_minor)
             results.version = HTTPVersion(major: major, minor: minor)
+            results.method = http_method(parser.pointee.method)
+            results.headersComplete = true
 
             return 0
         }
 
         // called when chunks of the body have been read
         settings.on_body = { parser, chunk, length in
-            guard
-                let results = CParseResults.get(from: parser),
-                let chunk = chunk
-            else {
+            print("chttp: on_body '\(String(data: Data(chunk!.makeBuffer(length: length)), encoding: .ascii)!)' (\(length)) ")
+            guard let results = CParseResults.get(from: parser), let chunk = chunk else {
                 // signal an error
                 return 1
             }
 
-            return chunk.withMemoryRebound(to: UInt8.self, capacity: length) { pointer -> Int32 in
-                results.bodyStream.push(ByteBuffer(start: pointer, count: length))
-                
-                return 0
+            switch results.bodyState {
+            case .buffer: fatalError("Unexpected buffer body state during CHTTP.on_body: \(results.bodyState)")
+            case .none: results.bodyState = .buffer(chunk.makeByteBuffer(length))
+            case .stream: fatalError("Illegal state")
+            case .readyStream(let bodyStream, let ready):
+                bodyStream.push(chunk.makeByteBuffer(length), ready)
+                results.bodyState = .stream(bodyStream) // no longer ready
             }
+
+            return 0
+//            return chunk.withMemoryRebound(to: UInt8.self, capacity: length) { pointer -> Int32 in
+//                results.bodyStream.push(ByteBuffer(start: pointer, count: length))
+//
+//                return 0
+//            }
         }
 
         // called when the message is finished parsing
         settings.on_message_complete = { parser in
-            guard
-                let parser = parser,
-                let results = CParseResults.get(from: parser)
-            else {
+            print("chttp: on_message_complete")
+            guard let parser = parser, let results = CParseResults.get(from: parser) else {
                 // signal an error
                 return 1
             }
-
-            results.bodyStream.close()
             
             // mark the results as complete
-            results.isComplete = true
+            results.messageComplete = true
             
             return 0
         }
@@ -350,6 +471,13 @@ fileprivate extension Data {
 }
 
 fileprivate extension UnsafePointer where Pointee == CChar {
+    /// Creates a Bytes array from a C pointer
+    fileprivate func makeByteBuffer(_ count: Int) -> ByteBuffer {
+        return withMemoryRebound(to: Byte.self, capacity: count) { pointer in
+            return ByteBuffer(start: pointer, count: count)
+        }
+    }
+
     /// Creates a Bytes array from a C pointer
     fileprivate func makeBuffer(length: Int) -> UnsafeRawBufferPointer {
         let pointer = UnsafeBufferPointer(start: self, count: length)

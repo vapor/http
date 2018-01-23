@@ -14,38 +14,43 @@ import Foundation
 /// See the convenience methods below to see how the
 /// object is set and fetched from the C object.
 internal final class CParseResults {
-    // state
-    var headerState: HeaderState
-    var isComplete: Bool
+    /// If true, all of the headers have been sent.
+    var headersComplete: Bool
 
-    // message components
+    /// If true, the entire message has been parsed.
+    var messageComplete: Bool
+
+    /// The current header parsing state (field, value, etc)
+    var headerState: CHTTPHeaderState
+
+    /// The current body parsing state
+    var bodyState: CHTTPBodyState
+
+    /// The HTTP method (only set for requests)
+    var method: http_method?
+
+    // The HTTP version
     var version: HTTPVersion?
+
     var headersIndexes: [HTTPHeaders.Index]
     var headersData = [UInt8]()
-    
     var currentSize: Int = 0
     var maxHeaderSize: Int?
-    
     var contentLength: Int?
-    
     var headers: HTTPHeaders?
-    
-    var body: HTTPBody?
-    var bodyStream: PushStream<ByteBuffer>
-    
     var url = [UInt8]()
     
     /// Creates a new results object
-    init<Parser: CHTTPParser>(parser: Parser) {
-        self.isComplete = false
+    init() {
+        self.headersComplete = false
+        self.messageComplete = false
         self.headersIndexes = []
         headersData.reserveCapacity(4096)
         headersIndexes.reserveCapacity(64)
         url.reserveCapacity(128)
-        self.maxHeaderSize = parser.maxHeaderSize
-        self.bodyStream = .init()
-        
+        self.maxHeaderSize = 100_000
         self.headerState = .none
+        self.bodyState = .none
     }
     
     func addSize(_ n: Int) -> Bool {
@@ -65,9 +70,9 @@ internal final class CParseResults {
 
 extension CParseResults {
     /// Sets the parse results object on a C parser
-    static func set<Parser: CHTTPParser>(on parser: inout http_parser, swiftParser: Parser) -> CParseResults {
+    static func set(on parser: inout http_parser) -> CParseResults {
         let results = UnsafeMutablePointer<CParseResults>.allocate(capacity: 1)
-        let new = CParseResults(parser: swiftParser)
+        let new = CParseResults()
         results.initialize(to: new)
         parser.data = UnsafeMutableRawPointer(results)
         return new

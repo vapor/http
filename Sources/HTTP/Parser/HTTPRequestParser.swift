@@ -6,44 +6,42 @@ import Foundation
 
 /// Parses requests from a readable stream.
 public final class HTTPRequestParser: CHTTPParser {
+    /// See `InputStream.Input`
     public typealias Input = ByteBuffer
+
+    /// See `OutputStream.Output`
     public typealias Output = HTTPRequest
 
     /// See CHTTPParser.parserType
     static let parserType: http_parser_type = HTTP_REQUEST
 
-    // Internal variables to conform
-    // to the C HTTP parser protocol.
-    var parser: http_parser
-    var settings: http_parser_settings
-    var httpState:  CHTTPParserState
+    /// See `CHTTPParser.chttpParserContext`
+    var chttp: CHTTPParserContext<HTTPRequest>
 
-    /// The maxiumum possible header size
-    /// larger sizes will result in an error
+    /// See `CHTTPParser.maxHeaderSize`
     public var maxHeaderSize: Int?
 
     /// Creates a new Request parser.
     public init() {
         self.maxHeaderSize = 100_000
-        
-        self.parser = http_parser()
-        self.settings = http_parser_settings()
-        self.httpState = .ready
+        self.chttp = .init()
         reset()
     }
 
-    func makeMessage(from results: CParseResults) throws -> HTTPRequest {
+    /// See `CHTTPParser.makeMessage(from:using:)`
+    func makeMessage(from results: CParseResults, using body: HTTPBody) throws -> HTTPRequest {
         // require a version to have been parsed
         guard
             let version = results.version,
-            let headers = results.headers
+            let headers = results.headers,
+            let cmethod = results.method
         else {
             throw HTTPError.invalidMessage()
         }
         
         /// switch on the C method type from the parser
         let method: HTTPMethod
-        switch http_method(parser.method) {
+        switch cmethod {
         case HTTP_DELETE:
             method = .delete
         case HTTP_GET:
@@ -61,7 +59,7 @@ public final class HTTPRequestParser: CHTTPParser {
             /// convert the method into a string
             /// and use Engine's other type
             guard
-                let pointer = http_method_str(http_method(parser.method)),
+                let pointer = http_method_str(cmethod),
                 let string = String(validatingUTF8: pointer)
             else {
                 throw HTTPError.invalidMessage()
@@ -83,7 +81,7 @@ public final class HTTPRequestParser: CHTTPParser {
             uri: uri,
             version: version,
             headers: headers,
-            body: results.body ?? HTTPBody()
+            body: body
         )
     }
 }
