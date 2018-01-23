@@ -4,46 +4,260 @@ import Dispatch
 import HTTP
 import XCTest
 
+
+extension String {
+    var buffer: ByteBuffer {
+        return self.data(using: .utf8)!.withByteBuffer { $0 }
+    }
+}
+public final class ProtocolTester: Async.OutputStream {
+    /// See `OutputStream.Output`
+    public typealias Output = ByteBuffer
+
+    /// Stream being tested
+    public var downstream: AnyInputStream<ByteBuffer>?
+
+    /// See `OutputStream.output`
+    public func output<S>(to inputStream: S) where S: Async.InputStream, ProtocolTester.Output == S.Input {
+        downstream = .init(inputStream)
+    }
+
+    private var reset: () -> ()
+    private var fail: (String, StaticString, UInt) -> ()
+    private var checks: [ProtocolTesterCheck]
+
+    private struct ProtocolTesterCheck {
+        var minOffset: Int?
+        var maxOffset: Int?
+        var file: StaticString
+        var line: UInt
+        var checks: () throws -> ()
+    }
+
+    public init(onFail: @escaping (String, StaticString, UInt) -> (), reset: @escaping () -> ()) {
+        self.reset = reset
+        self.fail = onFail
+        checks = []
+    }
+
+    public func assert(before offset: Int, file: StaticString = #file, line: UInt = #line, callback: @escaping () throws -> ()) {
+        let check = ProtocolTesterCheck(minOffset: nil, maxOffset: offset, file: file, line: line, checks: callback)
+        checks.append(check)
+    }
+
+    public func assert(after offset: Int, file: StaticString = #file, line: UInt = #line, callback: @escaping () throws -> ()) {
+        let check = ProtocolTesterCheck(minOffset: offset, maxOffset: nil, file: file, line: line, checks: callback)
+        checks.append(check)
+    }
+
+    /// Runs the protocol tester w/ the supplied input
+    public func run(_ string: String) -> Future<Void> {
+        Swift.assert(downstream != nil, "ProtocolTester must be connected before running")
+        let buffer = string.buffer
+        return runMax(buffer, max: buffer.count)
+    }
+
+    private func runMax(_ buffer: ByteBuffer, max: Int) -> Future<Void> {
+        if max > 0 {
+            let maxSizedChunksCount = buffer.count / max
+            let lastChunkSize = buffer.count % max
+
+            var chunks: [ByteBuffer] = []
+
+            for i in 0..<maxSizedChunksCount {
+                let maxSizedChunk = ByteBuffer(start: buffer.baseAddress?.advanced(by: i * max), count: max)
+                chunks.insert(maxSizedChunk, at: 0)
+            }
+
+            if lastChunkSize > 0 {
+                let lastChunk = ByteBuffer(start: buffer.baseAddress?.advanced(by: buffer.count - lastChunkSize), count: lastChunkSize)
+                chunks.insert(lastChunk, at: 0)
+            }
+
+            reset()
+            return runChunks(chunks, currentOffset: 0, original: chunks).flatMap(to: Void.self) {
+                return self.runMax(buffer, max: max - 1)
+            }
+        } else {
+            downstream?.close()
+            return .done
+        }
+    }
+
+    private func runChunks(_ chunks: [ByteBuffer], currentOffset: Int, original: [ByteBuffer]) -> Future<Void> {
+        var chunks = chunks
+        if let chunk = chunks.popLast() {
+            runChecks(offset: currentOffset, chunks: original)
+            return downstream!.next(chunk).flatMap(to: Void.self) { _ in
+                return self.runChunks(chunks, currentOffset: currentOffset + chunk.count, original: original)
+            }
+        } else {
+            runChecks(offset: currentOffset, chunks: original)
+            return .done
+        }
+    }
+
+    private func runChecks(offset: Int, chunks: [ByteBuffer]) {
+        for check in checks {
+            var shouldRun = false
+            if let min = check.minOffset, offset >= min {
+                shouldRun = true
+            }
+            if let max = check.maxOffset, offset < max {
+                shouldRun = true
+            }
+            if shouldRun {
+                do {
+                    try check.checks()
+                } catch {
+                    var message = "Protocol test failed: \(error)"
+                    let data = chunks.reversed().map { "[" + ProtocolTester.dataDebug(for: $0) + "]" }.joined(separator: " ")
+                    let text = chunks.reversed().map { "[" + ProtocolTester.textDebug(for: $0) + "]" }.joined(separator: " ")
+                    message += "\nData: \(data)"
+                    message += "\nText: \(text)"
+                    self.fail(message, check.file, check.line)
+                }
+            }
+        }
+    }
+
+    static func textDebug(for buffer: ByteBuffer) -> String {
+        let string = String(bytes: buffer, encoding: .ascii) ?? "n/a"
+        return string
+            .replacingOccurrences(of: "\r", with: "\\r")
+            .replacingOccurrences(of: "\n", with: "\\n")
+    }
+
+    /// See `CustomStringConvertible.description`
+    static func dataDebug(for buffer: ByteBuffer) -> String {
+        var string = "0x"
+        for i in 0..<buffer.count {
+            let byte = buffer[i]
+            let upper = Int(byte >> 4)
+            let lower = Int(byte & 0b00001111)
+            string.append(hexMap[upper])
+            string.append(hexMap[lower])
+        }
+        return string
+    }
+
+    static let hexMap = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "A", "B", "C", "D", "E", "F"]
+}
+extension String: Error {}
+
 class ParserTests : XCTestCase {
-    let loop = try! DefaultEventLoop(label: "test")
 
-    func testParserEdgeCases() throws {
-        let firstChunk = "GET /hello HTTP/1.1\r\nContent-Type: ".data(using: .utf8)!
-        let secondChunk = "text/plain\r\nContent-Length: 5\r\n\r\nwo".data(using: .utf8)!
-        let thirdChunk = "rl".data(using: .utf8)!
-        let fourthChunk = "d".data(using: .utf8)!
 
-        let eventLoop = try DefaultEventLoop(label: "codes.vapor.engine.http.parser.test")
-        let parser = HTTPRequestParser()
+    func testParserEdgeCasesOld() throws {
+        // captured variables to check
+        var request: HTTPRequest?
+        var content: String?
+        var isClosed = false
 
+        // configure parser stream
         let socket = PushStream(ByteBuffer.self)
-        socket.stream(to: parser).drain { message in
-            print("parser.drain { ... }")
-            print(message)
-            print("message.body.makeData")
+        socket.stream(to: HTTPRequestParser()).drain { message in
+            request = message
             message.body.makeData(max: 100).do { data in
-                print(data)
+                content = String(data: data, encoding: .ascii)
             }.catch { error in
-                print("body error: \(error)")
+                XCTFail("body error: \(error)")
             }
         }.catch { error in
-            print("parser.catch { \(error) }")
+            XCTFail("parser error: \(error)")
         }.finally {
-            print("parser.close { }")
+            isClosed = true
         }
 
+        // pre-step
+        XCTAssertNil(request)
+        XCTAssertNil(content)
+        XCTAssertFalse(isClosed)
 
-        print("(1) FIRST ---")
-        firstChunk.withByteBuffer(socket.push)
-        print("(2) SECOND ---")
-        secondChunk.withByteBuffer(socket.push)
-        print("(3) THIRD ---")
-        thirdChunk.withByteBuffer(socket.push)
-        print("(4) FOURTH ---")
-        fourthChunk.withByteBuffer(socket.push)
-        print("(c) CLOSE ---")
+        // (1) FIRST ---
+        socket.push("GET /hello HTTP/1.1\r\nContent-Type: ".buffer)
+        XCTAssertNil(request)
+        XCTAssertNil(content)
+        XCTAssertFalse(isClosed)
+
+        // (2) SECOND ---
+        socket.push("text/plain\r\nContent-Length: 5\r\n\r\nwo".buffer)
+        XCTAssertNotNil(request)
+        XCTAssertEqual(request?.uri.path, "/hello")
+        XCTAssertEqual(request?.method, .get)
+        XCTAssertNil(content)
+        XCTAssertFalse(isClosed)
+
+        // (3) THIRD ---
+        socket.push("rl".buffer)
+        XCTAssertNil(content)
+        XCTAssertFalse(isClosed)
+
+        // (4) FOURTH ---
+        socket.push("d".buffer)
+        XCTAssertEqual(content, "world")
+        XCTAssertFalse(isClosed)
+
+        // (c) CLOSE ---
         socket.close()
+        XCTAssertTrue(isClosed)
     }
+
+
+    func testParserEdgeCases() throws {
+        // captured variables to check
+        var request: HTTPRequest?
+        var content: String?
+        var isClosed = false
+
+        // creates a protocol tester
+        let tester = ProtocolTester(onFail: XCTFail) {
+            request = nil
+            content = nil
+            isClosed = false
+        }
+
+        tester.assert(before: 68) {
+            guard request == nil else {
+                throw "request was not nil"
+            }
+        }
+
+        tester.assert(after: 68) {
+            guard request != nil else {
+                throw "request was nil"
+            }
+        }
+
+        tester.assert(after: 73) {
+            guard let string = content else {
+                throw "content was nil"
+            }
+
+            guard string == "world" else {
+                throw "incorrect string"
+            }
+        }
+
+        // configure parser stream
+        tester.stream(to: HTTPRequestParser()).drain { message in
+            request = message
+            message.body.makeData(max: 100).do { data in
+                content = String(data: data, encoding: .ascii)
+            }.catch { error in
+                XCTFail("body error: \(error)")
+            }
+        }.catch { error in
+            XCTFail("parser error: \(error)")
+        }.finally {
+            isClosed = true
+        }
+
+        try tester.run("GET /hello HTTP/1.1\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nworld").blockingAwait()
+        XCTAssertTrue(isClosed)
+    }
+
+
 //
 //    func testRequest() throws {
 //        var data = """

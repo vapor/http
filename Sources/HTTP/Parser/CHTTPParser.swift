@@ -81,7 +81,9 @@ extension CHTTPParser {
     /// See `InputStream.input(_:)`
     public func input(_ event: InputEvent<ByteBuffer>) {
         switch event {
-        case .close: chttp.downstream!.close()
+        case .close:
+            chttp.close()
+            chttp.downstream!.close()
         case .error(let error): chttp.downstream!.error(error)
         case .next(let input, let ready): try! handleNext(input, ready)
         }
@@ -122,10 +124,10 @@ extension CHTTPParser {
                     CParseResults.remove(from: &chttp.parser)
                 } else {
                     // Convert body to a stream
-                    let stream = CHTTPBodyStream() // FIX, this shouldn't backlog
+                    let stream = CHTTPBodyStream()
                     switch results.bodyState {
                     case .buffer(let buffer): stream.push(buffer, ready)
-                    case .none: break // push nothing
+                    case .none: stream.push(ByteBuffer(start: nil, count: 0), ready)
                     case .stream: fatalError("Illegal state")
                     case .readyStream: fatalError("Illegal state")
                     }
@@ -173,10 +175,6 @@ extension CHTTPParser {
                 fatalError("\(error)")
             }
         }
-
-
-        //            // EOF
-        //            http_parser_execute(&parser, &settings, nil, 0)
     }
 
     /// Resets the parser
@@ -246,6 +244,11 @@ extension CHTTPParserContext {
             isParsing = true
         }
         return results
+    }
+
+    /// Indicates a close to the HTTP parser.
+    mutating func close() {
+        http_parser_execute(&parser, &settings, nil, 0)
     }
     
     /// Initializes the http parser settings with appropriate callbacks.
