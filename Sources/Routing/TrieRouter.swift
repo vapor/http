@@ -15,9 +15,13 @@ public final class TrieRouter<Output> {
     
     /// If a route cannot be found, this is the fallback responder that will be used instead
     public var fallback: Output?
+    
+    /// If `true`, constants are compared case insensitively
+    public var caseInsensitive: Bool
 
     /// Create a new trie router
     public init() {
+        self.caseInsensitive = false
         self.root = TrieRouterNode<Output>(kind: .root)
     }
 
@@ -54,7 +58,11 @@ public final class TrieRouter<Output> {
                     // if we find a constant route path that matches this component,
                     // then we should use it.
                     let match = component.withByteBuffer { buffer in
-                        return memcmp(data, buffer.baseAddress!, size) == 0
+                        if self.caseInsensitive {
+                            return data.caseInsensitiveEquals(to: buffer)
+                        } else {
+                            return memcmp(data, buffer.baseAddress!, size) == 0
+                        }
                     }
                     
                     if match {

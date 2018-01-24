@@ -25,6 +25,42 @@ class RouterTests: XCTestCase {
         XCTAssertEqual(router.route(path: path + [.string("Tanner")], parameters: params), 42)
         try XCTAssertEqual(params.parameter(User.self, using: container).blockingAwait().name, "Tanner")
     }
+    
+    func testCaseSensitiveRouting() throws {
+        let router = TrieRouter<Int>()
+        
+        let path: [PathComponent.Parameter] = [.string("path"), .string("TO"), .string("fOo")]
+        
+        let route = Route<Int>(path: [.constants(path)], output: 42)
+        router.register(route: route)
+        
+        let container = try BasicContainer(
+            config: Config(),
+            environment: .development,
+            services: Services(),
+            on: DefaultEventLoop(label: "unit-test")
+        )
+        let params = Params()
+        XCTAssertEqual(router.route(path: [.string("PATH"), .string("tO"), .strign("FOo")], parameters: params), nil)
+    }
+    
+    func testCaseInsensitiveRouting() throws {
+        let router = TrieRouter<Int>()
+        
+        let path: [PathComponent.Parameter] = [.string("path"), .string("TO"), .string("fOo")]
+        
+        let route = Route<Int>(path: [.constants(path)], output: 42)
+        router.register(route: route)
+        
+        let container = try BasicContainer(
+            config: Config(),
+            environment: .development,
+            services: Services(),
+            on: DefaultEventLoop(label: "unit-test")
+        )
+        let params = Params()
+        XCTAssertEqual(router.route(path: [.string("PATH"), .string("tO"), .strign("FOo")], parameters: params), 42)
+    }
 
     func testAnyRouting() throws {
         let router = TrieRouter<Int>()
@@ -111,6 +147,9 @@ class RouterTests: XCTestCase {
 
     static let allTests = [
         ("testRouter", testRouter),
+        ("testCaseInsensitiveRouting", testCaseInsensitiveRouting),
+        ("testCaseSensitiveRouting", testCaseSensitiveRouting),
+        ("testAnyRouting", testAnyRouting),
     ]
 }
 
