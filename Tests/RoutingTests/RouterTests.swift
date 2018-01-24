@@ -34,32 +34,22 @@ class RouterTests: XCTestCase {
         let route = Route<Int>(path: [.constants(path)], output: 42)
         router.register(route: route)
         
-        let container = try BasicContainer(
-            config: Config(),
-            environment: .development,
-            services: Services(),
-            on: DefaultEventLoop(label: "unit-test")
-        )
         let params = Params()
-        XCTAssertEqual(router.route(path: [.string("PATH"), .string("tO"), .strign("FOo")], parameters: params), nil)
+        XCTAssertEqual(router.route(path: [.string("PATH"), .string("tO"), .string("FOo")], parameters: params), nil)
+        XCTAssertEqual(router.route(path: [.string("path"), .string("TO"), .string("fOo")], parameters: params), 42)
     }
     
     func testCaseInsensitiveRouting() throws {
         let router = TrieRouter<Int>()
+        router.caseInsensitive = true
         
         let path: [PathComponent.Parameter] = [.string("path"), .string("TO"), .string("fOo")]
         
         let route = Route<Int>(path: [.constants(path)], output: 42)
         router.register(route: route)
         
-        let container = try BasicContainer(
-            config: Config(),
-            environment: .development,
-            services: Services(),
-            on: DefaultEventLoop(label: "unit-test")
-        )
         let params = Params()
-        XCTAssertEqual(router.route(path: [.string("PATH"), .string("tO"), .strign("FOo")], parameters: params), 42)
+        XCTAssertEqual(router.route(path: [.string("PATH"), .string("tO"), .string("FOo")], parameters: params), 42)
     }
 
     func testAnyRouting() throws {

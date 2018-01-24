@@ -57,7 +57,7 @@ public final class TrieRouter<Output> {
                 case .constant(let data, let size):
                     // if we find a constant route path that matches this component,
                     // then we should use it.
-                    let match = component.withByteBuffer { buffer in
+                    let match = component.withByteBuffer { buffer -> Bool in
                         if self.caseInsensitive {
                             return data.caseInsensitiveEquals(to: buffer)
                         } else {
