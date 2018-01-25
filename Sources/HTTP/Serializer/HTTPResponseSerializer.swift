@@ -41,7 +41,8 @@ public final class HTTPResponseSerializer: _HTTPSerializer {
         if case .chunkedOutputStream = message.body.storage {
             headers[.transferEncoding] = "chunked"
         } else {
-            headers.appendValue(message.body.count.description, forName: .contentLength)
+            let count = message.body.count ?? 0
+            headers.appendValue(count.bytes(reserving: 6), forName: .contentLength)
         }
         
         self.headersData = headers.storage

@@ -70,12 +70,6 @@ public final class ProtocolTester: Async.OutputStream {
                 chunks.insert(lastChunk, at: 0)
             }
 
-            print("=== TEST: \(max)")
-            let data = chunks.reversed().map { "[" + ProtocolTester.dataDebug(for: $0) + "]" }.joined(separator: " ")
-            let text = chunks.reversed().map { "[" + ProtocolTester.textDebug(for: $0) + "]" }.joined(separator: " ")
-            print("Data: \(data)")
-            print("Text: \(text)")
-
             reset()
             return runChunks(chunks, currentOffset: 0).flatMap(to: Void.self) {
                 return self.runMax(buffer, max: max - 1)
@@ -88,7 +82,6 @@ public final class ProtocolTester: Async.OutputStream {
 
     /// Recursively passes each chunk to downstream until chunks.count == 0
     private func runChunks(_ chunks: [ByteBuffer], currentOffset: Int) -> Future<Void> {
-        print("--- run \(chunks.count)")
         var chunks = chunks
         if let chunk = chunks.popLast() {
             runChecks(offset: currentOffset, chunks: chunks)

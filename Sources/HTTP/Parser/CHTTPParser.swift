@@ -68,7 +68,7 @@ extension CHTTPParser {
                 /// if we already have the HTTPBody in its entirety
                 if chttp.messageComplete {
                     switch chttp.bodyState {
-                    case .buffer(let buffer): body = HTTPBody(Data(buffer))
+                    case .buffer(let buffer): body = HTTPBody(storage: .buffer(buffer))
                     case .none: body = HTTPBody()
                     case .stream: fatalError("Illegal state")
                     case .readyStream: fatalError("Illegal state")
@@ -86,7 +86,9 @@ extension CHTTPParser {
                     case .readyStream: fatalError("Illegal state")
                     }
                     chttp.bodyState = .stream(stream)
-                    body = HTTPBody(size: nil, stream: .init(stream))
+                    body = HTTPBody(stream: .init(stream)) {
+                        return self.chttp.headers?[.contentLength].flatMap(Int.init)
+                    }
                     let message = try makeMessage(using: body)
                     let nextMessageFuture = downstream.next(message)
                     chttp.state = .streaming(nextMessageFuture)

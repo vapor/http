@@ -26,11 +26,7 @@ public final class HTTPRequestParser: CHTTPParser {
     /// See `CHTTPParser.makeMessage(from:using:)`
     func makeMessage(using body: HTTPBody) throws -> HTTPRequest {
         // require a version to have been parsed
-        guard
-            let version = chttp.version,
-            let headers = chttp.headers,
-            let cmethod = chttp.method
-        else {
+        guard let version = chttp.version, let headers = chttp.headers, let cmethod = chttp.method else {
             throw HTTPError.invalidMessage()
         }
         

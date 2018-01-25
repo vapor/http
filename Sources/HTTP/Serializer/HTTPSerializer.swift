@@ -137,7 +137,7 @@ extension _HTTPSerializer {
                         state: .streaming(stream)
                     )
                 default:
-                    bufferSize = body.count
+                    bufferSize = body.count ?? 0
                     writeSize = min(outputSize, bufferSize - offset)
                     
                     try body.withUnsafeBytes { pointer in

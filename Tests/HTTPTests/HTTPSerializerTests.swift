@@ -1,42 +1,42 @@
 import Async
 import Bits
-import Dispatch
 import HTTP
+import Foundation
 import XCTest
 
-class HTTPParserTests: XCTestCase {
-    func testRequest() throws {
+class HTTPSerializerTests: XCTestCase {
+    func testResponse() throws {
         // captured variables to check
-        var request: HTTPRequest?
+        var response: HTTPResponse?
         var content: String?
         var isClosed = false
 
         // creates a protocol tester
         let tester = ProtocolTester(
-            data: "GET /hello HTTP/1.1\r\nContent-Type: text/plain\r\nContent-Length:  5\r\n\r\nworld",
+            data: "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length:  5\r\n\r\nworld",
             onFail: XCTFail
         ) {
-            request = nil
+            response = nil
             content = nil
             isClosed = false
         }
 
         tester.assert(before: "\r\n\r\n") {
-            guard request == nil else {
-                throw "request was not nil"
+            guard response == nil else {
+                throw "response was not nil"
             }
         }
 
         tester.assert(after: "\r\n\r\n") {
-            guard let req = request else {
-                throw "request was nil"
+            guard let res = response else {
+                throw "response was nil"
             }
 
-            guard req.headers[.contentType] == "text/plain" else {
+            guard res.headers[.contentType] == "text/plain" else {
                 throw "incorrect content type"
             }
 
-            guard req.headers[.contentLength] == "5" else {
+            guard res.headers[.contentLength] == "5" else {
                 throw "incorrect content length"
             }
         }
@@ -58,8 +58,8 @@ class HTTPParserTests: XCTestCase {
         }
 
         // configure parser stream
-        tester.stream(to: HTTPRequestParser()).drain { message in
-            request = message
+        tester.stream(to: HTTPResponseParser()).drain { message in
+            response = message
             message.body.makeData(max: 100).do { data in
                 content = String(data: data, encoding: .ascii)
             }.catch { error in
@@ -76,6 +76,7 @@ class HTTPParserTests: XCTestCase {
     }
 
     static let allTests = [
-        ("testRequest", testRequest),
+        ("testResponse", testResponse),
     ]
 }
+

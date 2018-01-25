@@ -104,11 +104,7 @@ public final class WebSocket {
         let serializer = HTTPRequestSerializer().stream(on: self.worker)
         let serializerStream = PushStream<HTTPRequest>()
         
-        let responseParser = HTTPResponseParser()
-        responseParser.maxHeaderSize = 50_000
-        
-        let parser = responseParser.stream(on: self.worker)
-        
+        let parser = HTTPResponseParser()
         serializerStream.stream(to: serializer).output(to: self.sink)
         
         let drain = DrainStream<HTTPResponse>(onInput: { response in

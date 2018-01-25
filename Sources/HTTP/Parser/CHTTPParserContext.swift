@@ -27,6 +27,9 @@ internal final class CHTTPParserContext {
     /// The parsed HTTP method
     var method: http_method?
 
+    /// The parsed HTTP status
+    var statusCode: Int?
+
     /// The parsed HTTP version
     var version: HTTPVersion?
 
@@ -238,36 +241,6 @@ extension CHTTPParserContext {
     }
 }
 
-/// MARK: C Baton Access
-
-extension CHTTPParserContext {
-    /// Sets C pointer for this context on the http_parser's data.
-    /// Use `CHTTPParserContext.get(from:)` to fetch back.
-    fileprivate func set(on parser: inout http_parser) {
-        let results = UnsafeMutablePointer<CHTTPParserContext>.allocate(capacity: 1)
-        results.initialize(to: self)
-        parser.data = UnsafeMutableRawPointer(results)
-    }
-
-    /// Removes C pointer from http_parser data
-    fileprivate static func remove(from parser: inout http_parser) {
-        if let results = parser.data {
-            let pointer = results.assumingMemoryBound(to: CHTTPParserContext.self)
-            pointer.deinitialize()
-            pointer.deallocate(capacity: 1)
-        }
-    }
-
-    /// Fetches the parse results object from the C http_parser data
-    fileprivate static func get(from parser: UnsafePointer<http_parser>?) -> CHTTPParserContext? {
-        return parser?
-            .pointee
-            .data
-            .assumingMemoryBound(to: CHTTPParserContext.self)
-            .pointee
-    }
-}
-
 /// Private methods
 
 extension CHTTPParserContext {
@@ -430,6 +403,7 @@ extension CHTTPParserContext {
             let minor = Int(parser.pointee.http_minor)
             results.version = HTTPVersion(major: major, minor: minor)
             results.method = http_method(parser.pointee.method)
+            results.statusCode = Int(parser.pointee.status_code)
             results.headersComplete = true
 
             return 0
@@ -469,6 +443,38 @@ extension CHTTPParserContext {
 
             return 0
         }
+    }
+}
+
+
+
+/// MARK: C Baton Access
+
+extension CHTTPParserContext {
+    /// Sets C pointer for this context on the http_parser's data.
+    /// Use `CHTTPParserContext.get(from:)` to fetch back.
+    fileprivate func set(on parser: inout http_parser) {
+        let results = UnsafeMutablePointer<CHTTPParserContext>.allocate(capacity: 1)
+        results.initialize(to: self)
+        parser.data = UnsafeMutableRawPointer(results)
+    }
+
+    /// Removes C pointer from http_parser data
+    fileprivate static func remove(from parser: inout http_parser) {
+        if let results = parser.data {
+            let pointer = results.assumingMemoryBound(to: CHTTPParserContext.self)
+            pointer.deinitialize()
+            pointer.deallocate(capacity: 1)
+        }
+    }
+
+    /// Fetches the parse results object from the C http_parser data
+    fileprivate static func get(from parser: UnsafePointer<http_parser>?) -> CHTTPParserContext? {
+        return parser?
+            .pointee
+            .data
+            .assumingMemoryBound(to: CHTTPParserContext.self)
+            .pointee
     }
 }
 
