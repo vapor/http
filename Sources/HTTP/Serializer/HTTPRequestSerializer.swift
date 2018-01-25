@@ -49,7 +49,8 @@ public final class HTTPRequestSerializer: _HTTPSerializer {
     }
     
     deinit {
-        self.buffer.baseAddress?.deallocate(capacity: self.buffer.count)
+        self.buffer.baseAddress?.deinitialize(count: self.buffer.count)
+        self.buffer.baseAddress?.deallocate()
     }
 }
 

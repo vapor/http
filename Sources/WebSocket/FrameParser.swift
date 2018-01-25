@@ -229,7 +229,8 @@ final class FrameParser: ByteParser {
     }
 
     deinit {
-        bufferBuilder.deallocate(capacity: 15 + maximumPayloadSize)
+        bufferBuilder.deinitialize(count: 15 + maximumPayloadSize)
+        bufferBuilder.deallocate()
     }
 }
 

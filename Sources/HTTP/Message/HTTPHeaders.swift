@@ -50,7 +50,18 @@ public struct HTTPHeaders: Codable {
     }
     
     public func encode(to encoder: Encoder) throws {
-        try Array(self).encode(to: encoder)
+        struct Pair: Codable {
+            var name: Name
+            var value: String
+        }
+        
+        var array = [Pair]()
+        
+        for pair in self {
+            array.append(Pair(name: pair.name, value: pair.value))
+        }
+        
+        try array.encode(to: encoder)
     }
     
     public init(from decoder: Decoder) throws {
@@ -210,7 +221,7 @@ public struct HTTPHeaders: Codable {
     /// Accesses all values associated with the `Name`
     public subscript(valuesFor name: Name) -> [String] {
         get {
-            return self.indexes(forName: name).flatMap { index in
+            return self.indexes(forName: name).compactMap { index in
                 return String(bytes: storage[index.valueStartIndex..<index.valueEndIndex], encoding: .utf8)
             }
         }
