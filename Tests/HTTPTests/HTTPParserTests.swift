@@ -5,6 +5,53 @@ import HTTP
 import XCTest
 
 class HTTPParserTests: XCTestCase {
+    func testParserEdgeCasesOld() throws {
+        let firstChunk = "GET /hello HTTP/1.1\r\nContent-Type: ".data(using: .utf8)!
+        let secondChunk = "text/plain\r\nContent-Length: 5\r\n\r\nwo".data(using: .utf8)!
+        let thirdChunk = "rl".data(using: .utf8)!
+        let fourthChunk = "d".data(using: .utf8)!
+
+        let parser = HTTPRequestParser()
+
+        let socket = PushStream(ByteBuffer.self)
+        socket.stream(to: parser).drain { message in
+            print("parser.drain { ... }")
+            print(message)
+            print("message.body.makeData")
+            message.body.makeData(max: 100).do { data in
+                print(data)
+            }.catch { error in
+                print("body error: \(error)")
+            }
+        }.catch { error in
+            print("parser.catch { \(error) }")
+        }.finally {
+            print("parser.close { }")
+        }
+
+
+        print("(1) FIRST ---")
+        firstChunk.withByteBuffer(socket.push)
+        print("(2) SECOND ---")
+        secondChunk.withByteBuffer(socket.push)
+        print("(3) THIRD ---")
+        thirdChunk.withByteBuffer(socket.push)
+        print("(4) FOURTH ---")
+        fourthChunk.withByteBuffer(socket.push)
+
+        print("(1) FIRST ---")
+        firstChunk.withByteBuffer(socket.push)
+        print("(2) SECOND ---")
+        secondChunk.withByteBuffer(socket.push)
+        print("(3) THIRD ---")
+        thirdChunk.withByteBuffer(socket.push)
+        print("(4) FOURTH ---")
+        fourthChunk.withByteBuffer(socket.push)
+        
+        print("(c) CLOSE ---")
+        socket.close()
+    }
+
     func testParserEdgeCases() throws {
         // captured variables to check
         var request: HTTPRequest?
@@ -28,8 +75,16 @@ class HTTPParserTests: XCTestCase {
         }
 
         tester.assert(after: "\r\n\r\n") {
-            guard request != nil else {
+            guard let req = request else {
                 throw "request was nil"
+            }
+
+            guard req.headers[.contentType] == "text/plain" else {
+                throw "incorrect content type"
+            }
+
+            guard req.headers[.contentLength] == "5" else {
+                throw "incorrect content length"
             }
         }
 

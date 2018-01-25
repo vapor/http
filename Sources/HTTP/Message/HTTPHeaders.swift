@@ -14,13 +14,9 @@ import Bits
 ///
 /// [Learn More →](https://docs.vapor.codes/3.0/http/headers/)
 public struct HTTPHeaders: Codable {
-    struct Index: CustomStringConvertible, CustomDebugStringConvertible {
+    struct Index: CustomStringConvertible {
         var description: String {
-            return ""
-        }
-        
-        var debugDescription: String {
-            return ""
+            return "[\(nameStartIndex)..<\(nameEndIndex):\(valueStartIndex)..<\(valueEndIndex)]"
         }
         
         var nameStartIndex: Int

@@ -12,29 +12,24 @@ public final class HTTPRequestParser: CHTTPParser {
     /// See `OutputStream.Output`
     public typealias Output = HTTPRequest
 
-    /// See CHTTPParser.parserType
-    static let parserType: http_parser_type = HTTP_REQUEST
-
     /// See `CHTTPParser.chttpParserContext`
-    var chttp: CHTTPParserContext<HTTPRequest>
+    var chttp: CHTTPParserContext
 
-    /// See `CHTTPParser.maxHeaderSize`
-    public var maxHeaderSize: Int?
+    /// Current downstream accepting parsed messages.
+    var downstream: AnyInputStream<HTTPRequest>?
 
     /// Creates a new Request parser.
     public init() {
-        self.maxHeaderSize = 100_000
-        self.chttp = .init()
-        reset()
+        self.chttp = .init(HTTP_REQUEST)
     }
 
     /// See `CHTTPParser.makeMessage(from:using:)`
-    func makeMessage(from results: CParseResults, using body: HTTPBody) throws -> HTTPRequest {
+    func makeMessage(using body: HTTPBody) throws -> HTTPRequest {
         // require a version to have been parsed
         guard
-            let version = results.version,
-            let headers = results.headers,
-            let cmethod = results.method
+            let version = chttp.version,
+            let headers = chttp.headers,
+            let cmethod = chttp.method
         else {
             throw HTTPError.invalidMessage()
         }
@@ -68,7 +63,7 @@ public final class HTTPRequestParser: CHTTPParser {
         }
         
         // parse the uri from the url bytes.
-        var uri = URI(buffer: results.url)
+        var uri = URI(buffer: chttp.urlData)
         
         // if there is no scheme, use http by default
         if uri.scheme?.isEmpty == true {
