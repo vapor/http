@@ -185,8 +185,9 @@ extension CHTTPParserContext {
 
     /// Copies raw header data from the buffer into `headersData`
     internal func copyHeaders(from buffer: ByteBuffer) {
-        print("copy headers")
         guard startLineComplete else {
+            /// we should not copy headers until the start line is complete
+            /// (there will be no `headerStart` pointer, and buffer start contains non-header data)
             return
         }
 
@@ -194,6 +195,7 @@ extension CHTTPParserContext {
         let start: UnsafePointer<Int8>
         if let headerStart = self.headerStart {
             start = headerStart
+            self.headerStart = nil
         } else {
             start = buffer.cPointer
         }
@@ -209,15 +211,22 @@ extension CHTTPParserContext {
             end = buffer.cPointer.advanced(by: buffer.count)
         }
 
-        let headerSize = start.distance(to: end)
-        // append the length of the headers in this buffer to the header start offset
-        headerStartOffset += start.distance(to: end)
-        let buffer = ByteBuffer(start: start.withMemoryRebound(to: Byte.self, capacity: headerSize) { $0 }, count: headerSize)
-        headersData.append(contentsOf: buffer)
-        headerStart = nil
+        /// current distance from start to end
+        let distance = start.distance(to: end)
 
+        // append the length of the headers in this buffer to the header start offset
+        headerStartOffset += distance
+
+        /// create buffer view of current header data and append it
+        let buffer = ByteBuffer(
+            start: start.withMemoryRebound(to: Byte.self, capacity: distance) { $0 },
+            count: distance
+        )
+        headersData.append(contentsOf: buffer)
+
+        /// if this buffer copy is happening after headers complete indication,
+        /// set the headers struct for later retreival
         if headersComplete {
-            print("    set headers")
             headers = HTTPHeaders(storage: headersData, indexes: headersIndexes)
         }
     }
@@ -229,16 +238,18 @@ extension CHTTPParserContext {
     }
 }
 
-/// MARK: C-Baton Access
+/// MARK: C Baton Access
 
 extension CHTTPParserContext {
-    /// Sets the parse results object on a C parser
+    /// Sets C pointer for this context on the http_parser's data.
+    /// Use `CHTTPParserContext.get(from:)` to fetch back.
     fileprivate func set(on parser: inout http_parser) {
         let results = UnsafeMutablePointer<CHTTPParserContext>.allocate(capacity: 1)
         results.initialize(to: self)
         parser.data = UnsafeMutableRawPointer(results)
     }
 
+    /// Removes C pointer from http_parser data
     fileprivate static func remove(from parser: inout http_parser) {
         if let results = parser.data {
             let pointer = results.assumingMemoryBound(to: CHTTPParserContext.self)
@@ -247,7 +258,7 @@ extension CHTTPParserContext {
         }
     }
 
-    /// Fetches the parse results object from the C parser
+    /// Fetches the parse results object from the C http_parser data
     fileprivate static func get(from parser: UnsafePointer<http_parser>?) -> CHTTPParserContext? {
         return parser?
             .pointee
@@ -304,8 +315,12 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
+
+            /// Header fields are the first indication that the start-line has completed.
             results.startLineComplete = true
 
+            /// Get headerStart pointer. If nil, then there has not
+            /// been a header event yet.
             let start: UnsafePointer<Int8>
             if let existing = results.headerStart {
                 start = existing
@@ -314,7 +329,6 @@ extension CHTTPParserContext {
                 start = chunk
             }
             print("on_header_field")
-
 
             // check current header parsing state
             switch results.headerState {
@@ -336,6 +350,7 @@ extension CHTTPParserContext {
 
             // verify total size has not exceeded max
             results.currentHeadersSize += count
+
             // verify we are within max size limits
             guard results.isUnderMaxSize() else {
                 return 1
@@ -352,6 +367,8 @@ extension CHTTPParserContext {
             }
             print("on_header_value")
 
+            /// Get headerStart pointer. If nil, then there has not
+            /// been a header event yet.
             let start: UnsafePointer<Int8>
             if let existing = results.headerStart {
                 start = existing
@@ -370,17 +387,13 @@ extension CHTTPParserContext {
 
             // check the current header parsing state
             switch results.headerState {
-            case .none: fatalError("Illegal header state `none` during `on_header_value`")
+            case .none: fatalError("Unexpected headerState (.key) during chttp.on_header_value")
             case .value(var index):
                 // there was previously a value being parsed.
                 // add the new bytes to it.
                 index.valueEndIndex += count
                 results.headerState = .value(index)
             case .key(let key):
-                // there was previously a value being parsed.
-                // it is now finished.
-                // results.headersData.append(contentsOf: headerSeparator)
-
                 let distance = start.distance(to: chunk) + results.headerStartOffset
 
                 // create a full HTTP headers index
@@ -406,24 +419,13 @@ extension CHTTPParserContext {
 
             // check the current header parsing state
             switch results.headerState {
-            case .value(let index):
-                // there was previously a value being parsed.
-                // it is now finished.
-                results.headersIndexes.append(index)
-
-                // let headers = HTTPHeaders(storage: results.headersData, indexes: results.headersIndexes)
-
-                /// FIXME: what was this doing?
-                //                if let contentLength = results.contentLength {
-                //                    results.body = HTTPBody(size: contentLength, stream: AnyOutputStream(results.bodyStream))
-                //                }
-
-                // results.headers = headers
-            case .key: fatalError("Unexpected header state .key during on_headers_complete")
-            case .none: fatalError("Unexpected header state .none during on_headers_complete")
+            case .value(let index): results.headersIndexes.append(index)
+            case .key: fatalError("Unexpected headerState (.key) during chttp.on_headers_complete")
+            case .none: fatalError("Unexpected headerState (.none) during chttp.on_headers_complete")
             }
 
-            // parse version
+            /// if headers are complete, so is the start line.
+            /// parse all start-line information now
             let major = Int(parser.pointee.http_major)
             let minor = Int(parser.pointee.http_minor)
             results.version = HTTPVersion(major: major, minor: minor)
@@ -443,9 +445,9 @@ extension CHTTPParserContext {
             results.bodyStart = chunk
 
             switch results.bodyState {
-            case .buffer: fatalError("Unexpected buffer body state during CHTTP.on_body: \(results.bodyState)")
+            case .buffer: fatalError("Unexpected bodyState (.buffer) during chttp.on_body.")
             case .none: results.bodyState = .buffer(chunk.makeByteBuffer(length))
-            case .stream: fatalError("Illegal state")
+            case .stream: fatalError("Unexpected bodyState (.stream) during chttp.on_body.")
             case .readyStream(let bodyStream, let ready):
                 bodyStream.push(chunk.makeByteBuffer(length), ready)
                 results.bodyState = .stream(bodyStream) // no longer ready
@@ -472,61 +474,18 @@ extension CHTTPParserContext {
 
 // MARK: Utilities
 
-extension UnsafeBufferPointer where Element == Byte {
+extension UnsafeBufferPointer where Element == Byte /* ByteBuffer */ {
+    /// Creates a C pointer from a Byte Buffer
     fileprivate var cPointer: UnsafePointer<CChar> {
         return baseAddress.unsafelyUnwrapped.withMemoryRebound(to: CChar.self, capacity: count) { $0 }
     }
 }
 
-fileprivate let headerSeparator: [UInt8] = [.colon, .space]
-fileprivate let lowercasedContentLength = HTTPHeaders.Name.contentLength.lowercased
-
-//fileprivate extension Data {
-//    fileprivate var cPointer: UnsafePointer<CChar> {
-//        return withUnsafeBytes { $0 }
-//    }
-//}
-
 fileprivate extension UnsafePointer where Pointee == CChar {
-    /// Creates a Bytes array from a C pointer
+    /// Creates a Bytes Buffer from a C pointer.
     fileprivate func makeByteBuffer(_ count: Int) -> ByteBuffer {
         return withMemoryRebound(to: Byte.self, capacity: count) { pointer in
             return ByteBuffer(start: pointer, count: count)
         }
     }
-
-    /// Creates a Bytes array from a C pointer
-    fileprivate func makeBuffer(length: Int) -> UnsafeRawBufferPointer {
-        let pointer = UnsafeBufferPointer(start: self, count: length)
-
-        guard let base = pointer.baseAddress else {
-            return UnsafeRawBufferPointer(start: nil, count: 0)
-        }
-
-        return base.withMemoryRebound(to: UInt8.self, capacity: length) { pointer in
-            return UnsafeRawBufferPointer(start: pointer, count: length)
-        }
-    }
 }
-
-
-//extension CHTTPParserContext {
-//    fileprivate func parseContentLength(index: HTTPHeaders.Index) {
-//        if self.contentLength == nil {
-//            let namePointer = UnsafePointer(self.headersData).advanced(by: index.nameStartIndex)
-//            let nameLength = index.nameEndIndex - index.nameStartIndex
-//            let nameBuffer = ByteBuffer(start: namePointer, count: nameLength)
-//
-//            if lowercasedContentLength.caseInsensitiveEquals(to: nameBuffer) {
-//                let pointer = UnsafePointer(self.headersData).advanced(by: index.valueStartIndex)
-//                let length = index.valueEndIndex - index.valueStartIndex
-//
-//                pointer.withMemoryRebound(to: Int8.self, capacity: length) { pointer in
-//                    self.contentLength = numericCast(strtol(pointer, nil, 10))
-//                }
-//            }
-//        }
-//    }
-//}
-//
-
