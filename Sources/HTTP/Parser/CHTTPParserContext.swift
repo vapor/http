@@ -328,7 +328,7 @@ extension CHTTPParserContext {
                 results.headerStart = chunk
                 start = chunk
             }
-            print("on_header_field")
+            //print("on_header_field")
 
             // check current header parsing state
             switch results.headerState {
@@ -365,7 +365,7 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
-            print("on_header_value")
+            //print("on_header_value")
 
             /// Get headerStart pointer. If nil, then there has not
             /// been a header event yet.
@@ -415,7 +415,7 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
-            print("on_headers_complete")
+            //print("on_headers_complete")
 
             // check the current header parsing state
             switch results.headerState {
@@ -441,7 +441,7 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
-            print("on_body")
+            //print("on_body")
             results.bodyStart = chunk
 
             switch results.bodyState {
@@ -462,7 +462,7 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
-            print("on_message_complete")
+            //print("on_message_complete")
 
             // mark the results as complete
             results.messageComplete = true

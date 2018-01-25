@@ -60,7 +60,7 @@ class HTTPParserTests: XCTestCase {
 
         // creates a protocol tester
         let tester = ProtocolTester(
-            data: "GET /hello HTTP/1.1\r\nContent-Type: text/plain\r\nContent-Length: 5\r\n\r\nworld",
+            data: "GET /hello HTTP/1.1\r\nContent-Type: text/plain\r\nContent-Length:  5\r\n\r\nworld",
             onFail: XCTFail
         ) {
             request = nil
