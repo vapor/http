@@ -88,7 +88,7 @@ extension CHTTPParser {
                     case .readyStream: fatalError("Illegal state")
                     }
                     chttp.bodyState = .stream(stream)
-                    body = HTTPBody(size: chttp.contentLength, stream: .init(stream))
+                    body = HTTPBody(size: nil, stream: .init(stream))
                     print(chttp.headersIndexes)
                     let message = try makeMessage(using: body)
                     let nextMessageFuture = downstream.next(message)

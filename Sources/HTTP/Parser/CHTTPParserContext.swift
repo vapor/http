@@ -4,15 +4,6 @@ import CHTTP
 
 /// Maintains the CHTTP parser's internal state.
 internal final class CHTTPParserContext {
-    /// Parser's message
-    var state: CHTTPParserState
-
-    /// The CHTTP parser's C struct
-    fileprivate var parser: http_parser
-
-    /// The CHTTP parer's C settings
-    fileprivate var settings: http_parser_settings
-
     /// If true, the start line has been parsed.
     var startLineComplete: Bool
 
@@ -22,52 +13,96 @@ internal final class CHTTPParserContext {
     /// If true, the entire message has been parsed.
     var messageComplete: Bool
 
+
+    /// Parser's message
+    var state: CHTTPParserState
+
     /// The current header parsing state (field, value, etc)
     var headerState: CHTTPHeaderState
 
     /// The current body parsing state
     var bodyState: CHTTPBodyState
 
-    /// The HTTP method (only set for requests)
+
+    /// The parsed HTTP method
     var method: http_method?
 
-    // The HTTP version
+    /// The parsed HTTP version
     var version: HTTPVersion?
 
-    var maxStartLineAndHeadersSize: Int
-    var contentLength: Int?
-
+    /// The parsed HTTP headers.
     var headers: HTTPHeaders?
+
+
+    /// Raw headers data
+    var headersData: [UInt8]
+
+    /// Parsed indexes into the header data
     var headersIndexes: [HTTPHeaders.Index]
 
+
+    /// Raw URL data
+    var urlData: [UInt8]
+
+
+    /// Maximum allowed size of the start line + headers data (not including some start line componenets and white space)
+    private var maxStartLineAndHeadersSize: Int
+
+    /// Current URL size in start line (excluding other start line components)
     private var currentURLSize: Int
+
+    /// Current size of header data exclusing whitespace
     private var currentHeadersSize: Int
 
-    var headerStart: UnsafePointer<Int8>?
-    var headerStartOffset: Int
-    var bodyStart: UnsafePointer<Int8>?
 
-    var headersData: [UInt8]
-    var urlData: [UInt8]
+    /// Pointer to the last start location of headers.
+    /// If not set, there have been no header start events yet.
+    private var headerStart: UnsafePointer<Int8>?
+
+    /// Current header start offset from previous run(s) of the parser
+    private var headerStartOffset: Int
+
+    /// Pointer to the last start location of the body.
+    /// If not set, there have been no body start events yet.
+    private var bodyStart: UnsafePointer<Int8>?
+
+
+    /// The CHTTP parser's C struct
+    fileprivate var parser: http_parser
+
+    /// The CHTTP parer's C settings
+    fileprivate var settings: http_parser_settings
 
     /// Creates a new `CHTTPParserContext`
     init(_ type: http_parser_type) {
-        self.parser = http_parser()
-        self.settings = http_parser_settings()
-        self.state = .parsing
         self.startLineComplete = false
         self.headersComplete = false
         self.messageComplete = false
-        self.currentHeadersSize = 0
-        self.currentURLSize = 0
-        self.maxStartLineAndHeadersSize = 100_000
+
+        self.state = .parsing
         self.headerState = .none
         self.bodyState = .none
+
+        self.method = nil
+        self.version = nil
+        self.headers = nil
+
+        self.headersData = []
         self.headersIndexes = []
-        urlData = []
-        headersData = []
-        headerStart = nil
-        headerStartOffset = 0
+
+        self.urlData = []
+
+        self.maxStartLineAndHeadersSize = 100_000
+        self.currentURLSize = 0
+        self.currentHeadersSize = 0
+
+        self.headerStart = nil
+        self.headerStartOffset = 0
+        self.bodyStart = nil
+
+        self.parser = http_parser()
+        self.settings = http_parser_settings()
+
         headersIndexes.reserveCapacity(64)
         set(on: &self.parser)
         http_parser_init(&parser, type)
@@ -123,26 +158,32 @@ extension CHTTPParserContext {
 
     /// Resets the parser context, preparing it for a new message.
     internal func reset() {
-        print(" RESET")
-        startLineComplete = false
-        headersComplete = false
-        messageComplete = false
-        headerState = .none
-        bodyState = .none
-        state = .parsing
-        urlData = []
-        headersData = []
-        currentURLSize = 0
-        currentHeadersSize = 0
-        headersIndexes = []
-        headersIndexes.reserveCapacity(64)
-        headers = nil
-        method = nil
-        headerStart = nil
-        headerStartOffset = 0
-        bodyStart = nil
+        self.startLineComplete = false
+        self.headersComplete = false
+        self.messageComplete = false
+
+        self.state = .parsing
+        self.headerState = .none
+        self.bodyState = .none
+
+        self.method = nil
+        self.version = nil
+        self.headers = nil
+
+        self.headersData = []
+        self.headersIndexes = []
+
+        self.urlData = []
+
+        self.currentURLSize = 0
+        self.currentHeadersSize = 0
+
+        self.headerStart = nil
+        self.headerStartOffset = 0
+        self.bodyStart = nil
     }
 
+    /// Copies raw header data from the buffer into `headersData`
     internal func copyHeaders(from buffer: ByteBuffer) {
         print("copy headers")
         guard startLineComplete else {
