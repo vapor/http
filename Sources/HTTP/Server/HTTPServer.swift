@@ -20,28 +20,17 @@ public final class HTTPServer {
     public var onError: ErrorHandler?
 
     /// Create a new HTTP server with the supplied accept stream.
-    public init<AcceptStream>(acceptStream: AcceptStream, worker: Worker, responder: HTTPResponder)
-        where AcceptStream: OutputStream, AcceptStream.Output: ByteStream
+    public init<AcceptStream, Responder>(acceptStream: AcceptStream, worker: Worker, responder: Responder)
+        where AcceptStream: OutputStream, AcceptStream.Output: ByteStream, Responder: HTTPResponder
     {
         /// set up the server stream
         acceptStream.drain { client in
-            let serializerStream = HTTPResponseSerializer().stream(on: worker)
+            let serializerStream = HTTPResponseSerializer()
             let parserStream = HTTPRequestParser()
 
             client
                 .stream(to: parserStream)
-                .stream(to: responder.stream(on: worker).stream())
-                .map(to: HTTPResponse.self) { response in
-                    /// map the responder adding http upgrade support
-                    if let onUpgrade = response.onUpgrade {
-                        do {
-                            try onUpgrade.closure(.init(client), .init(client), worker)
-                        } catch {
-                            self.onError?(error)
-                        }
-                    }
-                    return response
-                }
+                .stream(to: responder.stream(upgradingTo: .init(client), on: worker))
                 .stream(to: serializerStream)
                 .output(to: client)
         }.catch { err in

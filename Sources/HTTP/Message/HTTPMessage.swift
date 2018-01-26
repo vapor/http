@@ -71,6 +71,19 @@ public struct HTTPOnUpgrade: Codable {
     }
 }
 
+extension HTTPMessage {
+    /// Sets Content-Length / Transfer-Encoding headers.
+    internal mutating func updateBodyHeaders() {
+        if let count = body.count {
+            if count > 0 {
+                headers[.contentLength] = count.description
+            }
+        } else {
+            headers[.transferEncoding] = "chunked"
+        }
+    }
+}
+
 // MARK: Debug string
 
 extension HTTPMessage {

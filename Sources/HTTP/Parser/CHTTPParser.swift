@@ -74,7 +74,7 @@ extension CHTTPParser {
                     case .readyStream: fatalError("Illegal state")
                     }
                     let message = try makeMessage(using: body)
-                    downstream.next(message, ready)
+                    downstream.input(.next(message, ready))
                     chttp.reset()
                 } else {
                     // Convert body to a stream
@@ -90,8 +90,9 @@ extension CHTTPParser {
                         return self.chttp.headers?[.contentLength].flatMap(Int.init)
                     }
                     let message = try makeMessage(using: body)
-                    let nextMessageFuture = downstream.next(message)
-                    chttp.state = .streaming(nextMessageFuture)
+                    let nextMessagePromise = Promise(Void.self)
+                    downstream.input(.next(message, nextMessagePromise))
+                    chttp.state = .streaming(nextMessagePromise.future)
                 }
             } else {
                 /// Headers not complete, request more input

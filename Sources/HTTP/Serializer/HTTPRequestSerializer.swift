@@ -3,88 +3,70 @@ import Bits
 import Dispatch
 import Foundation
 
-/// Converts requests to DispatchData.
-public final class HTTPRequestSerializer: _HTTPSerializer {
-    public typealias SerializationState = HTTPSerializerState
+/// https://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers
+let maxStartLineSize = 2048
+
+/// Serializing stream, converts HTTP Request to ByteBuffer.
+public final class HTTPRequestSerializer: HTTPSerializer {
+    /// See `InputStream.Input`
     public typealias Input = HTTPRequest
+
+    /// See `OutputStream.Output`
     public typealias Output = ByteBuffer
-    
-    /// Serialized message
-    var firstLine: [UInt8]?
-    
-    /// Headers
-    var headersData: [UInt8]?
 
-    /// Static body data
-    var body: HTTPBody?
-    
-    public let state: ByteSerializerState<HTTPRequestSerializer>
-    let buffer: MutableByteBuffer
-    
-    /// Create a new HTTPResponseSerializer
-    public init(bufferSize: Int = 2048) {
-        self.state = .init()
-        
-        let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
-        self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
+    /// See `HTTPSerializer.downstream`
+    public var downstream: AnyInputStream<ByteBuffer>?
+
+    /// See `HTTPSerializer.context`
+    public var context: HTTPSerializerContext
+
+    /// Holds start lines for serialization
+    private let startLineBuffer: MutableByteBuffer
+
+    /// Creates a new `HTTPRequestSerializer`
+    init() {
+        context = .init()
+        let pointer = MutableBytesPointer.allocate(capacity: maxStartLineSize)
+        startLineBuffer = .init(start: pointer, count: maxStartLineSize)
     }
-    
-    /// Set up the variables for Message serialization
-    public func setMessage(to message: HTTPRequest) {
-        var headers = message.headers
-        
-        headers[.contentLength] = nil
-        
-        if case .chunkedOutputStream = message.body.storage {
-            headers[.transferEncoding] = "chunked"
-        } else {
-            let count = message.body.count ?? 0
-            headers.appendValue(count.bytes(reserving: 6), forName: .contentLength)
+
+    /// See `HTTPSerializer.serializeStartLine(for:)`
+    public func serializeStartLine(for message: HTTPRequest) -> ByteBuffer {
+        guard startLineBuffer.count >
+            /// GET                          /foo                              HTTP/1.1\r\n
+            message.method.bytes.count + 1 + message.uri.pathBytes.count + 1 + http1newLineBuffer.count
+        else {
+            fatalError("Start line too large for buffer")
         }
-        
-        self.headersData = headers.storage
-        
-        self.firstLine = message.firstLine
-        
-        self.body = message.body
+
+        var address = startLineBuffer.baseAddress!.advanced(by: 0)
+        /// FIXME: static string?
+        let methodBytes: ByteBuffer = message.method.bytes.withUnsafeBufferPointer { $0 }
+        memcpy(address, methodBytes.baseAddress!, methodBytes.count)
+
+        address = address.advanced(by: methodBytes.count)
+        address.pointee = .space
+
+        address = address.advanced(by: 1)
+        let pathCount = message.uri.path.utf8.count
+        let pathBytes = message.uri.path.withCString { $0 }
+        memcpy(address, pathBytes, pathCount)
+
+        address = address.advanced(by: pathCount)
+        memcpy(address, http1newLineBuffer.baseAddress!, http1newLineBuffer.count)
+        address = address.advanced(by: http1newLineBuffer.count)
+
+        return ByteBuffer(
+            start: startLineBuffer.baseAddress,
+            count: startLineBuffer.baseAddress!.distance(to: address)
+        )
     }
-    
+
     deinit {
-        self.buffer.baseAddress?.deallocate(capacity: self.buffer.count)
+        startLineBuffer.baseAddress?.deinitialize()
+        startLineBuffer.baseAddress?.deallocate(capacity: maxStartLineSize)
     }
 }
 
-fileprivate extension HTTPRequest {
-    var firstLine: [UInt8] {
-        var firstLine = self.method.bytes
-        firstLine.reserveCapacity(self.headers.storage.count + 256)
-        
-        firstLine.append(.space)
-        
-        if self.uri.pathBytes.first != .forwardSlash {
-            firstLine.append(.forwardSlash)
-        }
-        
-        firstLine.append(contentsOf: self.uri.pathBytes)
-        
-        if let query = self.uri.query {
-            firstLine.append(.questionMark)
-            firstLine.append(contentsOf: query.utf8)
-        }
-        
-        if let fragment = self.uri.fragment {
-            firstLine.append(.numberSign)
-            firstLine.append(contentsOf: fragment.utf8)
-        }
-        
-        firstLine.append(contentsOf: http1newLine)
-        
-        return firstLine
-    }
-}
-
-fileprivate let crlf = Data([
-    .carriageReturn,
-    .newLine
-])
-fileprivate let http1newLine = [UInt8](" HTTP/1.1\r\n".utf8)
+fileprivate let http1newLine: StaticString = " HTTP/1.1\r\n"
+fileprivate let http1newLineBuffer = http1newLine.withUTF8Buffer { $0 }

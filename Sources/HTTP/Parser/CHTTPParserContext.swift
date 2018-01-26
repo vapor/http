@@ -41,7 +41,7 @@ internal final class CHTTPParserContext {
     var headersData: [UInt8]
 
     /// Parsed indexes into the header data
-    var headersIndexes: [HTTPHeaders.Index]
+    var headersIndexes: [HTTPHeaderIndex]
 
 
     /// Raw URL data
@@ -128,7 +128,7 @@ enum CHTTPParserState {
 /// Possible header states
 enum CHTTPHeaderState {
     case none
-    case value(HTTPHeaders.Index)
+    case value(HTTPHeaderIndex)
     case key(startIndex: Int, endIndex: Int)
 }
 
@@ -230,7 +230,8 @@ extension CHTTPParserContext {
         /// if this buffer copy is happening after headers complete indication,
         /// set the headers struct for later retreival
         if headersComplete {
-            headers = HTTPHeaders(storage: headersData, indexes: headersIndexes)
+            let storage = HTTPHeaderStorage(bytes: headersData, indexes: headersIndexes)
+            headers = HTTPHeaders(storage: storage)
         }
     }
 
@@ -370,12 +371,11 @@ extension CHTTPParserContext {
                 let distance = start.distance(to: chunk) + results.headerStartOffset
 
                 // create a full HTTP headers index
-                let index = HTTPHeaders.Index(
+                let index = HTTPHeaderIndex(
                     nameStartIndex: key.startIndex,
                     nameEndIndex: key.endIndex,
                     valueStartIndex: distance,
-                    valueEndIndex: distance + count,
-                    invalidated: false
+                    valueEndIndex: distance + count
                 )
                 results.headerState = .value(index)
             }

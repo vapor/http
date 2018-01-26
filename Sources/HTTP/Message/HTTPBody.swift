@@ -61,7 +61,7 @@ public struct HTTPBody: Codable {
     /// Executes a closure with a pointer to the start of the data
     ///
     /// Can be used to read data from this buffer until the `count`.
-    public func withUnsafeBytes<Return>(_ run: ((BytesPointer) throws -> (Return))) throws -> Return {
+    public func withUnsafeBytes<Return>(_ run: (ByteBuffer) throws -> Return) throws -> Return {
         return try self.storage.withUnsafeBytes(run)
     }
     
@@ -141,27 +141,37 @@ enum HTTPBodyStorage: Codable {
         case .staticString(let staticString): return staticString.utf8CodeUnitCount
         case .string(let string): return string.utf8.count
         case .buffer(let buffer): return buffer.count
-        case .chunkedOutputStream, .none: return nil
+        case .none: return 0
+        case .chunkedOutputStream: return nil
         case .binaryOutputStream(let size, _): return size()
         }
     }
 
     /// Accesses the bytes of this data
-    func withUnsafeBytes<Return>(_ run: ((BytesPointer) throws -> (Return))) throws -> Return {
+    func withUnsafeBytes<Return>(_ run: (ByteBuffer) throws -> Return) throws -> Return {
         switch self {
         case .data(let data):
-            return try data.withUnsafeBytes(run)
+            return try data.withByteBuffer(run)
         case .dispatchData(let data):
-            return try data.withUnsafeBytes(body: run)
+            let data = Data(data)
+            return try data.withByteBuffer(run)
         case .staticString(let staticString):
-            return try run(staticString.utf8Start)
-        case .string(let string):
-            return try string.withCString { pointer in
-                return try pointer.withMemoryRebound(to: UInt8.self, capacity: string.utf8.count, run)
+            return staticString.withUTF8Buffer { buffer in
+                return try! run(buffer) // FIXME: throwing
             }
+        case .string(let string):
+            let buffer = string.withCString { pointer in
+                return ByteBuffer(
+                    start: pointer.withMemoryRebound(to: UInt8.self, capacity: string.utf8.count) { $0 },
+                    count: string.utf8.count
+                )
+            }
+            return try run(buffer)
         case .buffer(let buffer):
-            return try run(buffer.baseAddress!)
-        case .none, .chunkedOutputStream(_), .binaryOutputStream(_):
+            return try run(buffer)
+        case .none:
+            return try run(ByteBuffer(start: nil, count: 0))
+        case .chunkedOutputStream(_), .binaryOutputStream(_):
             throw HTTPError(
                 identifier: "streamingBody",
                 reason: "A BodyStream was being accessed as a sequential byte buffer, which is impossible."

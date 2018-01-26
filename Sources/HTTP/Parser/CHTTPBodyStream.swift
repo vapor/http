@@ -19,7 +19,7 @@ final class CHTTPBodyStream: OutputStream {
     func push(_ buffer: ByteBuffer, _ ready: Promise<Void>) {
         assert(waiting == nil)
         if let downstream = self.downstream {
-            downstream.next(buffer, ready)
+            downstream.input(.next(buffer, ready))
         } else {
             waiting = (buffer, ready)
         }
@@ -30,7 +30,7 @@ final class CHTTPBodyStream: OutputStream {
         downstream = .init(inputStream)
         if let (buffer, ready) = self.waiting {
             self.waiting = nil
-            inputStream.next(buffer, ready)
+            inputStream.input(.next(buffer, ready))
         }
     }
 
