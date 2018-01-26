@@ -1,4 +1,5 @@
 import Bits
+import Foundation
 import COperatingSystem
 
 /// COW storage for HTTP headers.
@@ -49,7 +50,6 @@ final class HTTPHeaderStorage {
 
     /// Creates a new, identical copy of the header storage.
     internal func copy() -> HTTPHeaderStorage {
-        print("🐄 COPY")
         let newBuffer = MutableByteBuffer(
             start: MutableBytesPointer.allocate(capacity: buffer.count),
             count: buffer.count
@@ -96,7 +96,14 @@ final class HTTPHeaderStorage {
     /// Note: This will naively append data, not deleting existing values. Use in
     /// conjunction with `removeValues(for:)` for that behavior.
     internal func appendValue(_ value: String, for name: HTTPHeaderName) {
-        let valueCount = value.utf8.count
+        
+    }
+    
+    /// Appends the supplied string to the header data.
+    /// Note: This will naively append data, not deleting existing values. Use in
+    /// conjunction with `removeValues(for:)` for that behavior.
+    internal func appendValue(_ value: ByteBuffer, for name: HTTPHeaderName) {
+        let valueCount = value.count
 
         /// create the new header index
         let index = HTTPHeaderIndex(
@@ -117,19 +124,31 @@ final class HTTPHeaderStorage {
         // `: `
         memcpy(buffer.start.advanced(by: index.nameEndIndex), headerSeparator.start, headerSeparatorSize)
         // <value>
-        _ = value.withByteBuffer { valueBuffer in
-            memcpy(buffer.start.advanced(by: index.valueStartIndex), valueBuffer.start, valueCount)
-        }
+        memcpy(buffer.start.advanced(by: index.valueStartIndex), value.start, valueCount)
         // `\r\n`
         memcpy(buffer.start.advanced(by: index.valueEndIndex), headerEnding.start, headerEndingSize)
 
         view = ByteBuffer(start: buffer.start, count: view.count + index.size)
     }
 
+    /// Fetches the ByteBuffer value for a given header index.
+    /// Use `indexes(for:)` to fetch indexes for a given header name.
+    internal func buffer(for header: HTTPHeaderIndex) -> ByteBuffer? {
+        return ByteBuffer(
+            start: view.baseAddress?.advanced(by: header.valueStartIndex),
+            count: header.valueEndIndex &- header.valueStartIndex
+        )
+    }
+    
     /// Fetches the String value for a given header index.
     /// Use `indexes(for:)` to fetch indexes for a given header name.
     internal func value(for header: HTTPHeaderIndex) -> String? {
-        return String(bytes: view[header.valueStartIndex..<header.valueEndIndex], encoding: .ascii)
+        guard let buffer = buffer(for: header) else {
+            return nil
+        }
+        
+        let data = Data(buffer: buffer)
+        return String(data: data, encoding: .ascii)
     }
 
     /// Fetches the String name for a given header index.
@@ -170,25 +189,8 @@ final class HTTPHeaderStorage {
 
         let headerData = ByteBuffer(start: view.start.advanced(by: index.startIndex), count: index.size)
         let nameData: ByteBuffer = name.lowercased.withUnsafeBufferPointer { $0 }
-
-        for i in 0..<nameSize {
-            let headerByte = headerData[i]
-            let nameByte = nameData[i]
-
-            /// check case that byte is exact match
-            if headerByte == nameByte {
-                continue
-            }
-
-            /// check case that header data is uppercased
-            if headerByte >= .A && headerByte <= .Z && headerByte &+ asciiCasingOffset == nameByte {
-                continue
-            }
-
-            return false
-        }
-
-        return true
+        
+        return headerData.caseInsensitiveEquals(to: nameData)
     }
 
     /// An internal API that blindly adds a header without checking for doubles
