@@ -173,7 +173,8 @@ extension CHTTPParserContext {
         self.version = nil
         self.headers = nil
 
-        self.headersData = .init(reserving: 64) // .manualReset()
+        //self.headersData = .init(reserving: 64)
+        self.headersData.manualReset() // can we get this to work w/ COW?
         self.headersIndexes = []
 
         self.urlData = []
