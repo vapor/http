@@ -13,13 +13,12 @@ final class HTTPHeaderStorage {
     private var indexes: [HTTPHeaderIndex?]
 
     /// Creates a new `HTTPHeaders` with default content.
-    public init() {
+    public static func `default`() -> HTTPHeaderStorage {
         let storageSize = 64
         let buffer = MutableByteBuffer(start: .allocate(capacity: storageSize), count: storageSize)
         memcpy(buffer.baseAddress, defaultHeaders.baseAddress!, defaultHeadersSize)
-        self.buffer = buffer
-        self.view = ByteBuffer(start: buffer.baseAddress, count: defaultHeadersSize)
-        self.indexes = []
+        let view = ByteBuffer(start: buffer.baseAddress, count: defaultHeadersSize)
+        return HTTPHeaderStorage(view: view, buffer: buffer, indexes: [defaultHeaderIndex])
     }
 
     /// Internal init for truly empty header storage.
@@ -50,12 +49,12 @@ final class HTTPHeaderStorage {
 
     /// Creates a new, identical copy of the header storage.
     internal func copy() -> HTTPHeaderStorage {
-        print("copy")
+        print("🐄 COPY")
         let newBuffer = MutableByteBuffer(
             start: MutableBytesPointer.allocate(capacity: buffer.count),
             count: buffer.count
         )
-        memcpy(buffer.start, newBuffer.start, buffer.count)
+        memcpy(newBuffer.start, buffer.start, buffer.count)
         return HTTPHeaderStorage(
             view: ByteBuffer(start: newBuffer.start, count: view.count),
             buffer: newBuffer,
@@ -78,7 +77,7 @@ final class HTTPHeaderStorage {
 
                 /// calculate how much valid storage data is placed
                 /// after this header
-                let displacedBytes = view.count - index.startIndex
+                let displacedBytes = view.count - index.endIndex
 
                 if displacedBytes > 0 {
                     /// there is valid data after this header that we must relocate
@@ -87,8 +86,8 @@ final class HTTPHeaderStorage {
                     memcpy(destination, source, displacedBytes)
                 } else {
                     // no headers after this, simply shorten the valid buffer
-                    self.view = ByteBuffer(start: buffer.start, count: view.count - index.size)
                 }
+                self.view = ByteBuffer(start: buffer.start, count: view.count - index.size)
             }
         }
     }
@@ -97,14 +96,14 @@ final class HTTPHeaderStorage {
     /// Note: This will naively append data, not deleting existing values. Use in
     /// conjunction with `removeValues(for:)` for that behavior.
     internal func appendValue(_ value: String, for name: HTTPHeaderName) {
-        let value = value.buffer
+        let valueCount = value.utf8.count
 
         /// create the new header index
         let index = HTTPHeaderIndex(
             nameStartIndex: view.count,
-            nameEndIndex: view.count + name.lowercased.count,
-            valueStartIndex: view.count + name.lowercased.count + 2,
-            valueEndIndex: view.count + name.lowercased.count + 2 + value.count
+            nameEndIndex: view.count + name.original.count,
+            valueStartIndex: view.count + name.original.count + 2,
+            valueEndIndex: view.count + name.original.count + 2 + valueCount
         )
         indexes.append(index)
 
@@ -114,15 +113,17 @@ final class HTTPHeaderStorage {
         }
 
         // <name>
-        memcpy(buffer.start.advanced(by: index.nameStartIndex), name.lowercased, name.lowercased.count)
+        memcpy(buffer.start.advanced(by: index.nameStartIndex), name.original, name.original.count)
         // `: `
         memcpy(buffer.start.advanced(by: index.nameEndIndex), headerSeparator.start, headerSeparatorSize)
         // <value>
-        memcpy(buffer.start.advanced(by: index.valueStartIndex), value.start, value.count)
+        _ = value.withByteBuffer { valueBuffer in
+            memcpy(buffer.start.advanced(by: index.valueStartIndex), valueBuffer.start, valueCount)
+        }
         // `\r\n`
         memcpy(buffer.start.advanced(by: index.valueEndIndex), headerEnding.start, headerEndingSize)
 
-        view = ByteBuffer(start: buffer.start, count: view.count + index.endIndex)
+        view = ByteBuffer(start: buffer.start, count: view.count + index.size)
     }
 
     /// Fetches the String value for a given header index.
@@ -167,10 +168,11 @@ final class HTTPHeaderStorage {
             return false
         }
 
+        let headerData = ByteBuffer(start: view.start.advanced(by: index.startIndex), count: index.size)
         let nameData: ByteBuffer = name.lowercased.withUnsafeBufferPointer { $0 }
 
         for i in 0..<nameSize {
-            let headerByte = view[i]
+            let headerByte = headerData[i]
             let nameByte = nameData[i]
 
             /// check case that byte is exact match
@@ -258,10 +260,12 @@ extension UnsafeBufferPointer {
 }
 
 extension String {
-    var buffer: ByteBuffer {
+    func withByteBuffer<T>(_ closure: (ByteBuffer) -> T) -> T {
         let count = utf8.count
         return withCString { cPointer in
-            return ByteBuffer(start: cPointer.withMemoryRebound(to: Byte.self, capacity: count) { $0 }, count: count)
+            return cPointer.withMemoryRebound(to: Byte.self, capacity: count) {
+                return closure(ByteBuffer(start: $0, count: count))
+            }
         }
     }
 }
@@ -279,3 +283,4 @@ private let headerEndingSize: Int = headerEnding.count
 private let defaultHeadersStaticString: StaticString = "Content-Length: 0\r\n"
 private let defaultHeaders: ByteBuffer = defaultHeadersStaticString.withUTF8Buffer { $0 }
 private let defaultHeadersSize: Int = defaultHeaders.count
+private let defaultHeaderIndex = HTTPHeaderIndex(nameStartIndex: 0, nameEndIndex: 14, valueStartIndex: 16, valueEndIndex: 17)

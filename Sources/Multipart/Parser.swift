@@ -118,7 +118,7 @@ public final class MultipartParser {
                 throw MultipartError(identifier: "multipart:invalid-header-value", reason: "Invalid multipart header value string encoding")
             }
             
-            headers[HTTPHeaders.Name(key)] = value
+            headers[HTTPHeaderName(key)] = value
         }
         
         return headers

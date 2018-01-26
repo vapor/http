@@ -21,7 +21,7 @@ public struct HTTPHeaders: Codable {
 
     /// Creates a new, empty `HTTPHeaders`.
     public init() {
-        self.storage = .init()
+        self.storage = .default()
     }
 
     /// Create a new `HTTPHeaders` with explicit storage and indexes.
@@ -61,6 +61,11 @@ public struct HTTPHeaders: Codable {
                 storage.appendValue(value, for: name)
             }
         }
+    }
+
+    /// An internal API that blindly adds a header without checking for doubles
+    public func withByteBuffer<T>(_ closure: (ByteBuffer) -> T) -> T {
+        return storage.withByteBuffer(closure)
     }
 }
 

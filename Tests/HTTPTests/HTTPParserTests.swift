@@ -32,8 +32,10 @@ class HTTPParserTests: XCTestCase {
                 throw "request was nil"
             }
 
-            guard req.headers[.contentType] == "text/plain" else {
-                throw "incorrect content type"
+            let contentType = req.headers[.contentType]
+            guard contentType == "text/plain" else {
+                print(req.headers)
+                throw "incorrect content type: \(contentType ?? "nil")"
             }
 
             guard req.headers[.contentLength] == "5" else {

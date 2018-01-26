@@ -24,7 +24,7 @@ public final class HTTPRequestSerializer: HTTPSerializer {
     private let startLineBuffer: MutableByteBuffer
 
     /// Creates a new `HTTPRequestSerializer`
-    init() {
+    public init() {
         context = .init()
         let pointer = MutableBytesPointer.allocate(capacity: maxStartLineSize)
         startLineBuffer = .init(start: pointer, count: maxStartLineSize)

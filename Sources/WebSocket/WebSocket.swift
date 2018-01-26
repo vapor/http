@@ -101,7 +101,7 @@ public final class WebSocket {
         let id = OSRandom().data(count: 16).base64EncodedString()
         
         // Creates an HTTP client for the handshake
-        let serializer = HTTPRequestSerializer().stream(on: self.worker)
+        let serializer = HTTPRequestSerializer()
         let serializerStream = PushStream<HTTPRequest>()
         
         let parser = HTTPResponseParser()

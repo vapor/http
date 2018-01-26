@@ -173,7 +173,7 @@ extension CHTTPParserContext {
         self.version = nil
         self.headers = nil
 
-        self.headersData.manualReset()
+        self.headersData = .init(reserving: 64) // .manualReset()
         self.headersIndexes = []
 
         self.urlData = []
