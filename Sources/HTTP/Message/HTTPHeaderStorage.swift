@@ -12,9 +12,9 @@ final class HTTPHeaderStorage {
     /// The HTTPHeader's known indexes into the storage.
     private var indexes: [HTTPHeaderIndex?]
 
-    /// Creates a new, empty `HTTPHeaders`.
+    /// Creates a new `HTTPHeaders` with default content.
     public init() {
-        let storageSize = 1024
+        let storageSize = 64
         let buffer = MutableByteBuffer(start: .allocate(capacity: storageSize), count: storageSize)
         memcpy(buffer.baseAddress, defaultHeaders.baseAddress!, defaultHeadersSize)
         self.buffer = buffer
@@ -22,9 +22,17 @@ final class HTTPHeaderStorage {
         self.indexes = []
     }
 
+    /// Internal init for truly empty header storage.
+    internal init(reserving: Int) {
+        let buffer = MutableByteBuffer(start: .allocate(capacity: reserving), count: reserving)
+        self.buffer = buffer
+        self.view = ByteBuffer(start: buffer.baseAddress, count: 0)
+        self.indexes = []
+    }
+
     /// Create a new `HTTPHeaders` with explicit storage and indexes.
     internal init(bytes: Bytes, indexes: [HTTPHeaderIndex]) {
-        let storageSize = view.count
+        let storageSize = bytes.count
         let buffer = MutableByteBuffer(start: .allocate(capacity: storageSize), count: storageSize)
         memcpy(buffer.baseAddress, bytes, storageSize)
         self.buffer = buffer
@@ -32,6 +40,28 @@ final class HTTPHeaderStorage {
         self.indexes = indexes
     }
 
+
+    /// Create a new `HTTPHeaders` with explicit storage and indexes.
+    private init(view: ByteBuffer, buffer: MutableByteBuffer, indexes: [HTTPHeaderIndex?]) {
+        self.view = view
+        self.buffer = buffer
+        self.indexes = indexes
+    }
+
+    /// Creates a new, identical copy of the header storage.
+    internal func copy() -> HTTPHeaderStorage {
+        print("copy")
+        let newBuffer = MutableByteBuffer(
+            start: MutableBytesPointer.allocate(capacity: buffer.count),
+            count: buffer.count
+        )
+        memcpy(buffer.start, newBuffer.start, buffer.count)
+        return HTTPHeaderStorage(
+            view: ByteBuffer(start: newBuffer.start, count: view.count),
+            buffer: newBuffer,
+            indexes: indexes
+        )
+    }
 
     /// Removes all headers with this name
     internal func removeValues(for name: HTTPHeaderName) {
@@ -177,6 +207,33 @@ final class HTTPHeaderStorage {
             .assumingMemoryBound(to: Byte.self)
         buffer = MutableByteBuffer(start: pointer, count: newSize)
     }
+
+    /// Manually appends a byte buffer to the header storage.
+    internal func manualAppend(_ bytes: ByteBuffer) {
+        let count = (bytes.count + view.count) - buffer.count
+        if count > 0 {
+            // not enough room
+            increaseBufferSize(by: count)
+        }
+        memcpy(buffer.start.advanced(by: view.count), bytes.start, bytes.count)
+        view = ByteBuffer(start: buffer.start, count: view.count + bytes.count)
+    }
+
+    /// Resets the internal view, ignoring any added data.
+    internal func manualReset() {
+        self.indexes = []
+        self.view = ByteBuffer(start: buffer.start, count: 0)
+    }
+
+    /// Manually set indexes.
+    internal func manualIndexes(_ indexes: [HTTPHeaderIndex]) {
+        self.indexes = indexes
+    }
+
+    deinit {
+        buffer.start.deinitialize()
+        buffer.start.deallocate(capacity: buffer.count)
+    }
 }
 
 extension HTTPHeaderStorage: CustomStringConvertible {
@@ -219,6 +276,6 @@ private let headerEndingStaticString: StaticString = "\r\n"
 private let headerEnding: ByteBuffer = headerEndingStaticString.withUTF8Buffer { $0 }
 private let headerEndingSize: Int = headerEnding.count
 
-private let defaultHeadersStaticString: StaticString = "Content-Length: 0\r\n\r\n"
+private let defaultHeadersStaticString: StaticString = "Content-Length: 0\r\n"
 private let defaultHeaders: ByteBuffer = defaultHeadersStaticString.withUTF8Buffer { $0 }
 private let defaultHeadersSize: Int = defaultHeaders.count

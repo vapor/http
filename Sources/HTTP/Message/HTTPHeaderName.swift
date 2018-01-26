@@ -44,7 +44,7 @@ public struct HTTPHeaderName: Codable, Hashable, ExpressibleByStringLiteral, Cus
     }
 
     /// See `Equatable.==`
-    public static func ==(lhs: Name, rhs: Name) -> Bool {
+    public static func ==(lhs: HTTPHeaderName, rhs: HTTPHeaderName) -> Bool {
         return lhs.lowercased == rhs.lowercased
     }
 

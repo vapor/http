@@ -15,6 +15,8 @@ import Bits
 /// [Learn More →](https://docs.vapor.codes/3.0/http/headers/)
 public struct HTTPHeaders: Codable {
     /// The HTTPHeader's raw data storage
+    /// Note: For COW to work properly, this must only be
+    /// accessed from the public methods on this struct.
     internal var storage: HTTPHeaderStorage
 
     /// Creates a new, empty `HTTPHeaders`.
@@ -43,6 +45,28 @@ public struct HTTPHeaders: Codable {
         }
     }
     
+    /// Accesses all values associated with the `Name`
+    public subscript(valuesFor name: HTTPHeaderName) -> [String] {
+        get {
+            return storage.indexes(for: name).flatMap { storage.value(for: $0) }
+        }
+        set {
+            if !isKnownUniquelyReferenced(&storage) {
+                /// this storage is being referenced from two places
+                /// copy now to ensure COW behavior
+                storage = storage.copy()
+            }
+            storage.removeValues(for: name)
+            for value in newValue {
+                storage.appendValue(value, for: name)
+            }
+        }
+    }
+}
+
+/// MARK: Convenience
+
+extension HTTPHeaders {
     /// Accesses the (first) value associated with the `Name` if any
     ///
     /// [Learn More →](https://docs.vapor.codes/3.0/http/headers/#accessing-headers)
@@ -60,30 +84,15 @@ public struct HTTPHeaders: Codable {
             }
         }
         set {
-            storage.removeValues(for: name)
             if let value = newValue {
-                storage.appendValue(value, for: name)
+                self[valuesFor: name] = [value]
+            } else {
+                self[valuesFor: name] = []
             }
         }
     }
-    
-    /// Accesses all values associated with the `Name`
-    public subscript(valuesFor name: HTTPHeaderName) -> [String] {
-        get {
-            return storage.indexes(for: name).flatMap { storage.value(for: $0) }
-        }
-        set {
-            storage.removeValues(for: name)
-            for value in newValue {
-                storage.appendValue(value, for: name)
-            }
-        }
-    }
-}
 
-/// MARK: Convenience
 
-extension HTTPHeaders {
     /// https://tools.ietf.org/html/rfc2616#section-3.6
     ///
     /// "Parameters are in  the form of attribute/value pairs."

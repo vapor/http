@@ -38,7 +38,7 @@ internal final class CHTTPParserContext {
 
 
     /// Raw headers data
-    var headersData: [UInt8]
+    var headersData: HTTPHeaderStorage
 
     /// Parsed indexes into the header data
     var headersIndexes: [HTTPHeaderIndex]
@@ -90,7 +90,7 @@ internal final class CHTTPParserContext {
         self.version = nil
         self.headers = nil
 
-        self.headersData = []
+        self.headersData = .init(reserving: 64)
         self.headersIndexes = []
 
         self.urlData = []
@@ -173,7 +173,7 @@ extension CHTTPParserContext {
         self.version = nil
         self.headers = nil
 
-        self.headersData = []
+        self.headersData.manualReset()
         self.headersIndexes = []
 
         self.urlData = []
@@ -225,13 +225,13 @@ extension CHTTPParserContext {
             start: start.withMemoryRebound(to: Byte.self, capacity: distance) { $0 },
             count: distance
         )
-        headersData.append(contentsOf: buffer)
+        headersData.manualAppend(buffer)
 
         /// if this buffer copy is happening after headers complete indication,
         /// set the headers struct for later retreival
         if headersComplete {
-            let storage = HTTPHeaderStorage(bytes: headersData, indexes: headersIndexes)
-            headers = HTTPHeaders(storage: storage)
+            headersData.manualIndexes(headersIndexes)
+            headers = HTTPHeaders(storage: headersData)
         }
     }
 
