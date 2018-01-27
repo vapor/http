@@ -13,7 +13,7 @@ final class HTTPHeaderStorage {
     private var indexes: [HTTPHeaderIndex?]
 
     /// Creates a new `HTTPHeaders` with default content.
-    public static func `default`() -> HTTPHeaderStorage {
+    static func `default`() -> HTTPHeaderStorage {
         let storageSize = 64
         let buffer = MutableByteBuffer(start: .allocate(capacity: storageSize), count: storageSize)
         memcpy(buffer.baseAddress, defaultHeaders.baseAddress!, defaultHeadersSize)
