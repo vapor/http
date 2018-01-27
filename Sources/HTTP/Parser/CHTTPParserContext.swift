@@ -38,7 +38,10 @@ internal final class CHTTPParserContext {
 
 
     /// Raw headers data
-    var headersData: HTTPHeaderStorage
+    var headersData: MutableByteBuffer
+
+    /// Current header start offset from previous run(s) of the parser
+    var headersDataSize: Int
 
     /// Parsed indexes into the header data
     var headersIndexes: [HTTPHeaderIndex]
@@ -61,9 +64,6 @@ internal final class CHTTPParserContext {
     /// Pointer to the last start location of headers.
     /// If not set, there have been no header start events yet.
     private var headerStart: UnsafePointer<Int8>?
-
-    /// Current header start offset from previous run(s) of the parser
-    private var headerStartOffset: Int
 
     /// Pointer to the last start location of the body.
     /// If not set, there have been no body start events yet.
@@ -90,7 +90,8 @@ internal final class CHTTPParserContext {
         self.version = nil
         self.headers = nil
 
-        self.headersData = .init(reserving: 64)
+        self.headersData = .init(start: .allocate(capacity: 64), count: 64)
+        self.headersDataSize = 0
         self.headersIndexes = []
 
         self.urlData = []
@@ -100,7 +101,6 @@ internal final class CHTTPParserContext {
         self.currentHeadersSize = 0
 
         self.headerStart = nil
-        self.headerStartOffset = 0
         self.bodyStart = nil
 
         self.parser = http_parser()
@@ -110,6 +110,11 @@ internal final class CHTTPParserContext {
         set(on: &self.parser)
         http_parser_init(&parser, type)
         initialize()
+    }
+
+    deinit {
+        headersData.start.deinitialize()
+        headersData.start.deallocate(capacity: headersData.count)
     }
 }
 
@@ -173,8 +178,7 @@ extension CHTTPParserContext {
         self.version = nil
         self.headers = nil
 
-        //self.headersData = .init(reserving: 64)
-        self.headersData.manualReset() // can we get this to work w/ COW?
+        self.headersDataSize = 0
         self.headersIndexes = []
 
         self.urlData = []
@@ -183,7 +187,6 @@ extension CHTTPParserContext {
         self.currentHeadersSize = 0
 
         self.headerStart = nil
-        self.headerStartOffset = 0
         self.bodyStart = nil
     }
 
@@ -218,21 +221,23 @@ extension CHTTPParserContext {
         /// current distance from start to end
         let distance = start.distance(to: end)
 
-        // append the length of the headers in this buffer to the header start offset
-        headerStartOffset += distance
+        let overflow = (headersDataSize + distance) - headersData.count
+        if overflow > 0 {
+            headersData = headersData.increaseBufferSize(by: overflow)
+        }
 
-        /// create buffer view of current header data and append it
-        let buffer = ByteBuffer(
-            start: start.withMemoryRebound(to: Byte.self, capacity: distance) { $0 },
-            count: distance
-        )
-        headersData.manualAppend(buffer)
+        // append the length of the headers in this buffer to the header start offset
+        memcpy(headersData.start.advanced(by: headersDataSize), start, distance)
+        headersDataSize += distance
 
         /// if this buffer copy is happening after headers complete indication,
         /// set the headers struct for later retreival
         if headersComplete {
-            headersData.manualIndexes(headersIndexes)
-            headers = HTTPHeaders(storage: headersData)
+            let storage = HTTPHeaderStorage(
+                copying: ByteBuffer(start: headersData.start, count: headersDataSize),
+                with: headersIndexes
+            )
+            headers = HTTPHeaders(storage: storage)
         }
     }
 
@@ -308,11 +313,11 @@ extension CHTTPParserContext {
             // check current header parsing state
             switch results.headerState {
             case .none:
-                let distance = start.distance(to: chunk) + results.headerStartOffset
+                let distance = start.distance(to: chunk) + results.headersDataSize
                 // nothing is being parsed, start a new key
                 results.headerState = .key(startIndex: distance, endIndex: distance + count)
             case .value(let index):
-                let distance = start.distance(to: chunk) + results.headerStartOffset
+                let distance = start.distance(to: chunk) + results.headersDataSize
                 // there was previously a value being parsed.
                 // it is now finished.
                 results.headersIndexes.append(index)
@@ -369,7 +374,7 @@ extension CHTTPParserContext {
                 index.valueEndIndex += count
                 results.headerState = .value(index)
             case .key(let key):
-                let distance = start.distance(to: chunk) + results.headerStartOffset
+                let distance = start.distance(to: chunk) + results.headersDataSize
 
                 // create a full HTTP headers index
                 let index = HTTPHeaderIndex(

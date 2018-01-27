@@ -1,4 +1,4 @@
-     import Async
+import Async
 import Foundation
 import Dispatch
 import Bits
@@ -92,6 +92,38 @@ extension String: HTTPBodyRepresentable {
     }
 }
 
+extension HTTPBody: CustomStringConvertible {
+    /// See `CustomStringConvertible.description
+    public var description: String {
+        switch storage {
+        case .binaryOutputStream: return "<binary output stream> (use `debugPrint(_:)` to consume)"
+        case .chunkedOutputStream: return "<chunked output stream> (use `debugPrint(_:)` to consume)"
+        case .data, .buffer, .dispatchData, .none, .staticString, .string: return debugDescription
+        }
+    }
+ }
+
+extension HTTPBody: CustomDebugStringConvertible {
+    /// See `CustomDebugStringConvertible.debugDescription`
+    public var debugDescription: String {
+        switch storage {
+        case .buffer(let buffer): return String(bytes: buffer, encoding: .ascii) ?? "n/a"
+        case .data(let data): return String(data: data, encoding: .ascii) ?? "n/a"
+        case .dispatchData(let data): return String(data: Data(data), encoding: .ascii) ?? "n/a"
+        case .none: return "<empty>"
+        case .staticString(let string): return string.description
+        case .string(let string): return string
+        case .chunkedOutputStream, .binaryOutputStream:
+            do {
+                let data = try makeData(max: 2048).blockingAwait(timeout: .seconds(5))
+                let string = String(data: data, encoding: .ascii) ?? "Error: Decoding body data as ASCII failed."
+                return "<output stream consumed> " + string
+            } catch {
+                return "Error collecting body data: \(error)"
+            }
+        }
+    }
+ }
 
 /// Output the body stream to the chunk encoding stream
 /// When supplied in this closure

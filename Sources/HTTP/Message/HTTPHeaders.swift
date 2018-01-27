@@ -133,9 +133,16 @@ extension HTTPHeaders {
 /// MARK: Utility
 
 extension HTTPHeaders: CustomStringConvertible {
-    /// See `CustomStringConvertible.description`
+    /// See `CustomStringConvertible.description
     public var description: String {
         return storage.description
+    }
+}
+
+extension HTTPHeaders: CustomDebugStringConvertible {
+    /// See `CustomStringConvertible.description`
+    public var debugDescription: String {
+        return storage.debugDescription
     }
 }
 

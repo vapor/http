@@ -22,11 +22,12 @@ final class HTTPHeaderStorage {
     }
 
     /// Internal init for truly empty header storage.
-    internal init(reserving: Int) {
-        let buffer = MutableByteBuffer(start: .allocate(capacity: reserving), count: reserving)
+    internal init(copying bytes: ByteBuffer, with indexes: [HTTPHeaderIndex]) {
+        let buffer = MutableByteBuffer(start: .allocate(capacity: bytes.count), count: bytes.count)
         self.buffer = buffer
-        self.view = ByteBuffer(start: buffer.baseAddress, count: 0)
-        self.indexes = []
+        memcpy(buffer.start, bytes.start, bytes.count)
+        self.view = ByteBuffer(start: buffer.baseAddress, count: bytes.count)
+        self.indexes = indexes
     }
 
     /// Create a new `HTTPHeaders` with explicit storage and indexes.
@@ -39,7 +40,6 @@ final class HTTPHeaderStorage {
         self.indexes = indexes
     }
 
-
     /// Create a new `HTTPHeaders` with explicit storage and indexes.
     private init(view: ByteBuffer, buffer: MutableByteBuffer, indexes: [HTTPHeaderIndex?]) {
         self.view = view
@@ -49,7 +49,6 @@ final class HTTPHeaderStorage {
 
     /// Creates a new, identical copy of the header storage.
     internal func copy() -> HTTPHeaderStorage {
-        print("🐄 COPY")
         let newBuffer = MutableByteBuffer(
             start: MutableBytesPointer.allocate(capacity: buffer.count),
             count: buffer.count
@@ -204,32 +203,7 @@ final class HTTPHeaderStorage {
 
     /// Increases the internal buffer size by the supplied count.
     internal func increaseBufferSize(by count: Int) {
-        let newSize = buffer.count + count
-        let pointer: MutableBytesPointer = realloc(UnsafeMutableRawPointer(buffer.start), newSize)
-            .assumingMemoryBound(to: Byte.self)
-        buffer = MutableByteBuffer(start: pointer, count: newSize)
-    }
-
-    /// Manually appends a byte buffer to the header storage.
-    internal func manualAppend(_ bytes: ByteBuffer) {
-        let count = (bytes.count + view.count) - buffer.count
-        if count > 0 {
-            // not enough room
-            increaseBufferSize(by: count)
-        }
-        memcpy(buffer.start.advanced(by: view.count), bytes.start, bytes.count)
-        view = ByteBuffer(start: buffer.start, count: view.count + bytes.count)
-    }
-
-    /// Resets the internal view, ignoring any added data.
-    internal func manualReset() {
-        self.indexes = []
-        self.view = ByteBuffer(start: buffer.start, count: 0)
-    }
-
-    /// Manually set indexes.
-    internal func manualIndexes(_ indexes: [HTTPHeaderIndex]) {
-        self.indexes = indexes
+        buffer = buffer.increaseBufferSize(by: count)
     }
 
     deinit {
@@ -239,8 +213,15 @@ final class HTTPHeaderStorage {
 }
 
 extension HTTPHeaderStorage: CustomStringConvertible {
-    /// See `CustomStringConvertible.description`
+    /// See `CustomStringConvertible.description
     public var description: String {
+        return debugDescription
+    }
+}
+
+extension HTTPHeaderStorage: CustomDebugStringConvertible {
+    /// See `CustomDebugStringConvertible.debugDescription`
+    public var debugDescription: String {
         return String(bytes: view, encoding: .ascii) ?? "n/a"
     }
 }
@@ -267,6 +248,16 @@ extension String {
                 return closure(ByteBuffer(start: $0, count: count))
             }
         }
+    }
+}
+
+extension UnsafeMutableBufferPointer {
+    /// Increases the mutable buffer size by the supplied count.
+    internal mutating func increaseBufferSize(by count: Int) -> UnsafeMutableBufferPointer<Element> {
+        let newSize = self.count + count
+        let pointer = realloc(UnsafeMutableRawPointer(start), newSize * MemoryLayout<Element>.size)
+            .assumingMemoryBound(to: Element.self)
+        return .init(start: pointer, count: newSize)
     }
 }
 
