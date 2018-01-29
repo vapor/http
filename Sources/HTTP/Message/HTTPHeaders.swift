@@ -24,6 +24,11 @@ public struct HTTPHeaders: Codable {
         self.storage = .default()
     }
 
+    /// Creates an empty HTTPHeaders (no Content-Length 0)
+    public static func empty() -> HTTPHeaders {
+        return HTTPHeaders(storage: HTTPHeaderStorage(bytes: [], indexes: []))
+    }
+
     /// Create a new `HTTPHeaders` with explicit storage and indexes.
     internal init(storage: HTTPHeaderStorage) {
         self.storage = storage

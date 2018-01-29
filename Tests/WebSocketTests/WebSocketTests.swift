@@ -38,11 +38,11 @@ final class WebSocketTests : XCTestCase {
         let read = try client.socket.read(max: 512)
         let string = String(data: read, encoding: .utf8)
         XCTAssertEqual(string, """
-        HTTP/1.1 101 \r
+        HTTP/1.1 101 Upgrade\r
+        Content-Length: 0\r
         Upgrade: websocket\r
         Connection: Upgrade\r
         Sec-WebSocket-Accept: U5ZWHrbsu7snP3DY1Q5P3e8AkOk=\r
-        Content-Length: 0\r
         \r
 
         """)
