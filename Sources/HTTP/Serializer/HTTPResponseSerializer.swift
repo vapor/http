@@ -4,72 +4,85 @@ import Bits
 import Dispatch
 import Foundation
 
+private let startLineBufferSize = 1024
+
 /// Converts responses to Data.
-public final class HTTPResponseSerializer: _HTTPSerializer {
-    let buffer: MutableByteBuffer
-    
-    public var state: ByteSerializerState<HTTPResponseSerializer>
-    
-    /// See HTTPSerializer.Message
+public final class HTTPResponseSerializer: HTTPSerializer {
+    /// See `InputStream.Input`
     public typealias Input = HTTPResponse
-    public typealias SerializationState = HTTPSerializerState
+
+    /// See `OutputStream.Output`
     public typealias Output = ByteBuffer
 
-    /// Serialized message
-    var firstLine: [UInt8]?
-    
-    /// Headers
-    var headersData: [UInt8]?
+    /// See `HTTPSerializer.downstream`
+    public var downstream: AnyInputStream<ByteBuffer>?
 
-    /// Body data
-    var body: HTTPBody?
+    /// See `HTTPSerializer.context`
+    public var context: HTTPSerializerContext
+
+    /// Start line buffer for non-precoded start lines.
+    private var startLineBuffer: MutableByteBuffer?
     
     /// Create a new HTTPResponseSerializer
-    public init(bufferSize: Int = 2048) {
-        self.state = .init()
-        
-        let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
-        self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
+    public init() {
+        context = .init()
     }
-    
-    /// Set up the variables for Message serialization
-    public func setMessage(to message: HTTPResponse) {
-        var headers = message.headers
-        
-        headers[.contentLength] = nil
-        
-        if case .chunkedOutputStream = message.body.storage {
-            headers[.transferEncoding] = "chunked"
-        } else {
-            headers.appendValue(message.body.count.description, forName: .contentLength)
+
+    /// See `HTTPSerializer.serializeStartLine(for:)`
+    public func serializeStartLine(for message: HTTPResponse) -> ByteBuffer {
+        switch message.status {
+        case .ok: return okStartLine.withUTF8Buffer { $0 }
+        case .notFound: return notFoundStartLine.withUTF8Buffer { $0 }
+        case .internalServerError: return internalServerErrorStartLine.withUTF8Buffer { $0 }
+        default:
+            let buffer: MutableByteBuffer
+            if let existing = self.startLineBuffer {
+                buffer = existing
+            } else {
+                let new = MutableByteBuffer(start: .allocate(capacity: startLineBufferSize), count: startLineBufferSize)
+                buffer = new
+            }
+
+            // `HTTP/1.1 `
+            var pos = buffer.start.advanced(by: 0)
+            memcpy(pos, version.withUTF8Buffer { $0 }.start, version.utf8CodeUnitCount)
+
+            // `200`
+            pos = pos.advanced(by: version.utf8CodeUnitCount)
+            let codeBytes = message.status.code.bytes()
+            memcpy(pos, codeBytes, codeBytes.count)
+
+            // ` `
+            pos = pos.advanced(by: codeBytes.count)
+            pos[0] = .space
+
+            // `OK`
+            pos = pos.advanced(by: 1)
+            let messageBytes = message.status.messageBytes
+            memcpy(pos, messageBytes, messageBytes.count)
+
+            // `\r\n`
+            pos = pos.advanced(by: messageBytes.count)
+            pos[0] = .carriageReturn
+            pos[1] = .newLine
+            pos = pos.advanced(by: 2)
+
+            // view
+            let view = ByteBuffer(start: buffer.start, count: buffer.start.distance(to: pos))
+            return view
         }
-        
-        self.headersData = headers.storage
-        
-        self.firstLine = message.firstLine
-
-        self.body = message.body
     }
-    
+
     deinit {
-        self.buffer.baseAddress?.deallocate(capacity: self.buffer.count)
+        if let buffer = startLineBuffer {
+            buffer.baseAddress!.deinitialize()
+            buffer.baseAddress?.deallocate(capacity: buffer.count)
+        }
     }
 }
 
-fileprivate extension HTTPResponse {
-    var firstLine: [UInt8] {
-        // First line
-        var http1Line = http1Prefix
-        http1Line.reserveCapacity(128)
-        
-        http1Line.append(contentsOf: self.status.code.bytes(reserving: 3))
-        http1Line.append(.space)
-        http1Line.append(contentsOf: self.status.messageBytes)
-        http1Line.append(contentsOf: crlf)
-        return http1Line
-    }
-}
+private let version: StaticString = "HTTP/1.1 "
 
-private let http1Prefix = [UInt8]("HTTP/1.1 ".utf8)
-private let crlf = [UInt8]("\r\n".utf8)
-private let headerKeyValueSeparator = [UInt8](": ".utf8)
+private let okStartLine: StaticString = "HTTP/1.1 200 OK\r\n"
+private let notFoundStartLine: StaticString = "HTTP/1.1 404 Not Found\r\n"
+private let internalServerErrorStartLine: StaticString = "HTTP/1.1 500 Internal Server Error\r\n"

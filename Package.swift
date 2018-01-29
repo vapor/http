@@ -36,6 +36,7 @@ let package = Package(
         .testTarget(name: "FormURLEncodedTests", dependencies: ["FormURLEncoded"]),
         .target(name: "HTTP", dependencies: ["CHTTP", "TCP"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
+        .target(name: "Performance", dependencies: ["HTTP", "TCP"]),
         // .target(name: "HTTP2", dependencies: ["HTTP", "TLS", "Pufferfish"]),
         // .testTarget(name: "HTTP2Tests", dependencies: ["HTTP2"]),
         .target(name: "Multipart", dependencies: ["Debugging", "HTTP"]),

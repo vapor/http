@@ -197,11 +197,7 @@ extension HTTPMessage {
             return MediaType(string: contentType)
         }
         set {
-            if let newValue = newValue {
-                headers.appendValue(newValue.bytes, forName: .contentType)
-            } else {
-                headers.removeValues(forName: .contentType)
-            }
+            headers[.contentType] = newValue?.description // FIXME: performance
         }
     }
 }
