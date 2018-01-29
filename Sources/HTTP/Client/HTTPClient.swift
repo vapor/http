@@ -22,8 +22,8 @@ public final class HTTPClient {
     {
         let queueStream = QueueStream<HTTPResponse, HTTPRequest>()
 
-        let serializerStream = HTTPRequestSerializer().stream(on: worker)
-        let parserStream = HTTPResponseParser().stream(on: worker)
+        let serializerStream = HTTPRequestSerializer()
+        let parserStream = HTTPResponseParser()
 
         stream.stream(to: parserStream)
             .stream(to: queueStream)
@@ -47,3 +47,4 @@ public final class HTTPClient {
         }
     }
 }
+

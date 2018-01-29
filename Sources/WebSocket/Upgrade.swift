@@ -28,7 +28,7 @@ extension WebSocket {
         try settings.apply(on: request)
 
         let headers = try buildWebSocketHeaders(for: request)
-        var response = HTTPResponse(status: 101, headers: headers)
+        var response = HTTPResponse(status: .upgrade, headers: headers)
 
         try settings.apply(on: &response, request: request)
 

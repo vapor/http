@@ -4,164 +4,159 @@ import Dispatch
 import Foundation
 
 /// A helper for Request and Response serializer that keeps state
-public enum HTTPSerializerState {
-    case noMessage
-    case firstLine(offset: Int)
-    case headers(offset: Int)
-    case crlf(offset: Int)
-    case staticBody(offset: Int)
-    case streaming(AnyOutputStream<ByteBuffer>)
-    
-    mutating func next() {
-        switch self {
-        case .firstLine: self = .headers(offset: 0)
-        case .headers: self = .crlf(offset: 0)
-        case .crlf: self = .staticBody(offset: 0)
-        default: self = .noMessage
-        }
+public indirect enum HTTPSerializerState {
+    case startLine
+    case headers
+    case body
+    case done
+    case continueBuffer(ByteBuffer, nextState: HTTPSerializerState)
+}
+
+public final class HTTPSerializerContext {
+    var state: HTTPSerializerState
+
+    private let buffer: MutableByteBuffer
+    private var bufferOffset: Int
+
+    func drain() -> ByteBuffer {
+        defer { bufferOffset = 0 }
+        return ByteBuffer(start: buffer.baseAddress, count: bufferOffset)
     }
-    
-    mutating func advance(_ n: Int) {
-        switch self {
-        case .firstLine(let offset): self = .firstLine(offset: offset + n)
-        case .headers(let offset): self = .headers(offset: offset + n)
-        case .crlf(let offset): self = .crlf(offset: offset + n)
-        case .staticBody(let offset): self = .staticBody(offset: offset + n)
-        default: self = .noMessage
-        }
+
+    init() {
+        let bufferSize: Int = 2048
+        bufferOffset = 0
+        let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
+        self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
+        self.state = .startLine
     }
-    
-    var ready: Bool {
-        if case .noMessage = self {
-            return true
+
+    func append(_ data: ByteBuffer) -> ByteBuffer? {
+        let writeSize = min(data.count, buffer.count - bufferOffset)
+        memcpy(buffer.baseAddress!.advanced(by: bufferOffset), data.baseAddress!, writeSize)
+        bufferOffset += writeSize
+        guard writeSize >= data.count else {
+            return ByteBuffer(start: data.baseAddress!.advanced(by: writeSize), count: data.count - writeSize)
         }
-        
-        return false
+        return nil
+    }
+
+    deinit {
+        buffer.baseAddress?.deinitialize()
+        buffer.baseAddress?.deallocate(capacity: buffer.count)
     }
 }
 
 /// Internal Swift HTTP serializer protocol.
-public protocol HTTPSerializer: class, ByteSerializer where Input: HTTPMessage {
-    func setMessage(to message: Input)
+public protocol HTTPSerializer: Async.Stream where Input: HTTPMessage, Output == ByteBuffer {
+    var context: HTTPSerializerContext { get }
+    var downstream: AnyInputStream<ByteBuffer>? { get set }
+    func serializeStartLine(for message: Input) -> ByteBuffer
 }
 
-internal protocol _HTTPSerializer: HTTPSerializer where SerializationState == HTTPSerializerState {
-    /// Serialized message
-    var firstLine: [UInt8]? { get }
-    
-    /// Headers
-    var headersData: [UInt8]? { get }
-
-    /// Body data
-    var body: HTTPBody? { get }
-    
-    var buffer: MutableByteBuffer { get }
-}
-
-extension _HTTPSerializer {
-    public func serialize(_ input: Input, state previousState: SerializationState?) throws -> ByteSerializerResult<Self> {
-        var bufferSize: Int
-        var writeOffset = 0
-        
-        var state: SerializationState
-            
-        if let previousState = previousState {
-            state = previousState
-        } else {
-            self.setMessage(to: input)
-            state = .firstLine(offset: 0)
+extension HTTPSerializer {
+    public func input(_ event: InputEvent<Input>) {
+        guard let downstream = self.downstream else {
+            fatalError()
         }
-        
-        while !state.ready {
-            let _offset: Int
-            let writeSize: Int
-            let outputSize = buffer.count - writeOffset
-            
-            switch state {
-            case .noMessage:
-                throw HTTPError(identifier: "no-message", reason: "Serialization requested without a message")
-            case .firstLine(let offset):
-                _offset = offset
-                guard let firstLine = self.firstLine else {
-                    throw HTTPError(identifier: "invalid-state", reason: "Missing first line metadata")
-                }
-                
-                bufferSize = firstLine.count
-                writeSize = min(outputSize, bufferSize - offset)
-                
-                firstLine.withUnsafeBytes { pointer in
-                    _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), pointer.baseAddress!.advanced(by: offset), writeSize)
-                }
-            case .headers(let offset):
-                _offset = offset
-                guard let headersData = self.headersData else {
-                    throw HTTPError(identifier: "invalid-state", reason: "Missing header state")
-                }
-                
-                bufferSize = headersData.count
-                writeSize = min(outputSize, bufferSize - offset)
-                
-                headersData.withUnsafeBufferPointer { headerBuffer in
-                    _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), headerBuffer.baseAddress!.advanced(by: offset), writeSize)
-                }
-            case .crlf(let offset):
-                _offset = offset
-                bufferSize = 2
-                writeSize = min(outputSize, bufferSize - offset)
-                
-                crlf.withUnsafeBufferPointer { crlfBuffer in
-                    _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), crlfBuffer.baseAddress!.advanced(by: offset), writeSize)
-                }
-            case .staticBody(let offset):
-                _offset = offset
-                
-                guard let body = self.body else {
-                    state.next()
-                    continue
-                }
-                
-                switch body.storage {
-                case .none:
-                    return .complete(ByteBuffer(start: buffer.baseAddress, count: writeOffset))
-                case .chunkedOutputStream(let streamBuilder):
-                    let stream = HTTPChunkEncodingStream()
-                    let result = AnyOutputStream(streamBuilder(stream))
-                    
-                    return .incomplete(
-                        ByteBuffer(start: buffer.baseAddress, count: writeOffset),
-                        state: .streaming(result)
-                    )
-                case .binaryOutputStream(_, let stream):
-                    return .incomplete(
-                        ByteBuffer(start: buffer.baseAddress, count: writeOffset),
-                        state: .streaming(stream)
-                    )
-                default:
-                    bufferSize = body.count
-                    writeSize = min(outputSize, bufferSize - offset)
-                    
-                    try body.withUnsafeBytes { pointer in
-                        _ = memcpy(buffer.baseAddress!.advanced(by: writeOffset), pointer.advanced(by: offset), writeSize)
-                    }
-                }
-            case .streaming(let stream):
-                state.next()
-                return .awaiting(stream, state: nil)
-            }
-            
-            writeOffset += writeSize
-            
-            if _offset + writeSize < bufferSize {
-                state.advance(writeSize)
-                return .incomplete(ByteBuffer(start: buffer.baseAddress, count: writeOffset), state: state)
-            } else {
-                state.next()
-            }
+        switch event {
+        case .close: downstream.close()
+        case .error(let e): downstream.error(e)
+        case .next(let input, let ready):
+            try! serialize(input, downstream, ready)
         }
-        
-        return .complete(ByteBuffer(start: buffer.baseAddress, count: writeOffset))
     }
+
+    public func output<S>(to inputStream: S) where S: Async.InputStream, HTTPRequestSerializer.Output == S.Input {
+        downstream = .init(inputStream)
+    }
+
+    fileprivate func serialize(_ message: Input, _ downstream: AnyInputStream<ByteBuffer>, _ nextMessage: Promise<Void>) throws {
+        switch context.state {
+        case .startLine:
+            if let remaining = context.append(serializeStartLine(for: message)) {
+                context.state = .continueBuffer(remaining, nextState: .headers)
+                write(message, downstream, nextMessage)
+            } else {
+                context.state = .headers
+                try serialize(message, downstream, nextMessage)
+            }
+        case .headers:
+            let buffer = message.headers.storage.withByteBuffer { $0 }
+            if let remaining = context.append(buffer) {
+                context.state = .continueBuffer(remaining, nextState: .body)
+                write(message, downstream, nextMessage)
+            } else {
+                context.state = .body
+                try serialize(message, downstream, nextMessage)
+            }
+        case .body:
+            let byteBuffer: ByteBuffer?
+
+            switch message.body.storage {
+            case .data(let data):
+                byteBuffer = ByteBuffer(start: data.withUnsafeBytes { $0 }, count: data.count)
+            case .dispatchData(let data):
+                byteBuffer = ByteBuffer(start: data.withUnsafeBytes { $0 }, count: data.count)
+            case .staticString(let staticString):
+                byteBuffer = ByteBuffer(start: staticString.utf8Start, count: staticString.utf8CodeUnitCount)
+            case .string(let string):
+                let bytePointer = string.withCString { pointer in
+                    return pointer.withMemoryRebound(to: UInt8.self, capacity: string.utf8.count) { $0 }
+                }
+                byteBuffer = ByteBuffer(start: bytePointer, count: string.utf8.count)
+            case .buffer(let buffer):
+                byteBuffer = buffer
+            case .none:
+                byteBuffer = nil
+            case .chunkedOutputStream(_), .binaryOutputStream(_):
+                byteBuffer = nil
+            }
+
+            if let buffer = byteBuffer {
+                if let remaining = context.append(buffer) {
+                    context.state = .continueBuffer(remaining, nextState: .done)
+                    write(message, downstream, nextMessage)
+                } else {
+                    context.state = .done
+                    write(message, downstream, nextMessage)
+                }
+            } else {
+                switch message.body.storage {
+                case .none:
+                    context.state = .done
+                    write(message, downstream, nextMessage)
+                default: fatalError()
+                }
+            }
+        case .continueBuffer(let remainingStartLine, let then):
+            if let remaining = context.append(remainingStartLine) {
+                context.state = .continueBuffer(remaining, nextState: then)
+                write(message, downstream, nextMessage)
+            } else {
+                context.state = then
+                try serialize(message, downstream, nextMessage)
+            }
+        case .done:
+            context.state = .startLine
+            nextMessage.complete()
+        }
+    }
+
+    fileprivate func write(_ message: Input, _ downstream: AnyInputStream<Output>, _ nextMessage: Promise<Void>) {
+        let promise = Promise(Void.self)
+        downstream.input(.next(context.drain(), promise))
+        promise.future.addAwaiter { result in
+            switch result {
+            case .error(let error): downstream.error(error)
+            case .expectation:
+                do {
+                    try self.serialize(message, downstream, nextMessage)
+                } catch {
+                    downstream.error(error)
+                }
+            }
+        }
+    }
+
 }
-
-fileprivate let crlf: [UInt8] = [.carriageReturn, .newLine]
-
