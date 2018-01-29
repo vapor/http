@@ -10,7 +10,8 @@ XCTMain([
 	// MARK: HTTP
     testCase(HTTPClientTests.allTests),
     testCase(HTTPServerTests.allTests),
-    testCase(HTTPSerializerStreamTests.allTests),
+    testCase(HTTPParserTests.allTests),
+    testCase(HTTPSerializerTests.allTests),
     testCase(UtilityTests.allTests),
 
     testCase(FormURLEncodedCodableTests.allTests),

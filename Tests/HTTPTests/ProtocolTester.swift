@@ -22,34 +22,37 @@ public final class ProtocolTester: Async.OutputStream {
     /// The added checks
     private var checks: [ProtocolTesterCheck]
 
+    /// The original string data
+    private let original: String
+
     /// The test data
-    private var data: String
+    private var data: Bytes
 
     /// Creates a new `ProtocolTester`
     public init(data: String, onFail: @escaping (String, StaticString, UInt) -> (), reset: @escaping () -> ()) {
         self.reset = reset
         self.fail = onFail
-        self.data = data
+        self.original = data
+        self.data = Bytes(data.utf8)
         checks = []
     }
 
     /// Adds a "before" offset assertion to the tester.
     public func assert(before substring: String, file: StaticString = #file, line: UInt = #line, callback: @escaping () throws -> ()) {
-        let check = ProtocolTesterCheck(minOffset: nil, maxOffset: data.offset(of: substring), file: file, line: line, checks: callback)
+        let check = ProtocolTesterCheck(minOffset: nil, maxOffset: original.offset(of: substring), file: file, line: line, checks: callback)
         checks.append(check)
     }
 
     /// Adds an "after" offset assertion to the tester.
     public func assert(after substring: String, file: StaticString = #file, line: UInt = #line, callback: @escaping () throws -> ()) {
-        let check = ProtocolTesterCheck(minOffset: data.offset(of: substring), maxOffset: nil, file: file, line: line, checks: callback)
+        let check = ProtocolTesterCheck(minOffset: original.offset(of: substring), maxOffset: nil, file: file, line: line, checks: callback)
         checks.append(check)
     }
 
     /// Runs the protocol tester w/ the supplied input
     public func run() -> Future<Void> {
         Swift.assert(downstream != nil, "ProtocolTester must be connected before running")
-        let buffer = data.buffer
-        return runMax(buffer, max: buffer.count)
+        return runMax(ByteBuffer(start: &data, count: data.count), max: data.count)
     }
 
     /// Recurisvely runs tests, splitting the supplied buffer until max == 0
@@ -69,7 +72,7 @@ public final class ProtocolTester: Async.OutputStream {
                 let lastChunk = ByteBuffer(start: buffer.baseAddress?.advanced(by: buffer.count - lastChunkSize), count: lastChunkSize)
                 chunks.insert(lastChunk, at: 0)
             }
-
+            
             reset()
             return runChunks(chunks, currentOffset: 0).flatMap(to: Void.self) {
                 return self.runMax(buffer, max: max - 1)
@@ -141,7 +144,7 @@ public final class ProtocolTester: Async.OutputStream {
     }
 
     /// HEX map.
-    private static let hexMap = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "A", "B", "C", "D", "E", "F"]
+    private static let hexMap = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "0"]
 }
 
 /// A stored protocol tester check.
@@ -151,14 +154,6 @@ private struct ProtocolTesterCheck {
     var file: StaticString
     var line: UInt
     var checks: () throws -> ()
-}
-
-extension String {
-    /// Byte buffer representation
-    /// Note: String must be static or a reference held for the duration of this buffer's use
-    var buffer: ByteBuffer {
-        return self.data(using: .utf8)!.withByteBuffer { $0 }
-    }
 }
 
 extension String {

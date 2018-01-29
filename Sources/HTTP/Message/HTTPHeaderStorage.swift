@@ -16,7 +16,7 @@ final class HTTPHeaderStorage {
     static func `default`() -> HTTPHeaderStorage {
         let storageSize = 64
         let buffer = MutableByteBuffer(start: .allocate(capacity: storageSize), count: storageSize)
-        memcpy(buffer.baseAddress, defaultHeaders.baseAddress!, defaultHeadersSize)
+        memcpy(buffer.start, defaultHeaders.start, defaultHeadersSize)
         let view = ByteBuffer(start: buffer.baseAddress, count: defaultHeadersSize)
         return HTTPHeaderStorage(view: view, buffer: buffer, indexes: [defaultHeaderIndex])
     }
@@ -34,7 +34,7 @@ final class HTTPHeaderStorage {
     internal init(bytes: Bytes, indexes: [HTTPHeaderIndex]) {
         let storageSize = bytes.count
         let buffer = MutableByteBuffer(start: .allocate(capacity: storageSize), count: storageSize)
-        memcpy(buffer.baseAddress, bytes, storageSize)
+        memcpy(buffer.start, bytes, storageSize)
         self.buffer = buffer
         self.view = ByteBuffer(start: buffer.baseAddress, count: storageSize)
         self.indexes = indexes

@@ -69,7 +69,6 @@ public final class HTTPResponseSerializer: HTTPSerializer {
 
             // view
             let view = ByteBuffer(start: buffer.start, count: buffer.start.distance(to: pos))
-            print(String(bytes: view, encoding: .ascii))
             return view
         }
     }
