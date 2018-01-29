@@ -9,7 +9,6 @@ class HTTPSerializerTests: XCTestCase {
         // captured variables to check
         var response: HTTPResponse?
         var content: String?
-        var isClosed = false
 
         // creates a protocol tester
         let tester = ProtocolTester(
@@ -18,7 +17,6 @@ class HTTPSerializerTests: XCTestCase {
         ) {
             response = nil
             content = nil
-            isClosed = false
         }
 
         tester.assert(before: "\r\n\r\n") {
@@ -68,11 +66,10 @@ class HTTPSerializerTests: XCTestCase {
         }.catch { error in
             XCTFail("parser error: \(error)")
         }.finally {
-            isClosed = true
+            // closed
         }
 
         try tester.run().blockingAwait()
-        XCTAssertTrue(isClosed)
     }
 
     static let allTests = [

@@ -227,7 +227,7 @@ enum HTTPBodyStorage: Codable {
             return Future(error: error)
         case .binaryOutputStream(let size, let stream):
             let promise = Promise<Data>()
-            let size = size() ?? 0
+            let size = size() ?? Int.max
             var data = Data()
             data.reserveCapacity(size)
 

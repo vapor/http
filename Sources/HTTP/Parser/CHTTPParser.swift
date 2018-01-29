@@ -37,7 +37,13 @@ extension CHTTPParser {
         switch event {
         case .close:
             chttp.close()
-            downstream.close()
+            switch chttp.bodyState {
+            case .stream(let stream):
+                stream.close()
+                chttp.bodyState = .none
+            default: downstream.close()
+            }
+
         case .error(let error):
             downstream.error(error)
         case .next(let input, let ready):

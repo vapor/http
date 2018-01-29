@@ -79,7 +79,9 @@ extension HTTPMessage {
                 headers[.contentLength] = count.description
             }
         } else {
-            headers[.transferEncoding] = "chunked"
+            if headers[.connection] != "close" {
+                headers[.transferEncoding] = "chunked"
+            }
         }
     }
 }
