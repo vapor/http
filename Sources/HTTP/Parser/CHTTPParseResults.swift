@@ -76,8 +76,8 @@ extension CParseResults {
     static func remove(from parser: inout http_parser) {
         if let results = parser.data {
             let pointer = results.assumingMemoryBound(to: CParseResults.self)
-            pointer.deinitialize()
-            pointer.deallocate(capacity: 1)
+            pointer.deinitialize(count: 1)
+            pointer.deallocate()
         }
     }
 
