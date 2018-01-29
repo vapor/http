@@ -17,7 +17,7 @@ public final class HTTPClient {
     private let responseMap: (HTTPResponse) throws -> HTTPResponse
 
     /// Creates a new Client wrapped around a `TCP.Client`
-    public init<Stream>(stream: Stream, on worker: Worker, maxResponseSize: Int = 10_000_000)
+    public init<Stream>(stream: Stream, on worker: Worker)
         where Stream: ByteStream
     {
         let queueStream = QueueStream<HTTPResponse, HTTPRequest>()
