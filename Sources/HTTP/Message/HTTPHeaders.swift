@@ -102,7 +102,6 @@ extension HTTPHeaders {
         }
     }
 
-
     /// https://tools.ietf.org/html/rfc2616#section-3.6
     ///
     /// "Parameters are in  the form of attribute/value pairs."
@@ -129,6 +128,44 @@ extension HTTPHeaders {
             }
 
             return string
+        }
+    }
+}
+
+extension HTTPHeaders {
+    /// Accesses all values associated with the `Name`
+    public subscript(buffersFor name: HTTPHeaderName) -> [ByteBuffer] {
+        get {
+            return storage.indexes(for: name).flatMap { storage.buffer(for: $0) }
+        }
+        set {
+            if !isKnownUniquelyReferenced(&storage) {
+                /// this storage is being referenced from two places
+                /// copy now to ensure COW behavior
+                storage = storage.copy()
+            }
+            storage.removeValues(for: name)
+            for value in newValue {
+                storage.appendValue(value, for: name)
+            }
+        }
+    }
+    
+    /// Accesses the (first) value associated with the `Name` if any
+    ///
+    /// Warning: Do not use for headers where you can receive more than 1 value per header name
+    ///
+    /// [Learn More →](https://docs.vapor.codes/3.0/http/headers/#accessing-headers)
+    internal subscript(buffer name: HTTPHeaderName) -> ByteBuffer? {
+        get {
+            return self[buffersFor: .setCookie].first
+        }
+        set {
+            if let value = newValue {
+                self[buffersFor: name] = [value]
+            } else {
+                self[buffersFor: name] = []
+            }
         }
     }
 }

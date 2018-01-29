@@ -76,7 +76,9 @@ extension HTTPMessage {
     internal mutating func updateBodyHeaders() {
         if let count = body.count {
             if count > 0 {
-                headers[.contentLength] = count.description
+                count.bytes(reserving: 6).withUnsafeBufferPointer { buffer in
+                    headers[buffer: .contentLength] = buffer
+                }
             }
         } else {
             headers[.transferEncoding] = "chunked"
