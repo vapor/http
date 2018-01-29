@@ -26,7 +26,23 @@ class HTTPHeaderTests: XCTestCase {
         XCTAssertEqual(headers.description, "Content-Length: 0\r\n")
     }
 
+    func testHeaderDisplacement() throws {
+        var headers = HTTPHeaders()
+        XCTAssertEqual(headers.description, "Content-Length: 0\r\n")
+
+        headers[.contentType] = "text/plain"
+        XCTAssertEqual(headers.description, "Content-Length: 0\r\nContent-Type: text/plain\r\n")
+
+        headers[.contentLength] = "42"
+        XCTAssertEqual(headers.description, "Content-Type: text/plain\r\nContent-Length: 42\r\n")
+
+        XCTAssertEqual(headers[.contentLength], "42")
+        XCTAssertEqual(headers[.contentType], "text/plain")
+    }
+
+
     static let allTests = [
-        ("testHeaders", testHeaders)
+        ("testHeaders", testHeaders),
+        ("testHeaderDisplacement", testHeaderDisplacement),
     ]
 }
