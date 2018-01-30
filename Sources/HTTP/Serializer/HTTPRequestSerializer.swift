@@ -53,6 +53,14 @@ public final class HTTPRequestSerializer: HTTPSerializer {
         memcpy(address, pathBytes, pathCount)
 
         address = address.advanced(by: pathCount)
+        if let query = message.uri.query {
+            address[0] = .questionMark
+            address = address.advanced(by: 1)
+            let bytes = Bytes(query.utf8)
+            memcpy(address, bytes, bytes.count)
+            address = address.advanced(by: bytes.count)
+        }
+
         memcpy(address, http1newLineBuffer.baseAddress!, http1newLineBuffer.count)
         address = address.advanced(by: http1newLineBuffer.count)
 
