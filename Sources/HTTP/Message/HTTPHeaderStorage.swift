@@ -83,6 +83,26 @@ final class HTTPHeaderStorage {
                     let destination = buffer.start.advanced(by: index.startIndex) // deleted header's start
                     let source = buffer.start.advanced(by: index.endIndex) // deleted header's end
                     memcpy(destination, source, displacedBytes)
+
+                    /// fix all displaced indexes
+                    for j in 0..<self.indexes.count {
+                        guard let subindex = indexes[j] else {
+                            /// skip invalidated indexes
+                            continue
+                        }
+
+                        /// check if the subindex comes after the index
+                        /// we just deleted
+                        if subindex.startIndex >= index.endIndex {
+                            /// update the index's offsets
+                            indexes[j] = HTTPHeaderIndex(
+                                nameStartIndex: subindex.nameStartIndex - index.size,
+                                nameEndIndex: subindex.nameEndIndex - index.size,
+                                valueStartIndex: subindex.valueStartIndex - index.size,
+                                valueEndIndex: subindex.valueEndIndex - index.size
+                            )
+                        }
+                    }
                 } else {
                     // no headers after this, simply shorten the valid buffer
                 }
