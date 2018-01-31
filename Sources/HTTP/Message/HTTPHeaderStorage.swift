@@ -159,7 +159,7 @@ final class HTTPHeaderStorage {
 
     /// Returns all currently-valid header indexes.
     internal func validIndexes() -> [HTTPHeaderIndex] {
-        return indexes.flatMap { $0 }
+        return indexes.compactMap { $0 }
     }
 
     /// Scans the boundary of the value associated with a name
@@ -227,8 +227,8 @@ final class HTTPHeaderStorage {
     }
 
     deinit {
-        buffer.start.deinitialize()
-        buffer.start.deallocate(capacity: buffer.count)
+        buffer.start.deinitialize(count: buffer.count)
+        buffer.start.deallocate()
     }
 }
 

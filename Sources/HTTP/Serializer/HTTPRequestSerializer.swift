@@ -71,8 +71,8 @@ public final class HTTPRequestSerializer: HTTPSerializer {
     }
 
     deinit {
-        startLineBuffer.baseAddress?.deinitialize()
-        startLineBuffer.baseAddress?.deallocate(capacity: maxStartLineSize)
+        startLineBuffer.baseAddress?.deinitialize(count: maxStartLineSize)
+        startLineBuffer.baseAddress?.deallocate()
     }
 }
 

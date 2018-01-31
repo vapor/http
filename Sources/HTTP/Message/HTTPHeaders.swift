@@ -36,7 +36,11 @@ public struct HTTPHeaders: Codable {
 
     /// See `Encodable.encode(to:)`
     public func encode(to encoder: Encoder) throws {
-        try Array(self).encode(to: encoder)
+        var headers: [HTTPHeaderName: String] = [:]
+        for (name, value) in self {
+            headers[name] = value
+        }
+        try headers.encode(to: encoder)
     }
 
     /// See `Decodable.init(from:)`
@@ -53,7 +57,7 @@ public struct HTTPHeaders: Codable {
     /// Accesses all values associated with the `Name`
     public subscript(valuesFor name: HTTPHeaderName) -> [String] {
         get {
-            return storage.indexes(for: name).flatMap { storage.value(for: $0) }
+            return storage.indexes(for: name).compactMap { storage.value(for: $0) }
         }
         set {
             if !isKnownUniquelyReferenced(&storage) {

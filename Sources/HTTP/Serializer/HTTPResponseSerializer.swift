@@ -75,8 +75,8 @@ public final class HTTPResponseSerializer: HTTPSerializer {
 
     deinit {
         if let buffer = startLineBuffer {
-            buffer.baseAddress!.deinitialize()
-            buffer.baseAddress?.deallocate(capacity: buffer.count)
+            buffer.baseAddress!.deinitialize(count: buffer.count)
+            buffer.baseAddress?.deallocate()
         }
     }
 }
