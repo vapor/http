@@ -42,8 +42,8 @@ public final class HTTPSerializerContext {
     }
 
     deinit {
-        buffer.baseAddress?.deinitialize()
-        buffer.baseAddress?.deallocate(capacity: buffer.count)
+        buffer.baseAddress?.deinitialize(count: buffer.count)
+        buffer.baseAddress?.deallocate()
     }
 }
 

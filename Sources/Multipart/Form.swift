@@ -77,7 +77,7 @@ public struct MultipartForm {
         ofType type: FileType.Type,
         named name: String
     ) throws -> [FileType] {
-        return try parts.flatMap { part in
+        return try parts.compactMap { part in
             guard part.key == name else {
                 return nil
             }

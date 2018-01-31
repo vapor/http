@@ -15,7 +15,7 @@ final class FormURLKeyedDecoder<K>: KeyedDecodingContainerProtocol
         guard let dictionary = data.get(at: codingPath)?.dictionary else {
             return []
         }
-        return dictionary.keys.flatMap { K(stringValue: $0) }
+        return dictionary.keys.compactMap { K(stringValue: $0) }
     }
 
     /// Create a new FormURLKeyedDecoder
