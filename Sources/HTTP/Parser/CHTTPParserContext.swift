@@ -113,8 +113,8 @@ internal final class CHTTPParserContext {
     }
 
     deinit {
-        headersData.start.deinitialize()
-        headersData.start.deallocate(capacity: headersData.count)
+        headersData.start.deinitialize(count: headersData.count)
+        headersData.start.deallocate()
     }
 }
 
@@ -469,8 +469,8 @@ extension CHTTPParserContext {
     fileprivate static func remove(from parser: inout http_parser) {
         if let results = parser.data {
             let pointer = results.assumingMemoryBound(to: CHTTPParserContext.self)
-            pointer.deinitialize()
-            pointer.deallocate(capacity: 1)
+            pointer.deinitialize(count: 1)
+            pointer.deallocate()
         }
     }
 

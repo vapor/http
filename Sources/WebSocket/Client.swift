@@ -40,11 +40,12 @@ extension WebSocket {
         let client = try TCPClient(socket: socket)
         
         if uri.scheme == "wss" {
-            // FIXME: 
+            var settings = TLSClientSettings()
+            settings.peerDomainName = hostname
             #if os(Linux)
-                let tlsClient = try OpenSSLClient(tcp: client, using: TLSClientSettings(peerDomainName: hostname))
+            let tlsClient = try OpenSSLClient(tcp: client, using: settings)
             #else
-                let tlsClient = try AppleTLSClient(tcp: client, using: TLSClientSettings(peerDomainName: hostname))
+            let tlsClient = try AppleTLSClient(tcp: client, using: settings)
             #endif
             
             try tlsClient.connect(hostname: hostname, port: port)

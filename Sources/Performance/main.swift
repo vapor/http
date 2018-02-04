@@ -23,7 +23,7 @@ for i in 1...workerCount {
     let serverStream = tcpServer.stream(on: loop)
 
     _ = HTTPServer(
-        acceptStream: serverStream.map(to: SocketStream<TCPSocket>.self) { $0.socket.stream(on: loop) },
+        acceptStream: serverStream.map(to: TCPSocketStream.self) { $0.socket.stream(on: loop) },
         worker: loop,
         responder: EchoResponder()
     )

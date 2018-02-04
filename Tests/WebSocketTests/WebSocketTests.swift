@@ -13,7 +13,7 @@ final class WebSocketTests : XCTestCase {
         try server.start(hostname: "localhost", port: 8090, backlog: 128)
         Thread.async {
             let webserver = HTTPServer(
-                acceptStream: server.stream(on: worker).map(to: SocketStream<TCPSocket>.self) { $0.socket.stream(on: worker) },
+                acceptStream: server.stream(on: worker).map(to: TCPSocketStream.self) { $0.socket.stream(on: worker) },
                 worker: worker,
                 responder: WebSocketResponder()
             )
