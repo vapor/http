@@ -90,7 +90,7 @@ internal final class CHTTPParserContext {
         self.version = nil
         self.headers = nil
 
-        self.headersData = .init(start: .allocate(capacity: 64), count: 64)
+        self.headersData = .allocate(capacity: 64)
         self.headersDataSize = 0
         self.headersIndexes = []
 
@@ -113,8 +113,7 @@ internal final class CHTTPParserContext {
     }
 
     deinit {
-        headersData.start.deinitialize(count: headersData.count)
-        headersData.start.deallocate()
+        headersData.deallocate()
     }
 }
 
@@ -154,7 +153,7 @@ extension CHTTPParserContext {
     /// ParseResults object attached to the C praser.
     internal func execute(from buffer: ByteBuffer) throws {
         // call the CHTTP parser
-        let parsedCount = http_parser_execute(&parser, &settings, buffer.cPointer, buffer.count)
+        let parsedCount = buffer.withCPointer { http_parser_execute(&parser, &settings, $0, $1) }
 
         // if the parsed count does not equal the bytes passed
         // to the parser, it is signaling an error
@@ -197,39 +196,46 @@ extension CHTTPParserContext {
             /// (there will be no `headerStart` pointer, and buffer start contains non-header data)
             return
         }
+        
+        /// This vaguely ridiculous wrapper block ensures we don't access memory
+        /// improperly - even though that wasn't really a problem anyway. Silly
+        /// (yet helpful) memory type binding rules.
+        buffer.withCPointer { bufferCPointer, bufferCount in
+            /// start is known header start or buffer start
+            let start: UnsafePointer<Int8>
+            if let headerStart = self.headerStart {
+                start = headerStart
+                self.headerStart = nil
+            } else {
+                start = bufferCPointer
+            }
 
-        /// start is known header start or buffer start
-        let start: UnsafePointer<Int8>
-        if let headerStart = self.headerStart {
-            start = headerStart
-            self.headerStart = nil
-        } else {
-            start = buffer.cPointer
+            /// end is known body start or buffer end
+            let end: UnsafePointer<Int8>
+            if let bodyStart = self.bodyStart {
+                // end of headers is the body start
+                end = bodyStart
+            } else {
+                // body hasn't started yet
+                // get the end of this buffer as *char
+                end = bufferCPointer.advanced(by: bufferCount)
+            }
+
+            /// current distance from start to end
+            let distance = start.distance(to: end)
+
+            let overflow = (headersDataSize + distance) - headersData.count
+            if overflow > 0 {
+                headersData = headersData.moveToLargerCopy(increasingBy: overflow)
+            }
+
+            // append the length of the headers in this buffer to the header start offset
+            start.withMemoryRebound(to: Byte.self, capacity: distance) {
+                headersData.start.advanced(by: headersDataSize).initialize(from: $0, count: distance)
+                headersDataSize += distance
+            }
         }
-
-        /// end is known body start or buffer end
-        let end: UnsafePointer<Int8>
-        if let bodyStart = self.bodyStart {
-            // end of headers is the body start
-            end = bodyStart
-        } else {
-            // body hasn't started yet
-            // get the end of this buffer as *char
-            end = buffer.cPointer.advanced(by: buffer.count)
-        }
-
-        /// current distance from start to end
-        let distance = start.distance(to: end)
-
-        let overflow = (headersDataSize + distance) - headersData.count
-        if overflow > 0 {
-            headersData = headersData.increaseBufferSize(by: overflow)
-        }
-
-        // append the length of the headers in this buffer to the header start offset
-        memcpy(headersData.start.advanced(by: headersDataSize), start, distance)
-        headersDataSize += distance
-
+        
         /// if this buffer copy is happening after headers complete indication,
         /// set the headers struct for later retreival
         if headersComplete {
@@ -460,36 +466,31 @@ extension CHTTPParserContext {
     /// Sets C pointer for this context on the http_parser's data.
     /// Use `CHTTPParserContext.get(from:)` to fetch back.
     fileprivate func set(on parser: inout http_parser) {
-        let results = UnsafeMutablePointer<CHTTPParserContext>.allocate(capacity: 1)
-        results.initialize(to: self)
-        parser.data = UnsafeMutableRawPointer(results)
+        parser.data = Unmanaged<CHTTPParserContext>.passUnretained(self).toOpaque()
     }
 
     /// Removes C pointer from http_parser data
     fileprivate static func remove(from parser: inout http_parser) {
-        if let results = parser.data {
-            let pointer = results.assumingMemoryBound(to: CHTTPParserContext.self)
-            pointer.deinitialize(count: 1)
-            pointer.deallocate()
-        }
+        parser.data = nil // we didn't take a retain on self, so nothing to deallocate
     }
 
     /// Fetches the parse results object from the C http_parser data
     fileprivate static func get(from parser: UnsafePointer<http_parser>?) -> CHTTPParserContext? {
-        return parser?
-            .pointee
-            .data
-            .assumingMemoryBound(to: CHTTPParserContext.self)
-            .pointee
+        return parser.flatMap {
+            Unmanaged<CHTTPParserContext>.fromOpaque($0.pointee.data).takeUnretainedValue()
+        }
     }
 }
 
 // MARK: Utilities
 
 extension UnsafeBufferPointer where Element == Byte /* ByteBuffer */ {
-    /// Creates a C pointer from a Byte Buffer
-    fileprivate var cPointer: UnsafePointer<CChar> {
-        return baseAddress.unsafelyUnwrapped.withMemoryRebound(to: CChar.self, capacity: count) { $0 }
+    /// Creates a C pointer from a Byte Buffer and runs the closure on it.
+    /// The closure is passed the CChar pointer and the buffer size.
+    fileprivate func withCPointer<Result>(work: (_ pointer: UnsafePointer<CChar>, _ count: Int) throws -> Result) rethrows -> Result {
+        return try baseAddress.unsafelyUnwrapped.withMemoryRebound(to: CChar.self, capacity: count) {
+            return try work($0, count)
+        }
     }
 }
 

@@ -202,13 +202,13 @@ enum HTTPBodyStorage: Codable {
             if let closureError = closureError { throw closureError }
             return result!
         case .string(let string):
-            let buffer = string.withCString { pointer in
-                return ByteBuffer(
-                    start: pointer.withMemoryRebound(to: UInt8.self, capacity: string.utf8.count) { $0 },
-                    count: string.utf8.count
-                )
+            let len = string.utf8.count // avoid simultaneous access to string from multiple contexts, also efficiency
+            
+            return try string.withCString { pointer in
+                try pointer.withMemoryRebound(to: UInt8.self, capacity: len) {
+                    try run(ByteBuffer(start: $0, count: len))
+                }
             }
-            return try run(buffer)
         case .buffer(let buffer):
             return try run(buffer)
         case .none:
