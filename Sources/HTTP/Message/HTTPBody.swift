@@ -188,9 +188,19 @@ enum HTTPBodyStorage: Codable {
             let data = Data(data)
             return try data.withByteBuffer(run)
         case .staticString(let staticString):
-            return staticString.withUTF8Buffer { buffer in
-                return try! run(buffer) // FIXME: throwing
+            // This is a very ugly workaround, but `StaticString.withUTF8Buffer` does not
+            // allow its closure to throw.
+            var closureError: Error? = nil
+            let result: Return? = staticString.withUTF8Buffer { buffer -> Return? in
+                do {
+                    return try run(buffer) // FIXME: throwing
+                } catch {
+                    closureError = error
+                    return nil
+                }
             }
+            if let closureError = closureError { throw closureError }
+            return result!
         case .string(let string):
             let buffer = string.withCString { pointer in
                 return ByteBuffer(
