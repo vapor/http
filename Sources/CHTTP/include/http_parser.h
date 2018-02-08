@@ -131,6 +131,7 @@ typedef int (*http_cb) (http_parser*);
   XX(415, UNSUPPORTED_MEDIA_TYPE,          Unsupported Media Type)          \
   XX(416, RANGE_NOT_SATISFIABLE,           Range Not Satisfiable)           \
   XX(417, EXPECTATION_FAILED,              Expectation Failed)              \
+  XX(418, IM_A_TEAPOT,                     I'\''m a teapot)                 \
   XX(421, MISDIRECTED_REQUEST,             Misdirected Request)             \
   XX(422, UNPROCESSABLE_ENTITY,            Unprocessable Entity)            \
   XX(423, LOCKED,                          Locked)                          \
