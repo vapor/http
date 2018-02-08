@@ -174,9 +174,7 @@ public final class MultipartParser {
             // skip '--'
             position = position &+ 2
             
-            let matches = data.withByteBuffer { buffer in
-                return memcmp(buffer.baseAddress!.advanced(by: position), boundary, boundary.count) == 0
-            }
+            let matches = data.subdata(in: position..<(position + boundary.count)).elementsEqual(boundary)
             
             // check boundary
             guard matches else {

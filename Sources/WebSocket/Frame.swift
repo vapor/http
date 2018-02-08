@@ -141,22 +141,28 @@ final class Frame {
             lengthByte = 126
             payloadLengthSize = 2
             
-            var length = UInt16(payload.count).littleEndian
+            let length = UInt16(payload.count).littleEndian
             
             number = [UInt8](repeating: 0, count: 2)
-            
-            memcpy(&number, &length, 2)
+            number[0] = UInt8(length & 0xff)
+            number[1] = UInt8(length >> 8)
             
         // Serialize as UInt64
         } else {
             lengthByte = 127
             payloadLengthSize = 8
             
-            var length = UInt64(payload.count).littleEndian
+            let length = UInt64(payload.count).littleEndian
             
             number = [UInt8](repeating: 0, count: 8)
-            
-            memcpy(&number, &length, 8)
+            number[0] = UInt8((length >>  0) & 0x0ff)
+            number[1] = UInt8((length >>  8) & 0x0ff)
+            number[2] = UInt8((length >> 16) & 0x0ff)
+            number[3] = UInt8((length >> 24) & 0x0ff)
+            number[4] = UInt8((length >> 32) & 0x0ff)
+            number[5] = UInt8((length >> 40) & 0x0ff)
+            number[6] = UInt8((length >> 48) & 0x0ff)
+            number[7] = UInt8((length >> 56) & 0x0ff)
         }
         
         // create a buffer for the entire message
@@ -165,7 +171,7 @@ final class Frame {
         
         // sets the length bytes
         pointer[1] = lengthByte
-        memcpy(pointer.advanced(by: 2), number, number.count)
+        _ = MutableByteBuffer(start: pointer.advanced(by: 2), count: number.count).initialize(from: number)
         
         // set final bit if needed and rawValue
         pointer.pointee = (isFinal ? 0b10000000 : 0) | op.rawValue
@@ -186,12 +192,13 @@ final class Frame {
                 pointer[1] = pointer[1] | 0b10000000
             }
             
-            memcpy(pointer.advanced(by: 2 &+ payloadLengthSize), mask, 4)
+            _ = MutableByteBuffer(start: pointer.advanced(by: 2 &+ payloadLengthSize), count: 4).initialize(from: mask)
         }
         
         // You can't write empty buffers
         if let baseAddress = payload.baseAddress {
-            memcpy(pointer.advanced(by: headerUntil), baseAddress, payload.count)
+            _ = MutableByteBuffer(start: pointer.advanced(by: headerUntil), count: payload.count)
+                .initialize(from: ByteBuffer(start: baseAddress, count: payload.count))
         }
         
         self.maskBytes = mask

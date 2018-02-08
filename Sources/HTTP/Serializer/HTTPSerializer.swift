@@ -26,14 +26,13 @@ public final class HTTPSerializerContext {
     init() {
         let bufferSize: Int = 2048
         bufferOffset = 0
-        let pointer = MutableBytesPointer.allocate(capacity: bufferSize)
-        self.buffer = MutableByteBuffer(start: pointer, count: bufferSize)
+        self.buffer = MutableByteBuffer.allocate(capacity: bufferSize)
         self.state = .startLine
     }
 
     func append(_ data: ByteBuffer) -> ByteBuffer? {
         let writeSize = min(data.count, buffer.count - bufferOffset)
-        memcpy(buffer.baseAddress!.advanced(by: bufferOffset), data.baseAddress!, writeSize)
+        buffer.baseAddress!.advanced(by: bufferOffset).initialize(from: data.baseAddress!, count: writeSize)
         bufferOffset += writeSize
         guard writeSize >= data.count else {
             return ByteBuffer(start: data.baseAddress!.advanced(by: writeSize), count: data.count - writeSize)
@@ -42,8 +41,10 @@ public final class HTTPSerializerContext {
     }
 
     deinit {
-        buffer.baseAddress?.deinitialize(count: buffer.count)
-        buffer.baseAddress?.deallocate()
+        if case .continueBuffer(let continueBuffer, _) = state {
+            continueBuffer.deallocate()
+        }
+        buffer.deallocate()
     }
 }
 
@@ -75,16 +76,15 @@ extension HTTPSerializer {
         switch context.state {
         case .startLine:
             if let remaining = context.append(serializeStartLine(for: message)) {
-                context.state = .continueBuffer(remaining, nextState: .headers)
+                context.state = .continueBuffer(remaining.allocateAndInitializeCopy(), nextState: .headers)
                 write(message, downstream, nextMessage)
             } else {
                 context.state = .headers
                 try serialize(message, downstream, nextMessage)
             }
         case .headers:
-            let buffer = message.headers.storage.withByteBuffer { $0 }
-            if let remaining = context.append(buffer) {
-                context.state = .continueBuffer(remaining, nextState: .body)
+            if let remaining = message.headers.storage.withByteBuffer({ context.append($0) }) {
+                context.state = .continueBuffer(remaining.allocateAndInitializeCopy(), nextState: .body)
                 write(message, downstream, nextMessage)
             } else {
                 context.state = .body
@@ -92,51 +92,55 @@ extension HTTPSerializer {
             }
         case .body:
             let byteBuffer: ByteBuffer?
-
-            switch message.body.storage {
-            case .data(let data):
-                byteBuffer = ByteBuffer(start: data.withUnsafeBytes { $0 }, count: data.count)
-            case .dispatchData(let data):
-                byteBuffer = ByteBuffer(start: data.withUnsafeBytes { $0 }, count: data.count)
-            case .staticString(let staticString):
-                byteBuffer = ByteBuffer(start: staticString.utf8Start, count: staticString.utf8CodeUnitCount)
-            case .string(let string):
-                let bytePointer = string.withCString { pointer in
-                    return pointer.withMemoryRebound(to: UInt8.self, capacity: string.utf8.count) { $0 }
-                }
-                byteBuffer = ByteBuffer(start: bytePointer, count: string.utf8.count)
-            case .buffer(let buffer):
-                byteBuffer = buffer
-            case .none:
-                byteBuffer = nil
-            case .chunkedOutputStream(_), .binaryOutputStream(_):
-                byteBuffer = nil
-            }
-
-            if let buffer = byteBuffer {
+            
+            func sendDownstream(buffer: ByteBuffer) {
                 if let remaining = context.append(buffer) {
-                    context.state = .continueBuffer(remaining, nextState: .done)
+                    // Unfortunately, because we can't allow the buffer's pointer
+                    // to escape the current context if we don't maange it, we have
+                    // no choice but to copy here. 99% of the time, it will appear
+                    // to work without copying, but then it'll bug out horribly when
+                    // you least expect it.
+                    context.state = .continueBuffer(remaining.allocateAndInitializeCopy(), nextState: .done)
                     write(message, downstream, nextMessage)
                 } else {
                     context.state = .done
                     write(message, downstream, nextMessage)
                 }
-            } else {
-                switch message.body.storage {
-                case .none:
-                    context.state = .done
-                    write(message, downstream, nextMessage)
-                default: fatalError()
-                }
+            }
+            
+            switch message.body.storage {
+            case .data(let data):
+                let count = data.count
+                data.withUnsafeBytes { sendDownstream(buffer: ByteBuffer(start: $0, count: count)) }
+            case .dispatchData(let data):
+                let count = data.count
+                data.withUnsafeBytes { sendDownstream(buffer: ByteBuffer(start: $0, count: count)) }
+            case .staticString(let staticString):
+                staticString.withUTF8Buffer { $0.withMemoryRebound(to: Byte.self) {
+                    sendDownstream(buffer: ByteBuffer(start: $0.baseAddress!, count: $0.count))
+                }}
+            case .string(let string):
+                let count = string.utf8.count
+                string.withCString { $0.withMemoryRebound(to: Byte.self, capacity: count) {
+                    sendDownstream(buffer: ByteBuffer(start: $0, count: count))
+                }}
+            case .buffer(let buffer):
+                sendDownstream(buffer: buffer)
+            case .none:
+                context.state = .done
+                write(message, downstream, nextMessage)
+            case .chunkedOutputStream(_), .binaryOutputStream(_):
+                fatalError()
             }
         case .continueBuffer(let remainingStartLine, let then):
             if let remaining = context.append(remainingStartLine) {
-                context.state = .continueBuffer(remaining, nextState: then)
+                context.state = .continueBuffer(remaining.allocateAndInitializeCopy(), nextState: then)
                 write(message, downstream, nextMessage)
             } else {
                 context.state = then
                 try serialize(message, downstream, nextMessage)
             }
+            remainingStartLine.deallocate()
         case .done:
             context.state = .startLine
             nextMessage.complete()
