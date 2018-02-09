@@ -131,33 +131,14 @@ extension HTTPSerializer {
             case .none:
                 context.state = .done
                 write(message, downstream, nextMessage)
-            case .chunkedOutputStream(_), .binaryOutputStream(_):
-                byteBuffer = nil
-            }
-
-            if let buffer = byteBuffer {
-                if let remaining = context.append(buffer) {
-                    context.state = .continueBuffer(remaining, nextState: .done)
-                    write(message, downstream, nextMessage)
-                } else {
-                    context.state = .done
-                    write(message, downstream, nextMessage)
-                }
-            } else {
-                switch message.body.storage {
-                case .none:
-                    context.state = .done
-                    write(message, downstream, nextMessage)
-                case .chunkedOutputStream(let stream):
-                    let encodedStream = stream(HTTPChunkEncodingStream())
-                    context.state = .streaming(AnyOutputStream(encodedStream))
-                    write(message, downstream, nextMessage)
-                case .binaryOutputStream(_, let stream):
-                    let connectingStream = stream.stream(to: ConnectingStream<ByteBuffer>())
-                    context.state = .streaming(AnyOutputStream(connectingStream))
-                    write(message, downstream, nextMessage)
-                default: fatalError()
-                }
+            case .chunkedOutputStream(let stream):
+                let encodedStream = stream(HTTPChunkEncodingStream())
+                context.state = .streaming(AnyOutputStream(encodedStream))
+                write(message, downstream, nextMessage)
+            case .binaryOutputStream(_, let stream):
+                let connectingStream = stream.stream(to: ConnectingStream<ByteBuffer>())
+                context.state = .streaming(AnyOutputStream(connectingStream))
+                write(message, downstream, nextMessage)
             }
         case .continueBuffer(let remainingStartLine, let then):
             if let remaining = context.append(remainingStartLine) {
