@@ -368,6 +368,8 @@ public struct HTTPHeaderName: Codable, Hashable, ExpressibleByStringLiteral, Cus
     public static let accessControlAllowMethods = HTTPHeaderName("Access-Control-Allow-Methods")
     /// Access-Control-Allow-Origin header.
     public static let accessControlAllowOrigin = HTTPHeaderName("Access-Control-Allow-Origin")
+    /// Access-Control-Expose-Headers header.
+    public static let accessControlExpose = HTTPHeaderName("Access-Control-Expose-Headers")
     /// Access-Control-Max-Age header.
     public static let accessControlMaxAge = HTTPHeaderName("Access-Control-Max-Age")
     /// Access-Control-Request-Method header.
@@ -426,5 +428,7 @@ public struct HTTPHeaderName: Codable, Hashable, ExpressibleByStringLiteral, Cus
     public static let xDeviceAcceptLanguage = HTTPHeaderName("X-Device-Accept-Language")
     /// X-Device-User-Agent header.
     public static let xDeviceUserAgent = HTTPHeaderName("X-Device-User-Agent")
+    /// X-Requested-With header.
+    public static let xRequestedWith = HTTPHeaderName("X-Requested-With")
 }
 

@@ -21,6 +21,8 @@ public final class HTTPResponseSerializer: HTTPSerializer {
     public var context: HTTPSerializerContext
 
     /// Start line buffer for non-precoded start lines.
+    /// Can't make it lazy because deinit{} would cause it always to be allocated
+    /// even when not needed.
     private var startLineBuffer: MutableByteBuffer?
     
     /// Create a new HTTPResponseSerializer
@@ -31,58 +33,57 @@ public final class HTTPResponseSerializer: HTTPSerializer {
     /// See `HTTPSerializer.serializeStartLine(for:)`
     public func serializeStartLine(for message: HTTPResponse) -> ByteBuffer {
         switch message.status {
-        case .ok: return okStartLine.withUTF8Buffer { $0 }
-        case .notFound: return notFoundStartLine.withUTF8Buffer { $0 }
-        case .internalServerError: return internalServerErrorStartLine.withUTF8Buffer { $0 }
+        case .ok: return okStartLineBuffer
+        case .notFound: return notFoundStartLineBuffer
+        case .internalServerError: return internalServerErrorStartLineBuffer
         default:
-            let buffer: MutableByteBuffer
-            if let existing = self.startLineBuffer {
-                buffer = existing
-            } else {
-                let new = MutableByteBuffer(start: .allocate(capacity: startLineBufferSize), count: startLineBufferSize)
-                buffer = new
+            if startLineBuffer == nil {
+                startLineBuffer = MutableByteBuffer.allocate(capacity: startLineBufferSize)
             }
-
+            
             // `HTTP/1.1 `
-            var pos = buffer.start.advanced(by: 0)
-            memcpy(pos, version.withUTF8Buffer { $0 }.start, version.utf8CodeUnitCount)
+            var pos = startLineBuffer!.start
+            pos.initialize(from: versionBuffer.baseAddress!, count: versionBuffer.count)
+            pos = pos.advanced(by: versionBuffer.count)
 
             // `200`
-            pos = pos.advanced(by: version.utf8CodeUnitCount)
             let codeBytes = message.status.code.bytes()
-            memcpy(pos, codeBytes, codeBytes.count)
+            UnsafeMutableBufferPointer(start: pos, count: codeBytes.count).initializeAssertingNoRemainder(from: codeBytes)
+            pos = pos.advanced(by: codeBytes.count)
 
             // ` `
-            pos = pos.advanced(by: codeBytes.count)
-            pos[0] = .space
+            pos.pointee = .space
+            pos = pos.advanced(by: 1)
 
             // `OK`
-            pos = pos.advanced(by: 1)
             let messageBytes = message.status.messageBytes
-            memcpy(pos, messageBytes, messageBytes.count)
+            UnsafeMutableBufferPointer(start: pos, count: messageBytes.count).initializeAssertingNoRemainder(from: messageBytes)
+            pos = pos.advanced(by: messageBytes.count)
 
             // `\r\n`
-            pos = pos.advanced(by: messageBytes.count)
             pos[0] = .carriageReturn
             pos[1] = .newLine
             pos = pos.advanced(by: 2)
 
             // view
-            let view = ByteBuffer(start: buffer.start, count: buffer.start.distance(to: pos))
+            let view = ByteBuffer(start: startLineBuffer!.start, count: startLineBuffer!.start.distance(to: pos))
             return view
         }
     }
 
     deinit {
-        if let buffer = startLineBuffer {
-            buffer.baseAddress!.deinitialize(count: buffer.count)
-            buffer.baseAddress?.deallocate()
-        }
+        startLineBuffer?.deallocate()
     }
 }
 
 private let version: StaticString = "HTTP/1.1 "
+private let versionBuffer: ByteBuffer = version.withUTF8Buffer { $0.allocateAndInitializeCopy() }
 
 private let okStartLine: StaticString = "HTTP/1.1 200 OK\r\n"
+private let okStartLineBuffer: ByteBuffer = okStartLine.withUTF8Buffer { $0.allocateAndInitializeCopy() }
+
 private let notFoundStartLine: StaticString = "HTTP/1.1 404 Not Found\r\n"
+private let notFoundStartLineBuffer: ByteBuffer = notFoundStartLine.withUTF8Buffer { $0.allocateAndInitializeCopy() }
+
 private let internalServerErrorStartLine: StaticString = "HTTP/1.1 500 Internal Server Error\r\n"
+private let internalServerErrorStartLineBuffer: ByteBuffer = internalServerErrorStartLine.withUTF8Buffer { $0.allocateAndInitializeCopy() }
