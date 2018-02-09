@@ -11,16 +11,17 @@ final class WebSocketTests : XCTestCase {
         let worker = try DefaultEventLoop(label: "codes.vapor.test.worker")
         let serverSocket = try TCPSocket(isNonBlocking: true)
         let server = try TCPServer(socket: serverSocket)
-
-        let webserver = HTTPServer(
-            acceptStream: server.stream(on: worker).map(to: SocketStream<TCPSocket>.self) { $0.socket.stream(on: worker) },
-            worker: worker,
-            responder: WebSocketResponder()
-        )
-        webserver.onError = { XCTFail("\($0)") }
         
         try server.start(hostname: "localhost", port: 8090, backlog: 128)
-        Thread.async { worker.runLoop() }
+        Thread.async {
+            let webserver = HTTPServer(
+                acceptStream: server.stream(on: worker).map(to: TCPSocketStream.self) { $0.socket.stream(on: worker) },
+                worker: worker,
+                responder: WebSocketResponder()
+            )
+            webserver.onError = { XCTFail("\($0)") }
+            worker.runLoop()
+        }
 
         let clientSocket = try TCPSocket(isNonBlocking: false)
         let client = try TCPClient(socket: clientSocket)
@@ -39,11 +40,11 @@ final class WebSocketTests : XCTestCase {
         let read = try client.socket.read(max: 512)
         let string = String(data: read, encoding: .utf8)
         XCTAssertEqual(string, """
-        HTTP/1.1 101 \r
+        HTTP/1.1 101 Upgrade\r
+        Content-Length: 0\r
         Upgrade: websocket\r
         Connection: Upgrade\r
         Sec-WebSocket-Accept: U5ZWHrbsu7snP3DY1Q5P3e8AkOk=\r
-        Content-Length: 0\r
         \r
 
         """)

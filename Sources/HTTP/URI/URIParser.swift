@@ -81,7 +81,8 @@ extension URI {
         // parse url
         self.buffer.withUnsafeBufferPointer { buffer in
             buffer.baseAddress!.withMemoryRebound(to: Int8.self, capacity: buffer.count) { pointer in
-                _ = http_parser_parse_url(pointer, buffer.count, 0, &url)
+                let status = http_parser_parse_url(pointer, buffer.count, 0, &url)
+                assert(status == 0, "URL parser error: \(status)")
             }
         }
         

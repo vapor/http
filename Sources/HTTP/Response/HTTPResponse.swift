@@ -38,7 +38,9 @@ public struct HTTPResponse: HTTPMessage {
     /// See Message.body
     ///
     /// [Learn More →](https://docs.vapor.codes/3.0/http/body/)
-    public var body: HTTPBody
+    public var body: HTTPBody {
+        didSet { updateBodyHeaders() }
+    }
 
     /// See Message.onUpgrade
     public var onUpgrade: HTTPOnUpgrade?
@@ -54,6 +56,7 @@ public struct HTTPResponse: HTTPMessage {
         self.status = status
         self.headers = headers
         self.body = body
+        updateBodyHeaders()
     }
 }
 

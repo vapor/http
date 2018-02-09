@@ -4,356 +4,145 @@ import CHTTP
 import Dispatch
 import Foundation
 
-/// Possible header states
-enum HeaderState {
-    case none
-    case value(HTTPHeaders.Index)
-    case key(startIndex: Int, endIndex: Int)
-}
-
-
 /// Internal CHTTP parser protocol
-internal protocol CHTTPParser: class, HTTPParser where Partial == CHTTPParserState {
-    static var parserType: http_parser_type { get }
-    var parser: http_parser { get set }
-    var settings: http_parser_settings { get set }
-    var maxHeaderSize: Int? { get set }
-    
-    var httpState: CHTTPParserState { get set }
-    func makeMessage(from results: CParseResults) throws -> Output
+internal protocol CHTTPParser: HTTPParser where Input == ByteBuffer {
+    /// Current downstream.
+    var downstream: AnyInputStream<Output>? { get set }
+
+    /// Holds the CHTTP parser's internal state.
+    var chttp: CHTTPParserContext { get set }
+
+    /// Converts the CHTTP parser results and body to HTTP message.
+    func makeMessage(using body: HTTPBody) throws -> Output
 }
 
-enum CHTTPParserState {
-    case ready
-    case parsing
-}
-
-/// MARK: HTTPParser conformance
+/// MARK: CHTTPParser OutputStream
 
 extension CHTTPParser {
-    public func parseBytes(from buffer: ByteBuffer, partial: CHTTPParserState?) throws -> Future<ByteParserResult<Self>> {
-        return Future(try _parseBytes(from: buffer, partial: partial))
-    }
-
-    private func _parseBytes(from buffer: ByteBuffer, partial: CHTTPParserState?) throws -> ByteParserResult<Self> {
-        guard let results = getResults() else {
-            throw HTTPError(identifier: "no-parser-results", reason: "An internal HTTP Parser state became invalid")
-        }
-        
-        /// parse the message using the C HTTP parser.
-        try executeParser(from: buffer)
-        
-        guard results.isComplete else {
-            return .uncompleted(httpState)
-        }
-        
-        // the results have completed, so we are ready
-        // for a new request to come in
-        httpState = .ready
-        CParseResults.remove(from: &parser)
-        
-        let message = try makeMessage(from: results)
-        
-        return .completed(consuming: buffer.count, result: message)
-    }
-
-    /// Resets the parser
-    public func reset() {
-        reset(Self.parserType)
+    /// See `OutputStream.output(to:)`
+    public func output<S>(to inputStream: S) where S: Async.InputStream, Self.Output == S.Input {
+        downstream = .init(inputStream)
     }
 }
 
-/// MARK: CHTTP integration
+/// MARK: CHTTPParser InputStream
 
 extension CHTTPParser {
-    /// Parses a generic CHTTP message, filling the
-    /// ParseResults object attached to the C praser.
-    internal func executeParser(from buffer: ByteBuffer) throws {
-        // call the CHTTP parser
-        let parsedCount = http_parser_execute(&parser, &settings, buffer.cPointer, buffer.count)
-
-        // if the parsed count does not equal the bytes passed
-        // to the parser, it is signaling an error
-        // - 1 to allow room for filtering a possibly final \r\n which I observed the parser does
-        guard parsedCount >= buffer.count - 2, parsedCount <= buffer.count else {
-            throw HTTPError.invalidMessage()
+    /// See `InputStream.input(_:)`
+    public func input(_ event: InputEvent<ByteBuffer>) {
+        DEBUG("CHTTPParser.input(\(event))")
+        guard let downstream = self.downstream else {
+            ERROR("No downstream, ignoring input event: \(event)")
+            return
         }
-    }
 
-    internal func reset(_ type: http_parser_type) {
-        http_parser_init(&parser, type)
-        initialize(&settings)
-    }
-}
+        switch event {
+        case .close:
+            chttp.close()
+            switch chttp.bodyState {
+            case .stream(let stream):
+                stream.close()
+                chttp.bodyState = .none
+            default: downstream.close()
+            }
 
-extension CParseResults {
-    func parseContentLength(index: HTTPHeaders.Index) {
-        if self.contentLength == nil {
-            let namePointer = UnsafePointer(self.headersData).advanced(by: index.nameStartIndex)
-            let nameLength = index.nameEndIndex - index.nameStartIndex
-            let nameBuffer = ByteBuffer(start: namePointer, count: nameLength)
-            
-            if lowercasedContentLength.caseInsensitiveEquals(to: nameBuffer) {
-                let pointer = UnsafePointer(self.headersData).advanced(by: index.valueStartIndex)
-                let length = index.valueEndIndex - index.valueStartIndex
-                
-                pointer.withMemoryRebound(to: Int8.self, capacity: length) { pointer in
-                    self.contentLength = numericCast(strtol(pointer, nil, 10))
-                }
+        case .error(let error):
+            downstream.error(error)
+        case .next(let input, let ready):
+            do {
+                try handleNext(input, ready, downstream)
+            } catch {
+                downstream.error(error)
             }
         }
     }
-}
 
-extension CHTTPParser {
-    func getResults() -> CParseResults? {
-        let results: CParseResults
-        
-        switch httpState {
-        case .ready:
-            // create a new results object and set
-            // a reference to it on the parser
-            let newResults = CParseResults.set(on: &parser, swiftParser: self)
-            results = newResults
-            httpState = .parsing
+    /// See `InputEvent.next`
+    private func handleNext(_ buffer: ByteBuffer, _ ready: Promise<Void>, _ downstream: AnyInputStream<Output>) throws {
+        DEBUG("CHTTPParser.handle() [state: \(chttp.state)]")
+        switch chttp.state {
         case .parsing:
-            // get the current parse results object
-            guard let existingResults = CParseResults.get(from: &parser) else {
-                return nil
-            }
-            results = existingResults
-        }
-        
-        return results
-    }
-    
-    /// Initializes the http parser settings with appropriate callbacks.
-    func initialize(_ settings: inout http_parser_settings) {
-        // called when chunks of the url have been read
-        settings.on_url = { parser, chunkPointer, length in
-            guard
-                let results = CParseResults.get(from: parser),
-                let chunkPointer = chunkPointer
-            else {
-                // signal an error
-                return 1
-            }
-            
-            guard results.addSize(length) else {
-                return 1
-            }
+            /// Parse the message using the CHTTP parser.
+            try chttp.execute(from: buffer)
 
-            // append the url bytes to the results
-            chunkPointer.withMemoryRebound(to: UInt8.self, capacity: length) { chunkPointer in
-                results.url.append(contentsOf: ByteBuffer(start: chunkPointer, count: length))
-            }
-            
-            return 0
-        }
+            /// Copies raw header data from the buffer
+            chttp.copyHeaders(from: buffer)
 
-        // called when chunks of a header field have been read
-        settings.on_header_field = { parser, chunkPointer, length in
-            guard
-                let results = CParseResults.get(from: parser),
-                let chunkPointer = chunkPointer
-            else {
-                // signal an error
-                return 1
-            }
-            
-            guard results.addSize(length + 4) else { // + ": \r\n"
-                return 1
-            }
-            
-            // check current header parsing state
-            switch results.headerState {
-            case .none:
-                // nothing is being parsed, start a new key
-                results.headerState = .key(startIndex: results.headersData.count, endIndex: results.headersData.count + length)
-            case .value(let index):
-                // there was previously a value being parsed.
-                // it is now finished.
-                
-                results.headersIndexes.append(index)
-                
-                results.headersData.append(.carriageReturn)
-                results.headersData.append(.newLine)
-                
-                results.parseContentLength(index: index)
-                
-                // start a new key
-                results.headerState = .key(startIndex: results.headersData.count, endIndex: results.headersData.count + length)
-            case .key(let start, let end):
-                // there is a key currently being parsed.
-                results.headerState = .key(startIndex: start, endIndex: end + length)
-            }
-            
-            chunkPointer.withMemoryRebound(to: UInt8.self, capacity: length) { chunkPointer in
-                results.headersData.append(contentsOf: ByteBuffer(start: chunkPointer, count: length))
-            }
+            /// Check if we have received all of the messages headers
+            if chttp.headersComplete {
+                /// Either streaming or static will be decided
+                let body: HTTPBody
 
-            return 0
-        }
-
-        // called when chunks of a header value have been read
-        settings.on_header_value = { parser, chunkPointer, length in
-            guard
-                let results = CParseResults.get(from: parser),
-                let chunkPointer = chunkPointer
-            else {
-                // signal an error
-                return 1
-            }
-            
-            guard results.addSize(length + 2) else { // + "\r\n"
-                return 1
-            }
-
-            // check the current header parsing state
-            switch results.headerState {
-            case .none:
-                // nothing has been parsed, so this
-                // value is useless.
-                // (this should never be reached)
-                results.headerState = .none
-            case .value(var index):
-                // there was previously a value being parsed.
-                // add the new bytes to it.
-                index.nameEndIndex += length
-                results.headerState = .value(index)
-            case .key(let key):
-                // there was previously a key being parsed.
-                // it is now finished.
-                results.headersData.append(contentsOf: headerSeparator)
-                
-                // Set a dummy hashvalue
-                let index = HTTPHeaders.Index(
-                    nameStartIndex: key.startIndex,
-                    nameEndIndex: key.endIndex,
-                    valueStartIndex: results.headersData.count,
-                    valueEndIndex: results.headersData.count + length,
-                    invalidated: false
-                )
-                
-                results.headerState = .value(index)
-            }
-            
-            chunkPointer.withMemoryRebound(to: UInt8.self, capacity: length) { chunkPointer in
-                results.headersData.append(contentsOf: ByteBuffer(start: chunkPointer, count: length))
-            }
-
-            return 0
-        }
-
-        // called when header parsing has completed
-        settings.on_headers_complete = { parser in
-            guard
-                let parser = parser,
-                let results = CParseResults.get(from: parser)
-            else {
-                // signal an error
-                return 1
-            }
-
-            // check the current header parsing state
-            switch results.headerState {
-            case .value(let index):
-                // there was previously a value being parsed.
-                // it should be added to the headers dict.
-                
-                results.headersIndexes.append(index)
-                results.headersData.append(.carriageReturn)
-                results.headersData.append(.newLine)
-                
-                results.parseContentLength(index: index)
-                
-                let headers = HTTPHeaders(storage: results.headersData, indexes: results.headersIndexes)
-                
-                if let contentLength = results.contentLength {
-                    results.body = HTTPBody(size: contentLength, stream: AnyOutputStream(results.bodyStream))
+                /// The message is ready to move downstream, check to see
+                /// if we already have the HTTPBody in its entirety
+                if chttp.messageComplete {
+                    switch chttp.bodyState {
+                    case .buffer(let buffer): body = HTTPBody(storage: .buffer(buffer))
+                    case .data(let data): body = HTTPBody(storage: .data(data))
+                    case .none: body = HTTPBody()
+                    case .stream:
+                        ERROR("Using empty body. Unexpected state: \(chttp.bodyState)")
+                        body = HTTPBody()
+                    }
+                    let message = try makeMessage(using: body)
+                    downstream.input(.next(message, ready))
+                    chttp.reset()
+                } else {
+                    // Convert body to a stream
+                    let stream = CHTTPBodyStream()
+                    switch chttp.bodyState {
+                    case .buffer(let buffer): stream.push(buffer)
+                    case .data(let data): data.withByteBuffer { stream.push($0) }
+                    case .none: stream.push(ByteBuffer(start: nil, count: 0))
+                    case .stream(_): ERROR("Ignoring existing stream. Unexpected state: \(chttp.bodyState)")
+                    }
+                    stream.flush(ready)
+                    chttp.bodyState = .stream(stream)
+                    body = HTTPBody(stream: .init(stream)) {
+                        return self.chttp.headers?[.contentLength].flatMap(Int.init)
+                    }
+                    let message = try makeMessage(using: body)
+                    let nextMessagePromise = Promise(Void.self)
+                    downstream.input(.next(message, nextMessagePromise))
+                    chttp.state = .streaming(nextMessagePromise.future)
                 }
-                
-                results.headers = headers
-            default:
-                // no other cases need to be handled.
-                break
+            } else {
+                /// Headers not complete, request more input
+                ready.complete()
             }
-            
-            // parse version
-            let major = Int(parser.pointee.http_major)
-            let minor = Int(parser.pointee.http_minor)
-            results.version = HTTPVersion(major: major, minor: minor)
+        case .streaming(let nextMessageFuture):
+            /// Parse the message using the CHTTP parser.
+            try chttp.execute(from: buffer)
 
-            return 0
-        }
+            if chttp.messageComplete {
+                /// Close the body stream now
+                chttp.state = .streamingClosed(nextMessageFuture)
 
-        // called when chunks of the body have been read
-        settings.on_body = { parser, chunk, length in
-            guard
-                let results = CParseResults.get(from: parser),
-                let chunk = chunk
-            else {
-                // signal an error
-                return 1
+                switch chttp.bodyState {
+                case .stream(let stream):
+                    stream.flush(ready)
+                    stream.close()
+                default:
+                    ERROR("Unexpected state: \(chttp.bodyState)")
+                    ready.complete()
+                }
+            } else {
+                /// Close the body stream now
+                switch chttp.bodyState {
+                case .none, .buffer, .data:
+                    ERROR("Unexpected state: \(chttp.bodyState)")
+                    ready.complete()
+                case .stream(let s): s.flush(ready)
+                }
             }
-
-            return chunk.withMemoryRebound(to: UInt8.self, capacity: length) { pointer -> Int32 in
-                results.bodyStream.push(ByteBuffer(start: pointer, count: length))
-                
-                return 0
+        case .streamingClosed(let nextMessageFuture):
+            chttp.reset()
+            nextMessageFuture.map(to: Void.self) {
+                return try self.handleNext(buffer, ready, downstream)
+            }.catch { error in
+                downstream.error(error)
+                ready.complete()
             }
-        }
-
-        // called when the message is finished parsing
-        settings.on_message_complete = { parser in
-            guard
-                let parser = parser,
-                let results = CParseResults.get(from: parser)
-            else {
-                // signal an error
-                return 1
-            }
-
-            results.bodyStream.eof()
-            
-            // mark the results as complete
-            results.isComplete = true
-            
-            return 0
         }
     }
 }
-
-// MARK: Utilities
-
-extension UnsafeBufferPointer where Element == Byte {
-    fileprivate var cPointer: UnsafePointer<CChar> {
-        return baseAddress.unsafelyUnwrapped.withMemoryRebound(to: CChar.self, capacity: count) { $0 }
-    }
-}
-
-fileprivate let headerSeparator: [UInt8] = [.colon, .space]
-fileprivate let lowercasedContentLength = HTTPHeaders.Name.contentLength.lowercased
-
-fileprivate extension Data {
-    fileprivate var cPointer: UnsafePointer<CChar> {
-        return withUnsafeBytes { $0 }
-    }
-}
-
-fileprivate extension UnsafePointer where Pointee == CChar {
-    /// Creates a Bytes array from a C pointer
-    fileprivate func makeBuffer(length: Int) -> UnsafeRawBufferPointer {
-        let pointer = UnsafeBufferPointer(start: self, count: length)
-
-        guard let base = pointer.baseAddress else {
-            return UnsafeRawBufferPointer(start: nil, count: 0)
-        }
-
-        return base.withMemoryRebound(to: UInt8.self, capacity: length) { pointer in
-            return UnsafeRawBufferPointer(start: pointer, count: length)
-        }
-    }
-}
-
-
