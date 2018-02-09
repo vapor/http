@@ -48,7 +48,7 @@ public final class HTTPResponseSerializer: HTTPSerializer {
 
             // `200`
             let codeBytes = message.status.code.bytes()
-            _ = UnsafeMutableBufferPointer(start: pos, count: codeBytes.count).initialize(from: codeBytes)
+            UnsafeMutableBufferPointer(start: pos, count: codeBytes.count).initializeAssertingNoRemainder(from: codeBytes)
             pos = pos.advanced(by: codeBytes.count)
 
             // ` `
@@ -57,7 +57,7 @@ public final class HTTPResponseSerializer: HTTPSerializer {
 
             // `OK`
             let messageBytes = message.status.messageBytes
-            _ = UnsafeMutableBufferPointer(start: pos, count: messageBytes.count).initialize(from: messageBytes)
+            UnsafeMutableBufferPointer(start: pos, count: messageBytes.count).initializeAssertingNoRemainder(from: messageBytes)
             pos = pos.advanced(by: messageBytes.count)
 
             // `\r\n`

@@ -30,8 +30,10 @@ extension CHTTPParser {
 extension CHTTPParser {
     /// See `InputStream.input(_:)`
     public func input(_ event: InputEvent<ByteBuffer>) {
+        DEBUG("CHTTPParser.input(\(event))")
         guard let downstream = self.downstream else {
-            fatalError("Unexpected `nil` downstream on CHTTPParser.input(close)")
+            ERROR("No downstream, ignoring input event: \(event)")
+            return
         }
 
         switch event {
@@ -57,6 +59,7 @@ extension CHTTPParser {
 
     /// See `InputEvent.next`
     private func handleNext(_ buffer: ByteBuffer, _ ready: Promise<Void>, _ downstream: AnyInputStream<Output>) throws {
+        DEBUG("CHTTPParser.handle() [state: \(chttp.state)]")
         switch chttp.state {
         case .parsing:
             /// Parse the message using the CHTTP parser.
@@ -75,9 +78,11 @@ extension CHTTPParser {
                 if chttp.messageComplete {
                     switch chttp.bodyState {
                     case .buffer(let buffer): body = HTTPBody(storage: .buffer(buffer))
+                    case .data(let data): body = HTTPBody(storage: .data(data))
                     case .none: body = HTTPBody()
-                    case .stream: fatalError("Illegal state")
-                    case .readyStream: fatalError("Illegal state")
+                    case .stream:
+                        ERROR("Using empty body. Unexpected state: \(chttp.bodyState)")
+                        body = HTTPBody()
                     }
                     let message = try makeMessage(using: body)
                     downstream.input(.next(message, ready))
@@ -86,11 +91,12 @@ extension CHTTPParser {
                     // Convert body to a stream
                     let stream = CHTTPBodyStream()
                     switch chttp.bodyState {
-                    case .buffer(let buffer): stream.push(buffer, ready)
-                    case .none: stream.push(ByteBuffer(start: nil, count: 0), ready)
-                    case .stream: fatalError("Illegal state")
-                    case .readyStream: fatalError("Illegal state")
+                    case .buffer(let buffer): stream.push(buffer)
+                    case .data(let data): data.withByteBuffer { stream.push($0) }
+                    case .none: stream.push(ByteBuffer(start: nil, count: 0))
+                    case .stream(_): ERROR("Ignoring existing stream. Unexpected state: \(chttp.bodyState)")
                     }
+                    stream.flush(ready)
                     chttp.bodyState = .stream(stream)
                     body = HTTPBody(stream: .init(stream)) {
                         return self.chttp.headers?[.contentLength].flatMap(Int.init)
@@ -105,26 +111,29 @@ extension CHTTPParser {
                 ready.complete()
             }
         case .streaming(let nextMessageFuture):
-            let stream: CHTTPBodyStream
-
-            /// Close the body stream now
-            switch chttp.bodyState {
-            case .none: fatalError("Illegal state")
-            case .buffer: fatalError("Illegal state")
-            case .readyStream: fatalError("Illegal state")
-            case .stream(let s):
-                stream = s
-                // replace body state w/ new ready
-                chttp.bodyState = .readyStream(s, ready)
-            }
-
             /// Parse the message using the CHTTP parser.
             try chttp.execute(from: buffer)
 
             if chttp.messageComplete {
                 /// Close the body stream now
-                stream.close()
                 chttp.state = .streamingClosed(nextMessageFuture)
+
+                switch chttp.bodyState {
+                case .stream(let stream):
+                    stream.flush(ready)
+                    stream.close()
+                default:
+                    ERROR("Unexpected state: \(chttp.bodyState)")
+                    ready.complete()
+                }
+            } else {
+                /// Close the body stream now
+                switch chttp.bodyState {
+                case .none, .buffer, .data:
+                    ERROR("Unexpected state: \(chttp.bodyState)")
+                    ready.complete()
+                case .stream(let s): s.flush(ready)
+                }
             }
         case .streamingClosed(let nextMessageFuture):
             chttp.reset()

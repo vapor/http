@@ -38,7 +38,8 @@ public final class HTTPRequestSerializer: HTTPSerializer {
             /// GET                          /foo                          ?a=b             HTTP/1.1\r\n
             message.method.bytes.count + 1 + message.uri.pathBytes.count + queryBytes + 1 + newlineBuffer.count
         else {
-            fatalError("Start line too large for buffer")
+            ERROR("Start line too large for buffer")
+            return ByteBuffer(start: nil, count: 0)
         }
 
         var address = startLineBuffer.baseAddress!.advanced(by: 0)
@@ -61,7 +62,7 @@ public final class HTTPRequestSerializer: HTTPSerializer {
         if let query = message.uri.query {
             address.pointee = .questionMark
             address = address.advanced(by: 1)
-            _ = UnsafeMutableBufferPointer(start: address, count: queryBytes - 1).initialize(from: query.utf8)
+            UnsafeMutableBufferPointer(start: address, count: queryBytes - 1).initializeAssertingNoRemainder(from: query.utf8)
             address = address.advanced(by: queryBytes - 1)
         }
 

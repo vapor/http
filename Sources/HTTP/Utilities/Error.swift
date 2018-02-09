@@ -64,5 +64,23 @@ public struct HTTPError: Traceable, Debuggable, Swift.Error, Encodable {
     }
 }
 
+/// For printing un-handleable errors.
+func ERROR(_ string: @autoclosure () -> String, file: StaticString = #file, line: Int = #line) {
+    print("[HTTP] \(string()) [\(file):\(line)]")
+}
 
+/// For printing debug info.
+func DEBUG(_ string: @autoclosure () -> String, file: StaticString = #file, line: Int = #line) {
+    #if VERBOSE
+    print("[VERBOSE] \(string()) [\(file):\(line)]")
+    #endif
+}
+
+extension UnsafeMutableBufferPointer {
+    /// Calls `.initialize(from:)` and asserts there is no remaining data.
+    func initializeAssertingNoRemainder<S>(from sequence: S) where S: Sequence, S.Element == Element {
+        var (it, _) = initialize(from: sequence)
+        assert(it.next() == nil)
+    }
+}
 

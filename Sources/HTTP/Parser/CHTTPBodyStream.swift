@@ -1,8 +1,9 @@
 import Async
 import Bits
+import Foundation
 
 /// Streams ByteBuffers parsed by CHTTP during `on_message` callbacks.
-final class CHTTPBodyStream: OutputStream {
+final class CHTTPBodyStream: Async.OutputStream {
     /// See `OutputStream.Output`
     typealias Output = ByteBuffer
 
@@ -12,30 +13,51 @@ final class CHTTPBodyStream: OutputStream {
     /// Current downstream accepting the body's byte buffers.
     var downstream: AnyInputStream<ByteBuffer>?
 
-    /// Waiting output
-    var waiting: (ByteBuffer, Promise<Void>)?
+    /// Waiting data
+    private var waitingData: Data?
+
+    /// Waiting ready
+    private var waitingReady: Promise<Void>?
 
     /// Pushes a new ByteBuffer with associated ready.
-    func push(_ buffer: ByteBuffer, _ ready: Promise<Void>) {
-        assert(waiting == nil)
-        if let downstream = self.downstream {
-            downstream.input(.next(buffer, ready))
+    func push(_ buffer: ByteBuffer) {
+        if var data = waitingData {
+            data.append(buffer)
+            waitingData = data
         } else {
-            waiting = (buffer, ready)
+            waitingData = Data(buffer)
+        }
+    }
+
+    func flush(_ ready: Promise<Void>) {
+        if let downstream = self.downstream {
+            if let data = waitingData {
+                waitingData = nil
+                data.withByteBuffer { downstream.input(.next($0, ready)) }
+            } else {
+                // send empty data
+                Data().withByteBuffer { downstream.input(.next($0, ready)) }
+            }
+        } else {
+            waitingReady = ready
         }
     }
 
     /// See `OutputStream.output(to:)`
-    func output<S>(to inputStream: S) where S : InputStream, CHTTPBodyStream.Output == S.Input {
+    func output<S>(to inputStream: S) where S: Async.InputStream, CHTTPBodyStream.Output == S.Input {
         downstream = .init(inputStream)
-        if let (buffer, ready) = self.waiting {
-            self.waiting = nil
-            inputStream.input(.next(buffer, ready))
+        if let ready = waitingReady {
+            waitingReady = nil
+            flush(ready)
         }
     }
 
     /// Closes the stream.
     func close() {
-        downstream!.close()
+        DEBUG("CHTTPBodyStream.close()")
+        assert(downstream != nil)
+        downstream?.close()
     }
 }
+
+
