@@ -1,6 +1,7 @@
 import Async
 import Bits
 import CHTTP
+import Foundation
 
 /// Maintains the CHTTP parser's internal state.
 internal final class CHTTPParserContext {
@@ -141,8 +142,8 @@ enum CHTTPHeaderState {
 enum CHTTPBodyState {
     case none
     case buffer(ByteBuffer)
+    case data(Data) // used for chunked streams
     case stream(CHTTPBodyStream)
-    case readyStream(CHTTPBodyStream, Promise<Void>)
 }
 
 
@@ -274,6 +275,7 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
+            DEBUG("on_url")
 
             // increase url count
             results.currentURLSize += count
@@ -301,6 +303,7 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
+            DEBUG("on_header_field")
 
             /// Header fields are the first indication that the start-line has completed.
             results.startLineComplete = true
@@ -314,7 +317,6 @@ extension CHTTPParserContext {
                 results.headerStart = chunk
                 start = chunk
             }
-            //print("on_header_field")
 
             // check current header parsing state
             switch results.headerState {
@@ -351,7 +353,7 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
-            //print("on_header_value")
+            DEBUG("on_header_value")
 
             /// Get headerStart pointer. If nil, then there has not
             /// been a header event yet.
@@ -373,7 +375,7 @@ extension CHTTPParserContext {
 
             // check the current header parsing state
             switch results.headerState {
-            case .none: fatalError("Unexpected headerState (.key) during chttp.on_header_value")
+            case .none: ERROR("Unexpected headerState (.key) during chttp.on_header_value")
             case .value(var index):
                 // there was previously a value being parsed.
                 // add the new bytes to it.
@@ -400,13 +402,13 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
-            //print("on_headers_complete")
+            DEBUG("on_headers_complete")
 
             // check the current header parsing state
             switch results.headerState {
             case .value(let index): results.headersIndexes.append(index)
-            case .key: fatalError("Unexpected headerState (.key) during chttp.on_headers_complete")
-            case .none: fatalError("Unexpected headerState (.none) during chttp.on_headers_complete")
+            case .key: ERROR("Unexpected headerState (.key) during chttp.on_headers_complete")
+            case .none: ERROR("Unexpected headerState (.none) during chttp.on_headers_complete")
             }
 
             /// if headers are complete, so is the start line.
@@ -427,16 +429,20 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
-            //print("on_body")
+            DEBUG("on_body: \(results.bodyState)")
             results.bodyStart = chunk
 
             switch results.bodyState {
-            case .buffer: fatalError("Unexpected bodyState (.buffer) during chttp.on_body.")
+            case .buffer(let buffer):
+                // multiple buffers incoming, we must copy into data
+                var data = Data(buffer)
+                data.append(chunk.makeByteBuffer(length))
+                results.bodyState = .data(data)
+            case .data(var data):
+                data.append(chunk.makeByteBuffer(length))
+                results.bodyState = .data(data)
             case .none: results.bodyState = .buffer(chunk.makeByteBuffer(length))
-            case .stream: fatalError("Unexpected bodyState (.stream) during chttp.on_body.")
-            case .readyStream(let bodyStream, let ready):
-                bodyStream.push(chunk.makeByteBuffer(length), ready)
-                results.bodyState = .stream(bodyStream) // no longer ready
+            case .stream(let stream): stream.push(chunk.makeByteBuffer(length))
             }
 
             return 0
@@ -448,7 +454,7 @@ extension CHTTPParserContext {
                 // signal an error
                 return 1
             }
-            //print("on_message_complete")
+            DEBUG("on_message_complete")
 
             // mark the results as complete
             results.messageComplete = true

@@ -15,7 +15,7 @@ final class HTTPHeaderStorage {
     /// Creates a new `HTTPHeaders` with default content.
     static func `default`() -> HTTPHeaderStorage {
         let buffer = MutableByteBuffer.allocate(capacity: defaultHeadersSize)
-        _ = buffer.initialize(from: defaultHeaders)
+        buffer.initializeAssertingNoRemainder(from: defaultHeaders)
         let view = ByteBuffer(buffer)
         return HTTPHeaderStorage(view: view, buffer: buffer, indexes: [defaultHeaderIndex])
     }
@@ -23,7 +23,7 @@ final class HTTPHeaderStorage {
     /// Internal init for truly empty header storage.
     internal init(copying bytes: ByteBuffer, with indexes: [HTTPHeaderIndex]) {
         self.buffer = MutableByteBuffer.allocate(capacity: bytes.count)
-        _ = self.buffer.initialize(from: bytes)
+        self.buffer.initializeAssertingNoRemainder(from: bytes)
         self.view = ByteBuffer(buffer)
         self.indexes = indexes
     }
@@ -31,7 +31,7 @@ final class HTTPHeaderStorage {
     /// Create a new `HTTPHeaders` with explicit storage and indexes.
     internal init(bytes: Bytes, indexes: [HTTPHeaderIndex]) {
         self.buffer = MutableByteBuffer.allocate(capacity: bytes.count)
-        _ = self.buffer.initialize(from: bytes)
+        self.buffer.initializeAssertingNoRemainder(from: bytes)
         self.view = ByteBuffer(buffer)
         self.indexes = indexes
     }
@@ -46,8 +46,7 @@ final class HTTPHeaderStorage {
     /// Creates a new, identical copy of the header storage.
     internal func copy() -> HTTPHeaderStorage {
         let newBuffer = MutableByteBuffer.allocate(capacity: buffer.count)
-        
-        _ = newBuffer.initialize(from: buffer)
+        newBuffer.initializeAssertingNoRemainder(from: buffer)
         return .init(view: ByteBuffer(newBuffer), buffer: newBuffer, indexes: indexes)
     }
 
@@ -125,19 +124,27 @@ final class HTTPHeaderStorage {
         }
 
         // <name>
-        _ = UnsafeMutableBufferPointer(start: buffer.start.advanced(by: index.nameStartIndex), count: name.original.count)
-            .initialize(from: name.original)
+        UnsafeMutableBufferPointer(
+            start: buffer.start.advanced(by: index.nameStartIndex),
+            count: name.original.count
+        ).initializeAssertingNoRemainder(from: name.original)
         // `: `
-        _ = UnsafeMutableBufferPointer(start: buffer.start.advanced(by: index.nameEndIndex), count: headerSeparatorSize)
-            .initialize(from: headerSeparator)
+        UnsafeMutableBufferPointer(
+            start: buffer.start.advanced(by: index.nameEndIndex),
+            count: headerSeparatorSize
+        ).initializeAssertingNoRemainder(from: headerSeparator)
         // <value>
         value.withByteBuffer { valueBuffer in
-            _ = UnsafeMutableBufferPointer(start: buffer.start.advanced(by: index.valueStartIndex), count: valueCount)
-                .initialize(from: valueBuffer)
+            UnsafeMutableBufferPointer(
+                start: buffer.start.advanced(by: index.valueStartIndex),
+                count: valueCount
+            ).initializeAssertingNoRemainder(from: valueBuffer)
         }
         // `\r\n`
-        _ = UnsafeMutableBufferPointer(start: buffer.start.advanced(by: index.valueEndIndex), count: headerEndingSize)
-            .initialize(from: headerEnding)
+        UnsafeMutableBufferPointer(
+            start: buffer.start.advanced(by: index.valueEndIndex),
+            count: headerEndingSize
+        ).initializeAssertingNoRemainder(from: headerEnding)
 
         view = ByteBuffer(start: buffer.start, count: view.count + index.size)
     }
@@ -213,7 +220,10 @@ final class HTTPHeaderStorage {
         if view.count + headerEndingSize > buffer.count {
             moveToLargerCopy(increasingBy: headerEndingSize)
         }
-        _ = MutableByteBuffer(start: buffer.start.advanced(by: view.count), count: headerEndingSize).initialize(from: headerEnding)
+        MutableByteBuffer(
+            start: buffer.start.advanced(by: view.count),
+            count: headerEndingSize
+        ).initializeAssertingNoRemainder(from: headerEnding)
         let sub = ByteBuffer(start: buffer.start, count: view.count + headerEndingSize)
         return closure(sub)
     }
@@ -257,8 +267,7 @@ extension UnsafeBufferPointer {
     
     func allocateAndInitializeCopy() -> UnsafeBufferPointer {
         let buffer = UnsafeMutableBufferPointer<Element>.allocate(capacity: self.count)
-        
-        _ = buffer.initialize(from: self)
+        buffer.initializeAssertingNoRemainder(from: self)
         return UnsafeBufferPointer(buffer)
     }
 }

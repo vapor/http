@@ -58,7 +58,8 @@ public protocol HTTPSerializer: Async.Stream where Input: HTTPMessage, Output ==
 extension HTTPSerializer {
     public func input(_ event: InputEvent<Input>) {
         guard let downstream = self.downstream else {
-            fatalError()
+            ERROR("No downstream, ignoring input event: \(event)")
+            return
         }
         switch event {
         case .close: downstream.close()
@@ -130,7 +131,7 @@ extension HTTPSerializer {
                 context.state = .done
                 write(message, downstream, nextMessage)
             case .chunkedOutputStream(_), .binaryOutputStream(_):
-                fatalError()
+                ERROR("Unsupported HTTPBody storage: \(message.body.storage)")
             }
         case .continueBuffer(let remainingStartLine, let then):
             if let remaining = context.append(remainingStartLine) {

@@ -45,7 +45,8 @@ public final class HTTPResponderStream<Responder>: Stream where Responder: HTTPR
     /// See `InputStream.input(_:)`
     public func input(_ event: InputEvent<HTTPRequest>) {
         guard let downstream = self.downstream else {
-            fatalError("Unexpected nil downstream during HTTPResponderStream.input")
+            ERROR("Unexpected nil downstream during HTTPResponderStream.input, ignoring event: \(event)")
+            return
         }
 
         switch event {
