@@ -4,12 +4,13 @@ import Dispatch
 import Foundation
 
 /// A helper for Request and Response serializer that keeps state
-public indirect enum HTTPSerializerState {
+indirect enum HTTPSerializerState {
     case startLine
     case headers
     case body
     case done
     case continueBuffer(ByteBuffer, nextState: HTTPSerializerState)
+    case streaming(AnyOutputStream<ByteBuffer>)
 }
 
 public final class HTTPSerializerContext {
@@ -130,8 +131,14 @@ extension HTTPSerializer {
             case .none:
                 context.state = .done
                 write(message, downstream, nextMessage)
-            case .chunkedOutputStream(_), .binaryOutputStream(_):
-                ERROR("Unsupported HTTPBody storage: \(message.body.storage)")
+            case .chunkedOutputStream(let stream):
+                let encodedStream = stream(HTTPChunkEncodingStream())
+                context.state = .streaming(AnyOutputStream(encodedStream))
+                write(message, downstream, nextMessage)
+            case .binaryOutputStream(_, let stream):
+                let connectingStream = stream.stream(to: ConnectingStream<ByteBuffer>())
+                context.state = .streaming(AnyOutputStream(connectingStream))
+                write(message, downstream, nextMessage)
             }
         case .continueBuffer(let remainingStartLine, let then):
             if let remaining = context.append(remainingStartLine) {
@@ -142,10 +149,29 @@ extension HTTPSerializer {
                 try serialize(message, downstream, nextMessage)
             }
             remainingStartLine.deallocate()
+          
+        case .streaming(let stream):
+            write(message, stream, downstream, nextMessage, .done)
         case .done:
             context.state = .startLine
             nextMessage.complete()
         }
+    }
+    
+    fileprivate func write(_ message: Input, _ upstream: AnyOutputStream<Output>, _ downstream: AnyInputStream<Output>, _ nextMessage: Promise<Void>, _ nextState: HTTPSerializerState) {
+        
+        let peekStream = PeekStream<Output>()
+        
+        peekStream.onClose = {
+            do {
+                self.context.state = nextState
+                try self.serialize(message, downstream, nextMessage)
+            } catch {
+                downstream.error(error)
+            }
+        }
+        
+        upstream.stream(to: peekStream).output(to: downstream)
     }
 
     fileprivate func write(_ message: Input, _ downstream: AnyInputStream<Output>, _ nextMessage: Promise<Void>) {
@@ -163,5 +189,26 @@ extension HTTPSerializer {
             }
         }
     }
+}
 
+fileprivate final class PeekStream<Data>: Async.Stream {
+    typealias Input = Data
+    typealias Output = Data
+    
+    var onClose: (()->())?
+    var downstream: AnyInputStream<Data>?
+    
+    func input(_ event: InputEvent<Input>) {
+        downstream?.input(event)
+        
+        switch event {
+        case .close:
+            onClose?()
+        default: return
+        }
+    }
+    
+    func output<S>(to inputStream: S) where S : Async.InputStream, Output == S.Input {
+        self.downstream = AnyInputStream(inputStream)
+    }
 }
