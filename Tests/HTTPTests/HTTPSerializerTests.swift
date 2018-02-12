@@ -72,8 +72,36 @@ class HTTPSerializerTests: XCTestCase {
         try tester.run().blockingAwait()
     }
 
+    func testLargeResponse() throws {
+        let app = PushStream(HTTPResponse.self)
+        var output = ""
+
+        app.stream(to: HTTPResponseSerializer()).drain { buffer in
+            output += String(data: Data(buffer), encoding: .ascii) ?? ""
+        }.catch { error in
+            XCTFail("\(error)")
+        }.finally {
+            // closed
+        }
+
+        let body = String(repeating: "a", count: 5_000)
+        var res = HTTPResponse()
+        res.headers["foo"] = "bar"
+        res.body = try body.makeBody()
+        app.push(res)
+
+        XCTAssertEqual(output, """
+        HTTP/1.1 200 OK\r
+        foo: bar\r
+        Content-Length: \(body.count)\r
+        \r
+        \(body)
+        """)
+    }
+
     static let allTests = [
         ("testResponse", testResponse),
+        ("testLargeResponse", testLargeResponse)
     ]
 }
 
