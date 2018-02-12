@@ -146,7 +146,7 @@ extension HTTPSerializer {
                 write(message, downstream, nextMessage)
             } else {
                 context.state = then
-                try serialize(message, downstream, nextMessage)
+                write(message, downstream, nextMessage)
             }
             remainingStartLine.deallocate()
           
