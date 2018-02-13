@@ -135,11 +135,28 @@ class RouterTests: XCTestCase {
         )
     }
 
+    func testRouterSuffixes() throws {
+        let router = TrieRouter<Int>()
+        router.caseInsensitive = true
+
+        let path1: [PathComponent.Parameter] = [.string("a")]
+        let path2: [PathComponent.Parameter] = [.string("aa")]
+        let route1 = Route<Int>(path: [.constants(path1)], output: 1)
+        let route2 = Route<Int>(path: [.constants(path2)], output: 2)
+        router.register(route: route1)
+        router.register(route: route2)
+
+        let params = Params()
+        XCTAssertEqual(router.route(path: [.string("a")], parameters: params), 1)
+        XCTAssertEqual(router.route(path: [.string("aa")], parameters: params), 2)
+    }
+
     static let allTests = [
         ("testRouter", testRouter),
         ("testCaseInsensitiveRouting", testCaseInsensitiveRouting),
         ("testCaseSensitiveRouting", testCaseSensitiveRouting),
         ("testAnyRouting", testAnyRouting),
+        ("testRouterSuffixes", testRouterSuffixes),
     ]
 }
 

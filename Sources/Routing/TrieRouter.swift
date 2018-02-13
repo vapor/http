@@ -54,14 +54,14 @@ public final class TrieRouter<Output> {
                 switch child.kind {
                 case .anything:
                     fallbackNode = child
-                case .constant(let data, let size):
+                case .constant(let data, _):
                     // if we find a constant route path that matches this component,
                     // then we should use it.
                     let match = component.withByteBuffer { buffer -> Bool in
                         if self.caseInsensitive {
                             return data.caseInsensitiveEquals(to: buffer)
                         } else {
-                            return memcmp(data, buffer.baseAddress!, size) == 0
+                            return data.elementsEqual(buffer)
                         }
                     }
                     
