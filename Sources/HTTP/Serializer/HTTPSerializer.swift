@@ -143,13 +143,11 @@ extension HTTPSerializer {
         case .continueBuffer(let remainingStartLine, let then):
             if let remaining = context.append(remainingStartLine) {
                 context.state = .continueBuffer(remaining.allocateAndInitializeCopy(), nextState: then)
-                write(message, downstream, nextMessage)
             } else {
                 context.state = then
-                write(message, downstream, nextMessage)
             }
+            write(message, downstream, nextMessage)
             remainingStartLine.deallocate()
-          
         case .streaming(let stream):
             write(message, stream, downstream, nextMessage, .done)
         case .done:
