@@ -9,41 +9,45 @@ extension WebSocket {
     public static func background<C: ClientStream>(
         to uri: String,
         using client: C,
+        maxPayloadSize: UInt64,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
     )  throws {
         let uri = try URI(uri)
-        try background(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
+        try background(to: uri, using: client, maxPayloadSize: maxPayloadSize, protocols: protocols, headers: headers, onConnect: onConnect)
     }
 
     public static func background<C: ClientStream>(
         to uri: URI,
         using client: C,
+        maxPayloadSize: UInt64,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
     ) throws {
         Core.background {
             // TODO: Need to notify failure -- Result<WebSocket>?
-            _ = try? connect(to: uri, using: client, protocols: protocols, headers: headers, onConnect: onConnect)
+            _ = try? connect(to: uri, using: client, maxPayloadSize: maxPayloadSize, protocols: protocols, headers: headers, onConnect: onConnect)
         }
     }
 
     public static func connect<C: ClientStream>(
         to uri: String,
         using client: C,
+        maxPayloadSize: UInt64,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
     ) throws {
         let uri = try URI(uri)
-        try connect(to: uri, using: client, protocols: protocols, headers: headers,  onConnect: onConnect)
+        try connect(to: uri, using: client, maxPayloadSize: maxPayloadSize, protocols: protocols, headers: headers,  onConnect: onConnect)
     }
 
     public static func connect<C: ClientStream>(
         to uri: URI,
         using stream: C,
+        maxPayloadSize: UInt64,
         protocols: [String]? = nil,
         headers: [HeaderKey: String]? = nil,
         onConnect: @escaping (WebSocket) throws -> Void
@@ -66,7 +70,8 @@ extension WebSocket {
             headers.secWebProtocol = protocols
         }
         
-        let client = try BasicClient(stream)
+        // 100KB static is very luxorious for a websocket upgrade request
+        let client = try BasicClient(stream, maxResponseSize: 100_000)
         
         // manually requesting to preserve queries that might be in URI easily
         let request = Request(
@@ -86,7 +91,7 @@ extension WebSocket {
 
         let ws = WebSocket(stream, mode: .client)
         try onConnect(ws)
-        try ws.listen()
+        try ws.listen(maxPayloadSize: maxPayloadSize)
     }
 }
 

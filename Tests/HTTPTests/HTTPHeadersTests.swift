@@ -23,7 +23,7 @@ class HTTPHeadersTests: XCTestCase {
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
 
-            let req = try RequestParser().parse(from: stream)
+            let req = try RequestParser(maxSize: 100_000).parse(from: stream)
             XCTAssertEqual(req.headers["accept"], "*/*")
             XCTAssertEqual(req.headers["host"], "localhost:8080")
             XCTAssertEqual(req.headers["content-type"], "application/json")
@@ -48,7 +48,7 @@ class HTTPHeadersTests: XCTestCase {
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
             
-            let req = try RequestParser().parse(from: stream)
+            let req = try RequestParser(maxSize: 100_000).parse(from: stream)
             XCTAssertEqual(req.headers["cookie"], "1=1; 2=2;")
         } catch {
             XCTFail("\(error)")
@@ -71,7 +71,7 @@ class HTTPHeadersTests: XCTestCase {
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
             
-            _ = try RequestParser().parse(from: stream)
+            _ = try RequestParser(maxSize: 100_000).parse(from: stream)
             XCTFail("Headers init should have thrown")
         } catch ParserError.invalidMessage {
             //
@@ -92,7 +92,7 @@ class HTTPHeadersTests: XCTestCase {
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
             
-            _ = try RequestParser().parse(from: stream)
+            _ = try RequestParser(maxSize: 100_000).parse(from: stream)
             XCTFail("Headers init should have thrown")
         } catch ParserError.invalidMessage {
             //

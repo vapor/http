@@ -5,11 +5,21 @@ public enum FrameParserError: Swift.Error {
     case missingByte
 }
 
+internal struct FrameTooLarge: Swift.Error {}
+
 public final class FrameParser {
     private var stream: ReadableStream // FIXME: generic
+    
+    private let maxSize: UInt64
 
-    public init(stream: ReadableStream) {
+    public init(stream: ReadableStream, maxSize: UInt64) {
         self.stream = stream
+        self.maxSize = maxSize
+    }
+    
+    @available(*, deprecated, message: "Use init(stream:, maximumSize:) instead.")
+    public convenience init(stream: ReadableStream) {
+        self.init(stream: stream, maxSize: UInt64.max)
     }
 
     public func acceptFrame() throws -> WebSocket.Frame {
@@ -27,6 +37,10 @@ public final class FrameParser {
             payloadLength = try extractEightBytePayloadLengthExtension()
         default:
             payloadLength = payloadLengthInfo.toUIntMax()
+        }
+        
+        guard payloadLength <= maxSize else {
+            throw FrameTooLarge()
         }
 
         let maskingKey: WebSocket.Frame.MaskingKey

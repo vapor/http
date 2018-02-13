@@ -19,7 +19,7 @@ class HTTPBodyTests: XCTestCase {
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
             _ = try stream.write(expected)
-            let req = try RequestParser().parse(from: stream)
+            let req = try RequestParser(maxSize: 100_000).parse(from: stream)
 
             switch req.body {
             case .data(let data):
@@ -48,7 +48,7 @@ class HTTPBodyTests: XCTestCase {
             try chunkStream.write("d!")
             try chunkStream.close()
             
-            let req = try RequestParser().parse(from: stream)
+            let req = try RequestParser(maxSize: 100_000).parse(from: stream)
 
             switch req.body {
             case .data(let data):
@@ -67,7 +67,8 @@ class HTTPBodyTests: XCTestCase {
         let server = try TCPServer(
             scheme: "http",
             hostname: "0.0.0.0",
-            port: port
+            port: port,
+            maxRequestSize: 100_000
         )
 
         let responder = BasicResponder { request in
@@ -108,7 +109,7 @@ class HTTPBodyTests: XCTestCase {
                             uri: "http://127.0.0.1:\(port)\(path)"
                         )
                         
-                        let res = try TCPClient(clientSocket)
+                        let res = try TCPClient(clientSocket, maxResponseSize: 100_000)
                             .respond(to: req)
                         
                         XCTAssertEqual(res.body.bytes?.makeString(), "Hello \(path)")
@@ -128,7 +129,7 @@ class HTTPBodyTests: XCTestCase {
             hostname: "httpbin.org",
             port: 80
         )
-        let client = try TCPClient(httpbin)
+        let client = try TCPClient(httpbin, maxResponseSize: 100_000)
         let req = Request(method: .get, uri: "http://httpbin.org/bytes/8192")
         let res = try client.respond(to: req)
         XCTAssertEqual(res.body.bytes?.count, 8192)

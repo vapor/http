@@ -10,8 +10,14 @@ public final class ResponseParser: CHTTPParser {
     var settings: http_parser_settings
     var state:  CHTTPParserState
     
+    private var parsedBytes = 0
+    
+    // The maximum amount of bytes to parse
+    private let maximumSize: Int
+    
     /// Creates a new Response parser.
-    public init() {
+    public init(maxSize: Int) {
+        self.maximumSize = maxSize
         self.parser = http_parser()
         self.settings = http_parser_settings()
         self.state = .ready
@@ -21,6 +27,14 @@ public final class ResponseParser: CHTTPParser {
     
     /// Parses a Response from the stream.
     public func parse(max: Int, from buffer: Bytes) throws -> Response? {
+        guard buffer.count + parsedBytes <= maximumSize else {
+            throw ParserError.invalidMessage
+        }
+        
+        defer {
+            parsedBytes += buffer.count
+        }
+        
         let results: ParseResults
         
         switch state {
@@ -64,6 +78,15 @@ public final class ResponseParser: CHTTPParser {
             body: .data(results.body)
         )
         
+        self.parsedBytes = 0
+        
         return response
+    }
+}
+
+extension ResponseParser {
+    @available(*, deprecated, message: "Use init(maxSize:) instead.")
+    public convenience init() {
+        self.init(maxSize: Int.max)
     }
 }

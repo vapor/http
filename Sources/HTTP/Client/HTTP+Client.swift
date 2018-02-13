@@ -19,6 +19,7 @@ public typealias TLSClient = BasicClient<TLS.InternetSocket>
 public final class BasicClient<StreamType: ClientStream>: Client {
     // public let middleware: [Middleware]
     public let stream: StreamType
+    public let maxResponseSize: Int
 
     public var scheme: String {
         return stream.scheme
@@ -34,10 +35,16 @@ public final class BasicClient<StreamType: ClientStream>: Client {
 
     var buffer: Bytes
     
-    public init(_ stream: StreamType) throws {
+    public init(_ stream: StreamType, maxResponseSize: Int) throws {
         self.stream = stream
+        self.maxResponseSize = maxResponseSize
         try stream.connect()
         buffer = Bytes(repeating: 0, count: 2048)
+    }
+    
+    @available(*, deprecated, message: "Use init(_:, maxResponseSize) instead.")
+    public convenience init(_ stream: StreamType) throws {
+        try self.init(stream)
     }
     
     deinit {
@@ -81,7 +88,7 @@ public final class BasicClient<StreamType: ClientStream>: Client {
             _ = try stream.write(bytes)
         }
 
-        let parser = ResponseParser()
+        let parser = ResponseParser(maxSize: maxResponseSize)
         
         var response: Response?
         while response == nil {
