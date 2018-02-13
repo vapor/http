@@ -22,10 +22,10 @@ let package = Package(
         .package(url: "https://github.com/vapor/service.git", .exact("1.0.0-beta.1")),
 
         // Pure Swift (POSIX) TCP and UDP non-blocking socket layer, with event-driven Server and Client.
-        .package(url: "https://github.com/vapor/sockets.git", .exact("3.0.0-beta.1")),
+        .package(url: "https://github.com/vapor/sockets.git", .exact("3.0.0-beta.2")),
 
         // Swift OpenSSL & macOS Security TLS wrapper
-        .package(url: "https://github.com/vapor/tls.git", .exact("3.0.0-beta.1")),
+        .package(url: "https://github.com/vapor/tls.git", .exact("3.0.0-beta.2")),
     ],
     targets: [
         .target(name: "CHTTP"),
