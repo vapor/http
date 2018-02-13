@@ -31,7 +31,6 @@ public final class MultipartSerializer {
                 body.append(buffer)
             }
             
-            body.append(contentsOf: [.carriageReturn, .newLine])
             body.append(part.data)
             body.append(contentsOf: [.carriageReturn, .newLine])
         }

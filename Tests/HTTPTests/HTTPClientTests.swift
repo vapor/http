@@ -8,7 +8,9 @@ import XCTest
 class HTTPClientTests: XCTestCase {
     func testTCP() throws {
         let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
-        let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop)
+        let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop) { _, error in
+            XCTFail("\(error)")
+        }
 
         let req = HTTPRequest(method: .get, uri: "/html", headers: [.host: "httpbin.org"])
         let res = try client.send(req).flatMap(to: Data.self) { res in
@@ -21,7 +23,9 @@ class HTTPClientTests: XCTestCase {
     
     func testConnectionClose() throws {
         let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
-        let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop)
+        let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop) { _, error in
+            XCTFail("\(error)")
+        }
         
         let req = HTTPRequest(method: .get, uri: "/status/418", headers: [.host: "httpbin.org"])
         let res = try client.send(req).flatMap(to: Data.self) { res in
@@ -46,3 +50,4 @@ class HTTPClientTests: XCTestCase {
         ("testURI", testURI),
     ]
 }
+

@@ -17,13 +17,13 @@ public final class HTTPClient {
     private let responseMap: (HTTPResponse) throws -> HTTPResponse
 
     /// Creates a new Client wrapped around a `TCP.Client`
-    public init<Stream>(stream: Stream, on worker: Worker, maxResponseSize: Int = 10_000_000)
+    public init<Stream>(stream: Stream, on worker: Worker)
         where Stream: ByteStream
     {
         let queueStream = QueueStream<HTTPResponse, HTTPRequest>()
 
-        let serializerStream = HTTPRequestSerializer().stream(on: worker)
-        let parserStream = HTTPResponseParser().stream(on: worker)
+        let serializerStream = HTTPRequestSerializer()
+        let parserStream = HTTPResponseParser()
 
         stream.stream(to: parserStream)
             .stream(to: queueStream)
@@ -47,3 +47,4 @@ public final class HTTPClient {
         }
     }
 }
+

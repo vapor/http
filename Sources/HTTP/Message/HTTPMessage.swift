@@ -30,7 +30,7 @@ import TCP
 /// to add your own stored properties to requests and responses
 /// that can be accessed simply by importing the module that
 /// adds them. This is how much of Vapor's functionality is created.
-public protocol HTTPMessage: Codable, CustomDebugStringConvertible {
+public protocol HTTPMessage: Codable, CustomStringConvertible, CustomDebugStringConvertible {
     /// The HTTP version of this message.
     var version: HTTPVersion { get set }
     /// The HTTP headers.
@@ -71,18 +71,41 @@ public struct HTTPOnUpgrade: Codable {
     }
 }
 
+extension HTTPMessage {
+    /// Sets Content-Length / Transfer-Encoding headers.
+    internal mutating func updateBodyHeaders() {
+        if let count = body.count {
+            if count > 0 {
+                headers[.contentLength] = count.description
+            }
+        } else {
+            if headers[.connection] != "close" {
+                headers[.transferEncoding] = "chunked"
+            }
+        }
+    }
+}
+
 // MARK: Debug string
 
 extension HTTPMessage {
-    /// A debug description for this HTTP message.
+    /// See `CustomStringConvertible.description
+    public var description: String {
+        var desc: [String] = []
+        desc.append("(\(Self.self))")
+        desc.append(headers.description)
+        desc.append(body.description)
+        return desc.joined(separator: "\n")
+    }
+}
+
+extension HTTPMessage {
+    /// See `CustomDebugStringConvertible.debugDescription`
     public var debugDescription: String {
         var desc: [String] = []
-
-        desc.append("HTTP.\(Self.self)")
-        for header in headers {
-            desc.append("\(header.name): \(header.value)")
-        }
-
+        desc.append("(\(Self.self))")
+        desc.append(headers.debugDescription)
+        desc.append(body.debugDescription)
         return desc.joined(separator: "\n")
     }
 }

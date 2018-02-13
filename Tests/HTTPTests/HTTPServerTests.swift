@@ -18,7 +18,11 @@ class HTTPServerTests: XCTestCase {
             let serverStream = tcpServer.stream(on: worker)
 
             _ = HTTPServer(
-                acceptStream: serverStream.map(to: SocketStream<TCPSocket>.self) { $0.socket.stream(on: worker) },
+                acceptStream: serverStream.map(to: TCPSocketStream.self) {
+                    $0.socket.stream(on: worker) { _, error in
+                        XCTFail("\(error)")
+                    }
+                },
                 worker: worker,
                 responder: EchoResponder()
             )

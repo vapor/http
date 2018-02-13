@@ -92,7 +92,7 @@ public final class MultipartParser {
     
     /// Reads the headers at the current position
     fileprivate func readHeaders() throws -> HTTPHeaders {
-        var headers = HTTPHeaders()
+        var headers = HTTPHeaders.empty()
         
         // headers
         headerScan: while position < data.count, try carriageReturnNewLine() {
@@ -117,8 +117,8 @@ public final class MultipartParser {
             guard let value = try scanStringUntil(.carriageReturn) else {
                 throw MultipartError(identifier: "multipart:invalid-header-value", reason: "Invalid multipart header value string encoding")
             }
-            
-            headers[HTTPHeaders.Name(key)] = value
+
+            headers[HTTPHeaderName(key)] = value
         }
         
         return headers
@@ -174,9 +174,7 @@ public final class MultipartParser {
             // skip '--'
             position = position &+ 2
             
-            let matches = data.withByteBuffer { buffer in
-                return memcmp(buffer.baseAddress!.advanced(by: position), boundary, boundary.count) == 0
-            }
+            let matches = data.subdata(in: position..<(position + boundary.count)).elementsEqual(boundary)
             
             // check boundary
             guard matches else {

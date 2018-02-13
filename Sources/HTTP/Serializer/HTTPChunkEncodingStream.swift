@@ -48,12 +48,13 @@ final class HTTPChunkEncodingStream: Async.Stream {
             // FIXME: Improve performance
             let hexNumber = String(input.count, radix: 16, uppercase: true).data(using: .utf8)!
             self.chunk = hexNumber + crlf + Data(input) + crlf
-            downstream!.next(self.chunk!.withByteBuffer { $0 }, done)
+            self.chunk!.withByteBuffer { downstream!.input(.next($0, done)) }
         case .error(let error):
             downstream?.error(error)
         case .close:
             isClosed = true
-            _ = downstream?.next(eof.withByteBuffer { $0 })
+            let promise = Promise(Void.self)
+            eof.withByteBuffer { downstream?.input(.next($0, promise)) }
             downstream?.close()
         }
     }

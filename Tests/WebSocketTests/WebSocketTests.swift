@@ -13,7 +13,11 @@ final class WebSocketTests : XCTestCase {
         try server.start(hostname: "localhost", port: 8090, backlog: 128)
         Thread.async {
             let webserver = HTTPServer(
-                acceptStream: server.stream(on: worker).map(to: SocketStream<TCPSocket>.self) { $0.socket.stream(on: worker) },
+                acceptStream: server.stream(on: worker).map(to: TCPSocketStream.self) {
+                    $0.socket.stream(on: worker) { _, error in
+                        XCTFail("\(error)")
+                    }
+                },
                 worker: worker,
                 responder: WebSocketResponder()
             )
@@ -38,11 +42,11 @@ final class WebSocketTests : XCTestCase {
         let read = try client.socket.read(max: 512)
         let string = String(data: read, encoding: .utf8)
         XCTAssertEqual(string, """
-        HTTP/1.1 101 \r
+        HTTP/1.1 101 Upgrade\r
+        Content-Length: 0\r
         Upgrade: websocket\r
         Connection: Upgrade\r
         Sec-WebSocket-Accept: U5ZWHrbsu7snP3DY1Q5P3e8AkOk=\r
-        Content-Length: 0\r
         \r
 
         """)

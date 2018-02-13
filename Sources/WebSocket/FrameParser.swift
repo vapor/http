@@ -54,7 +54,7 @@ final class FrameParser: ByteParser {
         
         guard let header = try FrameParser.parseFrameHeader(from: pointer, length: buffer.count) else {
             // Not enough data for a header
-            memcpy(bufferBuilder.advanced(by: accumulated), pointer, buffer.count)
+            _ = MutableByteBuffer(start: bufferBuilder.advanced(by: accumulated), count: buffer.count).initialize(from: buffer)
             accumulated = accumulated &+ buffer.count
             
             return .uncompleted(.header(Array(buffer)))
@@ -67,11 +67,11 @@ final class FrameParser: ByteParser {
         // This casting is safe because `maximumPayloadSize < Int.max - 15`
         if buffer.count &- header.consumed >= numericCast(header.size) {
             let consumed = header.consumed &+ numericCast(header.size)
-            memcpy(bufferBuilder, pointer, consumed)
+            _ = MutableByteBuffer(start: bufferBuilder, count: consumed).initialize(from: buffer)
             
             return .completed(consuming: consumed, result: try makeFrame(header: header))
         } else {
-            memcpy(bufferBuilder, pointer, buffer.count)
+            _ = MutableByteBuffer(start: bufferBuilder, count: buffer.count).initialize(from: buffer)
             return .uncompleted(.body(header: header, totalFilled: buffer.count))
         }
     }
@@ -99,7 +99,7 @@ final class FrameParser: ByteParser {
             
             defer {
                 // Always write these. Ensures that successful and uncompleted parsing are covered, always
-                memcpy(bufferBuilder, headerBytes, headerBytes.count)
+                _ = MutableByteBuffer(start: bufferBuilder, count: headerBytes.count).initialize(from: headerBytes)
             }
             
             // Append until the maximum necessary
@@ -125,7 +125,7 @@ final class FrameParser: ByteParser {
             let offset = header.consumed - previouslyConsumed
             
             if buffer.count &- offset >= numericCast(header.size) {
-                memcpy(bufferBuilder.advanced(by: header.consumed), pointer, numericCast(header.size))
+                _ = MutableByteBuffer(start: bufferBuilder.advanced(by: header.consumed), count: numericCast(header.size)).initialize(from: buffer)
                 return .completed(consuming: offset &+ numericCast(header.size), result: try makeFrame(header: header))
             } else {
                 return .uncompleted(
@@ -136,10 +136,10 @@ final class FrameParser: ByteParser {
             let needed = numericCast(header.size) &- filled
             
             if buffer.count < needed {
-                memcpy(self.bufferBuilder.advanced(by: filled), buffer.baseAddress!, buffer.count)
+                _ = MutableByteBuffer(start: bufferBuilder.advanced(by: filled), count: buffer.count).initialize(from: buffer)
                 return .uncompleted(.body(header: header, totalFilled: filled &+ buffer.count))
             } else {
-                memcpy(self.bufferBuilder.advanced(by: filled), buffer.baseAddress!, needed)
+                _ = MutableByteBuffer(start: bufferBuilder.advanced(by: filled), count: needed).initialize(from: buffer)
                 return .completed(consuming: needed, result: try makeFrame(header: header))
             }
         }
@@ -202,15 +202,15 @@ final class FrameParser: ByteParser {
         let mask: [UInt8]?
         
         if isMasked {
+            guard consumed &+ 4 <= length else {
+                // throw an invalidFrame for a missing mask buffer
+                throw WebSocketError(.invalidMask)
+            }
+
             // Ensure the minimum length is available
             guard length &- consumed >= payloadLength &+ 4, payloadLength < Int.max else {
                 // throw an invalidFrame for incomplete/invalid
                 return nil
-            }
-            
-            guard consumed &+ 4 < length else {
-                // throw an invalidFrame for a missing mask buffer
-                throw WebSocketError(.invalidMask)
             }
             
             mask = [base[0], base[1], base[2], base[3]]
@@ -229,7 +229,7 @@ final class FrameParser: ByteParser {
     }
 
     deinit {
-        bufferBuilder.deallocate(capacity: 15 + maximumPayloadSize)
+        bufferBuilder.deallocate()
     }
 }
 

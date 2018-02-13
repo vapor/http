@@ -44,7 +44,10 @@ func randomMask() -> [UInt8] {
         number = arc4random_uniform(UInt32.max)
     #endif
     
-    memcpy(&buffer, &number, 4)
+    buffer[0] = UInt8((number >>  0) & 0x0ff)
+    buffer[1] = UInt8((number >>  8) & 0x0ff)
+    buffer[2] = UInt8((number >> 16) & 0x0ff)
+    buffer[3] = UInt8((number >> 24) & 0x0ff)
     
     return buffer
 }

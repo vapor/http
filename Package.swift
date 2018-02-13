@@ -12,23 +12,20 @@ let package = Package(
         .library(name: "WebSocket", targets: ["WebSocket"]),
     ],
     dependencies: [
-        // Swift Promises, Futures, and Streams.
-        .package(url: "https://github.com/vapor/async.git", .branch("beta")),
+        // Core extensions, type-aliases, and functions that facilitate common tasks.
+        .package(url: "https://github.com/vapor/core.git", .exact("3.0.0-beta.1")),
 
         // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/core.git", .branch("beta")),
+        .package(url: "https://github.com/vapor/crypto.git", .exact("3.0.0-beta.1")),
 
         // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/crypto.git", .branch("beta")),
-
-        // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/service.git", .branch("beta")),
+        .package(url: "https://github.com/vapor/service.git", .exact("1.0.0-beta.1")),
 
         // Pure Swift (POSIX) TCP and UDP non-blocking socket layer, with event-driven Server and Client.
-        .package(url: "https://github.com/vapor/sockets.git", .branch("beta")),
+        .package(url: "https://github.com/vapor/sockets.git", .exact("3.0.0-beta.1")),
 
         // Swift OpenSSL & macOS Security TLS wrapper
-        .package(url: "https://github.com/vapor/tls.git", .branch("beta")),
+        .package(url: "https://github.com/vapor/tls.git", .exact("3.0.0-beta.1")),
     ],
     targets: [
         .target(name: "CHTTP"),
@@ -36,6 +33,7 @@ let package = Package(
         .testTarget(name: "FormURLEncodedTests", dependencies: ["FormURLEncoded"]),
         .target(name: "HTTP", dependencies: ["CHTTP", "TCP"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
+        .target(name: "Performance", dependencies: ["HTTP", "TCP"]),
         // .target(name: "HTTP2", dependencies: ["HTTP", "TLS", "Pufferfish"]),
         // .testTarget(name: "HTTP2Tests", dependencies: ["HTTP2"]),
         .target(name: "Multipart", dependencies: ["Debugging", "HTTP"]),
