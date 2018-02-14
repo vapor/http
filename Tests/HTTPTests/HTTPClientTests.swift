@@ -3,7 +3,13 @@ import Bits
 import HTTP
 import Foundation
 import TCP
+import TLS
 import XCTest
+#if os(Linux)
+import OpenSSL
+#else
+import AppleTLS
+#endif
 
 class HTTPClientTests: XCTestCase {
     func testTCP() throws {
@@ -62,6 +68,20 @@ class HTTPClientTests: XCTestCase {
     func testRomans() {
         testFetchingURL(hostname: "romansgohome.com", path: "/", responseContains: "Romans Go Home!")
     }
+
+    /// TLS
+
+    func testHTTPBin418Secure() {
+        testFetchingURL(hostname: "httpbin.org", path: "/status/418", useTLS: true, responseContains: "[ teapot ]")
+    }
+
+    func testHTTPBinRobotsSecure() {
+        testFetchingURL(hostname: "httpbin.org", path: "/robots.txt", useTLS: true, responseContains: "Disallow: /deny")
+    }
+
+    func testHTTPBinAnythingSecure() {
+        testFetchingURL(hostname: "httpbin.org", path: "/anything", useTLS: true, responseContains: "https://httpbin.org/anything")
+    }
     
     func testURI() {
         var uri: URI = "http://localhost:8081/test?q=1&b=4#test"
@@ -83,15 +103,32 @@ class HTTPClientTests: XCTestCase {
         ("testExampleCom", testExampleCom),
         ("testZombo", testZombo),
         ("testRomans", testRomans),
+        ("testHTTPBin418Secure", testHTTPBin418Secure),
+        ("testHTTPBinRobotsSecure", testHTTPBinRobotsSecure),
+        ("testHTTPBinAnythingSecure", testHTTPBinAnythingSecure),
     ]
 }
 
 /// MARK: Utilities
 
-func testFetchingURL(hostname: String, port: UInt16 = 80, path: String, times: Int = 3, responseContains: String, file: StaticString = #file, line: UInt = #line) {
+func testFetchingURL(
+    hostname: String,
+    port: UInt16? = nil,
+    path: String,
+    useTLS: Bool = false,
+    times: Int = 3,
+    responseContains: String,
+    file: StaticString = #file,
+    line: UInt = #line
+) {
     for i in 0..<times {
         do {
-            let content = try fetchURL(hostname: hostname, port: port, path: path)
+            let content: String?
+            if useTLS {
+                content = try fetchURLTLS(hostname: hostname, port: port ?? 443, path: path)
+            } else {
+                content = try fetchURLTCP(hostname: hostname, port: port ?? 80, path: path)
+            }
             if content?.contains(responseContains) != true {
                 XCTFail("Bad response \(i)/\(times): \(content ?? "nil")", file: file, line: line)
             }
@@ -101,7 +138,7 @@ func testFetchingURL(hostname: String, port: UInt16 = 80, path: String, times: I
     }
 }
 
-func fetchURL(hostname: String, port: UInt16, path: String) throws -> String? {
+func fetchURLTCP(hostname: String, port: UInt16, path: String) throws -> String? {
     let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
     let client = try HTTPClient.tcp(hostname: hostname, port: port, on: eventLoop) { _, error in
         XCTFail("\(error)")
@@ -112,5 +149,28 @@ func fetchURL(hostname: String, port: UInt16, path: String) throws -> String? {
         return res.body.makeData(max: 100_000)
     }.await(on: eventLoop)
 
+    return String(data: res, encoding: .utf8)
+}
+
+func fetchURLTLS(hostname: String, port: UInt16, path: String) throws -> String? {
+    let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
+    let tcpSocket = try TCPSocket(isNonBlocking: true)
+    let tcpClient = try TCPClient(socket: tcpSocket)
+    var settings = TLSClientSettings()
+    settings.peerDomainName = hostname
+    #if os(macOS)
+    let tlsClient = try AppleTLSClient(tcp: tcpClient, using: settings)
+    #else
+    let tlsClient = try OpenSSLClient(tcp: tcpClient, using: settings)
+    #endif
+    try tlsClient.connect(hostname: hostname, port: port)
+    let client = HTTPClient(
+        stream: tlsClient.socket.stream(on: eventLoop),
+        on: eventLoop
+    )
+    let req = HTTPRequest(method: .get, uri: URI(path: path), headers: [.host: hostname])
+    let res = try client.send(req).flatMap(to: Data.self) { res in
+        return res.body.makeData(max: 100_000)
+    }.await(on: eventLoop)
     return String(data: res, encoding: .utf8)
 }
