@@ -53,6 +53,10 @@ class HTTPClientTests: XCTestCase {
         testFetchingURL(hostname: "httpbin.org", path: "/anything", responseContains: "http://httpbin.org/anything")
     }
 
+    func testHTTPBinNoBody() {
+        testFetchingURL(hostname: "httpbin.org", path: "", responseContains: "")
+    }
+
     func testGoogleAPIsFCM() {
         testFetchingURL(hostname: "fcm.googleapis.com", path: "/fcm/send", responseContains: "<TITLE>Moved Temporarily</TITLE>")
     }
@@ -82,6 +86,21 @@ class HTTPClientTests: XCTestCase {
     func testHTTPBinAnythingSecure() {
         testFetchingURL(hostname: "httpbin.org", path: "/anything", useTLS: true, responseContains: "https://httpbin.org/anything")
     }
+
+    func testInvalidHTTPRequest() throws {
+        let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
+        let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop) { _, error in
+            XCTFail("\(error)")
+        }
+
+        let req = HTTPRequest(method: .get, uri: "http://httpbin.org" as URI, headers: [.host: "httpbin.org"])
+        let res = try client.send(req).flatMap(to: Data.self) { res in
+            return res.body.makeData(max: 100_000)
+        }.await(on: eventLoop)
+
+        let content = String(data: res, encoding: .utf8)
+        XCTAssert(content?.contains("<title>Bad Request</title>") == true)
+    }
     
     func testURI() {
         var uri: URI = "http://localhost:8081/test?q=1&b=4#test"
@@ -93,9 +112,18 @@ class HTTPClientTests: XCTestCase {
         XCTAssertEqual(uri.fragment, "test")
     }
 
+    func testURINoPath() {
+        var uri: URI = "http://httpbin.org"
+        XCTAssertEqual(uri.scheme, "http")
+        XCTAssertEqual(uri.hostname, "httpbin.org")
+        XCTAssertEqual(uri.port, nil)
+        XCTAssertEqual(uri.path, "/")
+        XCTAssertEqual(uri.query, nil)
+        XCTAssertEqual(uri.fragment, nil)
+    }
+
     static let allTests = [
         ("testTCP", testTCP),
-        ("testURI", testURI),
         ("testHTTPBin418", testHTTPBin418),
         ("testHTTPBinRobots", testHTTPBinRobots),
         ("testHTTPBinAnything", testHTTPBinAnything),
@@ -106,6 +134,8 @@ class HTTPClientTests: XCTestCase {
         ("testHTTPBin418Secure", testHTTPBin418Secure),
         ("testHTTPBinRobotsSecure", testHTTPBinRobotsSecure),
         ("testHTTPBinAnythingSecure", testHTTPBinAnythingSecure),
+        ("testURI", testURI),
+        ("testURINoPath", testURINoPath),
     ]
 }
 

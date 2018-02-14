@@ -142,7 +142,7 @@ extension URI {
         path: String = "/",
         query: String? = nil,
         fragment: String? = nil
-        ) {
+    ) {
         var buffer = [UInt8]()
         buffer.reserveCapacity(256)
         
