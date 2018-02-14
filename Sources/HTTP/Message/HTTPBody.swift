@@ -239,7 +239,7 @@ enum HTTPBodyStorage: Codable {
             let promise = Promise<Data>()
             let size = size() ?? Int.max
             var data = Data()
-            data.reserveCapacity(size)
+            data.reserveCapacity(size == Int.max ? 128 : size)
 
             let drain = DrainStream(ByteBuffer.self, onInput: { buffer in
                 guard data.count + buffer.count <= size else {
@@ -250,7 +250,7 @@ enum HTTPBodyStorage: Codable {
                     throw HTTPError(identifier: "bodySize", reason: "The body was larger than the limit")
                 }
 
-                data.append(Data(buffer: buffer))
+                data.append(buffer)
             }, onError: promise.fail, onClose: {
                 promise.complete(data)
             })
