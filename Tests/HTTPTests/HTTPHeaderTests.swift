@@ -47,6 +47,7 @@ class HTTPHeaderTests: XCTestCase {
         Content-Length: 1564\r
         Date: Mon, 29 Jan 2018 22:29:53 GMT\r
         Alt-Svc: hq=":443"; ma=2592000; quic=51303431; quic=51303339; quic=51303338; quic=51303337; quic=51303335,quic=":443"; ma=2592000; v="41,39,38,37,35"\r
+
         """
         let storage = HTTPHeaderStorage(bytes: Bytes(text.utf8), indexes: [
             HTTPHeaderIndex(nameStartIndex: 0, nameEndIndex: 12, valueStartIndex: 14, valueEndIndex: 38),
@@ -74,6 +75,36 @@ class HTTPHeaderTests: XCTestCase {
         hq=":443"; ma=2592000; quic=51303431; quic=51303339; quic=51303338; quic=51303337; quic=51303335,quic=":443"; ma=2592000; v="41,39,38,37,35"
         """)
 
+    }
+
+    func testHeadersUpdateContentLength() throws {
+        let text1 = """
+        Content-Type: text/html\r
+        Content-Length: 349\r
+        Connection: close\r
+        Date: Thu, 15 Feb 2018 01:27:36 GMT\r
+        Server: ECSF (lga/1372)\r
+
+        """
+        var headers = HTTPHeaders()
+        headers[.contentType] = "text/html"
+        headers[.contentLength] = 349.description
+        headers[.connection] = "close"
+        headers[.date] = "Thu, 15 Feb 2018 01:27:36 GMT"
+        headers[.server] = "ECSF (lga/1372)"
+
+        XCTAssertEqual(headers.debugDescription, text1)
+
+        let text2 = """
+        Content-Type: text/html\r
+        Connection: close\r
+        Date: Thu, 15 Feb 2018 01:27:36 GMT\r
+        Server: ECSF (lga/1372)\r
+        Content-Length: 349\r
+
+        """
+        headers[.contentLength] = 349.description
+        XCTAssertEqual(headers.debugDescription, text2)
     }
 
     static let allTests = [

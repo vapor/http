@@ -21,18 +21,18 @@ final class HTTPHeaderStorage {
     }
 
     /// Internal init for truly empty header storage.
-    internal init(copying bytes: ByteBuffer, with indexes: [HTTPHeaderIndex]) {
+    internal init(copying bytes: ByteBuffer, with indexes: [HTTPHeaderIndex?]) {
         self.buffer = MutableByteBuffer.allocate(capacity: bytes.count)
         self.buffer.initializeAssertingNoRemainder(from: bytes)
-        self.view = ByteBuffer(buffer)
+        self.view = ByteBuffer(start: buffer.start, count: indexes.determineLargestEndIndex())
         self.indexes = indexes
     }
 
     /// Create a new `HTTPHeaders` with explicit storage and indexes.
-    internal init(bytes: Bytes, indexes: [HTTPHeaderIndex]) {
+    internal init(bytes: Bytes, indexes: [HTTPHeaderIndex?]) {
         self.buffer = MutableByteBuffer.allocate(capacity: bytes.count)
         self.buffer.initializeAssertingNoRemainder(from: bytes)
-        self.view = ByteBuffer(buffer)
+        self.view = ByteBuffer(start: buffer.start, count: indexes.determineLargestEndIndex())
         self.indexes = indexes
     }
 
@@ -47,7 +47,11 @@ final class HTTPHeaderStorage {
     internal func copy() -> HTTPHeaderStorage {
         let newBuffer = MutableByteBuffer.allocate(capacity: buffer.count)
         newBuffer.initializeAssertingNoRemainder(from: buffer)
-        return .init(view: ByteBuffer(newBuffer), buffer: newBuffer, indexes: indexes)
+        return .init(
+            view: ByteBuffer(start: newBuffer.start, count: view.count),
+            buffer: newBuffer,
+            indexes: indexes
+        )
     }
 
     /// Removes all headers with this name
@@ -108,7 +112,6 @@ final class HTTPHeaderStorage {
     /// conjunction with `removeValues(for:)` for that behavior.
     internal func appendValue(_ value: String, for name: HTTPHeaderName) {
         let valueCount = value.utf8.count
-
         /// create the new header index
         let index = HTTPHeaderIndex(
             nameStartIndex: view.count,
@@ -235,6 +238,22 @@ final class HTTPHeaderStorage {
 
     deinit {
         buffer.deallocate()
+    }
+}
+
+extension Array where Element == HTTPHeaderIndex? {
+    /// Returns the largest end index in the indexes array.
+    func determineLargestEndIndex() -> Int {
+        var largestEndIndex: Int = 0
+        for index in self {
+            guard let index = index else {
+                continue
+            }
+            if index.endIndex > largestEndIndex {
+                largestEndIndex = index.endIndex
+            }
+        }
+        return largestEndIndex
     }
 }
 

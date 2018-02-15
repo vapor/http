@@ -32,7 +32,6 @@ let package = Package(
         .target(name: "FormURLEncoded", dependencies: ["Bits", "HTTP", "Debugging"]),
         .testTarget(name: "FormURLEncodedTests", dependencies: ["FormURLEncoded"]),
         .target(name: "HTTP", dependencies: ["CHTTP", "TCP"]),
-        .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
         .target(name: "Performance", dependencies: ["HTTP", "TCP"]),
         // .target(name: "HTTP2", dependencies: ["HTTP", "TLS", "Pufferfish"]),
         // .testTarget(name: "HTTP2Tests", dependencies: ["HTTP2"]),
@@ -43,6 +42,12 @@ let package = Package(
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )
+
+#if os(macOS)
+package.targets.append(.testTarget(name: "HTTPTests", dependencies: ["AppleTLS", "HTTP"]))
+#else
+package.targets.append(.testTarget(name: "HTTPTests", dependencies: ["OpenSSL", "HTTP"]))
+#endif
 
 #if os(macOS)
     package.targets.append(.target(name: "WebSocket", dependencies: ["Debugging", "TCP", "AppleTLS", "HTTP", "Crypto"]))

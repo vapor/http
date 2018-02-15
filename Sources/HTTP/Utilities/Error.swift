@@ -66,13 +66,13 @@ public struct HTTPError: Traceable, Debuggable, Swift.Error, Encodable {
 
 /// For printing un-handleable errors.
 func ERROR(_ string: @autoclosure () -> String, file: StaticString = #file, line: Int = #line) {
-    print("[HTTP] \(string()) [\(file):\(line)]")
+    print("[HTTP] \(string()) [\(file.description.split(separator: "/").last!):\(line)]")
 }
 
 /// For printing debug info.
 func DEBUG(_ string: @autoclosure () -> String, file: StaticString = #file, line: Int = #line) {
     #if VERBOSE
-    print("[VERBOSE] \(string()) [\(file):\(line)]")
+    print("[VERBOSE] \(string()) [\(file.description.split(separator: "/").last!):\(line)]")
     #endif
 }
 
