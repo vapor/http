@@ -49,7 +49,7 @@ public struct HTTPResponse: HTTPMessage {
     public init(
         version: HTTPVersion = HTTPVersion(major: 1, minor: 1),
         status: HTTPStatus = .ok,
-        headers: HTTPHeaders = HTTPHeaders(),
+        headers: HTTPHeaders = HTTPHeaders.default(),
         body: HTTPBody = HTTPBody()
     ) {
         self.version = version
