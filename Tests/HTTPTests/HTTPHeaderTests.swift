@@ -76,6 +76,36 @@ class HTTPHeaderTests: XCTestCase {
 
     }
 
+    func testHeadersUpdateContentLength() throws {
+        let text1 = """
+        Content-Type: text/html\r
+        Content-Length: 349\r
+        Connection: close\r
+        Date: Thu, 15 Feb 2018 01:27:36 GMT\r
+        Server: ECSF (lga/1372)\r
+
+        """
+        var headers = HTTPHeaders()
+        headers[.contentType] = "text/html"
+        headers[.contentLength] = 349.description
+        headers[.connection] = "close"
+        headers[.date] = "Thu, 15 Feb 2018 01:27:36 GMT"
+        headers[.server] = "ECSF (lga/1372)"
+
+        XCTAssertEqual(headers.debugDescription, text1)
+
+        let text2 = """
+        Content-Type: text/html\r
+        Connection: close\r
+        Date: Thu, 15 Feb 2018 01:27:36 GMT\r
+        Server: ECSF (lga/1372)\r
+        Content-Length: 349\r
+
+        """
+        headers[.contentLength] = 349.description
+        XCTAssertEqual(headers.debugDescription, text2)
+    }
+
     static let allTests = [
         ("testHeaders", testHeaders),
         ("testHeaderDisplacement", testHeaderDisplacement),
