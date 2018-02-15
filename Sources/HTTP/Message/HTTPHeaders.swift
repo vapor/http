@@ -21,12 +21,12 @@ public struct HTTPHeaders: Codable {
 
     /// Creates a new, empty `HTTPHeaders`.
     public init() {
-        self.storage = .default()
+        self.storage = HTTPHeaderStorage(bytes: [], indexes: [])
     }
 
-    /// Creates an empty HTTPHeaders (no Content-Length 0)
-    public static func empty() -> HTTPHeaders {
-        return HTTPHeaders(storage: HTTPHeaderStorage(bytes: [], indexes: []))
+    /// Creates default HTTPHeaders (with Content-Length 0)
+    public static func `default`() -> HTTPHeaders {
+        return HTTPHeaders(storage: .default())
     }
 
     /// Create a new `HTTPHeaders` with explicit storage and indexes.

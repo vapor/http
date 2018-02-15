@@ -7,7 +7,7 @@ import XCTest
 
 class HTTPHeaderTests: XCTestCase {
     func testHeaders() throws {
-        var headers = HTTPHeaders()
+        var headers = HTTPHeaders.default()
         XCTAssertEqual(headers.description, "Content-Length: 0\r\n")
         headers[.contentType] = "text/plain"
         XCTAssertEqual(headers.description, "Content-Length: 0\r\nContent-Type: text/plain\r\n")
@@ -27,7 +27,7 @@ class HTTPHeaderTests: XCTestCase {
     }
 
     func testHeaderDisplacement() throws {
-        var headers = HTTPHeaders()
+        var headers = HTTPHeaders.default()
         XCTAssertEqual(headers.description, "Content-Length: 0\r\n")
 
         headers[.contentType] = "text/plain"

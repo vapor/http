@@ -75,7 +75,7 @@ extension HTTPMessage {
     /// Sets Content-Length / Transfer-Encoding headers.
     internal mutating func updateBodyHeaders() {
         if let count = body.count {
-            if count > 0 {
+            if count != headers[.contentLength].flatMap(Int.init) {
                 headers[.contentLength] = count.description
             }
         } else {
