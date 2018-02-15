@@ -53,10 +53,6 @@ class HTTPClientTests: XCTestCase {
         testFetchingURL(hostname: "httpbin.org", path: "/anything", responseContains: "http://httpbin.org/anything")
     }
 
-    func testHTTPBinNoBody() {
-        testFetchingURL(hostname: "httpbin.org", path: "", responseContains: "")
-    }
-
     func testGoogleAPIsFCM() {
         testFetchingURL(hostname: "fcm.googleapis.com", path: "/fcm/send", responseContains: "<TITLE>Moved Temporarily</TITLE>")
     }
@@ -112,16 +108,6 @@ class HTTPClientTests: XCTestCase {
         XCTAssertEqual(uri.fragment, "test")
     }
 
-    func testURINoPath() {
-        var uri: URI = "http://httpbin.org"
-        XCTAssertEqual(uri.scheme, "http")
-        XCTAssertEqual(uri.hostname, "httpbin.org")
-        XCTAssertEqual(uri.port, nil)
-        XCTAssertEqual(uri.path, "/")
-        XCTAssertEqual(uri.query, nil)
-        XCTAssertEqual(uri.fragment, nil)
-    }
-
     static let allTests = [
         ("testTCP", testTCP),
         ("testHTTPBin418", testHTTPBin418),
@@ -135,7 +121,6 @@ class HTTPClientTests: XCTestCase {
         ("testHTTPBinRobotsSecure", testHTTPBinRobotsSecure),
         ("testHTTPBinAnythingSecure", testHTTPBinAnythingSecure),
         ("testURI", testURI),
-        ("testURINoPath", testURINoPath),
     ]
 }
 

@@ -47,6 +47,7 @@ class HTTPHeaderTests: XCTestCase {
         Content-Length: 1564\r
         Date: Mon, 29 Jan 2018 22:29:53 GMT\r
         Alt-Svc: hq=":443"; ma=2592000; quic=51303431; quic=51303339; quic=51303338; quic=51303337; quic=51303335,quic=":443"; ma=2592000; v="41,39,38,37,35"\r
+
         """
         let storage = HTTPHeaderStorage(bytes: Bytes(text.utf8), indexes: [
             HTTPHeaderIndex(nameStartIndex: 0, nameEndIndex: 12, valueStartIndex: 14, valueEndIndex: 38),
