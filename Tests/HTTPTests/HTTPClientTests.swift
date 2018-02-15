@@ -82,21 +82,6 @@ class HTTPClientTests: XCTestCase {
     func testHTTPBinAnythingSecure() {
         testFetchingURL(hostname: "httpbin.org", path: "/anything", useTLS: true, responseContains: "https://httpbin.org/anything")
     }
-
-    func testInvalidHTTPRequest() throws {
-        let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
-        let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop) { _, error in
-            XCTFail("\(error)")
-        }
-
-        let req = HTTPRequest(method: .get, uri: "http://httpbin.org" as URI, headers: [.host: "httpbin.org"])
-        let res = try client.send(req).flatMap(to: Data.self) { res in
-            return res.body.makeData(max: 100_000)
-        }.await(on: eventLoop)
-
-        let content = String(data: res, encoding: .utf8)
-        XCTAssert(content?.contains("<title>Bad Request</title>") == true)
-    }
     
     func testURI() {
         var uri: URI = "http://localhost:8081/test?q=1&b=4#test"
