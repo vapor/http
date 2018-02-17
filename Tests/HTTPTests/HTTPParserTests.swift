@@ -75,6 +75,75 @@ class HTTPParserTests: XCTestCase {
     }
 
     func testChunkedResponse() throws {
+        // captured variables to check
+        var request: HTTPRequest?
+        var content: String?
+        
+        // creates a protocol tester
+        let tester = ProtocolTester(
+            data: "GET /hello HTTP/1.1\r\nContent-Type: text/plain\r\nContent-Length:  5\r\n\r\nworld",
+            onFail: XCTFail
+        ) {
+            request = nil
+            content = nil
+        }
+        
+        tester.assert(before: "\r\n\r\n") {
+            guard request == nil else {
+                throw "request was not nil"
+            }
+        }
+        
+        tester.assert(after: "\r\n\r\n") {
+            guard let req = request else {
+                throw "request was nil"
+            }
+            
+            let contentType = req.headers[.contentType]
+            guard contentType == "text/plain" else {
+                print(req.headers)
+                throw "incorrect content type: \(contentType ?? "nil")"
+            }
+            
+            guard req.headers[.contentLength] == "5" else {
+                throw "incorrect content length"
+            }
+        }
+        
+        tester.assert(before: "world") {
+            guard content == nil else {
+                throw "content was not nil"
+            }
+        }
+        
+        tester.assert(after: "world") {
+            guard let string = content else {
+                throw "content was nil"
+            }
+            
+            guard string == "world" else {
+                throw "incorrect string"
+            }
+        }
+        
+        // configure parser stream
+        tester.stream(to: HTTPRequestParser()).drain { message in
+            request = message
+            message.body.makeData(max: 100).do { data in
+                content = String(data: data, encoding: .ascii)
+                }.catch { error in
+                    XCTFail("body error: \(error)")
+            }
+            }.catch { error in
+                XCTFail("parser error: \(error)")
+            }.finally {
+                // closed
+        }
+        
+        try tester.run().blockingAwait()
+        
+        
+        
         let data = """
         HTTP/1.1 200 OK\r
         Content-Type: text/plain\r
@@ -157,9 +226,88 @@ class HTTPParserTests: XCTestCase {
 
         try tester.run().blockingAwait()
     }
+    
+    func testLargeHeadersRequest() throws {
+        // captured variables to check
+        var request: HTTPRequest?
+        var content: String?
+        
+        let headers = "Content-Type: text/plain\r\nContent-Length:  5\r\n"
+        
+        // creates a protocol tester
+        let tester = ProtocolTester(
+            data: "GET /hello HTTP/1.1\r\n" + headers + "\r\nworld",
+            onFail: XCTFail
+        ) {
+            request = nil
+            content = nil
+        }
+        
+        tester.assert(before: "\r\n\r\n") {
+            guard request == nil else {
+                throw "request was not nil"
+            }
+        }
+        
+        tester.assert(after: "\r\n\r\n") {
+            guard let req = request else {
+                throw "request was nil"
+            }
+            
+            let contentType = req.headers[.contentType]
+            guard contentType == "text/plain" else {
+                print(req.headers)
+                throw "incorrect content type: \(contentType ?? "nil")"
+            }
+            
+            guard req.headers[.contentLength] == "5" else {
+                throw "incorrect content length"
+            }
+        }
+        
+        tester.assert(before: "world") {
+            guard content == nil else {
+                throw "content was not nil"
+            }
+        }
+        
+        tester.assert(after: "world") {
+            guard let string = content else {
+                throw "content was nil"
+            }
+            
+            guard string == "world" else {
+                throw "incorrect string"
+            }
+        }
+        
+        var parser = HTTPRequestParser()
+        var passed = true
+        
+        // configure parser stream
+        tester.stream(to: parser).drain { message in
+            request = message
+            message.body.makeData(max: 100).do { data in
+                content = String(data: data, encoding: .ascii)
+            }.catch { error in
+                XCTFail("body error: \(error)")
+            }
+        }.catch { error in
+            passed = false
+        }.finally {
+            XCTAssert(!passed, "This message should not be parsing since the headers are too large")
+            XCTAssertNil(content, "The body should not have been parsed")
+            // closed
+        }
+        
+        try tester.run().blockingAwait()
+    }
 
     static let allTests = [
         ("testRequest", testRequest),
         ("testChunkedResponse", testChunkedResponse),
+        ("testTooLargeRequest", testTooLargeRequest),
+        ("testTooLargeResponse", testTooLargeResponse),
+        ("testContentLengthLastHeader", testContentLengthLastHeader),
     ]
 }

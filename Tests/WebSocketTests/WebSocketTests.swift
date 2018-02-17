@@ -182,7 +182,7 @@ final class WebSocketTests : XCTestCase {
             return try parser.parseBytes(from: buffer, partial: nil)
         }
         
-        switch try state.assertCompleted() {
+        switch try state.requireCompleted() {
         case .completed(let n, let frame):
             XCTAssertEqual(n, message.count)
             XCTAssertNotEqual(Array(frame.buffer), data)
@@ -222,7 +222,7 @@ final class WebSocketTests : XCTestCase {
                 return try parser.parseBytes(from: buffer, partial: nil)
             }
             
-            guard case .uncompleted = try state.assertCompleted() else {
+            guard case .uncompleted = try state.requireCompleted() else {
                 XCTFail()
                 return
             }
@@ -232,7 +232,7 @@ final class WebSocketTests : XCTestCase {
             return try parser.parseBytes(from: buffer, partial: nil)
         }
         
-        guard case .completed(_, let frame) = try state.assertCompleted() else {
+        guard case .completed(_, let frame) = try state.requireCompleted() else {
             XCTFail()
             return
         }

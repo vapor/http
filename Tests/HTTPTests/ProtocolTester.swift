@@ -39,13 +39,13 @@ public final class ProtocolTester: Async.OutputStream {
 
     /// Adds a "before" offset assertion to the tester.
     public func assert(before substring: String, file: StaticString = #file, line: UInt = #line, callback: @escaping () throws -> ()) {
-        let check = ProtocolTesterCheck(minOffset: nil, maxOffset: original.offset(of: substring), file: file, line: line, checks: callback)
+        let check = ProtocolTesterCheck(minOffset: nil, maxOffset: original.offset(of: substring), expectSuccess: true, file: file, line: line, checks: callback)
         checks.append(check)
     }
 
     /// Adds an "after" offset assertion to the tester.
     public func assert(after substring: String, file: StaticString = #file, line: UInt = #line, callback: @escaping () throws -> ()) {
-        let check = ProtocolTesterCheck(minOffset: original.offset(of: substring), maxOffset: nil, file: file, line: line, checks: callback)
+        let check = ProtocolTesterCheck(minOffset: original.offset(of: substring), maxOffset: nil, expectSuccess: true, file: file, line: line, checks: callback)
         checks.append(check)
     }
 
@@ -151,6 +151,7 @@ public final class ProtocolTester: Async.OutputStream {
 private struct ProtocolTesterCheck {
     var minOffset: Int?
     var maxOffset: Int?
+    var expectSuccess: Bool
     var file: StaticString
     var line: UInt
     var checks: () throws -> ()
