@@ -27,6 +27,12 @@ class UtilityTests : XCTestCase {
         XCTAssertEqual(URI(scheme: "http://", hostname: "localhost").rawValue, "http://localhost/")
     }
     
+    func testURIEmptyPath() throws {
+        let emptyPathURI = URI("http://localhost")
+        
+        XCTAssertEqual(emptyPathURI.path, "/")
+    }
+    
     func testMethod() {
         XCTAssertEqual(HTTPMethod.get, "GET")
         XCTAssertEqual(HTTPMethod.post, HTTPMethod("post"))
@@ -138,6 +144,7 @@ class UtilityTests : XCTestCase {
         ("testRFC1123", testRFC1123),
         ("testHTTPURIs", testHTTPURIs),
         ("testURIConstruction", testURIConstruction),
+        ("testURIEmptyPath", testURIEmptyPath),
         ("testMethod", testMethod),
         ("testCookie", testCookie),
         ("testCookieArray", testCookieArray),

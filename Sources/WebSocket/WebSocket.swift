@@ -190,7 +190,7 @@ public final class WebSocket {
     }
     
     @discardableResult
-    public func ping() -> Signal {
+    public func ping() -> Future<Void> {
         let promise = Promise<Void>()
         let data = OSRandom().data(count: 32)
         

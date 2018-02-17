@@ -25,6 +25,32 @@ class RouterTests: XCTestCase {
         XCTAssertEqual(router.route(path: path + [.string("Tanner")], parameters: params), 42)
         try XCTAssertEqual(params.parameter(User.self, using: container).blockingAwait().name, "Tanner")
     }
+    
+    func testCaseSensitiveRouting() throws {
+        let router = TrieRouter<Int>()
+        
+        let path: [PathComponent.Parameter] = [.string("path"), .string("TO"), .string("fOo")]
+        
+        let route = Route<Int>(path: [.constants(path)], output: 42)
+        router.register(route: route)
+        
+        let params = Params()
+        XCTAssertEqual(router.route(path: [.string("PATH"), .string("tO"), .string("FOo")], parameters: params), nil)
+        XCTAssertEqual(router.route(path: [.string("path"), .string("TO"), .string("fOo")], parameters: params), 42)
+    }
+    
+    func testCaseInsensitiveRouting() throws {
+        let router = TrieRouter<Int>()
+        router.caseInsensitive = true
+        
+        let path: [PathComponent.Parameter] = [.string("path"), .string("TO"), .string("fOo")]
+        
+        let route = Route<Int>(path: [.constants(path)], output: 42)
+        router.register(route: route)
+        
+        let params = Params()
+        XCTAssertEqual(router.route(path: [.string("PATH"), .string("tO"), .string("FOo")], parameters: params), 42)
+    }
 
     func testAnyRouting() throws {
         let router = TrieRouter<Int>()
@@ -109,9 +135,29 @@ class RouterTests: XCTestCase {
         )
     }
 
+    func testRouterSuffixes() throws {
+        let router = TrieRouter<Int>()
+        router.caseInsensitive = true
+
+        let path1: [PathComponent.Parameter] = [.string("a")]
+        let path2: [PathComponent.Parameter] = [.string("aa")]
+        let route1 = Route<Int>(path: [.constants(path1)], output: 1)
+        let route2 = Route<Int>(path: [.constants(path2)], output: 2)
+        router.register(route: route1)
+        router.register(route: route2)
+
+        let params = Params()
+        XCTAssertEqual(router.route(path: [.string("a")], parameters: params), 1)
+        XCTAssertEqual(router.route(path: [.string("aa")], parameters: params), 2)
+    }
+
     static let allTests = [
         ("testRouter", testRouter),
         ("testAnyRouting", testAnyRouting),
+        ("testCaseInsensitiveRouting", testCaseInsensitiveRouting),
+        ("testCaseSensitiveRouting", testCaseSensitiveRouting),
+        ("testAnyRouting", testAnyRouting),
+        ("testRouterSuffixes", testRouterSuffixes),
     ]
 }
 

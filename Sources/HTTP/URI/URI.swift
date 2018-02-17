@@ -78,7 +78,7 @@ public struct URI: Codable {
     // https://tools.ietf.org/html/rfc3986#section-3.3
     public var pathBytes: ArraySlice<UInt8> {
         guard let (start, end) = self.boundaries(of: .path) else {
-            return []
+            return [.forwardSlash]
         }
         
         return self.buffer[start..<end]
@@ -142,7 +142,7 @@ extension URI {
         path: String = "/",
         query: String? = nil,
         fragment: String? = nil
-        ) {
+    ) {
         var buffer = [UInt8]()
         buffer.reserveCapacity(256)
         

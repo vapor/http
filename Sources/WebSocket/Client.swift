@@ -23,7 +23,8 @@ extension WebSocket {
     /// [Learn More →](https://docs.vapor.codes/3.0/websocket/client/#connecting-a-websocket-client)
     public static func connect(
         to uri: URI,
-        on worker: Worker
+        on worker: Worker,
+        onError: @escaping TCPSocketSink.ErrorHandler
     ) throws -> WebSocket {
         guard
             uri.scheme == "ws" || uri.scheme == "wss",
@@ -59,7 +60,7 @@ extension WebSocket {
             return websocket
         } else {
             let source = socket.source(on: worker)
-            let sink = socket.sink(on: worker)
+            let sink = socket.sink(on: worker, onError: onError)
             let websocket = WebSocket(source: .init(source), sink: .init(sink), worker: worker, server: false)
             try client.connect(hostname: hostname, port: port)
             websocket.upgrade(uri: uri)

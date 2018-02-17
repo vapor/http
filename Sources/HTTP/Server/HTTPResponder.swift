@@ -74,6 +74,9 @@ public final class HTTPResponderStream<Responder>: Stream where Responder: HTTPR
                                             byteStream.inputStream,
                                             eventLoop
                                         )
+                                        // Used to transfer the stream binding
+                                        // FIXME: Feels like a hack
+                                        nextRequest.complete()
                                     }
                                 } catch {
                                     downstream.error(error)

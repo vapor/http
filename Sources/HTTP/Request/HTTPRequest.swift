@@ -56,7 +56,7 @@ public struct HTTPRequest: HTTPMessage {
         method: HTTPMethod = .get,
         uri: URI = URI(),
         version: HTTPVersion = HTTPVersion(major: 1, minor: 1),
-        headers: HTTPHeaders = HTTPHeaders(),
+        headers: HTTPHeaders = HTTPHeaders.default(),
         body: HTTPBody = HTTPBody()
     ) {
         self.method = method

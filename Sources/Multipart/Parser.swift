@@ -93,7 +93,7 @@ public final class MultipartParser {
     
     /// Reads the headers at the current position
     fileprivate func readHeaders() throws -> HTTPHeaders {
-        var headers = HTTPHeaders.empty()
+        var headers = HTTPHeaders()
         
         // headers
         headerScan: while position < data.count, try carriageReturnNewLine() {
