@@ -53,7 +53,7 @@ internal final class CHTTPParserContext {
 
 
     /// Maximum allowed size of the start line + headers data (not including some start line componenets and white space)
-    private var maxStartLineAndHeadersSize: Int
+    var maxStartLineAndHeadersSize: Int
 
     /// Current URL size in start line (excluding other start line components)
     private var currentURLSize: Int

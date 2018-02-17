@@ -53,7 +53,7 @@ class MultipartTests: XCTestCase {
         XCTAssertEqual(try form.getFile(named: "multinamed[]").data, Data(multinamed.utf8))
 
         let a = String(data: MultipartSerializer(form: form).serialize(), encoding: .ascii)
-        XCTAssertEqual(a, string)
+        XCTAssertEqual(a, validMultipart)
     }
     
     func testPartReading() throws {

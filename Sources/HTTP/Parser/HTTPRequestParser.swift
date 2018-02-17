@@ -14,6 +14,18 @@ public final class HTTPRequestParser: CHTTPParser {
 
     /// See `CHTTPParser.chttpParserContext`
     var chttp: CHTTPParserContext
+    
+    /// The maximum amount of bytes that can be received in the start line and headers
+    ///
+    /// Used to prevent memory buffer attacks
+    public var maxStartLineAndHeadersSize: Int {
+        get {
+            return chttp.maxStartLineAndHeadersSize
+        }
+        set {
+            chttp.maxStartLineAndHeadersSize = newValue
+        }
+    }
 
     /// Current downstream accepting parsed messages.
     var downstream: AnyInputStream<HTTPRequest>?

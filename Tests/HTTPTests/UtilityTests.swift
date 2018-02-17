@@ -33,6 +33,20 @@ class UtilityTests : XCTestCase {
         XCTAssertEqual(emptyPathURI.path, "/")
     }
     
+    func testURIMutations() {
+        var uri = URI("/")
+        XCTAssertEqual(uri.description, "/")
+        
+        uri.path = "/hello"
+        XCTAssertEqual(uri.description, "/hello")
+        
+        uri.scheme = "abcde"
+        XCTAssertEqual(uri.description, "abcde:/hello")
+        
+        uri.hostname = "example.com"
+        XCTAssertEqual(uri.description, "abcde://example.com/hello")
+    }
+    
     func testMethod() {
         XCTAssertEqual(HTTPMethod.get, "GET")
         XCTAssertEqual(HTTPMethod.post, HTTPMethod("post"))
@@ -145,6 +159,7 @@ class UtilityTests : XCTestCase {
         ("testHTTPURIs", testHTTPURIs),
         ("testURIConstruction", testURIConstruction),
         ("testURIEmptyPath", testURIEmptyPath),
+        ("testURIMutations", testURIMutations),
         ("testMethod", testMethod),
         ("testCookie", testCookie),
         ("testCookieArray", testCookieArray),

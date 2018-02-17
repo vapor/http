@@ -27,7 +27,17 @@ public struct URI: Codable {
             return self.parse(.scheme)
         }
         set {
-            update(.scheme, to: newValue?.description)
+            if var scheme = newValue {
+                if hostname != nil {
+                    scheme += "://"
+                } else {
+                    scheme += ":"
+                }
+                
+                update(.scheme, to: scheme)
+            } else {
+                update(.scheme, to: nil)
+            }
         }
     }
     
@@ -245,7 +255,13 @@ extension URI: RawRepresentable, CustomStringConvertible {
         var uri = ""
         
         if let scheme = scheme {
-            uri += scheme + "://"
+            var scheme = scheme + ":"
+            
+            if hostname != nil {
+                scheme += "//"
+            }
+            
+            uri += scheme
         }
         
         if let userInfo = userInfo {
