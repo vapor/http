@@ -49,6 +49,8 @@ extension URI {
     }
     
     mutating func update(_ component: URIComponent, to string: String?) {
+        var component = component
+        
         guard let (start, end) = boundaries(of: component) else {
             guard let string = string else {
                 return
@@ -57,6 +59,7 @@ extension URI {
             let url = uriParser()
             
             while let previousComponent = component.previousComponent {
+                component = previousComponent
                 let (_, end) = previousComponent.extract(from: url)
                 
                 self.buffer.insert(contentsOf: string.utf8, at: end)
