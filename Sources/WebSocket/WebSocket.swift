@@ -189,6 +189,24 @@ public final class WebSocket {
         self.serializerStream.push(frame)
     }
     
+    public func send(future: Future<String>) -> Void {
+        _ = future.map(to: Void.self) { (msg) -> Void in
+            self.send(string: msg)
+        }
+    }
+
+    public func send(future: Future<Data>) -> Void {
+        _ = future.map(to: Void.self) { (msg) -> Void in
+            self.send(data: msg)
+        }
+    }
+
+    public func send(future: Future<ByteBuffer>) -> Void {
+        _ = future.map(to: Void.self) { (msg) -> Void in
+            self.send(bytes: msg)
+        }
+    }
+    
     @discardableResult
     public func ping() -> Future<Void> {
         let promise = Promise<Void>()
