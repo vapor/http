@@ -38,7 +38,7 @@ import Foundation
     func makeMessage(using body: HTTPBody) throws -> HTTPResponse {
         // require a version to have been parsed
         guard let version = chttp.version, let headers = chttp.headers, let statusCode = chttp.statusCode else {
-            throw HTTPError.invalidMessage()
+            throw HTTPError.invalidMessage(source: .capture())
         }
 
         let status: HTTPStatus
