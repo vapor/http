@@ -82,6 +82,10 @@ class HTTPClientTests: XCTestCase {
     func testHTTPBinAnythingSecure() {
         testFetchingURL(hostname: "httpbin.org", path: "/anything", useTLS: true, responseContains: "https://httpbin.org/anything")
     }
+
+    func testGoogleAPIsFCMSecure() {
+        testFetchingURL(hostname: "fcm.googleapis.com", path: "/fcm/send", useTLS: true, responseContains: "<TITLE>Moved Temporarily</TITLE>")
+    }
     
     func testURI() {
         var uri: URI = "http://localhost:8081/test?q=1&b=4#test"
@@ -105,6 +109,7 @@ class HTTPClientTests: XCTestCase {
         ("testHTTPBin418Secure", testHTTPBin418Secure),
         ("testHTTPBinRobotsSecure", testHTTPBinRobotsSecure),
         ("testHTTPBinAnythingSecure", testHTTPBinAnythingSecure),
+        ("testGoogleAPIsFCMSecure", testGoogleAPIsFCMSecure),
         ("testURI", testURI),
     ]
 }
@@ -152,7 +157,7 @@ func fetchURLTCP(hostname: String, port: UInt16, path: String) throws -> String?
 
     let req = HTTPRequest(method: .get, uri: URI(path: path), headers: [.host: hostname])
     let res = try client.send(req).flatMap(to: Data.self) { res in
-        return res.body.makeData(max: 100_000)
+        return res.body.makeData(max: 1_000_000)
     }.await(on: eventLoop)
 
     return String(data: res, encoding: .utf8)
@@ -176,7 +181,7 @@ func fetchURLTLS(hostname: String, port: UInt16, path: String) throws -> String?
     )
     let req = HTTPRequest(method: .get, uri: URI(path: path), headers: [.host: hostname])
     let res = try client.send(req).flatMap(to: Data.self) { res in
-        return res.body.makeData(max: 100_000)
+        return res.body.makeData(max: 1_000_000)
     }.await(on: eventLoop)
     return String(data: res, encoding: .utf8)
 }

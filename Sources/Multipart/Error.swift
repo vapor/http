@@ -3,7 +3,7 @@ import Foundation
 import COperatingSystem
 
 /// Errors that can be thrown while working with Multipart.
-public struct MultipartError: Traceable, Debuggable, Swift.Error {
+public struct MultipartError: Debuggable, Swift.Error {
     public static let readableName = "Multipart Error"
     public let identifier: String
     public var reason: String

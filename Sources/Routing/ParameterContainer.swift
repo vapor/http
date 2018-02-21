@@ -59,21 +59,23 @@ extension ParameterContainer {
         where P: Parameter
     {
         guard parameters.count > 0 else {
-            throw RoutingError(identifier: "insufficientParameters", reason: "Insufficient parameters")
+            throw RoutingError(identifier: "insufficientParameters", reason: "Insufficient parameters", source: .capture())
         }
 
         let current = parameters[0]
         guard current.slug == [UInt8](P.uniqueSlug.utf8) else {
             throw RoutingError(
                 identifier: "invalidParameterType",
-                reason: "Invalid parameter type. Expected \(P.self) got \(current.slug)"
+                reason: "Invalid parameter type. Expected \(P.self) got \(current.slug)",
+                source: .capture()
             )
         }
 
         guard let string = String(bytes: current.value, encoding: .utf8) else {
             throw RoutingError(
                 identifier: "convertString",
-                reason: "Could not convert the parameter value to a UTF-8 string."
+                reason: "Could not convert the parameter value to a UTF-8 string.",
+                source: .capture()
             )
         }
 
