@@ -18,7 +18,7 @@ public final class MultipartParser {
     fileprivate let data: Data
     
     /// The current position, used for parsing
-    var position = 0
+    var position: Int
     
     /// The output form
     var multipart: MultipartForm
@@ -27,6 +27,7 @@ public final class MultipartParser {
     public init(data: Data, boundary: [UInt8]) {
         self.data = data
         self.boundary = boundary
+        self.position = data.startIndex
         self.multipart = MultipartForm(parts: [], boundary: boundary)
         self.fullBoundary = [.carriageReturn, .newLine, .hyphen, .hyphen] + boundary
     }
@@ -36,8 +37,8 @@ public final class MultipartParser {
         guard
             let index = data.index(of: .carriageReturn),
             index > 5,
-            data[0] == .hyphen,
-            data[1] == .hyphen
+            data[data.startIndex] == .hyphen,
+            data[data.startIndex + 1] == .hyphen
         else {
             throw MultipartError(identifier: "no-boundary", reason: "No possible boundary could be found")
         }
@@ -48,7 +49,7 @@ public final class MultipartParser {
     // Requires `n` bytes
     fileprivate func require(_ n: Int) throws {
         guard position + n < data.count else {
-            throw MultipartError(identifier: "multipart:missing-data", reason: "Invalid multipart formatting")
+            throw MultipartError(identifier: "missing-data", reason: "Invalid multipart formatting")
         }
     }
     
@@ -66,7 +67,7 @@ public final class MultipartParser {
         
         headerKey: while true {
             guard position + offset < data.count else {
-                throw MultipartError(identifier: "multipart:eof", reason: "Unexpected end of multipart")
+                throw MultipartError(identifier: "eof", reason: "Unexpected end of multipart")
             }
             
             if data[position &+ offset] == trigger {
@@ -86,7 +87,7 @@ public final class MultipartParser {
     /// Asserts that the position is on top of two hyphens
     fileprivate func assertBoundaryStartEnd() throws {
         guard data[position] == .hyphen, data[position &+ 1] == .hyphen else {
-            throw MultipartError(identifier: "multipart:boundary", reason: "Invalid multipart formatting")
+            throw MultipartError(identifier: "boundary", reason: "Invalid multipart formatting")
         }
     }
     
@@ -107,7 +108,7 @@ public final class MultipartParser {
             
             // header key
             guard let key = try scanStringUntil(.colon) else {
-                throw MultipartError(identifier: "multipart:invalid-header-key", reason: "Invalid multipart header key string encoding")
+                throw MultipartError(identifier: "invalid-header-key", reason: "Invalid multipart header key string encoding")
             }
             
             // skip space (': ')
@@ -115,7 +116,7 @@ public final class MultipartParser {
             
             // header value
             guard let value = try scanStringUntil(.carriageReturn) else {
-                throw MultipartError(identifier: "multipart:invalid-header-value", reason: "Invalid multipart header value string encoding")
+                throw MultipartError(identifier: "invalid-header-value", reason: "Invalid multipart header value string encoding")
             }
 
             headers[HTTPHeaderName(key)] = value
@@ -132,7 +133,11 @@ public final class MultipartParser {
         contentSeek: while true {
             try require(fullBoundary.count)
             
-            let matches = data.withByteBuffer { buffer in
+            let matches = try data.withByteBuffer { buffer -> Bool in
+                guard buffer.count > base else {
+                    throw MultipartError(identifier: "missing-boundary", reason: "A Multipart boundary was expected but not found")
+                }
+                
                 return buffer[base] == fullBoundary[0] && buffer[base &+ 1] == fullBoundary[1] && memcmp(fullBoundary, buffer.baseAddress!.advanced(by: base), fullBoundary.count) == 0
             }
             

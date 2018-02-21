@@ -153,6 +153,7 @@ class RouterTests: XCTestCase {
 
     static let allTests = [
         ("testRouter", testRouter),
+        ("testAnyRouting", testAnyRouting),
         ("testCaseInsensitiveRouting", testCaseInsensitiveRouting),
         ("testCaseSensitiveRouting", testCaseSensitiveRouting),
         ("testAnyRouting", testAnyRouting),

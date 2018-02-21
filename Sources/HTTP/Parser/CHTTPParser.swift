@@ -53,6 +53,7 @@ extension CHTTPParser {
                 try handleNext(input, ready, downstream)
             } catch {
                 downstream.error(error)
+                downstream.close()
             }
         }
     }

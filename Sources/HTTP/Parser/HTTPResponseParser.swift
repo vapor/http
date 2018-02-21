@@ -16,6 +16,18 @@ import Foundation
 
     /// Current downstream accepting parsed messages.
     var downstream: AnyInputStream<HTTPResponse>?
+    
+    /// The maximum amount of bytes that can be received in the start line and headers
+    ///
+    /// Used to prevent memory buffer attacks
+    public var maxStartLineAndHeadersSize: Int {
+        get {
+            return chttp.maxStartLineAndHeadersSize
+        }
+        set {
+            chttp.maxStartLineAndHeadersSize = newValue
+        }
+    }
 
     /// Creates a new Request parser.
     public init() {

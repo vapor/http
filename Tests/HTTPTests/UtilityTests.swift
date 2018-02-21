@@ -33,6 +33,20 @@ class UtilityTests : XCTestCase {
         XCTAssertEqual(emptyPathURI.path, "/")
     }
     
+    func testURIMutations() {
+        var uri = URI("/")
+        XCTAssertEqual(uri.description, "/")
+        
+        uri.path = "/hello"
+        XCTAssertEqual(uri.description, "/hello")
+        
+        uri.scheme = "abcde"
+        XCTAssertEqual(uri.description, "abcde:/hello")
+        
+        uri.hostname = "example.com"
+        XCTAssertEqual(uri.description, "abcde://example.com/hello")
+    }
+    
     func testMethod() {
         XCTAssertEqual(HTTPMethod.get, "GET")
         XCTAssertEqual(HTTPMethod.post, HTTPMethod("post"))
@@ -61,7 +75,16 @@ class UtilityTests : XCTestCase {
         XCTAssertEqual(cookie.value.httpOnly, true)
     }
     
-    func testCookies() {
+    func testCookieArray() {
+        var cookies: Cookies = [
+            Cookie(named: "abc", value: "123")
+        ]
+        
+        XCTAssertNil(cookies["ABC"])
+        XCTAssertEqual(cookies["abc"]?.value, "123")
+    }
+    
+    func testCookiesDict() {
         var cookies: Cookies = [
             "session": "test",
             "token2": "abc123"
@@ -84,13 +107,66 @@ class UtilityTests : XCTestCase {
         XCTAssertEqual(cookies.cookies.count, 3)
     }
     
+    func testCookiesInitializer() {
+        var cookies = Cookies()
+        
+        XCTAssertNil(cookies["hello"])
+        
+        cookies["hello"] = "world"
+        
+        XCTAssertEqual(cookies["hello"]?.value, "world")
+    }
+    
+    func testMediaType() throws {
+        let req = HTTPRequest(method: .get, uri: "/", headers: [.contentType: "application/json"])
+        
+        XCTAssertEqual(req.mediaType, .json)
+        XCTAssertEqual(req.mediaType?.description, "application/json")
+    }
+    
+    func testBasicMethods() {
+        XCTAssertEqual(HTTPMethod.get.string, "GET")
+        XCTAssertEqual(HTTPMethod.put.string, "PUT")
+        XCTAssertEqual(HTTPMethod.post.string, "POST")
+        XCTAssertEqual(HTTPMethod.patch.string, "PATCH")
+        XCTAssertEqual(HTTPMethod.delete.string, "DELETE")
+    }
+    
+    func testURISanity() {
+        var uri: URI = "https://joannis@github.com:8182/vapor/vapor?hello=world#test"
+        
+        XCTAssertEqual(uri.scheme, "https")
+        XCTAssertEqual(uri.hostname, "github.com")
+        XCTAssertEqual(uri.port, 8182)
+        XCTAssertEqual(uri.path, "/vapor/vapor")
+        XCTAssertEqual(uri.query, "hello=world")
+        XCTAssertEqual(uri.fragment, "test")
+        
+        XCTAssertEqual(uri.description, "https://joannis@github.com:8182/vapor/vapor?hello=world#test")
+        
+        uri.scheme = "wss"
+        uri.hostname = "example.com"
+        uri.port = 22
+        uri.path = "/fruits/apples"
+        uri.query = "olleh=dlrow"
+        uri.fragment = "teeest"
+        
+        XCTAssertEqual(uri.description, "wss://joannis@example.com:22/fruits/apples?olleh=dlrow#teeest")
+    }
+    
     static let allTests = [
         ("testRFC1123", testRFC1123),
         ("testHTTPURIs", testHTTPURIs),
         ("testURIConstruction", testURIConstruction),
         ("testURIEmptyPath", testURIEmptyPath),
+        ("testURIMutations", testURIMutations),
         ("testMethod", testMethod),
         ("testCookie", testCookie),
-        ("testCookies", testCookies),
+        ("testCookieArray", testCookieArray),
+        ("testCookiesDict", testCookiesDict),
+        ("testCookiesInitializer", testCookiesInitializer),
+        ("testMediaType", testMediaType),
+        ("testBasicMethods", testBasicMethods),
+        ("testURISanity", testURISanity),
     ]
 }

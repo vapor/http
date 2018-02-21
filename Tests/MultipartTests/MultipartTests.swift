@@ -9,6 +9,8 @@ class MultipartTests: XCTestCase {
 
     """
     
+    let test = "eqw-dd-sa----123;1[234"
+    
     let multinamed = """
     test123
     aijdisadi>dwekqie4u219034u129e0wque90qjsd90asffs
@@ -18,12 +20,12 @@ class MultipartTests: XCTestCase {
 
     """
     
-    func testBasics() throws {
-        let string = """
+    var validMultipart: String {
+        return """
         ------WebKitFormBoundaryPVOZifB9OqEwP2fn\r
         Content-Disposition: form-data; name="test"\r
         \r
-        eqw-dd-sa----123;1[234\r
+        \(test)\r
         ------WebKitFormBoundaryPVOZifB9OqEwP2fn\r
         Content-Disposition: form-data; name="named"; filename=""\r
         \r
@@ -35,8 +37,10 @@ class MultipartTests: XCTestCase {
         ------WebKitFormBoundaryPVOZifB9OqEwP2fn--\r
         
         """
-        
-        let data = Data(string.utf8)
+    }
+    
+    func testBasics() throws {
+        let data = Data(validMultipart.utf8)
         
         XCTAssertEqual(Array("----WebKitFormBoundaryPVOZifB9OqEwP2fn".utf8), try MultipartParser.boundary(for: data))
         
@@ -49,7 +53,22 @@ class MultipartTests: XCTestCase {
         XCTAssertEqual(try form.getFile(named: "multinamed[]").data, Data(multinamed.utf8))
 
         let a = String(data: MultipartSerializer(form: form).serialize(), encoding: .ascii)
-        XCTAssertEqual(a, string)
+        XCTAssertEqual(a, validMultipart)
+    }
+    
+    func testPartReading() throws {
+        let data = Data(validMultipart.utf8)
+        
+        let form = try MultipartParser(data: data, boundary: MultipartParser.boundary(for: data)).parse()
+        
+        XCTAssertEqual(
+            try form.getPart(named: "named").data,
+            named.data(using: .utf8)
+        )
+        XCTAssertEqual(
+            try form.getString(named: "test"),
+            test
+        )
     }
 
     func testMultifile() throws {
@@ -86,8 +105,109 @@ class MultipartTests: XCTestCase {
         XCTAssertEqual(MultipartSerializer(form: multipart).serialize(), data)
     }
     
+    func testInvalidBoundaryState() {
+        var invalid = validMultipart.data(using: .utf8)!
+        invalid.removeFirst(1)
+        
+        XCTAssertThrowsError(
+            try MultipartParser(
+                data: invalid,
+                boundary: try MultipartParser.boundary(for: invalid)
+            ).parse()
+        )
+    }
+    
+    func testMissingBoundaryState() {
+        var invalid = validMultipart.data(using: .utf8)!
+        invalid.removeFirst(2)
+        
+        XCTAssertThrowsError(
+            try MultipartParser(
+                data: invalid,
+                boundary: try MultipartParser.boundary(for: invalid)
+                ).parse()
+        )
+    }
+    
+    func testInconsistentBoundary() {
+        var invalid = validMultipart.data(using: .utf8)!
+        invalid[3] = .underscore
+        
+        XCTAssertThrowsError(
+            try MultipartParser(
+                data: invalid,
+                boundary: try MultipartParser.boundary(for: invalid)
+                ).parse()
+        )
+    }
+    
+    func testMissingEndOfMultipart() {
+        var invalid = validMultipart.data(using: .utf8)!
+        invalid.removeLast(2)
+        
+        XCTAssertThrowsError(
+            try MultipartParser(
+                data: invalid,
+                boundary: try MultipartParser.boundary(for: invalid)
+            ).parse()
+        )
+    }
+    
+    func testMissingPart() throws {
+        let data = self.validMultipart.data(using: .utf8)!
+        
+        let part = try MultipartParser(
+            data: data,
+            boundary: try MultipartParser.boundary(for: data)
+        ).parse()
+        
+        XCTAssertThrowsError(try part.getString(named: "hello"))
+    }
+    
+    func testMissingNewline() {
+        let data = """
+        ------WebKitFormBoundaryPVOZifB9OqEwP2fn
+        Content-Disposition: form-data; name="test"\r
+        \r
+        \(test)
+        ------WebKitFormBoundaryPVOZifB9OqEwP2fn\r
+        Content-Disposition: form-data; name="named"; filename=""\r
+        
+        \(named)\r
+        ------WebKitFormBoundaryPVOZifB9OqEwP2fn\r
+        Content-Disposition: form-data; name="multinamed[]"; filename=""\r
+        \r
+        \(multinamed)
+        ------WebKitFormBoundaryPVOZifB9OqEwP2fn--\r
+        
+        """.data(using: .utf8)!
+        
+        XCTAssertThrowsError(
+            try MultipartParser(
+                data: data,
+                boundary: try MultipartParser.boundary(for: data)
+            ).parse()
+        )
+    }
+    
+    func testFormBoundary() {
+        var string = "-hello\r\n"
+        XCTAssertThrowsError(try MultipartParser.boundary(for: Data(string.utf8)))
+        
+        string = "--hello\r\n"
+        XCTAssertNoThrow(try MultipartParser.boundary(for: Data(string.utf8)))
+    }
+    
     static let allTests = [
         ("testBasics", testBasics),
-        ("testMultifile", testMultifile)
+        ("testPartReading", testPartReading),
+        ("testMultifile", testMultifile),
+        ("testInvalidBoundaryState", testInvalidBoundaryState),
+        ("testMissingBoundaryState", testMissingBoundaryState),
+        ("testInconsistentBoundary", testInconsistentBoundary),
+        ("testMissingEndOfMultipart", testMissingEndOfMultipart),
+        ("testMissingPart", testMissingPart),
+        ("testMissingNewline", testMissingNewline),
+        ("testFormBoundary", testFormBoundary),
     ]
 }
