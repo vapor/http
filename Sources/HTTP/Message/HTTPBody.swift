@@ -154,7 +154,8 @@ enum HTTPBodyStorage: Codable {
         case .chunkedOutputStream, .binaryOutputStream:
             throw HTTPError(
                 identifier: "streamingBody",
-                reason: "A BodyStream cannot be encoded with `encode(to:)`."
+                reason: "A BodyStream cannot be encoded with `encode(to:)`.",
+                source: .capture()
             )
         }
     }
@@ -216,7 +217,8 @@ enum HTTPBodyStorage: Codable {
         case .chunkedOutputStream(_), .binaryOutputStream(_):
             throw HTTPError(
                 identifier: "streamingBody",
-                reason: "A BodyStream was being accessed as a sequential byte buffer, which is impossible."
+                reason: "A BodyStream was being accessed as a sequential byte buffer, which is impossible.",
+                source: .capture()
             )
         }
     }
@@ -232,7 +234,8 @@ enum HTTPBodyStorage: Codable {
         case .chunkedOutputStream(_):
             let error = HTTPError(
                 identifier: "chunkedBody",
-                reason: "Cannot use `makeData(max:)` on a chunk-encoded body."
+                reason: "Cannot use `makeData(max:)` on a chunk-encoded body.",
+                source: .capture()
             )
             return Future(error: error)
         case .binaryOutputStream(let size, let stream):
@@ -243,11 +246,11 @@ enum HTTPBodyStorage: Codable {
 
             let drain = DrainStream(ByteBuffer.self, onInput: { buffer in
                 guard data.count + buffer.count <= size else {
-                    throw HTTPError(identifier: "bodySize", reason: "The body was larger than the request.")
+                    throw HTTPError(identifier: "bodySize", reason: "The body was larger than the request.", source: .capture())
                 }
 
                 guard data.count + buffer.count <= max else {
-                    throw HTTPError(identifier: "bodySize", reason: "The body was larger than the limit")
+                    throw HTTPError(identifier: "bodySize", reason: "The body was larger than the limit", source: .capture())
                 }
 
                 data.append(buffer)

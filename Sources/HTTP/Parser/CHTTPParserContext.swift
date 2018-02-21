@@ -160,7 +160,7 @@ extension CHTTPParserContext {
         // to the parser, it is signaling an error
         // - 1 to allow room for filtering a possibly final \r\n which I observed the parser does
         guard parsedCount >= buffer.count - 2, parsedCount <= buffer.count else {
-            throw HTTPError.invalidMessage()
+            throw HTTPError.invalidMessage(source: .capture())
         }
     }
 
