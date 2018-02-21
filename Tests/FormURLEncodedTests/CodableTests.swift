@@ -37,10 +37,20 @@ class FormURLEncodedCodableTests: XCTestCase {
         XCTAssertEqual(a, b)
     }
 
+    func testDecodeIntArray() throws {
+        let data = """
+        array[]=1&array[]=2&array[]=3
+        """.data(using: .utf8)!
+
+        let content = try FormURLDecoder().decode([String: [Int]].self, from: HTTPBody(data)).blockingAwait()
+        XCTAssertEqual(content["array"], [1, 2, 3])
+    }
+
     static let allTests = [
         ("testDecode", testDecode),
         ("testEncode", testEncode),
         ("testCodable", testCodable),
+        ("testDecodeIntArray", testDecodeIntArray),
     ]
 }
 
