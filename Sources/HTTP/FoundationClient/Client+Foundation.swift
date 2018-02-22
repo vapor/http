@@ -15,12 +15,13 @@ public final class FoundationClient: Client {
     public init(
         scheme: String,
         hostname: String,
-        port: Transport.Port
+        port: Transport.Port,
+        session: URLSession
     ) {
         self.scheme = scheme
         self.hostname = hostname
         self.port = port
-        self.session = URLSession(configuration: .default)
+        self.session = session
     }
 
     /// responds to the request using URLResponse
@@ -44,5 +45,20 @@ public final class FoundationClient: Client {
             }
             task.resume()
         }
+    }
+}
+
+public extension FoundationClient {
+    public convenience init(
+        scheme: String,
+        hostname: String,
+        port: Transport.Port
+    ) {
+        self.init(
+            scheme: scheme,
+            hostname: hostname,
+            port: port,
+            session: URLSession(configuration: .default)
+        )
     }
 }
