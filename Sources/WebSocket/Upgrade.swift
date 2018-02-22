@@ -49,8 +49,8 @@ extension WebSocket {
             let websocket = WebSocket(source: source, sink: sink, worker: worker)
             // Does it make sense to be defined here? If someone calls the above method, the websocket won't be set according to the given settings.
             try settings.apply(on: websocket, request: request, response: response)
-            try onUpgrade(websocket)
             websocket.bindFrameStreams()
+            try onUpgrade(websocket)
         }
 
         return response
