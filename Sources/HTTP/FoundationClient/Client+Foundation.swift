@@ -16,7 +16,7 @@ public final class FoundationClient: Client {
         scheme: String,
         hostname: String,
         port: Transport.Port,
-        session: URLSession
+        session: URLSession = URLSession(configuration: .default)
     ) {
         self.scheme = scheme
         self.hostname = hostname
@@ -45,20 +45,5 @@ public final class FoundationClient: Client {
             }
             task.resume()
         }
-    }
-}
-
-public extension FoundationClient {
-    public convenience init(
-        scheme: String,
-        hostname: String,
-        port: Transport.Port
-    ) {
-        self.init(
-            scheme: scheme,
-            hostname: hostname,
-            port: port,
-            session: URLSession(configuration: .default)
-        )
     }
 }
