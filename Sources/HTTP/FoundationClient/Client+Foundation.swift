@@ -15,12 +15,13 @@ public final class FoundationClient: Client {
     public init(
         scheme: String,
         hostname: String,
-        port: Transport.Port
+        port: Transport.Port,
+        session: URLSession = URLSession(configuration: .default)
     ) {
         self.scheme = scheme
         self.hostname = hostname
         self.port = port
-        self.session = URLSession(configuration: .default)
+        self.session = session
     }
 
     /// responds to the request using URLResponse
