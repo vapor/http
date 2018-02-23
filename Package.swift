@@ -8,24 +8,23 @@ let package = Package(
         .library(name: "HTTP", targets: ["HTTP"]),
         // .library(name: "HTTP2", targets: ["HTTP2"]),
         .library(name: "Multipart", targets: ["Multipart"]),
-        .library(name: "Routing", targets: ["Routing"]),
         .library(name: "WebSocket", targets: ["WebSocket"]),
     ],
     dependencies: [
-        // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/core.git", "3.0.0-beta.2"..<"3.0.0-beta.3"),
+        // 🌎 Utility package containing tools for byte manipulation, Codable, OS APIs, and debugging.
+        .package(url: "https://github.com/vapor/core.git", from: "3.0.0-rc"),
 
-        // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/crypto.git", "3.0.0-beta.1"..<"3.0.0-beta.2"),
+        // 🔑 Hashing (BCrypt, SHA, HMAC, etc), encryption, and randomness.
+        .package(url: "https://github.com/vapor/crypto.git", from: "3.0.0-rc"),
 
-        // Core extensions, type-aliases, and functions that facilitate common tasks.
-        .package(url: "https://github.com/vapor/service.git", "1.0.0-beta.2"..<"1.0.0-beta.3"),
+        // 📦 Dependency injection / inversion of control framework.
+        .package(url: "https://github.com/vapor/service.git", from: "1.0.0-rc"),
 
-        // Pure Swift (POSIX) TCP and UDP non-blocking socket layer, with event-driven Server and Client.
-        .package(url: "https://github.com/vapor/sockets.git", "3.0.0-beta.3"..<"3.0.0-beta.4"),
+        // 🔌 Non-blocking TCP socket layer, with event-driven server and client.
+        .package(url: "https://github.com/vapor/sockets.git", from: "3.0.0-rc"),
 
-        // Swift OpenSSL & macOS Security TLS wrapper
-        .package(url: "https://github.com/vapor/tls.git", "3.0.0-beta.3"..<"3.0.0-beta.4"),
+        // 🔒 Non-blocking, event-driven TLS built on OpenSSL & macOS security.
+        .package(url: "https://github.com/vapor/tls.git", from: "3.0.0-rc"),
     ],
     targets: [
         .target(name: "CHTTP"),
@@ -37,20 +36,14 @@ let package = Package(
         // .testTarget(name: "HTTP2Tests", dependencies: ["HTTP2"]),
         .target(name: "Multipart", dependencies: ["Debugging", "HTTP"]),
         .testTarget(name: "MultipartTests", dependencies: ["Multipart"]),
-        .target(name: "Routing", dependencies: ["Debugging", "HTTP", "Service", "WebSocket"]),
-        .testTarget(name: "RoutingTests", dependencies: ["Routing"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )
 
 #if os(macOS)
+package.targets.append(.target(name: "WebSocket", dependencies: ["Debugging", "TCP", "AppleTLS", "HTTP", "Crypto"]))
 package.targets.append(.testTarget(name: "HTTPTests", dependencies: ["AppleTLS", "HTTP"]))
 #else
+package.targets.append(.target(name: "WebSocket", dependencies: ["Debugging", "TCP", "OpenSSL", "HTTP", "Crypto"]))
 package.targets.append(.testTarget(name: "HTTPTests", dependencies: ["OpenSSL", "HTTP"]))
-#endif
-
-#if os(macOS)
-    package.targets.append(.target(name: "WebSocket", dependencies: ["Debugging", "TCP", "AppleTLS", "HTTP", "Crypto"]))
-#else
-    package.targets.append(.target(name: "WebSocket", dependencies: ["Debugging", "TCP", "OpenSSL", "HTTP", "Crypto"]))
 #endif
