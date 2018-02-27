@@ -12,6 +12,68 @@ import AppleTLS
 #endif
 
 class HTTPClientTests: XCTestCase {
+    func testStreamingBody() throws {
+        for i in 0...3 {
+            let pushStream = PushStream<ByteBuffer>()
+            var request: HTTPRequest?
+            var body: Data?
+            var error = false
+            
+            let parser = HTTPRequestParser()
+            _ = parser.drain { req in
+                request = req
+                
+                _ = request?.body.makeData(max: 15_000).do { data in
+                    body = data
+                }.catch { _ in
+                    error = true
+                }
+            }.catch { _ in
+                error = true
+            }
+            
+            pushStream.output(to: parser)
+            
+            let bodyData = String(repeating: "A", count: 10_000)
+            let requestData = "GET /hello HTTP/1.1\r\nContent-Type: text/plain\r\nContent-Length: \(bodyData.count.description)\r\n\r\n" + bodyData
+            let data = Data(requestData.utf8)
+            let size = data.count
+            
+            data.withByteBuffer { buffer in
+                let headerBodyBuffer = ByteBuffer(start: buffer.baseAddress, count: 4_096)
+                let bodyBuffer = ByteBuffer(start: buffer.baseAddress?.advanced(by: 4_096), count: 4_096)
+                let endBuffer = ByteBuffer(start: buffer.baseAddress?.advanced(by: 8_192), count: size - 8_192)
+                
+                if i < 3 {
+                    pushStream.push(headerBodyBuffer)
+                    XCTAssertNotNil(request)
+                    XCTAssertNil(body)
+                }
+                
+                if i < 2 {
+                    pushStream.push(bodyBuffer)
+                    XCTAssertNil(body)
+                }
+                
+                if i < 1 {
+                    pushStream.push(endBuffer)
+                    XCTAssertNotNil(body)
+                }
+            }
+            
+            pushStream.close()
+            
+            switch i {
+            case 0:
+                XCTAssertFalse(error, "Test 0 received an error")
+            case 1...2:
+                XCTAssert(error, "Test \(i) didn't receive an error")
+            default:
+                XCTAssertNil(request)
+            }
+        }
+    }
+    
     func testTCP() throws {
         let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
         let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop) { _, error in

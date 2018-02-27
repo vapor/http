@@ -238,9 +238,10 @@ enum HTTPBodyStorage: Codable {
                 source: .capture()
             )
             return Future(error: error)
-        case .binaryOutputStream(let size, let stream):
+        case .binaryOutputStream(let expectedSize, let stream):
             let promise = Promise<Data>()
-            let size = size() ?? Int.max
+            let expectedSize = expectedSize()
+            let size = expectedSize ?? Int.max
             var data = Data()
             data.reserveCapacity(size == Int.max ? 128 : size)
 
@@ -255,6 +256,12 @@ enum HTTPBodyStorage: Codable {
 
                 data.append(buffer)
             }, onError: promise.fail, onClose: {
+                if let expectedSize = expectedSize, data.count != expectedSize {
+                    let error = HTTPError(identifier: "bodySize", reason: "The body was larger than the limit", source: .capture())
+                    promise.fail(error)
+                    return
+                }
+                
                 promise.complete(data)
             })
             stream.output(to: drain)
