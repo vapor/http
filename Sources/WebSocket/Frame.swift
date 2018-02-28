@@ -135,34 +135,34 @@ final class Frame {
             lengthByte = UInt8(payload.count)
             payloadLengthSize = 0
             number = []
-            
-        // Serialize as UInt16
+
+            // Serialize as UInt16
         } else if payload.count <= Int(UInt16.max) {
             lengthByte = 126
             payloadLengthSize = 2
-            
+
             let length = UInt16(payload.count).littleEndian
-            
+
             number = [UInt8](repeating: 0, count: 2)
-            number[0] = UInt8(length & 0xff)
-            number[1] = UInt8(length >> 8)
-            
-        // Serialize as UInt64
+            number[1] = UInt8((length >> 0) & 0xff)
+            number[0] = UInt8((length >> 8) & 0xff)
+
+            // Serialize as UInt64
         } else {
             lengthByte = 127
             payloadLengthSize = 8
-            
+
             let length = UInt64(payload.count).littleEndian
-            
+
             number = [UInt8](repeating: 0, count: 8)
-            number[0] = UInt8((length >>  0) & 0x0ff)
-            number[1] = UInt8((length >>  8) & 0x0ff)
-            number[2] = UInt8((length >> 16) & 0x0ff)
-            number[3] = UInt8((length >> 24) & 0x0ff)
-            number[4] = UInt8((length >> 32) & 0x0ff)
-            number[5] = UInt8((length >> 40) & 0x0ff)
-            number[6] = UInt8((length >> 48) & 0x0ff)
-            number[7] = UInt8((length >> 56) & 0x0ff)
+            number[7] = UInt8((length >>  0) & 0x0ff)
+            number[6] = UInt8((length >>  8) & 0x0ff)
+            number[5] = UInt8((length >> 16) & 0x0ff)
+            number[4] = UInt8((length >> 24) & 0x0ff)
+            number[3] = UInt8((length >> 32) & 0x0ff)
+            number[2] = UInt8((length >> 40) & 0x0ff)
+            number[1] = UInt8((length >> 48) & 0x0ff)
+            number[0] = UInt8((length >> 56) & 0x0ff)
         }
         
         // create a buffer for the entire message
