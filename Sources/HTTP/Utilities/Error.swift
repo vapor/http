@@ -27,7 +27,7 @@ public struct HTTPError: Debuggable {
         return HTTPError(
             identifier: "invalidMessage",
             reason: "Unable to parse invalid HTTP message.",
-            source: .capture()
+            source: source
         )
     }
 
@@ -38,7 +38,7 @@ public struct HTTPError: Debuggable {
         return HTTPError(
             identifier: "contentRequired",
             reason: "\(type) content required.",
-            source: .capture()
+            source: source
         )
     }
 }
