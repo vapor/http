@@ -31,24 +31,6 @@ class HTTPClientTests: XCTestCase {
         testFetchingURL(hostname: "romansgohome.com", path: "/", responseContains: "Romans Go Home!")
     }
 
-    /// TLS
-
-    func testHTTPBin418Secure() {
-        testFetchingURL(hostname: "httpbin.org", path: "/status/418", useTLS: true, responseContains: "[ teapot ]")
-    }
-
-    func testHTTPBinRobotsSecure() {
-        testFetchingURL(hostname: "httpbin.org", path: "/robots.txt", useTLS: true, responseContains: "Disallow: /deny")
-    }
-
-    func testHTTPBinAnythingSecure() {
-        testFetchingURL(hostname: "httpbin.org", path: "/anything", useTLS: true, responseContains: "https://httpbin.org/anything")
-    }
-
-    func testGoogleAPIsFCMSecure() {
-        testFetchingURL(hostname: "fcm.googleapis.com", path: "/fcm/send", useTLS: true, responseContains: "<TITLE>Moved Temporarily</TITLE>")
-    }
-
     static let allTests = [
         ("testHTTPBin418", testHTTPBin418),
         ("testHTTPBinRobots", testHTTPBinRobots),
@@ -57,10 +39,6 @@ class HTTPClientTests: XCTestCase {
         ("testExampleCom", testExampleCom),
         ("testZombo", testZombo),
         ("testRomans", testRomans),
-        ("testHTTPBin418Secure", testHTTPBin418Secure),
-        ("testHTTPBinRobotsSecure", testHTTPBinRobotsSecure),
-        ("testHTTPBinAnythingSecure", testHTTPBinAnythingSecure),
-        ("testGoogleAPIsFCMSecure", testGoogleAPIsFCMSecure),
     ]
 }
 
@@ -70,7 +48,6 @@ func testFetchingURL(
     hostname: String,
     port: Int? = nil,
     path: String,
-    useTLS: Bool = false,
     times: Int = 3,
     responseContains: String,
     file: StaticString = #file,
@@ -84,13 +61,7 @@ func testFetchingURL(
     #endif
     for i in 0..<times {
         do {
-            let content: String?
-            if useTLS {
-                content = nil
-//                content = try fetchURLTLS(hostname: hostname, port: port ?? 443, path: path)
-            } else {
-                content = try fetchURLTCP(hostname: hostname, port: port ?? 80, path: path).wait()
-            }
+            let content = try fetchURLTCP(hostname: hostname, port: port ?? 80, path: path).wait()
             if content?.contains(responseContains) != true {
                 XCTFail("Bad response \(i)/\(times): \(content ?? "nil")", file: file, line: line)
             }

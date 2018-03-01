@@ -33,6 +33,7 @@ public final class MultipartSerializer {
                 body.append(Data(val.utf8))
                 body.append(contentsOf: [.carriageReturn, .newLine])
             }
+            body.append(contentsOf: [.carriageReturn, .newLine])
             
             body.append(part.data)
             body.append(contentsOf: [.carriageReturn, .newLine])
