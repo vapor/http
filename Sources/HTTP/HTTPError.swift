@@ -20,27 +20,6 @@ public struct HTTPError: Debuggable {
         self.sourceLocation = source
         self.stackTrace = HTTPError.makeStackTrace()
     }
-
-    public static func invalidMessage(
-        source: SourceLocation
-    ) -> Error {
-        return HTTPError(
-            identifier: "invalidMessage",
-            reason: "Unable to parse invalid HTTP message.",
-            source: .capture()
-        )
-    }
-
-    public static func contentRequired(
-        _ type: Any.Type,
-        source: SourceLocation
-    ) -> Error {
-        return HTTPError(
-            identifier: "contentRequired",
-            reason: "\(type) content required.",
-            source: .capture()
-        )
-    }
 }
 
 /// For printing un-handleable errors.
@@ -62,4 +41,3 @@ extension UnsafeMutableBufferPointer {
         assert(it.next() == nil)
     }
 }
-

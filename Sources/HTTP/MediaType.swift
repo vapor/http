@@ -21,6 +21,7 @@
 /// SOFTWARE.
 
 import Foundation
+import Bits
 
 /// A media type (also MIME type and content type)
 /// is a two-part identifier for file formats and format
@@ -33,33 +34,33 @@ public struct MediaType: Hashable {
     public var type: String {
         return String(bytes: typeBytes, encoding: .utf8) ?? ""
     }
-    
+
     /// The subtype is specific to each type.
     public var subtype: String {
         return String(bytes: subtypeBytes, encoding: .utf8) ?? ""
     }
-    
+
     var typeBytes: [UInt8]
     var subtypeBytes: [UInt8]
     var bytes: [UInt8]
     public let hashValue: Int
-    
+
     /// Key/value pair parameters for this type.
     public let parameters: [String: String]
-    
+
     /// Create a new custom media type.
     public init(type: String, subtype: String, parameters: [String: String] = [:]) {
         self.typeBytes = Array(type.utf8)
         self.subtypeBytes = Array(subtype.utf8)
         self.parameters = parameters
-        
+
         var bytes = [UInt8]()
         bytes.reserveCapacity(typeBytes.count + subtypeBytes.count + 128)
-        
+
         bytes.append(contentsOf: typeBytes)
         bytes.append(.forwardSlash)
         bytes.append(contentsOf: subtypeBytes)
-        
+
         for parameter in parameters {
             bytes.append(.semicolon)
             bytes.append(.space)
@@ -67,7 +68,7 @@ public struct MediaType: Hashable {
             bytes.append(.equals)
             bytes += Array(parameter.value.utf8)
         }
-        
+
         self.bytes = bytes
         self.hashValue = typeBytes.djb2 &+ subtypeBytes.djb2
     }
@@ -155,7 +156,7 @@ public struct MediaType: Hashable {
     /// media types in the collection.
     public func matches<C : Collection>(
         any mediaTypes: C
-    ) -> Bool where C.Iterator.Element == MediaType {
+        ) -> Bool where C.Iterator.Element == MediaType {
         for mediaType in mediaTypes {
             if matches(other: mediaType) {
                 return true
@@ -190,15 +191,27 @@ extension HTTPMessage {
     /// The MediaType inside the `Message` `Headers`' "Content-Type"
     public var mediaType: MediaType? {
         get {
-            guard let contentType = headers[.contentType] else {
+            guard let contentType = headers[.contentType].first else {
                 return nil
             }
-            
+
             return MediaType(string: contentType)
         }
         set {
-            headers[.contentType] = newValue?.description // FIXME: performance
+            if let new = newValue?.description {
+                headers.replaceOrAdd(name: .contentType, value: new)
+            } else {
+                headers.remove(name: .contentType)
+            }
         }
+    }
+}
+
+
+extension MediaType : CustomStringConvertible {
+    /// :nodoc:
+    public var description: String {
+        return String(bytes: self.bytes, encoding: .utf8) ?? ""
     }
 }
 

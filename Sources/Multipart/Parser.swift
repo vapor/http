@@ -118,7 +118,7 @@ public final class MultipartParser {
                 throw MultipartError(identifier: "multipart:invalid-header-value", reason: "Invalid multipart header value string encoding")
             }
 
-            headers[HTTPHeaderName(key)] = value
+            headers.replaceOrAdd(name: key, value: value)
         }
         
         return headers
@@ -191,7 +191,7 @@ public final class MultipartParser {
             
             var headers = try readHeaders()
             
-            guard let content = headers[.contentDisposition], content.starts(with: "form-data") else {
+            guard let content = headers[.contentDisposition].first, content.starts(with: "form-data") else {
                 throw MultipartError(identifier: "multipart:headers", reason: "Invalid content disposition")
             }
             

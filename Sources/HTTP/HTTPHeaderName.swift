@@ -1,26 +1,104 @@
-/// Type used for the name of a HTTP header in the `HTTPHeaders` storage.
-public struct HTTPHeaderName: Codable, Hashable, ExpressibleByStringLiteral, CustomStringConvertible {
-    /// See `Hashable.hashValue`
-    public var hashValue: Int {
-        return lowercased.djb2
+import Foundation
+
+extension HTTPHeaders {
+    /// Add a header name/value pair to the block.
+    ///
+    /// This method is strictly additive: if there are other values for the given header name
+    /// already in the block, this will add a new entry. `add` performs case-insensitive
+    /// comparisons on the header field name.
+    ///
+    /// - Parameter name: The header field name. For maximum compatibility this should be an
+    ///     ASCII string. For future-proofing with HTTP/2 lowercase header names are strongly
+    //      recommended.
+    /// - Parameter value: The header field value to add for the given name.
+    public mutating func add(name: HTTPHeaderName, value: String) {
+        add(name: name.lowercased, value: value)
     }
 
-    /// Original header bytes
-    internal let original: [UInt8]
+    /// Add a header name/value pair to the block, replacing any previous values for the
+    /// same header name that are already in the block.
+    ///
+    /// This is a supplemental method to `add` that essentially combines `remove` and `add`
+    /// in a single function. It can be used to ensure that a header block is in a
+    /// well-defined form without having to check whether the value was previously there.
+    /// Like `add`, this method performs case-insensitive comparisons of the header field
+    /// names.
+    ///
+    /// - Parameter name: The header field name. For maximum compatibility this should be an
+    ///     ASCII string. For future-proofing with HTTP/2 lowercase header names are strongly
+    //      recommended.
+    /// - Parameter value: The header field value to add for the given name.
+    public mutating func replaceOrAdd(name: HTTPHeaderName, value: String) {
+        replaceOrAdd(name: name.lowercased, value: value)
+    }
+
+    /// Remove all values for a given header name from the block.
+    ///
+    /// This method uses case-insensitive comparisons for the header field name.
+    ///
+    /// - Parameter name: The name of the header field to remove from the block.
+    public mutating func remove(name: HTTPHeaderName) {
+        remove(name: name.lowercased)
+    }
+
+    /// Retrieve all of the values for a give header field name from the block.
+    ///
+    /// This method uses case-insensitive comparisons for the header field name. It
+    /// does not return a maximally-decomposed list of the header fields, but instead
+    /// returns them in their original representation: that means that a comma-separated
+    /// header field list may contain more than one entry, some of which contain commas
+    /// and some do not. If you want a representation of the header fields suitable for
+    /// performing computation on, consider `getCanonicalForm`.
+    ///
+    /// - Parameter name: The header field name whose values are to be retrieved.
+    /// - Returns: A list of the values for that header field name.
+    public subscript(name: HTTPHeaderName) -> [String] {
+        return self[name.lowercased]
+    }
+
+    /// https://tools.ietf.org/html/rfc2616#section-3.6
+    ///
+    /// "Parameters are in  the form of attribute/value pairs."
+    ///
+    /// From a header + attribute, this subscript will fetch a value
+    public subscript(name: HTTPHeaderName, attribute: String) -> String? {
+        get {
+            guard let header = self[name].first else { return nil }
+            guard let range = header.range(of: "\(attribute)=") else { return nil }
+
+            let remainder = header[range.upperBound...]
+
+            var string: String
+
+            if let end = remainder.index(of: ";") {
+                string = String(remainder[remainder.startIndex..<end])
+            } else {
+                string = String(remainder[remainder.startIndex...])
+            }
+
+            if string.first == "\"", string.last == "\"", string.count > 1 {
+                string.removeFirst()
+                string.removeLast()
+            }
+
+            return string
+        }
+    }
+}
+
+/// Type used for the name of a HTTP header in the `HTTPHeaders` storage.
+public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
+    /// See `Hashable.hashValue`
+    public var hashValue: Int {
+        return lowercased.hashValue
+    }
 
     /// Lowercased-ASCII version of the header.
-    internal let lowercased: [UInt8]
+    internal let lowercased: String
 
     /// Create a HTTP header name with the provided String.
     public init(_ name: String) {
-        original = Array(name.utf8)
-        lowercased = original.lowercasedASCIIString()
-    }
-
-    /// Create a HTTP header name with the provided String.
-    internal init(data: [UInt8]) {
-        original = data
-        lowercased = data.lowercasedASCIIString()
+        lowercased = name.lowercased()
     }
 
     /// See `ExpressibleByStringLiteral.init(stringLiteral:)`
@@ -40,7 +118,7 @@ public struct HTTPHeaderName: Codable, Hashable, ExpressibleByStringLiteral, Cus
 
     /// See `CustomStringConvertible.description`
     public var description: String {
-        return String(bytes: original, encoding: .utf8) ?? ""
+        return lowercased
     }
 
     /// See `Equatable.==`

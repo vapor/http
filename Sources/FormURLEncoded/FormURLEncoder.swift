@@ -7,7 +7,7 @@ public final class FormURLEncoder {
     public init() {}
 
     /// Encodes the supplied encodable structure to form-urlencoded data.
-    public func encodeBody<E: Encodable>(from encodable: E) throws -> HTTPBody {
+    public func encodeBody<E>(from encodable: E) throws -> HTTPBody where E: Encodable {
         let partialData = PartialFormURLEncodedData(
             data: .dictionary([:])
         )
@@ -23,7 +23,7 @@ public final class FormURLEncoder {
                 reason: "form-urlencoded requires a top level dictionary"
             )
         }
-        return HTTPBody(try serializer.serialize(dict))
+        return try HTTPBody(data: serializer.serialize(dict))
     }
 }
 
