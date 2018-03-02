@@ -58,6 +58,7 @@ final class HTTPServerHandler<Responder>: ChannelInboundHandler where Responder:
     }
 
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+        assert(ctx.channel.eventLoop.inEventLoop)
         let req = unwrapInboundIn(data)
         switch req {
         case .head(let head):
@@ -104,7 +105,6 @@ final class HTTPServerHandler<Responder>: ChannelInboundHandler where Responder:
                         ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
                     }
                     ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-                    ctx.channel.close(promise: nil)
                 }.catch { error in
                     fatalError("\(error)")
                 }
