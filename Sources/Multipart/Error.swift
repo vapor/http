@@ -1,6 +1,5 @@
 import Debugging
 import Foundation
-import COperatingSystem
 
 /// Errors that can be thrown while working with Multipart.
 public struct MultipartError: Debuggable, Swift.Error {
@@ -30,7 +29,3 @@ public struct MultipartError: Debuggable, Swift.Error {
         self.stackTrace = MultipartError.makeStackTrace()
     }
 }
-
-
-
-

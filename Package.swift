@@ -18,7 +18,7 @@ let package = Package(
     targets: [
         .target(name: "FormURLEncoded", dependencies: ["Bits", "HTTP", "Debugging"]),
         .testTarget(name: "FormURLEncodedTests", dependencies: ["FormURLEncoded"]),
-        .target(name: "HTTP", dependencies: ["Async", "NIO", "NIOHTTP1"]),
+        .target(name: "HTTP", dependencies: ["Async", "Bits", "Debugging", "NIO", "NIOHTTP1"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
         .target(name: "Performance", dependencies: ["HTTP"]),
         .target(name: "Multipart", dependencies: ["Debugging", "HTTP"]),
