@@ -133,7 +133,7 @@ final class HTTPClientHandler: ChannelInboundHandler {
         } else {
             headers.replaceOrAdd(name: .contentLength, value: "0")
         }
-        var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.uri)
+        var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.path)
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
         if let body = req.body, let data = body.data {

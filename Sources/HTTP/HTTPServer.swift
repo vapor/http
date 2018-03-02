@@ -86,7 +86,7 @@ final class HTTPServerHandler<Responder>: ChannelInboundHandler where Responder:
             case .parsingBody(let head, let data):
                 let req = HTTPRequest(
                     method: head.method,
-                    uri: head.uri,
+                    url: URL(string: head.uri)!,
                     version: head.version,
                     headers: head.headers,
                     body: data.flatMap { HTTPBody(data: $0) },

@@ -1,10 +1,12 @@
+import Foundation
+
 /// An HTTP request from a client to a server.
 public struct HTTPRequest: HTTPMessage {
     /// The HTTP method for this request.
     public var method: HTTPMethod
 
     /// The URI used on this request.
-    public var uri: String
+    public var url: URL
 
     /// The version for this HTTP request.
     public var version: HTTPVersion
@@ -21,14 +23,14 @@ public struct HTTPRequest: HTTPMessage {
     /// Creates a new HTTP Request
     public init(
         method: HTTPMethod = .GET,
-        uri: String = "/",
+        url: URL = URL(string: "/")!,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
         body: HTTPBody? = nil,
         on worker: Worker
     ) {
         self.method = method
-        self.uri = uri
+        self.url = url
         self.version = version
         self.headers = headers
         self.body = body
@@ -40,7 +42,7 @@ extension HTTPRequest {
     /// See `CustomStringConvertible.description
     public var description: String {
         var desc: [String] = []
-        desc.append("\(method) \(uri) HTTP/\(version.major).\(version.minor)")
+        desc.append("\(method) \(url) HTTP/\(version.major).\(version.minor)")
         desc.append(headers.debugDescription)
         desc.append(body?.description ?? "<no body>")
         return desc.joined(separator: "\n")
