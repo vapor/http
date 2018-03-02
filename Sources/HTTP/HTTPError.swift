@@ -1,6 +1,5 @@
 import Debugging
 import Foundation
-import COperatingSystem
 
 /// Errors that can be thrown while working with HTTP.
 public struct HTTPError: Debuggable {
