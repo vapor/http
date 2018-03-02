@@ -189,8 +189,7 @@ public final class MultipartParser {
                 return multipart
             }
             
-            var headers = try readHeaders()
-            
+            let headers = try readHeaders()
             guard let content = headers[.contentDisposition].first, content.starts(with: "form-data") else {
                 throw MultipartError(identifier: "multipart:headers", reason: "Invalid content disposition")
             }
