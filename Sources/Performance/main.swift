@@ -7,10 +7,7 @@ let port: Int = 8123
 
 struct EchoResponder: HTTPResponder {
     func respond(to req: HTTPRequest) -> Future<HTTPResponse> {
-        return req.body.consumeData(max: 1_000_000, on: req).map(to: HTTPResponse.self) { data in
-            print(String(data: data, encoding: .utf8))
-            return try HTTPResponse(body: "Hello, world!".makeBody(), on: req)
-        }
+        return Future.map(on: req) { try HTTPResponse(body: "Hello, world!".makeBody(), on: req) }
     }
 }
 

@@ -86,6 +86,17 @@ extension HTTPHeaders {
     }
 }
 
+extension HTTPHeaders: ExpressibleByDictionaryLiteral {
+    /// See `ExpressibleByDictionaryLiteral.init`
+    public init(dictionaryLiteral elements: (String, String)...) {
+        var headers = HTTPHeaders()
+        for (key, val) in elements {
+            headers.add(name: key, value: val)
+        }
+        self = headers
+    }
+}
+
 /// Type used for the name of a HTTP header in the `HTTPHeaders` storage.
 public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     /// See `Hashable.hashValue`
