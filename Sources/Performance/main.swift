@@ -1,15 +1,19 @@
 import Async
 import HTTP
+import Foundation
 
 let hostname = "localhost"
 let port: Int = 8123
 
 struct EchoResponder: HTTPResponder {
     func respond(to req: HTTPRequest) -> Future<HTTPResponse> {
-        return Future.map(on: req) { try HTTPResponse(body: "Hello, world!".makeBody(), on: req) }
+        return req.body.consumeData(max: 1_000_000, on: req).map(to: HTTPResponse.self) { data in
+            print(String(data: data, encoding: .utf8))
+            return try HTTPResponse(body: "Hello, world!".makeBody(), on: req)
+        }
     }
 }
 
-let server = HTTPServer(responder: EchoResponder())
 print("Server starting on http://\(hostname):\(port)")
-try server.start(hostname: hostname, port: port).wait()
+let server = try HTTPServer.start(hostname: hostname, port: port, responder: EchoResponder()).wait()
+try server.onClose.wait()

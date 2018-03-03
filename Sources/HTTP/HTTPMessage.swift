@@ -33,7 +33,7 @@ public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertib
     var headers: HTTPHeaders { get set }
 
     /// The optional HTTP body.
-    var body: HTTPBody? { get set }
+    var body: HTTPBody { get set }
 
     /// Closure to be called on upgrade
     //var onUpgrade: HTTPOnUpgrade? { get set }

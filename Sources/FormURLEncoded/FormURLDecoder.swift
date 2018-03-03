@@ -26,11 +26,13 @@ public final class FormURLDecoder {
     }
 
     /// Decodes a decodable type from form-urlencoded data
-    public func decode<D>(_ type: D.Type, from body: HTTPBody) throws -> D where D: Decodable {
-        let data = body.data ?? Data()
-        let formURLData = try self.parser.parse(data, omitEmptyValues: self.omitEmptyValues, omitFlags: self.omitFlags)
-        let decoder = _FormURLDecoder(data: .dictionary(formURLData), codingPath: [])
-        return try D(from: decoder)
+    public func decode<D>(_ type: D.Type, from body: HTTPBody) throws -> Future<D> where D: Decodable {
+        var body = body
+        return body.consumeData(max: maxBodySize, on: wrap(EmbeddedEventLoop())).map(to: D.self) { data in
+            let formURLData = try self.parser.parse(data, omitEmptyValues: self.omitEmptyValues, omitFlags: self.omitFlags)
+            let decoder = _FormURLDecoder(data: .dictionary(formURLData), codingPath: [])
+            return try D(from: decoder)
+        }
     }
 }
 

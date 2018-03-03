@@ -8,7 +8,7 @@ class FormURLEncodedCodableTests: XCTestCase {
         name=Tanner&age=23&pets[]=Zizek&pets[]=Foo&dict[a]=1&dict[b]=2
         """.data(using: .utf8)!
 
-        let user = try FormURLDecoder().decode(User.self, from: HTTPBody(data: data))
+        let user = try FormURLDecoder().decode(User.self, from: HTTPBody(data: data)).wait()
         XCTAssertEqual(user.name, "Tanner")
         XCTAssertEqual(user.age, 23)
         XCTAssertEqual(user.pets.count, 2)
@@ -33,7 +33,7 @@ class FormURLEncodedCodableTests: XCTestCase {
     func testCodable() throws {
         let a = User(name: "Tanner", age: 23, pets: ["Zizek", "Foo"], dict: ["a": 1, "b": 2])
         let body = try FormURLEncoder().encodeBody(from: a)
-        let b = try FormURLDecoder().decode(User.self, from: body)
+        let b = try FormURLDecoder().decode(User.self, from: body).wait()
         XCTAssertEqual(a, b)
     }
 
@@ -42,7 +42,7 @@ class FormURLEncodedCodableTests: XCTestCase {
         array[]=1&array[]=2&array[]=3
         """.data(using: .utf8)!
 
-        let content = try FormURLDecoder().decode([String: [Int]].self, from: HTTPBody(data: data))
+        let content = try FormURLDecoder().decode([String: [Int]].self, from: HTTPBody(data: data)).wait()
         XCTAssertEqual(content["array"], [1, 2, 3])
     }
 

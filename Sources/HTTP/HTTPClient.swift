@@ -80,7 +80,7 @@ final class HTTPClientHandler: ChannelInboundHandler {
                     status: head.status,
                     version: head.version,
                     headers: head.headers,
-                    body: data.flatMap { HTTPBody(data: $0) },
+                    body: data.flatMap { HTTPBody(data: $0) } ?? HTTPBody(),
                     on: wrap(ctx.eventLoop)
                 )
                 waitingRes!.succeed(result: res)
@@ -128,7 +128,7 @@ final class HTTPClientHandler: ChannelInboundHandler {
 
     func write(_ req: HTTPRequest, to ctx: ChannelHandlerContext) {
         var headers = req.headers
-        if let contentLength = req.body?.count {
+        if let contentLength = req.body.count {
             headers.replaceOrAdd(name: .contentLength, value: contentLength.description)
         } else {
             headers.replaceOrAdd(name: .contentLength, value: "0")
@@ -136,7 +136,7 @@ final class HTTPClientHandler: ChannelInboundHandler {
         var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.path)
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
-        if let body = req.body, let data = body.data {
+        if let data = req.body.data {
             var buffer = ByteBufferAllocator().buffer(capacity: data.count)
             buffer.write(bytes: data)
             ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)

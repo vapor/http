@@ -10,7 +10,7 @@ public struct HTTPResponse: HTTPMessage {
     public var headers: HTTPHeaders
 
     /// The http body
-    public var body: HTTPBody?
+    public var body: HTTPBody
 
     /// This request's event loop.
     public var eventLoop: EventLoop
@@ -20,7 +20,7 @@ public struct HTTPResponse: HTTPMessage {
         status: HTTPResponseStatus = .ok,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
-        body: HTTPBody? = nil,
+        body: HTTPBody = .init(),
         on worker: Worker
     ) {
         self.status = status
@@ -37,7 +37,7 @@ extension HTTPResponse {
         var desc: [String] = []
         desc.append("HTTP/\(version.major).\(version.minor) \(status.code) \(status.reasonPhrase)")
         desc.append(headers.debugDescription)
-        desc.append(body?.description ?? "<no body>")
+        desc.append(body.description)
         return desc.joined(separator: "\n")
     }
 }

@@ -15,7 +15,7 @@ public struct HTTPRequest: HTTPMessage {
     public var headers: HTTPHeaders
 
     /// The http body
-    public var body: HTTPBody?
+    public var body: HTTPBody
 
     /// This request's event loop.
     public var eventLoop: EventLoop
@@ -26,7 +26,7 @@ public struct HTTPRequest: HTTPMessage {
         url: URL = URL(string: "/")!,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
-        body: HTTPBody? = nil,
+        body: HTTPBody = .init(),
         on worker: Worker
     ) {
         self.method = method
@@ -44,7 +44,7 @@ extension HTTPRequest {
         var desc: [String] = []
         desc.append("\(method) \(url) HTTP/\(version.major).\(version.minor)")
         desc.append(headers.debugDescription)
-        desc.append(body?.description ?? "<no body>")
+        desc.append(body.description)
         return desc.joined(separator: "\n")
     }
 }
