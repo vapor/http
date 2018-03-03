@@ -136,8 +136,7 @@ extension HTTPSerializer {
                 context.state = .streaming(AnyOutputStream(encodedStream))
                 write(message, downstream, nextMessage)
             case .binaryOutputStream(_, let stream):
-                let connectingStream = stream.stream(to: ConnectingStream<ByteBuffer>())
-                context.state = .streaming(AnyOutputStream(connectingStream))
+                context.state = .streaming(AnyOutputStream(stream))
                 write(message, downstream, nextMessage)
             }
         case .continueBuffer(let remainingStartLine, let then):
