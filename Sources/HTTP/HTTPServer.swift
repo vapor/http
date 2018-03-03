@@ -139,6 +139,7 @@ internal final class HTTPServerHandler: ChannelInboundHandler {
             case .collectingBody(let head, let body): writeResponse(for: head, body: body.flatMap { HTTPBody(buffer: $0) } ?? HTTPBody(), ctx: ctx)
             case .streamingBody(let stream): stream.write(.end)
             }
+            state = .ready
         }
     }
 
