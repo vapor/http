@@ -10,24 +10,38 @@ public struct HTTPResponse: HTTPMessage {
     public var headers: HTTPHeaders
 
     /// The http body
-    public var body: HTTPBody
+    /// Updating this property will also update the associated transport headers.
+    public var body: HTTPBody {
+        didSet {
+            updateTransportHeaders()
+        }
+    }
 
-    /// This request's event loop.
-    public var eventLoop: EventLoop
-
-    /// Creates a new HTTP Request
+    /// Creates a new HTTP Response.
     public init(
         status: HTTPResponseStatus = .ok,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
-        body: HTTPBody = .init(),
-        on worker: Worker
+        body: HTTPBody = .init()
     ) {
         self.status = status
         self.version = version
         self.headers = headers
         self.body = body
-        self.eventLoop = worker.eventLoop
+        updateTransportHeaders()
+    }
+
+    /// Creates a new HTTPResponse without sanitizing headers.
+    internal init(
+        status: HTTPResponseStatus,
+        version: HTTPVersion,
+        headersNoUpdate headers: HTTPHeaders,
+        body: HTTPBody
+    ) {
+        self.status = status
+        self.version = version
+        self.headers = headers
+        self.body = body
     }
 }
 

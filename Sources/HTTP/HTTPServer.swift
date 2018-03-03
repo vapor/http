@@ -26,21 +26,18 @@ public final class HTTPServer {
     ///     - reuseAddress: When `true`, can prevent errors re-binding to a socket after successive server restarts.
     ///     - tcpNoDelay: When `true`, OS will attempt to minimize TCP packet delay.
     ///     - onError: Any uncaught server or responder errors will go here.
-    public static func start<R>(
+    public static func start(
         hostname: String,
         port: Int,
-        responder: R,
+        responder: HTTPResponder,
         maxBodySize: Int = 1_000_000,
-        threadCount: Int = 1, // system.coreCount,
         backlog: Int = 256,
         reuseAddress: Bool = true,
         tcpNoDelay: Bool = true,
+        on worker: Worker,
         onError: @escaping (Error) -> () = { _ in }
-    ) -> Future<HTTPServer>
-        where R: HTTPResponder
-    {
-        let group = MultiThreadedEventLoopGroup(numThreads: threadCount) // System.coreCount
-        let bootstrap = ServerBootstrap(group: group)
+    ) -> Future<HTTPServer> {
+        let bootstrap = ServerBootstrap(group: worker)
             // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: Int32(backlog))
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: reuseAddress ? SocketOptionValue(1) : SocketOptionValue(0))
@@ -106,7 +103,7 @@ internal final class HTTPServerHandler: ChannelInboundHandler {
             switch state {
             case .ready:
                 if head.headers[.transferEncoding].first == "chunked" {
-                    let stream = HTTPChunkedStream(on: wrap(ctx.eventLoop))
+                    let stream = HTTPChunkedStream(on: ctx.eventLoop)
                     state = .streamingBody(stream)
                     writeResponse(for: head, body: .init(chunked: stream), ctx: ctx)
                 } else {
@@ -130,14 +127,19 @@ internal final class HTTPServerHandler: ChannelInboundHandler {
                     body = chunk
                 }
                 state = .collectingBody(head, body)
-            case .streamingBody(let stream): stream.write(.chunk(chunk))
+            case .streamingBody(let stream): _ = stream.write(.chunk(chunk))
             }
         case .end(let tailHeaders):
             assert(tailHeaders == nil)
             switch state {
             case .ready: fatalError()
-            case .collectingBody(let head, let body): writeResponse(for: head, body: body.flatMap { HTTPBody(buffer: $0) } ?? HTTPBody(), ctx: ctx)
-            case .streamingBody(let stream): stream.write(.end)
+            case .collectingBody(let head, let body):
+                writeResponse(
+                    for: head,
+                    body: body.flatMap { HTTPBody(buffer: $0) } ?? HTTPBody(),
+                    ctx: ctx
+                )
+            case .streamingBody(let stream): _ = stream.write(.end)
             }
             state = .ready
         }
@@ -148,11 +150,10 @@ internal final class HTTPServerHandler: ChannelInboundHandler {
             method: head.method,
             url: URL(string: head.uri)!,
             version: head.version,
-            headers: head.headers,
-            body: body,
-            on: wrap(ctx.eventLoop)
+            headersNoUpdate: head.headers,
+            body: body
         )
-        responder.respond(to: req).do { res in
+        responder.respond(to: req, on: ctx.eventLoop).do { res in
             switch body.storage {
             case .chunkedStream(let stream):
                 if !stream.isClosed {
@@ -160,20 +161,45 @@ internal final class HTTPServerHandler: ChannelInboundHandler {
                 }
             default: break
             }
-            var headers = res.headers
-            if let contentLength = res.body.count {
-                headers.replaceOrAdd(name: .contentLength, value: contentLength.description)
-            }
-            let httpHead = HTTPResponseHead(version: res.version, status: res.status, headers: headers)
+            let httpHead = HTTPResponseHead(version: res.version, status: res.status, headers: res.headers)
             ctx.write(self.wrapOutboundOut(.head(httpHead)), promise: nil)
-            if let data = res.body.data {
-                var buffer = ByteBufferAllocator().buffer(capacity: data.count)
-                buffer.write(bytes: data)
-                ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
+
+            switch res.body.storage {
+            case .none:
+                // optimized case, just send end
+                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
+            case .chunkedStream(let stream):
+                stream.read { result, stream in
+                    switch result {
+                    case .chunk(let buffer):
+                        return ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
+                    case .end:
+                        return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                    case .error(let error):
+                        self.errorHandler(error)
+                        return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                    }
+                }
+            default:
+                var buffer = ByteBufferAllocator().buffer(capacity: res.body.count ?? 0)
+                switch res.body.storage {
+                case .buffer(var body): buffer.write(buffer: &body)
+                case .data(let data): buffer.write(bytes: data)
+                case .dispatchData(let data): buffer.write(bytes: data)
+                case .none: break
+                case .chunkedStream: break
+                case .staticString(let string): buffer.write(bytes: string)
+                case .string(let string): buffer.write(string: string)
+                }
+                if buffer.readableBytes > 0 {
+                    ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
+                }
+                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
             }
-            ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
         }.catch { error in
             self.errorHandler(error)
+            ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
+            ctx.close(promise: nil)
         }
     }
 

@@ -25,7 +25,7 @@
 /// to add your own stored properties to requests and responses
 /// that can be accessed simply by importing the module that
 /// adds them. This is how much of Vapor's functionality is created.
-public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertible, Worker {
+public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertible {
     /// The HTTP version of this message.
     var version: HTTPVersion { get set }
 
@@ -37,6 +37,23 @@ public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertib
 
     /// Closure to be called on upgrade
     //var onUpgrade: HTTPOnUpgrade? { get set }
+}
+
+extension HTTPMessage {
+    /// Updates transport headers for current body.
+    internal mutating func updateTransportHeaders() {
+        if let count = body.count?.description {
+            headers.remove(name: .transferEncoding)
+            if count != headers[.contentLength].first {
+                headers.replaceOrAdd(name: .contentLength, value: count)
+            }
+        } else {
+            headers.remove(name: .contentLength)
+            if headers[.transferEncoding].first != "chunked" {
+                headers.replaceOrAdd(name: .transferEncoding, value: "chunked")
+            }
+        }
+    }
 }
 
 /// An action that happens when the message is upgraded.

@@ -14,27 +14,43 @@ public struct HTTPRequest: HTTPMessage {
     /// The header fields for this HTTP request.
     public var headers: HTTPHeaders
 
-    /// The http body
-    public var body: HTTPBody
+    /// The http body.
+    /// Updating this property will also update the associated transport headers.
+    public var body: HTTPBody {
+        didSet {
+            updateTransportHeaders()
+        }
+    }
 
-    /// This request's event loop.
-    public var eventLoop: EventLoop
-
-    /// Creates a new HTTP Request
+    /// Creates a new HTTP Request.
     public init(
         method: HTTPMethod = .GET,
         url: URL = URL(string: "/")!,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
-        body: HTTPBody = .init(),
-        on worker: Worker
+        body: HTTPBody = .init()
     ) {
         self.method = method
         self.url = url
         self.version = version
         self.headers = headers
         self.body = body
-        self.eventLoop = worker.eventLoop
+        updateTransportHeaders()
+    }
+
+    /// Creates a new HTTPRequest without sanitizing headers.
+    internal init(
+        method: HTTPMethod,
+        url: URL,
+        version: HTTPVersion,
+        headersNoUpdate headers: HTTPHeaders,
+        body: HTTPBody
+    ) {
+        self.method = method
+        self.url = url
+        self.version = version
+        self.headers = headers
+        self.body = body
     }
 }
 

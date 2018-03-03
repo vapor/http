@@ -9,11 +9,9 @@ public final class HTTPClient: HTTPResponder {
         self.bootstrap = bootstrap
     }
 
-    public static func connect(hostname: String, port: Int) -> Future<HTTPClient> {
-        let group = MultiThreadedEventLoopGroup(numThreads: 1) // System.coreCount
-
+    public static func connect(hostname: String, port: Int, on worker: Worker) -> Future<HTTPClient> {
         let handler = HTTPClientHandler()
-        let bootstrap = ClientBootstrap(group: group)
+        let bootstrap = ClientBootstrap(group: worker.eventLoop)
             // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
@@ -27,8 +25,8 @@ public final class HTTPClient: HTTPResponder {
         }
     }
 
-    public func respond(to request: HTTPRequest) -> Future<HTTPResponse> {
-        return handler.enqueue(request)
+    public func respond(to request: HTTPRequest, on worker: Worker) -> Future<HTTPResponse> {
+        return handler.enqueue(request, on: worker)
     }
 }
 
@@ -79,9 +77,8 @@ final class HTTPClientHandler: ChannelInboundHandler {
                 let res = HTTPResponse(
                     status: head.status,
                     version: head.version,
-                    headers: head.headers,
-                    body: data.flatMap { HTTPBody(data: $0) } ?? HTTPBody(),
-                    on: wrap(ctx.eventLoop)
+                    headersNoUpdate: head.headers,
+                    body: data.flatMap { HTTPBody(data: $0) } ?? HTTPBody()
                 )
                 waitingRes!.succeed(result: res)
                 waitingRes = nil
@@ -112,9 +109,9 @@ final class HTTPClientHandler: ChannelInboundHandler {
         }
     }
 
-    func enqueue(_ req: HTTPRequest) -> Future<HTTPResponse> {
+    func enqueue(_ req: HTTPRequest, on worker: Worker) -> Future<HTTPResponse> {
         assert(waitingRes == nil)
-        let promise = req.eventLoop.newPromise(HTTPResponse.self)
+        let promise = worker.eventLoop.newPromise(HTTPResponse.self)
         waitingRes = promise
         if let ctx = waitingCtx {
             waitingCtx = nil

@@ -73,7 +73,7 @@ public struct HTTPBody {
     /// See `consumeData(max:on:)`
     @available(*, deprecated, renamed: "consumeData(max:on:)")
     public func makeData(max: Int) -> Future<Data> {
-        return consumeData(max: max, on: wrap(EmbeddedEventLoop()))
+        return consumeData(max: max, on: EmbeddedEventLoop())
     }
 }
 

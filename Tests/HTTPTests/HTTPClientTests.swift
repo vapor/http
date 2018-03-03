@@ -66,11 +66,12 @@ func testFetchingURL(
 }
 
 func fetchURLTCP(hostname: String, port: Int, path: String) throws -> Future<String?> {
-    return HTTPClient.connect(hostname: hostname, port: port).flatMap(to: HTTPResponse.self) { client in
-        var req = HTTPRequest(method: .GET, url: URL(string: path)!, on: wrap(FakeLoop()))
+    let loop = MultiThreadedEventLoopGroup(numThreads: 1).next()
+    return HTTPClient.connect(hostname: hostname, port: port, on: loop).flatMap(to: HTTPResponse.self) { client in
+        var req = HTTPRequest(method: .GET, url: URL(string: path)!)
         req.headers.replaceOrAdd(name: .host, value: hostname)
         req.headers.replaceOrAdd(name: .userAgent, value: "vapor/engine")
-        return client.respond(to: req)
+        return client.respond(to: req, on: loop)
     }.map(to: String?.self) { res in
         return String(data: res.body.data ?? Data(), encoding: .ascii)
     }

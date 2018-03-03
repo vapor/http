@@ -6,42 +6,44 @@ public enum HTTPChunkedStreamResult {
     case end
 }
 
-public final class HTTPChunkedStream {
-    public typealias HTTPChunkedHandler = (HTTPChunkedStreamResult) -> ()
+public final class HTTPChunkedStream: BasicWorker {
+    public typealias HTTPChunkedHandler = (HTTPChunkedStreamResult, HTTPChunkedStream) -> Future<Void>
     private var handler: HTTPChunkedHandler?
-    private var eventLoop: EventLoop
-    private var queue: [HTTPChunkedStreamResult]
+    private var waiting: (HTTPChunkedStreamResult, Promise<Void>)?
+    public var eventLoop: EventLoop
     public private(set) var isClosed: Bool
 
     public init(on worker: Worker) {
-        self.queue = []
         self.eventLoop = worker.eventLoop
         self.isClosed = false
     }
 
     public func read(_ handler: @escaping HTTPChunkedHandler) {
-        while let chunk = queue.popLast() {
-            handler(chunk)
-        }
         self.handler = handler
+        if let (chunk, promise) = waiting {
+            handler(chunk, self).chain(to: promise)
+        }
     }
 
-    public func write(_ chunk: HTTPChunkedStreamResult) {
+    public func write(_ chunk: HTTPChunkedStreamResult) -> Future<Void> {
         if case .end = chunk {
             self.isClosed = true
         }
 
         if let handler = handler {
-            handler(chunk)
+            return handler(chunk, self)
         } else {
-            self.queue.insert(chunk, at: 0)
+            let promise = eventLoop.newPromise(Void.self)
+            assert(waiting == nil)
+            waiting = (chunk, promise)
+            return promise.futureResult
         }
     }
 
     public func drain(max: Int) -> Future<Data> {
         let promise = eventLoop.newPromise(Data.self)
         var data = Data()
-        handler = { chunk in
+        handler = { chunk, stream in
             switch chunk {
             case .chunk(var buffer):
                 if data.count + buffer.readableBytes >= max {
@@ -53,6 +55,7 @@ public final class HTTPChunkedStream {
             case .error(let error): promise.fail(error: error)
             case .end: promise.succeed(result: data)
             }
+            return .done(on: stream)
         }
         return promise.futureResult
     }
