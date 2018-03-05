@@ -148,7 +148,7 @@ internal final class HTTPServerHandler: ChannelInboundHandler {
     private func writeResponse(for head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
         let req = HTTPRequest(
             method: head.method,
-            url: URL(string: head.uri)!,
+            urlString: head.uri,
             version: head.version,
             headersNoUpdate: head.headers,
             body: body

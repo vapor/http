@@ -6,7 +6,18 @@ public struct HTTPRequest: HTTPMessage {
     public var method: HTTPMethod
 
     /// The URI used on this request.
-    public var url: URL
+    public var url: URL {
+        get {
+            print("Convenience URL access.")
+            return URL(string: urlString) ?? .root
+        }
+        set {
+            print("Convenience URL set.")
+            urlString = url.absoluteString
+        }
+    }
+
+    public var urlString: String
 
     /// The version for this HTTP request.
     public var version: HTTPVersion
@@ -25,13 +36,13 @@ public struct HTTPRequest: HTTPMessage {
     /// Creates a new HTTP Request.
     public init(
         method: HTTPMethod = .GET,
-        url: URL = URL(string: "/")!,
+        url: URL = .root,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
         body: HTTPBody = .init()
     ) {
         self.method = method
-        self.url = url
+        self.urlString = url.absoluteString
         self.version = version
         self.headers = headers
         self.body = body
@@ -41,18 +52,25 @@ public struct HTTPRequest: HTTPMessage {
     /// Creates a new HTTPRequest without sanitizing headers.
     internal init(
         method: HTTPMethod,
-        url: URL,
+        urlString: String,
         version: HTTPVersion,
         headersNoUpdate headers: HTTPHeaders,
         body: HTTPBody
     ) {
         self.method = method
-        self.url = url
+        self.urlString = urlString
         self.version = version
         self.headers = headers
         self.body = body
     }
 }
+
+extension URL {
+    public static var root: URL {
+        return _defaultURL
+    }
+}
+private let _defaultURL = URL(string: "/")!
 
 extension HTTPRequest {
     /// See `CustomStringConvertible.description
