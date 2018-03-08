@@ -8,12 +8,10 @@ public struct HTTPRequest: HTTPMessage {
     /// The URI used on this request.
     public var url: URL {
         get {
-            print("Convenience URL access.")
             return URL(string: urlString) ?? .root
         }
         set {
-            print("Convenience URL set.")
-            urlString = url.absoluteString
+            urlString = newValue.absoluteString
         }
     }
 
