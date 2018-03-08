@@ -30,11 +30,35 @@ jobs:
           name: Compile code with optimizations
           command: swift build -c release
 
+  linux-vapor:
+    docker:
+      - image: norionomura/swift:swift-4.1-branch
+    steps:
+      - run:
+          name: Update APT
+          command: apt-get update
+      - run:
+          name: Install Swift NIO dependencies
+          command: apt-get install -yq pkg-config libssl-dev
+      - run:
+          name: Clone Vapor
+          command: git clone -b nio https://github.com/vapor/vapor.git
+          working_directory: ~/
+      - run:
+          name: Switch Vapor to this Engine revision
+          command: swift package edit Engine --revision $CIRCLE_SHA1
+          working_directory: ~/vapor
+      - run:
+          name: Run Vapor unit tests
+          command: swift test
+          working_directory: ~/vapor
+
 workflows:
   version: 2
   tests:
     jobs:
       - linux
+      - linux-vapor
       # - macos
   nightly:
     triggers:
