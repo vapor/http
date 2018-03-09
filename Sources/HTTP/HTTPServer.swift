@@ -34,6 +34,7 @@ public final class HTTPServer {
         backlog: Int = 256,
         reuseAddress: Bool = true,
         tcpNoDelay: Bool = true,
+        upgraders: [HTTPProtocolUpgrader] = [],
         on worker: Worker,
         onError: @escaping (Error) -> () = { _ in }
     ) -> Future<HTTPServer> {
@@ -44,9 +45,12 @@ public final class HTTPServer {
 
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
+                let handler = HTTPServerHandler(responder: responder, maxBodySize: maxBodySize, onError: onError)
                 // re-use subcontainer for an event loop here
-                return channel.pipeline.addHTTPServerHandlers().then {
-                    let handler = HTTPServerHandler(responder: responder, maxBodySize: maxBodySize, onError: onError)
+                return channel.pipeline.addHTTPServerHandlersWithUpgrader(upgraders: upgraders) { ctx in
+                    // should i wait for this?
+                    _ = channel.pipeline.remove(handler: handler)
+                }.then {
                     return channel.pipeline.add(handler: handler)
                 }
             }

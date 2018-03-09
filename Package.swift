@@ -23,5 +23,7 @@ let package = Package(
         .target(name: "Performance", dependencies: ["HTTP"]),
         .target(name: "Multipart", dependencies: ["Debugging", "HTTP"]),
         .testTarget(name: "MultipartTests", dependencies: ["Multipart"]),
+        .target(name: "WebSocket", dependencies: ["Debugging", "HTTP", "NIO", "NIOWebsocket"]),
+        .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )
