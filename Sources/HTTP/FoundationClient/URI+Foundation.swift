@@ -14,7 +14,7 @@ extension URI {
         comps.host = hostname.isEmpty ? nil : hostname
         comps.port = port.flatMap(Int.init)
         comps.path = path
-        comps.query = query
+        comps.query = query?.percentDecoded
         comps.fragment = fragment
         guard let url = comps.url else { throw ConversionError.unableToMakeFoundationURL }
         return url
