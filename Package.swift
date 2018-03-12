@@ -7,6 +7,7 @@ let package = Package(
         .library(name: "FormURLEncoded", targets: ["FormURLEncoded"]),
         .library(name: "HTTP", targets: ["HTTP"]),
         .library(name: "Multipart", targets: ["Multipart"]),
+        .library(name: "WebSocket", targets: ["WebSocket"]),
     ],
     dependencies: [
         // 🌎 Utility package containing tools for byte manipulation, Codable, OS APIs, and debugging.
@@ -23,7 +24,7 @@ let package = Package(
         .target(name: "Performance", dependencies: ["HTTP"]),
         .target(name: "Multipart", dependencies: ["Debugging", "HTTP"]),
         .testTarget(name: "MultipartTests", dependencies: ["Multipart"]),
-        .target(name: "WebSocket", dependencies: ["Debugging", "HTTP", "NIO", "NIOWebsocket"]),
+        .target(name: "WebSocket", dependencies: ["Debugging", "HTTP", "NIO", "NIOWebSocket"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )

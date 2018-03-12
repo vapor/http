@@ -6,7 +6,7 @@ extension WebSocket {
         shouldUpgrade: @escaping (HTTPRequest) -> (Bool),
         onUpgrade: @escaping (WebSocket, HTTPRequest) -> ()
     ) -> HTTPProtocolUpgrader {
-        return WebsocketUpgrader(shouldUpgrade: { head in
+        return WebSocketUpgrader(shouldUpgrade: { head in
             let req = HTTPRequest(
                 method: head.method,
                 url: URL(string: head.uri)!,
@@ -40,8 +40,8 @@ extension WebSocket {
 
 /// NIO channel pipeline handler for web sockets.
 internal final class WebsocketHandler: ChannelInboundHandler {
-    typealias InboundIn = WebsocketFrame
-    typealias OutboundOut = WebsocketFrame
+    typealias InboundIn = WebSocketFrame
+    typealias OutboundOut = WebSocketFrame
 
     private var awaitingClose: Bool = false
 
@@ -105,18 +105,18 @@ internal final class WebsocketHandler: ChannelInboundHandler {
         currentCtx = nil
     }
 
-    func send(count: Int, opcode: WebsocketOpcode, bufferWriter: (inout ByteBuffer) -> ()) {
+    func send(count: Int, opcode: WebSocketOpcode, bufferWriter: (inout ByteBuffer) -> ()) {
         let ctx = currentCtx!
         guard ctx.channel.isActive else { return }
         // We can't send if we sent a close message.
         guard !self.awaitingClose else { return }
         var buffer = ctx.channel.allocator.buffer(capacity: count)
         bufferWriter(&buffer)
-        let frame = WebsocketFrame(fin: true, opcode: opcode, data: buffer)
+        let frame = WebSocketFrame(fin: true, opcode: opcode, data: buffer)
         ctx.writeAndFlush(wrapOutboundOut(frame), promise: nil)
     }
 
-    private func receivedClose(ctx: ChannelHandlerContext, frame: WebsocketFrame) {
+    private func receivedClose(ctx: ChannelHandlerContext, frame: WebSocketFrame) {
         // Handle a received close frame. In websockets, we're just going to send the close
         // frame and then close, unless we already sent our own close frame.
         if awaitingClose {
@@ -128,14 +128,14 @@ internal final class WebsocketHandler: ChannelInboundHandler {
             // peer sent us, unless they didn't send one at all.
             var data = frame.unmaskedData
             let closeDataCode = data.readSlice(length: 2) ?? ctx.channel.allocator.buffer(capacity: 0)
-            let closeFrame = WebsocketFrame(fin: true, opcode: .connectionClose, data: closeDataCode)
+            let closeFrame = WebSocketFrame(fin: true, opcode: .connectionClose, data: closeDataCode)
             _ = ctx.write(self.wrapOutboundOut(closeFrame)).map { () in
                 self.close()
             }
         }
     }
 
-    private func pong(ctx: ChannelHandlerContext, frame: WebsocketFrame) {
+    private func pong(ctx: ChannelHandlerContext, frame: WebSocketFrame) {
         var frameData = frame.data
         let maskingKey = frame.maskKey
 
@@ -143,7 +143,7 @@ internal final class WebsocketHandler: ChannelInboundHandler {
             frameData.unmask(maskingKey)
         }
 
-        let responseFrame = WebsocketFrame(fin: true, opcode: .pong, data: frameData)
+        let responseFrame = WebSocketFrame(fin: true, opcode: .pong, data: frameData)
         ctx.write(self.wrapOutboundOut(responseFrame), promise: nil)
     }
 
@@ -155,9 +155,9 @@ internal final class WebsocketHandler: ChannelInboundHandler {
         // We have hit an error, we want to close. We do that by sending a close frame and then
         // shutting down the write side of the connection.
         var data = ctx.channel.allocator.buffer(capacity: 2)
-        let error = WebsocketErrorCode.protocolError
+        let error = WebSocketErrorCode.protocolError
         error.write(to: &data)
-        let frame = WebsocketFrame(fin: true, opcode: .connectionClose, data: data)
+        let frame = WebSocketFrame(fin: true, opcode: .connectionClose, data: data)
         _ = ctx.write(self.wrapOutboundOut(frame)).then {
             ctx.close(mode: .output)
         }
