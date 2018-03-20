@@ -45,7 +45,7 @@ public final class HTTPServer {
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
                 // re-use subcontainer for an event loop here
-                return channel.pipeline.addHTTPServerHandlers().then {
+                return channel.pipeline.configureHTTPServerPipeline().then {
                     let handler = HTTPServerHandler(responder: responder, maxBodySize: maxBodySize, onError: onError)
                     return channel.pipeline.add(handler: handler)
                 }
