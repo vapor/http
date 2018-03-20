@@ -47,10 +47,11 @@ public final class HTTPServer {
             .childChannelInitializer { channel in
                 let handler = HTTPServerHandler(responder: responder, maxBodySize: maxBodySize, onError: onError)
                 // re-use subcontainer for an event loop here
-                return channel.pipeline.addHTTPServerHandlersWithUpgrader(upgraders: upgraders) { ctx in
-                    // should i wait for this?
+                let upgrade: HTTPUpgradeConfiguration = (upgraders: upgraders, completionHandler: { ctx in
+                    // shouldn't need to wait for this
                     _ = channel.pipeline.remove(handler: handler)
-                }.then {
+                })
+                return channel.pipeline.configureHTTPServerPipeline(withServerUpgrade: upgrade).then {
                     return channel.pipeline.add(handler: handler)
                 }
             }

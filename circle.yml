@@ -11,15 +11,9 @@ jobs:
 
   linux:
     docker:
-      - image: norionomura/swift:swift-4.1-branch
+      - image: codevapor/swift:4.1
     steps:
       - checkout
-      - run:
-          name: Update APT
-          command: apt-get update
-      - run:
-          name: Install Swift NIO dependencies
-          command: apt-get install -yq pkg-config libssl-dev
       - run: 
           name: Compile code
           command: swift build
@@ -30,16 +24,11 @@ jobs:
           name: Compile code with optimizations
           command: swift build -c release
 
+
   linux-vapor:
     docker:
-      - image: norionomura/swift:swift-4.1-branch
+      - image: codevapor/swift:4.1
     steps:
-      - run:
-          name: Update APT
-          command: apt-get update
-      - run:
-          name: Install Swift NIO dependencies
-          command: apt-get install -yq pkg-config libssl-dev
       - run:
           name: Clone Vapor
           command: git clone -b nio https://github.com/vapor/vapor.git
@@ -53,6 +42,7 @@ jobs:
           command: swift test
           working_directory: ~/vapor
 
+
 workflows:
   version: 2
   tests:
@@ -60,6 +50,7 @@ workflows:
       - linux
       - linux-vapor
       # - macos
+
   nightly:
     triggers:
       - schedule:

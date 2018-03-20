@@ -140,7 +140,7 @@ internal final class WebsocketHandler: ChannelInboundHandler {
         let maskingKey = frame.maskKey
 
         if let maskingKey = maskingKey {
-            frameData.unmask(maskingKey)
+            frameData.webSocketUnmask(maskingKey)
         }
 
         let responseFrame = WebSocketFrame(fin: true, opcode: .pong, data: frameData)
@@ -156,7 +156,7 @@ internal final class WebsocketHandler: ChannelInboundHandler {
         // shutting down the write side of the connection.
         var data = ctx.channel.allocator.buffer(capacity: 2)
         let error = WebSocketErrorCode.protocolError
-        error.write(to: &data)
+        data.write(webSocketErrorCode: error)
         let frame = WebSocketFrame(fin: true, opcode: .connectionClose, data: data)
         _ = ctx.write(self.wrapOutboundOut(frame)).then {
             ctx.close(mode: .output)

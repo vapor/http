@@ -11,10 +11,10 @@ let package = Package(
     ],
     dependencies: [
         // 🌎 Utility package containing tools for byte manipulation, Codable, OS APIs, and debugging.
-        .package(url: "https://github.com/vapor/core.git", .branch("nio")),
+        .package(url: "https://github.com/vapor/core.git", .branch("master")),
         
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
-        .package(url: "https://github.com/apple/swift-nio.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "1.2.0"),
     ],
     targets: [
         .target(name: "FormURLEncoded", dependencies: ["Bits", "HTTP", "Debugging"]),
