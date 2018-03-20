@@ -1,46 +1,8 @@
-import Async
-import Bits
 import HTTP
 import Foundation
-import TCP
-import TLS
 import XCTest
-#if os(Linux)
-import OpenSSL
-#else
-import AppleTLS
-#endif
 
 class HTTPClientTests: XCTestCase {
-    func testTCP() throws {
-        let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
-        let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop) { _, error in
-            XCTFail("\(error)")
-        }
-
-        let req = HTTPRequest(method: .get, uri: "/html", headers: [.host: "httpbin.org"])
-        let res = try client.send(req).flatMap(to: Data.self) { res in
-            return res.body.makeData(max: 100_000)
-        }.await(on: eventLoop)
-
-        XCTAssert(String(data: res, encoding: .utf8)?.contains("Moby-Dick") == true)
-        XCTAssertEqual(res.count, 3741)
-    }
-    
-    func testConnectionClose() throws {
-        let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
-        let client = try HTTPClient.tcp(hostname: "httpbin.org", port: 80, on: eventLoop) { _, error in
-            XCTFail("\(error)")
-        }
-        
-        let req = HTTPRequest(method: .get, uri: "/status/418", headers: [.host: "httpbin.org"])
-        let res = try client.send(req).flatMap(to: Data.self) { res in
-            return res.body.makeData(max: 100_000)
-        }.await(on: eventLoop)
-        
-        XCTAssertEqual(res.count, 135)
-    }
-
     func testHTTPBin418() {
         testFetchingURL(hostname: "httpbin.org", path: "/status/418", responseContains: "[ teapot ]")
     }
@@ -69,36 +31,7 @@ class HTTPClientTests: XCTestCase {
         testFetchingURL(hostname: "romansgohome.com", path: "/", responseContains: "Romans Go Home!")
     }
 
-    /// TLS
-
-    func testHTTPBin418Secure() {
-        testFetchingURL(hostname: "httpbin.org", path: "/status/418", useTLS: true, responseContains: "[ teapot ]")
-    }
-
-    func testHTTPBinRobotsSecure() {
-        testFetchingURL(hostname: "httpbin.org", path: "/robots.txt", useTLS: true, responseContains: "Disallow: /deny")
-    }
-
-    func testHTTPBinAnythingSecure() {
-        testFetchingURL(hostname: "httpbin.org", path: "/anything", useTLS: true, responseContains: "https://httpbin.org/anything")
-    }
-
-    func testGoogleAPIsFCMSecure() {
-        testFetchingURL(hostname: "fcm.googleapis.com", path: "/fcm/send", useTLS: true, responseContains: "<TITLE>Moved Temporarily</TITLE>")
-    }
-    
-    func testURI() {
-        var uri: URI = "http://localhost:8081/test?q=1&b=4#test"
-        XCTAssertEqual(uri.scheme, "http")
-        XCTAssertEqual(uri.hostname, "localhost")
-        XCTAssertEqual(uri.port, 8081)
-        XCTAssertEqual(uri.path, "/test")
-        XCTAssertEqual(uri.query, "q=1&b=4")
-        XCTAssertEqual(uri.fragment, "test")
-    }
-
     static let allTests = [
-        ("testTCP", testTCP),
         ("testHTTPBin418", testHTTPBin418),
         ("testHTTPBinRobots", testHTTPBinRobots),
         ("testHTTPBinAnything", testHTTPBinAnything),
@@ -106,11 +39,6 @@ class HTTPClientTests: XCTestCase {
         ("testExampleCom", testExampleCom),
         ("testZombo", testZombo),
         ("testRomans", testRomans),
-        ("testHTTPBin418Secure", testHTTPBin418Secure),
-        ("testHTTPBinRobotsSecure", testHTTPBinRobotsSecure),
-        ("testHTTPBinAnythingSecure", testHTTPBinAnythingSecure),
-        ("testGoogleAPIsFCMSecure", testGoogleAPIsFCMSecure),
-        ("testURI", testURI),
     ]
 }
 
@@ -118,28 +46,16 @@ class HTTPClientTests: XCTestCase {
 
 func testFetchingURL(
     hostname: String,
-    port: UInt16? = nil,
+    port: Int? = nil,
     path: String,
-    useTLS: Bool = false,
     times: Int = 3,
     responseContains: String,
     file: StaticString = #file,
     line: UInt = #line
 ) {
-    #if os(Linux)
-    /// FIXME: TLS not working on Linux yet
-    if useTLS {
-        return
-    }
-    #endif
     for i in 0..<times {
         do {
-            let content: String?
-            if useTLS {
-                content = try fetchURLTLS(hostname: hostname, port: port ?? 443, path: path)
-            } else {
-                content = try fetchURLTCP(hostname: hostname, port: port ?? 80, path: path)
-            }
+            let content = try fetchURLTCP(hostname: hostname, port: port ?? 80, path: path).wait()
             if content?.contains(responseContains) != true {
                 XCTFail("Bad response \(i)/\(times): \(content ?? "nil")", file: file, line: line)
             }
@@ -149,39 +65,56 @@ func testFetchingURL(
     }
 }
 
-func fetchURLTCP(hostname: String, port: UInt16, path: String) throws -> String? {
-    let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
-    let client = try HTTPClient.tcp(hostname: hostname, port: port, on: eventLoop) { _, error in
-        XCTFail("\(error)")
+func fetchURLTCP(hostname: String, port: Int, path: String) throws -> Future<String?> {
+    let loop = MultiThreadedEventLoopGroup(numThreads: 1).next()
+    return HTTPClient.connect(hostname: hostname, port: port, on: loop).flatMap(to: HTTPResponse.self) { client in
+        var req = HTTPRequest(method: .GET, url: URL(string: path)!)
+        req.headers.replaceOrAdd(name: .host, value: hostname)
+        req.headers.replaceOrAdd(name: .userAgent, value: "vapor/engine")
+        return client.respond(to: req, on: loop)
+    }.map(to: String?.self) { res in
+        return String(data: res.body.data ?? Data(), encoding: .ascii)
+    }
+}
+
+final class FakeLoop: EventLoop {
+    var inEventLoop: Bool {
+        return true
     }
 
-    let req = HTTPRequest(method: .get, uri: URI(path: path), headers: [.host: hostname])
-    let res = try client.send(req).flatMap(to: Data.self) { res in
-        return res.body.makeData(max: 1_000_000)
-    }.await(on: eventLoop)
+    func execute(_ task: @escaping () -> Void) {
+        fatalError()
+    }
 
-    return String(data: res, encoding: .utf8)
+    func scheduleTask<T>(in: TimeAmount, _ task: @escaping () throws -> (T)) -> Scheduled<T> {
+        fatalError()
+    }
+
+    func shutdownGracefully(queue: DispatchQueue, _ callback: @escaping (Error?) -> Void) {
+        fatalError()
+    }
 }
 
-func fetchURLTLS(hostname: String, port: UInt16, path: String) throws -> String? {
-    let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
-    let tcpSocket = try TCPSocket(isNonBlocking: true)
-    let tcpClient = try TCPClient(socket: tcpSocket)
-    var settings = TLSClientSettings()
-    settings.peerDomainName = hostname
-    #if os(macOS)
-    let tlsClient = try AppleTLSClient(tcp: tcpClient, using: settings)
-    #else
-    let tlsClient = try OpenSSLClient(tcp: tcpClient, using: settings)
-    #endif
-    try tlsClient.connect(hostname: hostname, port: port)
-    let client = HTTPClient(
-        stream: tlsClient.socket.stream(on: eventLoop),
-        on: eventLoop
-    )
-    let req = HTTPRequest(method: .get, uri: URI(path: path), headers: [.host: hostname])
-    let res = try client.send(req).flatMap(to: Data.self) { res in
-        return res.body.makeData(max: 1_000_000)
-    }.await(on: eventLoop)
-    return String(data: res, encoding: .utf8)
-}
+//func fetchURLTLS(hostname: String, port: UInt16, path: String) throws -> String? {
+//    let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
+//    let tcpSocket = try TCPSocket(isNonBlocking: true)
+//    let tcpClient = try TCPClient(socket: tcpSocket)
+//    var settings = TLSClientSettings()
+//    settings.peerDomainName = hostname
+//    #if os(macOS)
+//    let tlsClient = try AppleTLSClient(tcp: tcpClient, using: settings)
+//    #else
+//    let tlsClient = try OpenSSLClient(tcp: tcpClient, using: settings)
+//    #endif
+//    try tlsClient.connect(hostname: hostname, port: port)
+//    let client = HTTPClient(
+//        stream: tlsClient.socket.stream(on: eventLoop),
+//        on: eventLoop
+//    )
+//    let req = HTTPRequest(method: .get, uri: URI(path: path), headers: [.host: hostname])
+//    let res = try client.send(req).flatMap(to: Data.self) { res in
+//        return res.body.makeData(max: 1_000_000)
+//    }.await(on: eventLoop)
+//    return String(data: res, encoding: .utf8)
+//}
+
