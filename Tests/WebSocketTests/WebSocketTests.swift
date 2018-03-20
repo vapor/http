@@ -7,9 +7,9 @@ class WebSocketTests: XCTestCase {
 
         let ws = WebSocket.httpProtocolUpgrader(shouldUpgrade: { req in
             if req.url.path == "/deny" {
-                return false
+                return nil
             }
-            return true
+            return [:]
         }, onUpgrade: { ws, req in
             ws.send(req.url.path)
             ws.onText { string in

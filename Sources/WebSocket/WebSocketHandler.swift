@@ -3,7 +3,7 @@ import Foundation
 extension WebSocket {
     /// Creates an `HTTPProtocolUpgrader` that will create instances of this class upon HTTP upgrade.
     public static func httpProtocolUpgrader(
-        shouldUpgrade: @escaping (HTTPRequest) -> (Bool),
+        shouldUpgrade: @escaping (HTTPRequest) -> (HTTPHeaders?),
         onUpgrade: @escaping (WebSocket, HTTPRequest) -> ()
     ) -> HTTPProtocolUpgrader {
         return WebSocketUpgrader(shouldUpgrade: { head in
@@ -14,11 +14,7 @@ extension WebSocket {
                 headers: head.headers,
                 body: .init()
             )
-            if shouldUpgrade(req) {
-                return .init()
-            } else {
-                return nil
-            }
+            return shouldUpgrade(req)
         }, upgradePipelineHandler: { channel, head in
             let req = HTTPRequest(
                 method: head.method,
