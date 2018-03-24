@@ -17,7 +17,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.2.0"),
     ],
     targets: [
-        .target(name: "FormURLEncoded", dependencies: ["Bits", "HTTP", "Debugging"]),
+        .target(name: "FormURLEncoded", dependencies: ["Bits", "Core", "HTTP", "Debugging"]),
         .testTarget(name: "FormURLEncodedTests", dependencies: ["FormURLEncoded"]),
         .target(name: "HTTP", dependencies: ["Async", "Bits", "Debugging", "NIO", "NIOHTTP1"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
