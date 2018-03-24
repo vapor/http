@@ -42,7 +42,7 @@ public final class FormURLDecoder: DataDecoder, HTTPBodyDecoder {
     /// - returns: An instance of the `Decodable` type (`D`).
     /// - throws: Any error that may occur while attempting to decode the specified type.
     public func decode<D>(_ decodable: D.Type, from data: Data) throws -> D where D : Decodable {
-        let formURLData = try self.parser.parse(data, omitEmptyValues: self.omitEmptyValues, omitFlags: self.omitFlags)
+        let formURLData = try self.parser.parse(percentEncoded: String(data: data, encoding: .utf8) ?? "", omitEmptyValues: self.omitEmptyValues, omitFlags: self.omitFlags)
         let decoder = _FormURLDecoder(data: .dictionary(formURLData), codingPath: [])
         return try D(from: decoder)
     }
