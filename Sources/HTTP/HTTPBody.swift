@@ -45,7 +45,7 @@ public struct HTTPBody {
         self.storage = .chunkedStream(chunked)
     }
 
-    /// Create a new body from an `ByteBuffer`
+    /// Create a new body from a `ByteBuffer`
     public init(buffer: ByteBuffer) {
         self.storage = .buffer(buffer)
     }
@@ -94,7 +94,7 @@ extension String: HTTPBodyRepresentable {
 }
 
 extension HTTPBody: CustomStringConvertible {
-    /// See `CustomStringConvertible.description
+    /// See `CustomStringConvertible.description`
     public var description: String {
         switch storage {
         case .data, .buffer, .dispatchData, .staticString, .string, .none: return debugDescription
