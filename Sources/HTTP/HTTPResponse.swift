@@ -9,7 +9,7 @@ public struct HTTPResponse: HTTPMessage {
     /// The HTTP headers on this response.
     public var headers: HTTPHeaders
 
-    /// The http body
+    /// The http body.
     /// Updating this property will also update the associated transport headers.
     public var body: HTTPBody {
         didSet {
@@ -46,7 +46,7 @@ public struct HTTPResponse: HTTPMessage {
 }
 
 extension HTTPResponse {
-    /// See `CustomStringConvertible.description
+    /// See `CustomStringConvertible.description`
     public var description: String {
         var desc: [String] = []
         desc.append("HTTP/\(version.major).\(version.minor) \(status.code) \(status.reasonPhrase)")
