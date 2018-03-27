@@ -5,7 +5,7 @@ public struct HTTPRequest: HTTPMessage {
     /// The HTTP method for this request.
     public var method: HTTPMethod
 
-    /// The URI used on this request.
+    /// The URL used on this request.
     public var url: URL {
         get {
             return URL(string: urlString) ?? .root
@@ -71,7 +71,7 @@ extension URL {
 private let _defaultURL = URL(string: "/")!
 
 extension HTTPRequest {
-    /// See `CustomStringConvertible.description
+    /// See `CustomStringConvertible.description`
     public var description: String {
         var desc: [String] = []
         desc.append("\(method) \(url) HTTP/\(version.major).\(version.minor)")
