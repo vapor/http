@@ -35,7 +35,7 @@ public protocol HTTPBodyDecoder {
     ///     - maxSize: Maximum size in bytes for streaming bodies.
     ///     - on: `Worker` to perform asynchronous tasks on.
     /// - returns: `Future` containing the decoded type.
-    /// - throws: Any errors that may have occured while decoding the `HTTPBody`.
+    /// - throws: Any errors that may have occurred while decoding the `HTTPBody`.
     func decode<D>(_ decodable: D.Type, from body: HTTPBody, maxSize: Int, on worker: Worker) throws -> Future<D>
     where D: Decodable
 }
@@ -78,7 +78,7 @@ public protocol HTTPBodyEncoder {
     func encodeBody<E>(from encodable: E) throws -> HTTPBody where E: Encodable
 }
 
-/// MARK: Default Conformances
+// MARK: Default Conformances
 
 extension JSONEncoder: HTTPBodyEncoder {
     /// See `HTTPBodyEncoder.encodeBody(from:)`

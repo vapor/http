@@ -41,7 +41,7 @@ extension HTTPHeaders {
         remove(name: name.lowercased)
     }
 
-    /// Retrieve all of the values for a give header field name from the block.
+    /// Retrieve all of the values for a given header field name from the block.
     ///
     /// This method uses case-insensitive comparisons for the header field name. It
     /// does not return a maximally-decomposed list of the header fields, but instead
@@ -172,7 +172,7 @@ public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     public static let altSvc = HTTPHeaderName("Alt-Svc")
     /// Alt-Used header.
     public static let altUsed = HTTPHeaderName("Alt-Used")
-    /// Alternatives header.
+    /// Alternates header.
     public static let alternates = HTTPHeaderName("Alternates")
     /// Apply-To-Redirect-Ref header.
     public static let applyToRedirectRef = HTTPHeaderName("Apply-To-Redirect-Ref")
@@ -190,7 +190,7 @@ public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     public static let cOpt = HTTPHeaderName("C-Opt")
     /// C-PEP header.
     public static let cPEP = HTTPHeaderName("C-PEP")
-    /// C-PEP-Indo header.
+    /// C-PEP-Info header.
     public static let cPEPInfo = HTTPHeaderName("C-PEP-Info")
     /// Cache-Control header.
     public static let cacheControl = HTTPHeaderName("Cache-Control")
@@ -200,7 +200,7 @@ public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     public static let close = HTTPHeaderName("Close")
     /// Connection header.
     public static let connection = HTTPHeaderName("Connection")
-    /// Content-Base.
+    /// Content-Base header.
     public static let contentBase = HTTPHeaderName("Content-Base")
     /// Content-Disposition header.
     public static let contentDisposition = HTTPHeaderName("Content-Disposition")
@@ -226,9 +226,9 @@ public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     public static let contentType = HTTPHeaderName("Content-Type")
     /// Content-Version header.
     public static let contentVersion = HTTPHeaderName("Content-Version")
-    /// Content-Cookie header.
+    /// Cookie header.
     public static let cookie = HTTPHeaderName("Cookie")
-    /// Content-Cookie2 header.
+    /// Cookie2 header.
     public static let cookie2 = HTTPHeaderName("Cookie2")
     /// DASL header.
     public static let dasl = HTTPHeaderName("DASL")
@@ -302,7 +302,7 @@ public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     public static let man = HTTPHeaderName("Man")
     /// Max-Forwards header.
     public static let maxForwards = HTTPHeaderName("Max-Forwards")
-    /// Memento-Date header.
+    /// Memento-Datetime header.
     public static let mementoDatetime = HTTPHeaderName("Memento-Datetime")
     /// Meter header.
     public static let meter = HTTPHeaderName("Meter")

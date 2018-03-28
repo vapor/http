@@ -59,7 +59,7 @@ public final class FormURLDecoder: DataDecoder, HTTPBodyDecoder {
     ///     - maxSize: Maximum size in bytes for streaming bodies.
     ///     - on: `Worker` to perform asynchronous tasks on.
     /// - returns: `Future` containing the decoded type.
-    /// - throws: Any errors that may have occured while decoding the `HTTPBody`.
+    /// - throws: Any errors that may have occurred while decoding the `HTTPBody`.
     public func decode<D>(_ type: D.Type, from body: HTTPBody, maxSize: Int, on worker: Worker) throws -> Future<D> where D: Decodable {
         return body.consumeData(max: maxSize, on: worker).map(to: D.self) { data in
             return try self.decode(D.self, from: data)

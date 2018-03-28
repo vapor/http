@@ -3,7 +3,7 @@
 /// and has the general structure of:
 ///
 ///     <status line> HTTP/1.1
-///     Content-Lengt: 5
+///     Content-Length: 5
 ///     Foo: Bar
 ///
 ///     hello

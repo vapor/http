@@ -19,7 +19,7 @@ public final class FormURLEncoder: DataEncoder, HTTPBodyEncoder {
     /// - parameters:
     ///     - encodable: Generic `Encodable` object (`E`) to encode.
     /// - returns: Encoded `Data`
-    /// - throws: Any error taht may occur while attempting to encode the specified type.
+    /// - throws: Any error that may occur while attempting to encode the specified type.
     public func encode<E>(_ encodable: E) throws -> Data where E: Encodable {
         let partialData = PartialFormURLEncodedData(
             data: .dictionary([:])
