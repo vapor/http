@@ -26,10 +26,14 @@ public final class MultipartSerializer {
         for part in form.parts {
             body.append(contentsOf: boundary)
             body.append(contentsOf: [.carriageReturn, .newLine])
-            
-            part.headers.withByteBuffer { buffer in
-                body.append(buffer)
+
+            for (key, val) in part.headers {
+                body.append(Data(key.utf8))
+                body.append(contentsOf: [.colon, .space])
+                body.append(Data(val.utf8))
+                body.append(contentsOf: [.carriageReturn, .newLine])
             }
+            body.append(contentsOf: [.carriageReturn, .newLine])
             
             body.append(part.data)
             body.append(contentsOf: [.carriageReturn, .newLine])

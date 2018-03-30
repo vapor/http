@@ -1,4 +1,4 @@
-import Foundation
+import Core
 
 /// Converts data to form-urlencoded struct.
 final class FormURLEncodedParser {
@@ -12,11 +12,26 @@ final class FormURLEncodedParser {
     /// If empty values is false, `foo=` will resolve as `foo: true`
     /// instead of `foo: ""`
     func parse(
-        _ data: Data,
+        percentEncoded: String,
+        omitEmptyValues: Bool = false,
+        omitFlags: Bool = false
+    ) throws -> [String: FormURLEncodedData] {
+        guard let decoded = percentEncoded.replacingOccurrences(of: "+", with: " ").removingPercentEncoding else {
+            throw FormURLError(identifier: "percentDecoding", reason: "Could not percent decode string: \(percentEncoded)")
+        }
+        return try parse(data: decoded, omitEmptyValues: omitEmptyValues, omitFlags: omitFlags)
+    }
+
+    /// Parses the data.
+    /// If empty values is false, `foo=` will resolve as `foo: true`
+    /// instead of `foo: ""`
+    func parse(
+        data: LosslessDataConvertible,
         omitEmptyValues: Bool = false,
         omitFlags: Bool = false
     ) throws -> [String: FormURLEncodedData] {
         var encoded: [String: FormURLEncodedData] = [:]
+        let data = try data.convertToData()
 
         for pair in data.split(separator: .ampersand) {
             let data: FormURLEncodedData
@@ -36,7 +51,7 @@ final class FormURLEncodedParser {
                     continue
                 }
                 key = try parseKey(data: token[0])
-                data = try .string(token[1].percentDecodedString())
+                data = try .string(token[1].utf8DecodedString())
             } else if token.count == 1 {
                 if omitFlags {
                     continue
@@ -87,7 +102,7 @@ final class FormURLEncodedParser {
                 if data[0] == .rightSquareBracket {
                     return .array
                 } else {
-                    return try .dictionary(data.dropLast().percentDecodedString())
+                    return try .dictionary(data.dropLast().utf8DecodedString())
                 }
             }
         } else {
@@ -96,7 +111,7 @@ final class FormURLEncodedParser {
         }
 
         return try FormURLEncodedKey(
-            string: stringData.percentDecodedString(),
+            string: stringData.utf8DecodedString(),
             subKeys: subKeys
         )
     }
@@ -166,7 +181,7 @@ fileprivate enum FormURLEncodedSubKey {
 // MARK: Utilities
 
 extension Data {
-    fileprivate func percentDecodedString() throws -> String {
+    fileprivate func utf8DecodedString() throws -> String {
         guard let string = String(data: self, encoding: .utf8) else {
             throw FormURLError(
                 identifier: "utf8Decoding",
@@ -174,7 +189,15 @@ extension Data {
             )
         }
 
-        guard let decoded = string.replacingOccurrences(of: "+", with: " ").removingPercentEncoding else {
+        return string
+    }
+}
+
+extension Data {
+    fileprivate func percentDecodedString() throws -> String {
+        let utf8 = try utf8DecodedString()
+
+        guard let decoded = utf8.replacingOccurrences(of: "+", with: " ").removingPercentEncoding else {
             throw FormURLError(
                 identifier: "percentDecoding",
                 reason: "Failed to percent decode string: \(self)"

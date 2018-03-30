@@ -1,39 +1,73 @@
-import Async
-import Foundation
+import Core
 import HTTP
 
-public final class FormURLDecoder {
-    /// Internal parser
-    let parser: FormURLEncodedParser
+/// Decodes instances of `Decodable` types from `Data`.
+///
+///     print(data) /// Data
+///     let user = try FormURLDecoder().decode(User.self, from: data)
+///     print(user) /// User
+///
+public final class FormURLDecoder: DataDecoder, HTTPBodyDecoder {
+    /// The underlying `FormURLEncodedParser`
+    private let parser: FormURLEncodedParser
 
-    /// If true, empty values will be omitted
+    /// If `true`, empty values will be omitted. Empty values are URL-Encoded keys with no value following the `=` sign.
     public var omitEmptyValues: Bool
 
-    /// If true, flags will be omitted
+    /// If `true`, flags will be omitted. Flags are URL-encoded keys with no following `=` sign.
     public var omitFlags: Bool
-    
-    /// The maximum amount of data to decode
-    ///
-    /// Used to prevent memory buffer attacks
-    public var maxBodySize: Int
 
-    /// Create a new form-urlencoded decoder.
+    /// Create a new `FormURLDecoder`.
+    ///
+    /// - parameters:
+    ///     - omitEmptyValues: If `true`, empty values will be omitted.
+    ///                        Empty values are URL-Encoded keys with no value following the `=` sign.
+    ///     - omitFlags: If `true`, flags will be omitted.
+    ///                  Flags are URL-encoded keys with no following `=` sign.
     public init(omitEmptyValues: Bool = false, omitFlags: Bool = false) {
         self.parser = FormURLEncodedParser()
         self.omitFlags = omitFlags
         self.omitEmptyValues = omitEmptyValues
-        self.maxBodySize = 100_000
     }
 
-    /// Decodes a decodable type from form-urlencoded data
-    public func decode<D>(_ type: D.Type, from body: HTTPBody) throws -> Future<D> where D: Decodable {
-        return body.makeData(max: maxBodySize).map(to: D.self) { data in
-            let formURLData = try self.parser.parse(data, omitEmptyValues: self.omitEmptyValues, omitFlags: self.omitFlags)
-            let decoder = _FormURLDecoder(data: .dictionary(formURLData), codingPath: [])
-            return try D(from: decoder)
+    /// Decodes an instance of the supplied `Decodable` type from `Data`.
+    ///
+    ///     print(data) /// Data
+    ///     let user = try FormURLDecoder().decode(User.self, from: data)
+    ///     print(user) /// User
+    ///
+    /// - parameters:
+    ///     - decodable: Generic `Decodable` type (`D`) to decode.
+    ///     - from: `Data` to decode a `D` from.
+    /// - returns: An instance of the `Decodable` type (`D`).
+    /// - throws: Any error that may occur while attempting to decode the specified type.
+    public func decode<D>(_ decodable: D.Type, from data: Data) throws -> D where D : Decodable {
+        let formURLData = try self.parser.parse(percentEncoded: String(data: data, encoding: .utf8) ?? "", omitEmptyValues: self.omitEmptyValues, omitFlags: self.omitFlags)
+        let decoder = _FormURLDecoder(data: .dictionary(formURLData), codingPath: [])
+        return try D(from: decoder)
+    }
+
+    /// Decodes the supplied `Decodable` type from an `HTTPBody`.
+    ///
+    ///     let decoder: BodyDecoder = FormURLDecoder()
+    ///     let string = try decoder.decode(String.self, from: HTTPBody(string: "hello"), on: ...).wait()
+    ///     print(string) /// "hello" from the HTTP body
+    ///
+    /// - parameters:
+    ///     - decodable: `Decodable` type to decode from the `HTTPBody`.
+    ///     - from: `HTTPBody` to decode the `Decodable` type from. This `HTTPBody` may be static or streaming.
+    ///     - maxSize: Maximum size in bytes for streaming bodies.
+    ///     - on: `Worker` to perform asynchronous tasks on.
+    /// - returns: `Future` containing the decoded type.
+    /// - throws: Any errors that may have occurred while decoding the `HTTPBody`.
+    public func decode<D>(_ type: D.Type, from body: HTTPBody, maxSize: Int, on worker: Worker) throws -> Future<D> where D: Decodable {
+        return body.consumeData(max: maxSize, on: worker).map(to: D.self) { data in
+            return try self.decode(D.self, from: data)
         }
     }
 }
+
+/// MARK: Private
 
 /// Internal form urlencoded decoder.
 /// See FormURLDecoder for the public decoder.

@@ -1,13 +1,26 @@
-import Foundation
+import Core
 import HTTP
 
-/// Encodes encodable structures to form-urlencoded data.
-public final class FormURLEncoder {
-    /// Create a new form-urlencoded encoder.
+/// Encodes `Encodable` instances to `application/x-www-form-urlencoded` data.
+///
+///     print(user) /// User
+///     let data = try FormURLEncoder().encode(user)
+///     print(data) /// Data
+public final class FormURLEncoder: DataEncoder, HTTPBodyEncoder {
+    /// Create a new `FormURLEncoder`.
     public init() {}
 
-    /// Encodes the supplied encodable structure to form-urlencoded data.
-    public func encodeBody<E: Encodable>(from encodable: E) throws -> HTTPBody {
+    /// Encodes the supplied `Encodable` object to `Data`.
+    ///
+    ///     print(user) /// User
+    ///     let data = try FormURLEncoder().encode(user)
+    ///     print(data) /// Data
+    ///
+    /// - parameters:
+    ///     - encodable: Generic `Encodable` object (`E`) to encode.
+    /// - returns: Encoded `Data`
+    /// - throws: Any error that may occur while attempting to encode the specified type.
+    public func encode<E>(_ encodable: E) throws -> Data where E: Encodable {
         let partialData = PartialFormURLEncodedData(
             data: .dictionary([:])
         )
@@ -23,9 +36,25 @@ public final class FormURLEncoder {
                 reason: "form-urlencoded requires a top level dictionary"
             )
         }
-        return HTTPBody(try serializer.serialize(dict))
+        return try serializer.serialize(dict)
+    }
+
+    /// Encodes the supplied `Encodable` object to an `HTTPBody`.
+    ///
+    ///     let encoder: HTTPBodyEncoder = FormURLEncoder()
+    ///     let body = try encoder.encodeBody(from: "hello")
+    ///     print(body) /// HTTPBody containing the string "hello"
+    ///
+    /// - parameters:
+    ///     - from: `Encodable` object that will be encoded to the `HTTPBody`.
+    /// - returns: Encoded HTTP body.
+    /// - throws: Any errors that may occur while encoding the object.
+    public func encodeBody<E>(from encodable: E) throws -> HTTPBody where E: Encodable {
+        return try HTTPBody(data: encode(encodable))
     }
 }
+
+/// MARK: Private
 
 /// Internal form urlencoded encoder.
 /// See FormURLEncoder for the public encoder.
