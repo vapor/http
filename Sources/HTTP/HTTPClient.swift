@@ -1,4 +1,4 @@
-import Foundation
+import Core
 
 public final class HTTPClient: HTTPResponder {
     private let handler: HTTPClientHandler

@@ -1,4 +1,4 @@
-import Foundation
+import Core
 import Dispatch
 
 /// Represents an HTTP Message's Body.

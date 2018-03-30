@@ -1,4 +1,4 @@
-import Foundation
+import Core
 
 public enum HTTPChunkedStreamResult {
     case chunk(ByteBuffer)
