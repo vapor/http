@@ -21,7 +21,7 @@ public final class HTTPChunkedStream: BasicWorker {
     public func read(_ handler: @escaping HTTPChunkedHandler) {
         self.handler = handler
         if let (chunk, promise) = waiting {
-            handler(chunk, self).chain(to: promise)
+            handler(chunk, self).cascade(promise: promise)
         }
     }
 
