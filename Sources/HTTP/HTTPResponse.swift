@@ -23,7 +23,7 @@ public struct HTTPResponse: HTTPMessage {
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
         body: HTTPBody = .init()
-        ) {
+    ) {
         self.status = status
         self.version = version
         self.headers = headers
@@ -37,7 +37,7 @@ public struct HTTPResponse: HTTPMessage {
         version: HTTPVersion,
         headersNoUpdate headers: HTTPHeaders,
         body: HTTPBody
-        ) {
+    ) {
         self.status = status
         self.version = version
         self.headers = headers
