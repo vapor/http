@@ -144,7 +144,7 @@ extension HTTPCookies {
         }
 
         let cookie: String = map { cookie in
-            return "\(cookie.name)=\(cookie.value)"
+            return "\(cookie.name)=\(cookie.value.string)"
         }.joined(separator: "; ")
 
         request.headers.replaceOrAdd(name: .cookie, value: cookie)
