@@ -1,4 +1,5 @@
 import Core
+import NIOOpenSSL
 
 public final class HTTPClient: HTTPResponder {
     private let handler: HTTPClientHandler
@@ -19,6 +20,29 @@ public final class HTTPClient: HTTPResponder {
                     channel.pipeline.add(handler: handler)
                 }
             }
+
+        return bootstrap.connect(host: hostname, port: port).map(to: HTTPClient.self) { _ in
+            return .init(handler: handler, bootstrap: bootstrap)
+        }
+    }
+
+    public static func connectTLS(hostname: String, port: Int, on worker: Worker) throws -> Future<HTTPClient> {
+        let handler = HTTPClientHandler()
+
+        let tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
+        let sslContext = try SSLContext(configuration: tlsConfiguration)
+        let tlsHandler = try OpenSSLClientHandler(context: sslContext)
+
+        let bootstrap = ClientBootstrap(group: worker.eventLoop)
+            // Enable SO_REUSEADDR.
+            .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
+            .channelInitializer { channel in
+                return channel.pipeline.add(handler: tlsHandler).then {
+                    channel.pipeline.addHTTPClientHandlers().then {
+                        channel.pipeline.add(handler: handler)
+                    }
+                }
+        }
 
         return bootstrap.connect(host: hostname, port: port).map(to: HTTPClient.self) { _ in
             return .init(handler: handler, bootstrap: bootstrap)
