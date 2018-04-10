@@ -31,10 +31,6 @@ class HTTPClientTests: XCTestCase {
         testFetchingURL(hostname: "romansgohome.com", path: "/", responseContains: "Romans Go Home!")
     }
 
-    func testAmazon() {
-        testFetchingURL(hostname: "www.amazon.com", port: 443, tls: false, path: "/", responseContains: "The request could not be satisfied")
-    }
-
     func testAmazonWithTLS() {
         testFetchingURL(hostname: "www.amazon.com", port: 443, tls: true, path: "/", responseContains: "Amazon.com, Inc.")
     }
@@ -47,7 +43,6 @@ class HTTPClientTests: XCTestCase {
         ("testExampleCom", testExampleCom),
         ("testZombo", testZombo),
         ("testRomans", testRomans),
-        ("testAmazon", testAmazon),
         ("testAmazonWithTLS", testAmazonWithTLS),
     ]
 }
