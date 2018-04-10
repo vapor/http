@@ -26,7 +26,7 @@ public final class HTTPClient: HTTPResponder {
         }
     }
 
-    public static func connectTLS(hostname: String, port: Int, on worker: Worker) throws -> Future<HTTPClient> {
+    public static func connectWithTLS(hostname: String, port: Int, on worker: Worker) throws -> Future<HTTPClient> {
         let handler = HTTPClientHandler()
 
         let tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
