@@ -15,7 +15,7 @@ public struct Part {
     public var headers: HTTPHeaders
     
     /// Creates a new part
-    init(data: Data, key: String?, headers: HTTPHeaders) {
+    public init(data: Data, key: String?, headers: HTTPHeaders) {
         self.data = data
         self.key = key
         self.headers = headers
@@ -31,6 +31,12 @@ public struct MultipartForm {
     
     /// The multipart's boundary
     public var boundary: [UInt8]
+    
+    /// Creates new MultipartForm
+    public init(parts: [Part], boundary: [UInt8]) {
+        self.parts = parts;
+        self.boundary = boundary;
+    }
     
     /// Gets the `String` associated with the `name`. Throws an error if there is no `String` encoded as UTF-8
     ///
