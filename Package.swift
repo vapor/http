@@ -15,11 +15,12 @@ let package = Package(
         
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.2.0"),
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.0.1"),
     ],
     targets: [
         .target(name: "FormURLEncoded", dependencies: ["Bits", "Core", "HTTP", "Debugging"]),
         .testTarget(name: "FormURLEncodedTests", dependencies: ["FormURLEncoded"]),
-        .target(name: "HTTP", dependencies: ["Async", "Bits", "Core", "Debugging", "NIO", "NIOHTTP1"]),
+        .target(name: "HTTP", dependencies: ["Async", "Bits", "Core", "Debugging", "NIO", "NIOOpenSSL", "NIOHTTP1"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
         .target(name: "Performance", dependencies: ["HTTP"]),
         .target(name: "Multipart", dependencies: ["Debugging", "HTTP"]),
