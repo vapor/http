@@ -101,15 +101,17 @@ internal final class WebsocketHandler: ChannelInboundHandler {
         currentCtx = nil
     }
 
-    func send(count: Int, opcode: WebSocketOpcode, bufferWriter: (inout ByteBuffer) -> ()) {
+    func send(count: Int, opcode: WebSocketOpcode, bufferWriter: @escaping (inout ByteBuffer) -> ()) {
         let ctx = currentCtx!
-        guard ctx.channel.isActive else { return }
-        // We can't send if we sent a close message.
-        guard !self.awaitingClose else { return }
-        var buffer = ctx.channel.allocator.buffer(capacity: count)
-        bufferWriter(&buffer)
-        let frame = WebSocketFrame(fin: true, opcode: opcode, data: buffer)
-        ctx.writeAndFlush(wrapOutboundOut(frame), promise: nil)
+        ctx.eventLoop.execute {
+            guard ctx.channel.isActive else { return }
+            // We can't send if we sent a close message.
+            guard !self.awaitingClose else { return }
+            var buffer = ctx.channel.allocator.buffer(capacity: count)
+            bufferWriter(&buffer)
+            let frame = WebSocketFrame(fin: true, opcode: opcode, data: buffer)
+            ctx.writeAndFlush(self.wrapOutboundOut(frame), promise: nil)
+        }
     }
 
     private func receivedClose(ctx: ChannelHandlerContext, frame: WebSocketFrame) {
