@@ -89,7 +89,7 @@ extension JSONEncoder: HTTPBodyEncoder {
 
 extension JSONDecoder: HTTPBodyDecoder {
     /// See `HTTPBodyDecoder.decode(_:from:maxSize:on:)`
-    public func decode<D>(_ decodable: D.Type, from body: HTTPBody, maxSize: Int, on worker: Worker) throws -> EventLoopFuture<D> where D : Decodable {
+    public func decode<D>(_ decodable: D.Type, from body: HTTPBody, maxSize: Int = 65_536, on worker: Worker) throws -> EventLoopFuture<D> where D : Decodable {
         return body.consumeData(max: maxSize, on: worker).map(to: D.self) { data in
             return try self.decode(D.self, from: data)
         }
