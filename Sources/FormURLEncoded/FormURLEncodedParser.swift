@@ -31,7 +31,7 @@ final class FormURLEncodedParser {
         omitFlags: Bool = false
     ) throws -> [String: FormURLEncodedData] {
         var encoded: [String: FormURLEncodedData] = [:]
-        let data = try data.convertToData()
+        let data = data.convertToData()
 
         for pair in data.split(separator: .ampersand) {
             let data: FormURLEncodedData

@@ -19,7 +19,7 @@ public struct MultipartFile: MultipartInitializable {
     
     /// Creates a new Multipart file
     public init(part: Part) throws {
-        self.mimeType = MediaType(string: part.headers[.contentType].first ?? "")
+        self.mimeType = MediaType.parse(part.headers[.contentType].first ?? "")
         self.filename = part.headers[.contentDisposition, "filename"]
         self.data = part.data
     }
