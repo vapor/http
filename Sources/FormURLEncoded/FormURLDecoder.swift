@@ -7,7 +7,7 @@ import HTTP
 ///     let user = try FormURLDecoder().decode(User.self, from: data)
 ///     print(user) /// User
 ///
-public final class FormURLDecoder: DataDecoder, HTTPBodyDecoder {
+public final class FormURLDecoder: DataDecoder, HTTPMessageDecoder {
     /// The underlying `FormURLEncodedParser`
     private let parser: FormURLEncodedParser
 
@@ -60,8 +60,13 @@ public final class FormURLDecoder: DataDecoder, HTTPBodyDecoder {
     ///     - on: `Worker` to perform asynchronous tasks on.
     /// - returns: `Future` containing the decoded type.
     /// - throws: Any errors that may have occurred while decoding the `HTTPBody`.
-    public func decode<D>(_ type: D.Type, from body: HTTPBody, maxSize: Int, on worker: Worker) throws -> Future<D> where D: Decodable {
-        return body.consumeData(max: maxSize, on: worker).map(to: D.self) { data in
+    public func decode<D, M>(_ type: D.Type, from message: M, maxSize: Int, on worker: Worker) throws -> Future<D>
+        where D: Decodable, M: HTTPMessage
+    {
+        guard message.mediaType == .json else {
+            throw HTTPError(identifier: "contentType", reason: "HTTP message did not have form-urlencoded content-type.", source: .capture())
+        }
+        return message.body.consumeData(max: maxSize, on: worker).map(to: D.self) { data in
             return try self.decode(D.self, from: data)
         }
     }

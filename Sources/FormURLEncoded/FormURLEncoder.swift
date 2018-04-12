@@ -6,7 +6,7 @@ import HTTP
 ///     print(user) /// User
 ///     let data = try FormURLEncoder().encode(user)
 ///     print(data) /// Data
-public final class FormURLEncoder: DataEncoder, HTTPBodyEncoder {
+public final class FormURLEncoder: DataEncoder, HTTPMessageEncoder {
     /// Create a new `FormURLEncoder`.
     public init() {}
 
@@ -41,7 +41,7 @@ public final class FormURLEncoder: DataEncoder, HTTPBodyEncoder {
 
     /// Encodes the supplied `Encodable` object to an `HTTPBody`.
     ///
-    ///     let encoder: HTTPBodyEncoder = FormURLEncoder()
+    ///     let encoder: HTTPMessageEncoder = FormURLEncoder()
     ///     let body = try encoder.encodeBody(from: "hello")
     ///     print(body) /// HTTPBody containing the string "hello"
     ///
@@ -49,8 +49,11 @@ public final class FormURLEncoder: DataEncoder, HTTPBodyEncoder {
     ///     - from: `Encodable` object that will be encoded to the `HTTPBody`.
     /// - returns: Encoded HTTP body.
     /// - throws: Any errors that may occur while encoding the object.
-    public func encodeBody<E>(from encodable: E) throws -> HTTPBody where E: Encodable {
-        return try HTTPBody(data: encode(encodable))
+
+    /// See `HTTPMessageEncoder`
+    public func encode<E, M>(_ encodable: E, to message: inout M, on worker: Worker) throws where E: Encodable, M: HTTPMessage {
+        message.mediaType = .urlEncodedForm
+        message.body = try HTTPBody(data: encode(encodable))
     }
 }
 

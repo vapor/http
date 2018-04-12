@@ -6,12 +6,11 @@ let package = Package(
     products: [
         .library(name: "FormURLEncoded", targets: ["FormURLEncoded"]),
         .library(name: "HTTP", targets: ["HTTP"]),
-        .library(name: "Multipart", targets: ["Multipart"]),
         .library(name: "WebSocket", targets: ["WebSocket"]),
     ],
     dependencies: [
         // 🌎 Utility package containing tools for byte manipulation, Codable, OS APIs, and debugging.
-        .package(url: "https://github.com/vapor/core.git", from: "3.0.0-rc.2"),
+        .package(url: "https://github.com/vapor/core.git", from: "3.0.0"),
         
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.2.0"),
@@ -23,8 +22,6 @@ let package = Package(
         .target(name: "HTTP", dependencies: ["Async", "Bits", "Core", "Debugging", "NIO", "NIOOpenSSL", "NIOHTTP1"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
         .target(name: "Performance", dependencies: ["HTTP"]),
-        .target(name: "Multipart", dependencies: ["Debugging", "HTTP"]),
-        .testTarget(name: "MultipartTests", dependencies: ["Multipart"]),
         .target(name: "WebSocket", dependencies: ["Debugging", "HTTP", "NIO", "NIOWebSocket"]),
         .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
