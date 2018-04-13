@@ -20,7 +20,9 @@ class FormURLEncodedCodableTests: XCTestCase {
 
     func testEncode() throws {
         let user = User(name: "Tanner", age: 23, pets: ["Zizek", "Foo"], dict: ["a": 1, "b": 2])
-        let data = try FormURLEncoder().encodeBody(from: user).data!
+        var res = HTTPResponse(status: .ok)
+        try FormURLEncoder().encode(user, to: &res, on: EmbeddedEventLoop())
+        let data = res.body.data!
         let result = String(data: data, encoding: .utf8)!
         XCTAssert(result.contains("pets[]=Zizek"))
         XCTAssert(result.contains("pets[]=Foo"))
