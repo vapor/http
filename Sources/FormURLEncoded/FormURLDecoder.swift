@@ -63,7 +63,7 @@ public final class FormURLDecoder: DataDecoder, HTTPMessageDecoder {
     public func decode<D, M>(_ type: D.Type, from message: M, maxSize: Int, on worker: Worker) throws -> Future<D>
         where D: Decodable, M: HTTPMessage
     {
-        guard message.mediaType == .json else {
+        guard message.mediaType == .urlEncodedForm else {
             throw HTTPError(identifier: "contentType", reason: "HTTP message did not have form-urlencoded content-type.", source: .capture())
         }
         return message.body.consumeData(max: maxSize, on: worker).map(to: D.self) { data in
