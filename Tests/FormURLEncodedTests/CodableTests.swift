@@ -18,6 +18,15 @@ class FormURLEncodedCodableTests: XCTestCase {
         XCTAssertEqual(user.dict["b"], 2)
     }
 
+    func testDecodeMessage() throws {
+        let data = """
+        name=Tanner&age=23&pets[]=Zizek&pets[]=Foo&dict[a]=1&dict[b]=2
+        """.data(using: .utf8)!
+        let request = HTTPRequest(headers: ["Content-Type": "application/x-www-form-urlencoded"], body: HTTPBody(data: data))
+        let user = try FormURLDecoder().decode(User.self, from: request, maxSize: Int.max, on: EmbeddedEventLoop()).wait()
+        XCTAssertEqual(user.name, "Tanner")
+    }
+
     func testEncode() throws {
         let user = User(name: "Tanner", age: 23, pets: ["Zizek", "Foo"], dict: ["a": 1, "b": 2])
         var res = HTTPResponse(status: .ok)
@@ -53,6 +62,7 @@ class FormURLEncodedCodableTests: XCTestCase {
         ("testEncode", testEncode),
         ("testCodable", testCodable),
         ("testDecodeIntArray", testDecodeIntArray),
+        ("testDecodeMessage", testDecodeMessage),
     ]
 }
 
