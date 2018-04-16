@@ -2,10 +2,9 @@
 import PackageDescription
 
 let package = Package(
-    name: "Engine",
+    name: "HTTP",
     products: [
         .library(name: "HTTP", targets: ["HTTP"]),
-        .library(name: "WebSocket", targets: ["WebSocket"]),
     ],
     dependencies: [
         // 🌎 Utility package containing tools for byte manipulation, Codable, OS APIs, and debugging.
@@ -21,7 +20,5 @@ let package = Package(
         .target(name: "HTTP", dependencies: ["Async", "Bits", "Core", "Debugging", "NIO", "NIOOpenSSL", "NIOHTTP1"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
         .target(name: "Performance", dependencies: ["HTTP"]),
-        .target(name: "WebSocket", dependencies: ["Debugging", "HTTP", "NIO", "NIOWebSocket"]),
-        .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )
