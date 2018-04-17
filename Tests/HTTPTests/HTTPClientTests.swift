@@ -34,6 +34,10 @@ class HTTPClientTests: XCTestCase {
         testFetchingURL(hostname: "www.amazon.com", port: 443, tls: true, path: "/", responseContains: "Amazon.com, Inc.")
     }
 
+    func testQuery() {
+        testFetchingURL(hostname: "httpbin.org", path: "/get?foo=bar", responseContains: "bar")
+    }
+
     static let allTests = [
         ("testHTTPBin418", testHTTPBin418),
         ("testHTTPBinRobots", testHTTPBinRobots),
@@ -43,6 +47,7 @@ class HTTPClientTests: XCTestCase {
         ("testZombo", testZombo),
         ("testRomans", testRomans),
         ("testAmazonWithTLS", testAmazonWithTLS),
+        ("testQuery", testQuery),
     ]
 }
 
