@@ -16,7 +16,7 @@ public final class HTTPClient {
     ///     - worker: `Worker` to perform async work on.
     /// - returns: A `Future` containing the connected `HTTPClient`.
     public static func connect(
-        scheme: HTTPScheme = .plainText,
+        scheme: HTTPScheme = .http,
         hostname: String,
         port: Int? = nil,
         on worker: Worker
@@ -31,7 +31,7 @@ public final class HTTPClient {
                     let defaultHandlers: [ChannelHandler] = [
                         HTTPRequestEncoder(),
                         HTTPResponseDecoder(),
-                        HTTPClientRequestSerializer(),
+                        HTTPClientRequestSerializer(hostname: hostname),
                         HTTPClientResponseParser()
                     ]
                     return channel.pipeline.addHandlers(defaultHandlers + [handler], first: false)
@@ -94,16 +94,20 @@ private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
     /// See `ChannelOutboundHandler`.
     typealias OutboundOut = HTTPClientRequestPart
 
+    /// Hostname we are serializing responses to.
+    private let hostname: String
+
     /// Creates a new `HTTPClientRequestSerializer`.
-    init() { }
+    init(hostname: String) {
+        self.hostname = hostname
+    }
 
     /// See `ChannelOutboundHandler`.
     func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = unwrapOutboundIn(data)
         var headers = req.headers
-        if headers[.host].isEmpty, let host = req.url.host  {
-            headers.add(name: .host, value: host)
-        }
+        headers.add(name: .host, value: hostname)
+        headers.replaceOrAdd(name: .userAgent, value: "vapor/engine")
         var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.absoluteString)
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)

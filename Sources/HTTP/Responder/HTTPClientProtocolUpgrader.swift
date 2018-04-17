@@ -5,13 +5,13 @@ extension HTTPClient {
     ///     let webSocket = try HTTPClient.upgrade(hostname: "vapor.codes", upgrader: webSocketUpgrader, on: req).wait()
     ///
     /// - parameters:
-    ///     - scheme: Transport layer security to use, either tls or plainText.
+    ///     - scheme: Transport layer security to use, either `http` or `https`.
     ///     - hostname: Remote server's hostname.
     ///     - port: Remote server's port, defaults to 80 for TCP and 443 for TLS.
     ///     - worker: `Worker` to perform async work on.
     /// - returns: A `Future` containing the upgrade result.
     public static func upgrade<Upgrader>(
-        scheme: HTTPScheme = .plainText,
+        scheme: HTTPScheme = .http,
         hostname: String,
         port: Int? = nil,
         upgrader: Upgrader,
