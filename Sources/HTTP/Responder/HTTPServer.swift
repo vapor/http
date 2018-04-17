@@ -46,6 +46,7 @@ public final class HTTPServer {
 
                 // configure the pipeline
                 return channel.pipeline.configureHTTPServerPipeline(
+                    withPipeliningAssistance: true, 
                     withServerUpgrade: upgrade,
                     withErrorHandling: true
                 ).then {
