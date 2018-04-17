@@ -55,3 +55,24 @@ extension HTTPResponse {
         return desc.joined(separator: "\n")
     }
 }
+
+
+extension HTTPResponseStatus: Codable {
+    enum CodingKeys: String, CodingKey {
+        case code, reasonPhrase
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let statusCode = try container.decode(Int.self, forKey: .code)
+        let reasonPhrase = try container.decode(String.self, forKey: .reasonPhrase)
+
+        self = HTTPResponseStatus(statusCode: statusCode, reasonPhrase: reasonPhrase)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(reasonPhrase, forKey: .reasonPhrase)
+        try container.encode(code, forKey: .code)
+    }
+}
