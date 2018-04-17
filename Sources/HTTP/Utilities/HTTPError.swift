@@ -43,3 +43,7 @@ extension UnsafeMutableBufferPointer {
         assert(it.next() == nil)
     }
 }
+
+internal func debugOnly(_ body: () -> Void) {
+    assert({ body(); return true }())
+}

@@ -106,22 +106,33 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         assert(ctx.channel.eventLoop.inEventLoop)
         switch unwrapInboundIn(data) {
         case .head(let head):
+            debugOnly {
+                /// only perform this switch in debug mode
+                switch state {
+                case .ready: break
+                default: assertionFailure("Unexpected state: \(state)")
+                }
+            }
+            state = .awaitingBody(head)
+        case .body(var chunk):
             switch state {
-            case .ready:
+            case .ready: assertionFailure("Unexpected state: \(state)")
+            case .awaitingBody(let head):
+                /// 1: check to see which kind of body we are parsing from the head
+                ///
                 /// short circuit on `contains(name:)` which is faster
                 /// - note: for some reason using String instead of HTTPHeaderName is faster here...
+                ///         this will be standardized when NIO gets header names
                 if head.headers.contains(name: "Transfer-Encoding"), head.headers.firstValue(name: .transferEncoding) == "chunked" {
                     let stream = HTTPChunkedStream(on: ctx.eventLoop)
                     state = .streamingBody(stream)
-                    writeResponse(for: head, body: .init(chunked: stream), ctx: ctx)
+                    respond(to: head, body: .init(chunked: stream), ctx: ctx)
                 } else {
                     state = .collectingBody(head, nil)
                 }
-            default: assert(false, "Unexpected state: \(state)")
-            }
-        case .body(var chunk):
-            switch state {
-            case .ready: assert(false, "Unexpected state: \(state)")
+
+                /// 2: perform the actual body read now
+                channelRead(ctx: ctx, data: data)
             case .collectingBody(let head, let existingBody):
                 let body: ByteBuffer
                 if var existing = existingBody {
@@ -138,23 +149,19 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             case .streamingBody(let stream): _ = stream.write(.chunk(chunk))
             }
         case .end(let tailHeaders):
-            assert(tailHeaders == nil)
+            assert(tailHeaders == nil, "Tail headers are not supported.")
             switch state {
-            case .ready: fatalError()
-            case .collectingBody(let head, let body):
-                writeResponse(
-                    for: head,
-                    body: body.flatMap { HTTPBody(buffer: $0) } ?? HTTPBody(),
-                    ctx: ctx
-                )
+            case .ready: assertionFailure("Unexpected state: \(state)")
+            case .awaitingBody(let head): respond(to: head, body: .empty, ctx: ctx)
+            case .collectingBody(let head, let body): respond(to: head, body: body.flatMap(HTTPBody.init(buffer:)) ?? .empty, ctx: ctx)
             case .streamingBody(let stream): _ = stream.write(.end)
             }
             state = .ready
         }
     }
 
-    /// Writes a response body.
-    private func writeResponse(for head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
+    /// Requests an `HTTPResponse` from the responder and serializes it.
+    private func respond(to head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
         let req = HTTPRequest(
             method: head.method,
             urlString: head.uri,
@@ -163,53 +170,65 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             body: body
         )
         responder.respond(to: req, on: ctx.eventLoop).do { res in
-            switch body.storage {
-            case .chunkedStream(let stream):
-                if !stream.isClosed {
-                    print("[WARNING] [HTTP] Response sent while Request had unconsumed chunked data.")
-                }
-            default: break
-            }
-            let httpHead = HTTPResponseHead(version: res.version, status: res.status, headers: res.headers)
-            ctx.write(self.wrapOutboundOut(.head(httpHead)), promise: nil)
-
-            switch res.body.storage {
-            case .none:
-                // optimized case, just send end
-                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-            case .chunkedStream(let stream):
-                stream.read { result, stream in
-                    switch result {
-                    case .chunk(let buffer):
-                        return ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
-                    case .end:
-                        return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
-                    case .error(let error):
-                        self.errorHandler(error)
-                        return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+            debugOnly {
+                switch body.storage {
+                case .chunkedStream(let stream):
+                    if !stream.isClosed {
+                        ERROR("HTTPResponse sent while HTTPRequest had unconsumed chunked data.")
                     }
+                default: break
                 }
-            default:
-                var buffer = ByteBufferAllocator().buffer(capacity: res.body.count ?? 0)
-                switch res.body.storage {
-                case .buffer(var body): buffer.write(buffer: &body)
-                case .data(let data): buffer.write(bytes: data)
-                case .dispatchData(let data): buffer.write(bytes: data)
-                case .none: break
-                case .chunkedStream: break
-                case .staticString(let string): buffer.write(bytes: string)
-                case .string(let string): buffer.write(string: string)
-                }
-                if buffer.readableBytes > 0 {
-                    ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
-                }
-                ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
             }
+            self.serialize(res, ctx: ctx)
         }.catch { error in
             self.errorHandler(error)
             ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
             ctx.close(promise: nil)
         }
+    }
+
+    /// Serializes the `HTTPResponse`.
+    private func serialize(_ res: HTTPResponse, ctx: ChannelHandlerContext) {
+        let httpHead = HTTPResponseHead(version: res.version, status: res.status, headers: res.headers)
+        ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
+        switch res.body.storage {
+        case .none: ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
+        case .buffer(let buffer): write(buffer: buffer, ctx: ctx)
+        case .string(let string):
+            var buffer = ctx.channel.allocator.buffer(capacity: string.count)
+            buffer.write(string: string)
+            write(buffer: buffer, ctx: ctx)
+        case .staticString(let string):
+            var buffer = ctx.channel.allocator.buffer(capacity: string.count)
+            buffer.write(staticString: string)
+            write(buffer: buffer, ctx: ctx)
+        case .data(let data):
+            var buffer = ctx.channel.allocator.buffer(capacity: data.count)
+            buffer.write(bytes: data)
+            write(buffer: buffer, ctx: ctx)
+        case .dispatchData(let data):
+            var buffer = ctx.channel.allocator.buffer(capacity: data.count)
+            buffer.write(bytes: data)
+            write(buffer: buffer, ctx: ctx)
+        case .chunkedStream(let stream):
+            stream.read { result, stream in
+                switch result {
+                case .chunk(let buffer): return ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
+                case .end: return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                case .error(let error):
+                    self.errorHandler(error)
+                    return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                }
+            }
+        }
+    }
+
+    /// Writes a `ByteBuffer` to the ctx.
+    private func write(buffer: ByteBuffer, ctx: ChannelHandlerContext) {
+        if buffer.readableBytes > 0 {
+            ctx.write(wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
+        }
+        ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
     }
 
     /// See `ChannelInboundHandler`.
@@ -222,6 +241,10 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 private enum HTTPServerState {
     /// Waiting for request headers
     case ready
+    /// Waiting for the body
+    /// This allows for performance optimization incase
+    /// a body never comes
+    case awaitingBody(HTTPRequestHead)
     /// Collecting fixed-length body
     case collectingBody(HTTPRequestHead, ByteBuffer?)
     /// Collecting streaming body

@@ -3,7 +3,7 @@ import HTTP
 let hostname = "localhost"
 let port: Int = 8123
 
-let res = HTTPResponse(body: "pong")
+let res = HTTPResponse(body: "pong" as StaticString)
 
 struct EchoResponder: HTTPServerResponder {
     func respond(to req: HTTPRequest, on worker: Worker) -> Future<HTTPResponse> {

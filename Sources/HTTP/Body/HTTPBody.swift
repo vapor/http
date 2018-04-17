@@ -4,6 +4,9 @@
 ///
 /// This can contain any data (streaming or static) and should match the Message's "Content-Type" header.
 public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, CustomDebugStringConvertible {
+    /// An empty `HTTPBody`.
+    public static let empty: HTTPBody = .init()
+
     /// Returns the body's contents as `Data`. `nil` if the body is streaming.
     public var data: Data? {
         return storage.data
