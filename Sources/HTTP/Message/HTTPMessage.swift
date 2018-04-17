@@ -37,6 +37,20 @@ extension HTTPMessage {
         }
     }
 
+    /// Returns a collection of `MediaTypePreference`s specified by this HTTP message's `"Accept"` header.
+    ///
+    /// You can returns all `MediaType`s in this collection to check membership.
+    ///
+    ///     httpReq.accept.mediaTypes.contains(.html)
+    ///
+    /// Or you can compare preferences for two `MediaType`s.
+    ///
+    ///     let pref = httpReq.accept.comparePreference(.json, to: .html)
+    ///
+    public var accept: [MediaTypePreference] {
+        return headers.firstValue(name: .accept).flatMap([MediaTypePreference].parse) ?? []
+    }
+
     /// See `CustomDebugStringConvertible`
     public var debugDescription: String {
         return description
