@@ -3,67 +3,41 @@
 ///
 /// See `connect(...)` and `connectTLS(...)` to create an `HTTPClient`.
 public final class HTTPClient {
-    /// Creates a new `HTTPClient` connected over TCP.
+    /// Creates a new `HTTPClient` connected over TCP or TLS.
     ///
     ///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: req).map(to: HTTPResponse.self) { client in
     ///         return client.send(...)
     ///     }
     ///
     /// - parameters:
+    ///     - scheme: Transport layer security to use, either tls or plainText.
     ///     - hostname: Remote server's hostname.
-    ///     - port: Remote server's port, defaults to 80 for TCP.
+    ///     - port: Remote server's port, defaults to 80 for TCP and 443 for TLS.
     ///     - worker: `Worker` to perform async work on.
     /// - returns: A `Future` containing the connected `HTTPClient`.
-    public static func connect(hostname: String, port: Int = 80, on worker: Worker) -> Future<HTTPClient> {
-        return _connect(hostname: hostname, port: port, on: worker) { pipeline in
-            return .done(on: pipeline.eventLoop)
-        }
-    }
-
-    /// Creates a new `HTTPClient` connected over TLS.
-    ///
-    ///     let httpRes = HTTPClient.connectTLS(hostname: "vapor.codes", on: req).map(to: HTTPResponse.self) { client in
-    ///         return client.send(...)
-    ///     }
-    ///
-    /// - parameters:
-    ///     - hostname: Remote server's hostname.
-    ///     - port: Remote server's port, defaults to 443 for TLS.
-    ///     - worker: `Worker` to perform async work on.
-    /// - returns: A `Future` containing the connected `HTTPClient`.
-    public static func connectTLS(hostname: String, port: Int = 443, on worker: Worker) throws -> Future<HTTPClient> {
-        let tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
-        let sslContext = try SSLContext(configuration: tlsConfiguration)
-        let tlsHandler = try OpenSSLClientHandler(context: sslContext)
-        return _connect(hostname: hostname, port: port, on: worker) { pipeline in
-            return pipeline.add(handler: tlsHandler)
-        }
-    }
-
-    /// Internal connect method that allows for configuration of the `ChannelPipeline`.
-    private static func _connect(hostname: String, port: Int, on worker: Worker, config: @escaping (ChannelPipeline) -> Future<Void>) -> Future<HTTPClient> {
+    public static func connect(
+        scheme: HTTPScheme = .plainText,
+        hostname: String,
+        port: Int? = nil,
+        on worker: Worker
+    ) -> Future<HTTPClient> {
         let handler = QueueHandler<HTTPResponse, HTTPRequest>(on: worker) { error in
             ERROR("HTTPClient: \(error)")
         }
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
-            // Enable SO_REUSEADDR.
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                return config(channel.pipeline).then {
-                    channel.pipeline.addHandlers(
+                return scheme.configureChannel(channel).then {
+                    let defaultHandlers: [ChannelHandler] = [
                         HTTPRequestEncoder(),
                         HTTPResponseDecoder(),
-
                         HTTPClientRequestSerializer(),
-                        HTTPClientResponseParser(),
-                        
-                        handler,
-                        first: false
-                    )
-            }
+                        HTTPClientResponseParser()
+                    ]
+                    return channel.pipeline.addHandlers(defaultHandlers + [handler], first: false)
+                }
         }
-
-        return bootstrap.connect(host: hostname, port: port).map(to: HTTPClient.self) { channel in
+        return bootstrap.connect(host: hostname, port: port ?? scheme.defaultPort).map(to: HTTPClient.self) { channel in
             return .init(handler: handler, channel: channel)
         }
     }
