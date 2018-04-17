@@ -35,13 +35,20 @@ public final class HTTPServer {
 
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
+                // create HTTPServerResponder-based handler
                 let handler = HTTPServerHandler(responder: responder, maxBodySize: maxBodySize, onError: onError)
+
                 // re-use subcontainer for an event loop here
                 let upgrade: HTTPUpgradeConfiguration = (upgraders: upgraders, completionHandler: { ctx in
                     // shouldn't need to wait for this
                     _ = channel.pipeline.remove(handler: handler)
                 })
-                return channel.pipeline.configureHTTPServerPipeline(withServerUpgrade: upgrade).then {
+
+                // configure the pipeline
+                return channel.pipeline.configureHTTPServerPipeline(
+                    withServerUpgrade: upgrade,
+                    withErrorHandling: true
+                ).then {
                     return channel.pipeline.add(handler: handler)
                 }
             }
@@ -50,6 +57,7 @@ public final class HTTPServer {
             .childChannelOption(ChannelOptions.socket(IPPROTO_TCP, TCP_NODELAY), value: tcpNoDelay ? SocketOptionValue(1) : SocketOptionValue(0))
             .childChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: reuseAddress ? SocketOptionValue(1) : SocketOptionValue(0))
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
+            // .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: 1)
 
         return bootstrap.bind(host: hostname, port: port).map(to: HTTPServer.self) { channel in
             return HTTPServer(channel: channel)
@@ -79,7 +87,10 @@ public final class HTTPServer {
 
 /// Private `ChannelInboundHandler` that converts `HTTPServerRequestPart` to `HTTPServerResponsePart`.
 private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPServerResponder {
+    /// See `ChannelInboundHandler`.
     public typealias InboundIn = HTTPServerRequestPart
+
+    /// See `ChannelInboundHandler`.
     public typealias OutboundOut = HTTPServerResponsePart
 
     /// The responder generating `HTTPResponse`s for incoming `HTTPRequest`s.
@@ -91,6 +102,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
     /// Handles any errors that may occur.
     private let errorHandler: (Error) -> ()
 
+    /// Current HTTP state.
     var state: HTTPServerState
 
     /// Create a new `HTTPServerHandler`.
@@ -222,13 +234,17 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             }
         }
     }
-
     /// Writes a `ByteBuffer` to the ctx.
     private func write(buffer: ByteBuffer, ctx: ChannelHandlerContext) {
         if buffer.readableBytes > 0 {
             ctx.write(wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
         }
         ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
+    }
+
+    /// See `ChannelInboundHandler`.
+    func channelInactive(ctx: ChannelHandlerContext) {
+        ctx.close(promise: nil)
     }
 
     /// See `ChannelInboundHandler`.
