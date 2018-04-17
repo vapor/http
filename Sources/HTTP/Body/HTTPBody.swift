@@ -3,7 +3,7 @@
 ///     let body = HTTPBody(string: "Hello, world!")
 ///
 /// This can contain any data (streaming or static) and should match the Message's "Content-Type" header.
-public struct HTTPBody: CustomStringConvertible, CustomDebugStringConvertible {
+public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, CustomDebugStringConvertible {
     /// Returns the body's contents as `Data`. `nil` if the body is streaming.
     public var data: Data? {
         return storage.data
@@ -99,6 +99,11 @@ public struct HTTPBody: CustomStringConvertible, CustomDebugStringConvertible {
     ///     - worker: The event loop to perform this async work on.
     public func consumeData(max: Int, on worker: Worker) -> Future<Data> {
         return storage.consumeData(max: max, on: worker)
+    }
+
+    /// See `LosslessHTTPBodyRepresentable`.
+    public func convertToHTTPBody() -> HTTPBody {
+        return self
     }
 }
 

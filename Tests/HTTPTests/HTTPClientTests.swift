@@ -1,5 +1,4 @@
 import HTTP
-import Foundation
 import XCTest
 
 class HTTPClientTests: XCTestCase {
@@ -82,7 +81,7 @@ func fetchURLTCP(hostname: String, port: Int, path: String) throws -> Future<Str
         var req = HTTPRequest(method: .GET, url: URL(string: path)!)
         req.headers.replaceOrAdd(name: .host, value: hostname)
         req.headers.replaceOrAdd(name: .userAgent, value: "vapor/engine")
-        return client.respond(to: req, on: loop)
+        return client.send(req)
     }.map(to: String?.self) { res in
         return String(data: res.body.data ?? Data(), encoding: .ascii)
     }
@@ -90,13 +89,13 @@ func fetchURLTCP(hostname: String, port: Int, path: String) throws -> Future<Str
 
 func fetchURLTCPWithTLS(hostname: String, port: Int, path: String) throws -> Future<String?> {
     let loop = MultiThreadedEventLoopGroup(numThreads: 1).next()
-    return try HTTPClient.connectWithTLS(hostname: hostname, port: port, on: loop).flatMap(to: HTTPResponse.self) { client in
+    return try HTTPClient.connectTLS(hostname: hostname, port: port, on: loop).flatMap(to: HTTPResponse.self) { client in
         var req = HTTPRequest(method: .GET, url: URL(string: path)!)
         req.headers.replaceOrAdd(name: .host, value: hostname)
         req.headers.replaceOrAdd(name: .userAgent, value: "vapor/engine")
-        return client.respond(to: req, on: loop)
-        }.map(to: String?.self) { res in
-            return String(data: res.body.data ?? Data(), encoding: .ascii)
+        return client.send(req)
+    }.map(to: String?.self) { res in
+        return String(data: res.body.data ?? Data(), encoding: .ascii)
     }
 }
 

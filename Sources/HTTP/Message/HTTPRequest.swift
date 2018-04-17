@@ -1,53 +1,97 @@
-import Foundation
-
 /// An HTTP request from a client to a server.
+///
+///     let httpReq = HTTPRequest(method: .GET, url: "/hello")
+///
+/// See `HTTPClient` and `HTTPServer`.
 public struct HTTPRequest: HTTPMessage {
+    // MARK: Properties
+
     /// The HTTP method for this request.
+    ///
+    ///     httpReq.method = .GET
+    ///
     public var method: HTTPMethod
 
-    /// The URL used on this request.
-    public var url: URL {
-        get {
-            return URL(string: urlString) ?? .root
-        }
-        set {
-            urlString = newValue.absoluteString
-        }
-    }
-
+    /// The unparsed URL string. This is usually set through the `url` property.
+    ///
+    ///     httpReq.urlString = "/welcome"
+    ///
     public var urlString: String
 
     /// The version for this HTTP request.
     public var version: HTTPVersion
 
     /// The header fields for this HTTP request.
+    /// The `"Content-Length"` and `"Transfer-Encoding"` headers will be set automatically
+    /// when the `body` property is mutated.
     public var headers: HTTPHeaders
 
-    /// The http body.
-    /// Updating this property will also update the associated transport headers.
+    /// The `HTTPBody`. Updating this property will also update the associated transport headers.
+    ///
+    ///     httpReq.body = HTTPBody(string: "Hello, world!")
+    ///
+    /// Also be sure to set this message's `contentType` property to a `MediaType` that correctly
+    /// represents the `HTTPBody`.
     public var body: HTTPBody {
-        didSet {
-            updateTransportHeaders()
-        }
+        didSet { updateTransportHeaders() }
     }
 
-    /// Creates a new HTTP Request.
+    // MARK: Computed
+
+    /// The URL used on this request.
+    public var url: URL {
+        get { return URL(string: urlString) ?? .root }
+        set { urlString = newValue.absoluteString }
+    }
+
+    /// Get and set `HTTPCookies` for this `HTTPRequest`
+    /// This accesses the `"Cookie"` header.
+    public var cookies: HTTPCookies {
+        get { return headers.firstValue(name: .cookie).flatMap(HTTPCookies.parse) ?? [] }
+        set { newValue.serialize(into: &self) }
+    }
+
+    /// See `CustomStringConvertible`
+    public var description: String {
+        var desc: [String] = []
+        desc.append("\(method) \(url) HTTP/\(version.major).\(version.minor)")
+        desc.append(headers.debugDescription)
+        desc.append(body.description)
+        return desc.joined(separator: "\n")
+    }
+
+    /// Creates a new `HTTPRequest`.
+    ///
+    ///     let httpReq = HTTPRequest(method: .GET, url: "/hello")
+    ///
+    /// - parameters:
+    ///     - method: `HTTPMethod` to use. This defaults to `HTTPMethod.GET`.
+    ///     - url: A `URLRepresentable` item that represents the request's URL.
+    ///            This defaults to `"/"`.
+    ///     - version: `HTTPVersion` of this request, should usually be (and defaults to) 1.1.
+    ///     - headers: `HTTPHeaders` to include with this request.
+    ///                Defaults to empty headers.
+    ///                The `"Content-Length"` and `"Transfer-Encoding"` headers will be set automatically.
+    ///     - body: `HTTPBody` for this request, defaults to an empty body.
+    ///             See `LosslessHTTPBodyRepresentable` for more information.
     public init(
         method: HTTPMethod = .GET,
-        url: URL = .root,
+        url: URLRepresentable = URL.root,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
-        body: HTTPBody = .init()
+        body: LosslessHTTPBodyRepresentable = HTTPBody()
     ) {
-        self.method = method
-        self.urlString = url.absoluteString
-        self.version = version
-        self.headers = headers
-        self.body = body
+        self.init(
+            method: method,
+            urlString: url.convertToURL()?.absoluteString ?? "/",
+            version: version,
+            headersNoUpdate: headers,
+            body: body.convertToHTTPBody()
+        )
         updateTransportHeaders()
     }
 
-    /// Creates a new HTTPRequest without sanitizing headers.
+    /// Internal init that creates a new `HTTPRequest` without sanitizing headers.
     internal init(
         method: HTTPMethod,
         urlString: String,
@@ -60,23 +104,5 @@ public struct HTTPRequest: HTTPMessage {
         self.version = version
         self.headers = headers
         self.body = body
-    }
-}
-
-extension URL {
-    public static var root: URL {
-        return _defaultURL
-    }
-}
-private let _defaultURL = URL(string: "/")!
-
-extension HTTPRequest {
-    /// See `CustomStringConvertible.description`
-    public var description: String {
-        var desc: [String] = []
-        desc.append("\(method) \(url) HTTP/\(version.major).\(version.minor)")
-        desc.append(headers.debugDescription)
-        desc.append(body.description)
-        return desc.joined(separator: "\n")
     }
 }

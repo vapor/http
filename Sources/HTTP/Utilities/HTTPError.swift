@@ -12,11 +12,14 @@ public struct HTTPError: Debuggable {
     public init(
         identifier: String,
         reason: String,
-        source: SourceLocation
+        file: String = #file,
+        function: String = #function,
+        line: UInt = #line,
+        column: UInt = #column
     ) {
         self.identifier = identifier
         self.reason = reason
-        self.sourceLocation = source
+        self.sourceLocation = SourceLocation(file: file, function: function, line: line, column: column, range: nil)
         self.stackTrace = HTTPError.makeStackTrace()
     }
 }

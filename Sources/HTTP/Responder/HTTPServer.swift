@@ -1,16 +1,6 @@
-import Foundation
-
 /// Simple HTTP server generic on an HTTP responder
 /// that will be used to generate responses to incoming requests.
 public final class HTTPServer {
-    /// The running channel.
-    private var channel: Channel
-
-    /// Creates a new `HTTPServer`. Use the public static `.start` method.
-    private init(channel: Channel) {
-        self.channel = channel
-    }
-
     /// Starts the server on the supplied hostname and port, using the supplied
     /// responder to generate HTTP responses for incoming requests.
     ///
@@ -20,16 +10,16 @@ public final class HTTPServer {
     ///     - responder: Used to generate responses for incoming requests.
     ///     - maxBodySize: Requests with bodies larger than this maximum will be rejected.
     ///                    Streaming bodies, like chunked bodies, ignore this maximum.
-    ///     - threadCount: The number of threads to use for responding to requests.
-    ///                    This defaults to `System.coreCount` which is recommended.
     ///     - backlog: OS socket backlog size.
     ///     - reuseAddress: When `true`, can prevent errors re-binding to a socket after successive server restarts.
     ///     - tcpNoDelay: When `true`, OS will attempt to minimize TCP packet delay.
+    ///     - upgraders: An array of `HTTPProtocolUpgrader` to check for with each request.
+    ///     - worker: `Worker` to perform async work on.
     ///     - onError: Any uncaught server or responder errors will go here.
     public static func start(
         hostname: String,
         port: Int,
-        responder: HTTPResponder,
+        responder: HTTPServerResponder,
         maxBodySize: Int = 1_000_000,
         backlog: Int = 256,
         reuseAddress: Bool = true,
@@ -71,18 +61,29 @@ public final class HTTPServer {
         return channel.closeFuture
     }
 
+    /// The running channel.
+    private var channel: Channel
+
+    /// Creates a new `HTTPServer`. Use the public static `.start` method.
+    private init(channel: Channel) {
+        self.channel = channel
+    }
+
     /// Closes the server.
     public func close() -> Future<Void> {
         return channel.close(mode: .all)
     }
 }
 
-internal final class HTTPServerHandler: ChannelInboundHandler {
+// MARK: Private
+
+/// Private `ChannelInboundHandler` that converts `HTTPServerRequestPart` to `HTTPServerResponsePart`.
+private final class HTTPServerHandler: ChannelInboundHandler {
     public typealias InboundIn = HTTPServerRequestPart
     public typealias OutboundOut = HTTPServerResponsePart
 
     /// The responder generating `HTTPResponse`s for incoming `HTTPRequest`s.
-    public let responder: HTTPResponder
+    public let responder: HTTPServerResponder
 
     /// Maximum body size allowed per request.
     private let maxBodySize: Int
@@ -92,14 +93,15 @@ internal final class HTTPServerHandler: ChannelInboundHandler {
 
     var state: HTTPServerState
 
-    /// Create a new `HTTPServer` using the supplied `HTTPResponder`
-    init(responder: HTTPResponder, maxBodySize: Int = 1_000_000, onError: @escaping (Error) -> ()) {
+    /// Create a new `HTTPServerHandler`.
+    init(responder: HTTPServerResponder, maxBodySize: Int = 1_000_000, onError: @escaping (Error) -> ()) {
         self.responder = responder
         self.maxBodySize = maxBodySize
         self.errorHandler = onError
         self.state = .ready
     }
 
+    /// See `ChannelInboundHandler`.
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
         assert(ctx.channel.eventLoop.inEventLoop)
         let req = unwrapInboundIn(data)
@@ -150,6 +152,7 @@ internal final class HTTPServerHandler: ChannelInboundHandler {
         }
     }
 
+    /// Writes a response body.
     private func writeResponse(for head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
         let req = HTTPRequest(
             method: head.method,
@@ -208,20 +211,18 @@ internal final class HTTPServerHandler: ChannelInboundHandler {
         }
     }
 
+    /// See `ChannelInboundHandler`.
     func errorCaught(ctx: ChannelHandlerContext, error: Error) {
         errorHandler(error)
     }
-
-    func channelReadComplete(ctx: ChannelHandlerContext) { }
-    func handlerAdded(ctx: ChannelHandlerContext) { }
 }
 
-enum HTTPServerState {
+/// Tracks current HTTP server state
+private enum HTTPServerState {
+    /// Waiting for request headers
     case ready
+    /// Collecting fixed-length body
     case collectingBody(HTTPRequestHead, ByteBuffer?)
+    /// Collecting streaming body
     case streamingBody(HTTPChunkedStream)
-}
-
-public struct HTTPRunningServer {
-    private var channel: Channel
 }

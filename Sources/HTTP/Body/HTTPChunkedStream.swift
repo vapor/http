@@ -11,7 +11,7 @@
 ///
 /// `HTTPChunkedStream` allows you to send data asynchronously without a predefined length.
 /// The `HTTPMessage` will be considered complete when the end chunk is sent.
-public final class HTTPChunkedStream: BasicWorker, HTTPBodyRepresentable {
+public final class HTTPChunkedStream: BasicWorker, LosslessHTTPBodyRepresentable {
     /// Handles an incoming `HTTPChunkedStreamResult`.
     public typealias HTTPChunkedHandler = (HTTPChunkedStreamResult, HTTPChunkedStream) -> Future<Void>
 
@@ -95,7 +95,7 @@ public final class HTTPChunkedStream: BasicWorker, HTTPBodyRepresentable {
             switch chunk {
             case .chunk(var buffer):
                 if data.count + buffer.readableBytes >= max {
-                    let error = HTTPError(identifier: "bodySize", reason: "HTTPBody was larger than max limit", source: .capture())
+                    let error = HTTPError(identifier: "bodySize", reason: "HTTPBody was larger than max limit.")
                     promise.fail(error: error)
                 } else {
                     data += buffer.readData(length: buffer.readableBytes) ?? Data()
@@ -109,7 +109,7 @@ public final class HTTPChunkedStream: BasicWorker, HTTPBodyRepresentable {
     }
 
     /// See `HTTPBodyRepresentable`.
-    public func convertToHTTPBody() throws -> HTTPBody {
+    public func convertToHTTPBody() -> HTTPBody {
         return .init(chunked: self)
     }
 }

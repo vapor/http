@@ -1,38 +1,38 @@
-/// Can be converted to an `HTTPBody`.
-public protocol HTTPBodyRepresentable {
-    /// Converts self to an HTTP body.
-    func convertToHTTPBody() throws -> HTTPBody
+/// Can be converted to an `HTTPBody` without the possibility of failure.
+public protocol LosslessHTTPBodyRepresentable {
+    /// Converts `self` to an `HTTPBody`.
+    func convertToHTTPBody() -> HTTPBody
 }
 
 /// `String` can be represented as an `HTTPBody`.
-extension String: HTTPBodyRepresentable {
+extension String: LosslessHTTPBodyRepresentable {
     /// See `HTTPBodyRepresentable`.
-    public func convertToHTTPBody() throws -> HTTPBody {
+    public func convertToHTTPBody() -> HTTPBody {
         return HTTPBody(string: self)
     }
 }
 
 /// `Data` can be represented as an `HTTPBody`.
-extension Data: HTTPBodyRepresentable {
+extension Data: LosslessHTTPBodyRepresentable {
     /// See `HTTPBodyRepresentable`.
-    public func convertToHTTPBody() throws -> HTTPBody {
+    public func convertToHTTPBody() -> HTTPBody {
         return HTTPBody(data: self)
     }
 }
 
 /// `StaticString` can be represented as an `HTTPBody`.
-extension StaticString: HTTPBodyRepresentable {
+extension StaticString: LosslessHTTPBodyRepresentable {
     /// See `HTTPBodyRepresentable`.
-    public func convertToHTTPBody() throws -> HTTPBody {
+    public func convertToHTTPBody() -> HTTPBody {
         return HTTPBody(staticString: self)
     }
 }
 
 
 /// `ByteBuffer` can be represented as an `HTTPBody`.
-extension ByteBuffer: HTTPBodyRepresentable {
+extension ByteBuffer: LosslessHTTPBodyRepresentable {
     /// See `HTTPBodyRepresentable`.
-    public func convertToHTTPBody() throws -> HTTPBody {
+    public func convertToHTTPBody() -> HTTPBody {
         return HTTPBody(buffer: self)
     }
 }
