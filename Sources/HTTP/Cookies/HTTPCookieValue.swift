@@ -1,5 +1,5 @@
 /// A single cookie (key/value pair).
-public struct HTTPCookie {
+public struct HTTPCookieValue: ExpressibleByStringLiteral {
     /// Parses an individual `HTTPCookie` from a `String`.
     ///
     ///     let cookie = HTTPCookie.parse("sessionID=123; HTTPOnly")
@@ -7,7 +7,7 @@ public struct HTTPCookie {
     /// - parameters:
     ///     - data: `LosslessDataConvertible` to parse the cookie from.
     /// - returns: `HTTPCookie` or `nil` if the data is invalid.
-    public static func parse(_ data: LosslessDataConvertible) -> HTTPCookie? {
+    public static func parse(_ data: LosslessDataConvertible) -> (String, HTTPCookieValue)? {
         /// Parse `HeaderValue` or return nil.
         guard let header = HeaderValue.parse(data) else {
             return nil
@@ -15,13 +15,13 @@ public struct HTTPCookie {
 
         /// Fetch name and value.
         var name: String
-        var value: String
+        var string: String
 
         let parts = header.value.split(separator: "=", maxSplits: 1)
         switch parts.count {
         case 2:
             name = String(parts[0]).trimmingCharacters(in: .whitespaces)
-            value = String(parts[1]).trimmingCharacters(in: .whitespaces)
+            string = String(parts[1]).trimmingCharacters(in: .whitespaces)
         default: return nil
         }
 
@@ -47,9 +47,8 @@ public struct HTTPCookie {
             }
         }
 
-        return HTTPCookie(
-            name: name,
-            value: value,
+        let value = HTTPCookieValue(
+            string: string,
             expires: expires,
             maxAge: maxAge,
             domain: domain,
@@ -58,30 +57,28 @@ public struct HTTPCookie {
             isHTTPOnly: httpOnly,
             sameSite: sameSite
         )
+        return (name, value)
     }
 
-    /// The cookie's key.
-    public var name: String
-
     /// The cookie's value.
-    public var value: String
+    public var string: String
 
-    /// The `Cookie`'s expiration date
+    /// The cookie's expiration date
     public var expires: Date?
 
-    /// The maximum `Cookie` age in seconds
+    /// The maximum cookie age in seconds.
     public var maxAge: Int?
 
-    /// The affected domain at which the `Cookie` is active
+    /// The affected domain at which the cookie is active.
     public var domain: String?
 
-    /// The path at which the `Cookie` is active
+    /// The path at which the cookie is active.
     public var path: String?
 
-    /// Limits the cookie to secure connections
+    /// Limits the cookie to secure connections.
     public var isSecure: Bool
 
-    /// Does not expose the `Cookie` over non-HTTP channels
+    /// Does not expose the cookie over non-HTTP channels.
     public var isHTTPOnly: Bool
 
     /// A cookie which can only be sent in requests originating from the same origin as the target domain.
@@ -89,16 +86,21 @@ public struct HTTPCookie {
     /// This restriction mitigates attacks such as cross-site request forgery (XSRF).
     public var sameSite: HTTPSameSitePolicy?
 
-    /// Creates a new `HTTPCookie`.
+    /// Creates a new `HTTPCookieValue`.
     ///
-    ///     let cookie = HTTPCookie(name: "sessionID", value: "123")
+    ///     let cookie = HTTPCookieValue(string: "123")
     ///
     /// - parameters:
-    ///     - named: Key for this cookie.
     ///     - value: Value for this cookie.
+    ///     - expires: The cookie's expiration date. Defaults to `nil`.
+    ///     - maxAge: The maximum cookie age in seconds. Defaults to `nil`.
+    ///     - domain: The affected domain at which the cookie is active. Defaults to `nil`.
+    ///     - path: The path at which the cookie is active. Defaults to `"/"`.
+    ///     - isSecure: Limits the cookie to secure connections. Defaults to `false`.
+    ///     - isHTTPOnly: Does not expose the cookie over non-HTTP channels. Defaults to `false`.
+    ///     - sameSite: See `HTTPSameSitePolicy`. Defaults to `nil`.
     public init(
-        name: String,
-        value: String,
+        string: String,
         expires: Date? = nil,
         maxAge: Int? = nil,
         domain: String? = nil,
@@ -107,8 +109,7 @@ public struct HTTPCookie {
         isHTTPOnly: Bool = false,
         sameSite: HTTPSameSitePolicy? = nil
     ) {
-        self.name = name
-        self.value = value
+        self.string = string
         self.expires = expires
         self.maxAge = maxAge
         self.domain = domain
@@ -118,9 +119,14 @@ public struct HTTPCookie {
         self.sameSite = sameSite
     }
 
+    /// See `ExpressibleByStringLiteral`.
+    public init(stringLiteral value: String) {
+        self.init(string: value)
+    }
+
     /// Seriaizes an `HTTPCookie` to a `String`.
-    public func serialize() -> String {
-        var serialized = "\(name)=\(value)"
+    public func serialize(name: String) -> String {
+        var serialized = "\(name)=\(string)"
 
         if let expires = self.expires {
             serialized += "; Expires=\(expires.rfc1123)"

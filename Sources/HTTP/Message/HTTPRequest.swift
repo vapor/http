@@ -47,7 +47,7 @@ public struct HTTPRequest: HTTPMessage {
     /// Get and set `HTTPCookies` for this `HTTPRequest`
     /// This accesses the `"Cookie"` header.
     public var cookies: HTTPCookies {
-        get { return headers.firstValue(name: .cookie).flatMap(HTTPCookies.parse) ?? [] }
+        get { return headers.firstValue(name: .cookie).flatMap(HTTPCookies.parse) ?? [:] }
         set { newValue.serialize(into: &self) }
     }
 

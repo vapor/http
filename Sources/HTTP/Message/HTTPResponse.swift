@@ -32,7 +32,7 @@ public struct HTTPResponse: HTTPMessage {
     /// Get and set `HTTPCookies` for this `HTTPResponse`
     /// This accesses the `"Set-Cookie"` header.
     public var cookies: HTTPCookies {
-        get { return HTTPCookies.parse(setCookieHeaders: headers[.setCookie]) ?? [] }
+        get { return HTTPCookies.parse(setCookieHeaders: headers[.setCookie]) ?? [:] }
         set { newValue.serialize(into: &self) }
     }
 
