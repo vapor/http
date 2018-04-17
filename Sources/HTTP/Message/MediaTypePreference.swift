@@ -47,7 +47,7 @@ extension Array where Element == MediaTypePreference {
 
     /// Returns `ComparisonResult` comparing the supplied `MediaType`s against these preferences.
     ///
-    ///     let pref = httpReq.accept.comparePreference(.json, to: .html)
+    ///     let pref = httpReq.accept.comparePreference(for: .json, to: .html)
     ///
     public func comparePreference(for a: MediaType, to b: MediaType) -> ComparisonResult {
         var aq: Double?

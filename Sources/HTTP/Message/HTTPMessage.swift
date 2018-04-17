@@ -45,7 +45,7 @@ extension HTTPMessage {
     ///
     /// Or you can compare preferences for two `MediaType`s.
     ///
-    ///     let pref = httpReq.accept.comparePreference(.json, to: .html)
+    ///     let pref = httpReq.accept.comparePreference(for: .json, to: .html)
     ///
     public var accept: [MediaTypePreference] {
         return headers.firstValue(name: .accept).flatMap([MediaTypePreference].parse) ?? []
