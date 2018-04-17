@@ -149,10 +149,8 @@ final class HTTPClientHandler: ChannelInboundHandler {
 
     func write(_ req: HTTPRequest, to ctx: ChannelHandlerContext) {
         var headers = req.headers
-        if let contentLength = req.body.count {
-            headers.replaceOrAdd(name: .contentLength, value: contentLength.description)
-        } else {
-            headers.replaceOrAdd(name: .contentLength, value: "0")
+        if headers[.host].isEmpty, let host = req.url.host  {
+            headers.add(name: .host, value: host)
         }
         var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.path)
         httpHead.headers = headers
