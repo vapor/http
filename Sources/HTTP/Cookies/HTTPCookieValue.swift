@@ -1,5 +1,8 @@
 /// A single cookie (key/value pair).
 public struct HTTPCookieValue: ExpressibleByStringLiteral {
+    /// An expired `HTTPCookieValue`.
+    public static let expired: HTTPCookieValue = .init(string: "", expires: Date(timeIntervalSince1970: 0))
+
     /// Parses an individual `HTTPCookie` from a `String`.
     ///
     ///     let cookie = HTTPCookie.parse("sessionID=123; HTTPOnly")
