@@ -1,15 +1,13 @@
-import Async
 import HTTP
-import Foundation
 
 let hostname = "localhost"
 let port: Int = 8123
 
-let res = HTTPResponse(body: HTTPBody(string: "pong"))
+let res = HTTPResponse(body: "pong")
 
 struct EchoResponder: HTTPServerResponder {
     func respond(to req: HTTPRequest, on worker: Worker) -> Future<HTTPResponse> {
-        return Future.map(on: worker) { res }
+        return worker.eventLoop.newSucceededFuture(result: res)
     }
 }
 

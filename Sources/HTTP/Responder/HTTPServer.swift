@@ -16,10 +16,10 @@ public final class HTTPServer {
     ///     - upgraders: An array of `HTTPProtocolUpgrader` to check for with each request.
     ///     - worker: `Worker` to perform async work on.
     ///     - onError: Any uncaught server or responder errors will go here.
-    public static func start(
+    public static func start<R>(
         hostname: String,
         port: Int,
-        responder: HTTPServerResponder,
+        responder: R,
         maxBodySize: Int = 1_000_000,
         backlog: Int = 256,
         reuseAddress: Bool = true,
@@ -27,7 +27,7 @@ public final class HTTPServer {
         upgraders: [HTTPProtocolUpgrader] = [],
         on worker: Worker,
         onError: @escaping (Error) -> () = { _ in }
-    ) -> Future<HTTPServer> {
+    ) -> Future<HTTPServer> where R: HTTPServerResponder {
         let bootstrap = ServerBootstrap(group: worker)
             // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: Int32(backlog))
@@ -78,12 +78,12 @@ public final class HTTPServer {
 // MARK: Private
 
 /// Private `ChannelInboundHandler` that converts `HTTPServerRequestPart` to `HTTPServerResponsePart`.
-private final class HTTPServerHandler: ChannelInboundHandler {
+private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPServerResponder {
     public typealias InboundIn = HTTPServerRequestPart
     public typealias OutboundOut = HTTPServerResponsePart
 
     /// The responder generating `HTTPResponse`s for incoming `HTTPRequest`s.
-    public let responder: HTTPServerResponder
+    public let responder: R
 
     /// Maximum body size allowed per request.
     private let maxBodySize: Int
@@ -94,7 +94,7 @@ private final class HTTPServerHandler: ChannelInboundHandler {
     var state: HTTPServerState
 
     /// Create a new `HTTPServerHandler`.
-    init(responder: HTTPServerResponder, maxBodySize: Int = 1_000_000, onError: @escaping (Error) -> ()) {
+    init(responder: R, maxBodySize: Int = 1_000_000, onError: @escaping (Error) -> ()) {
         self.responder = responder
         self.maxBodySize = maxBodySize
         self.errorHandler = onError
@@ -104,28 +104,29 @@ private final class HTTPServerHandler: ChannelInboundHandler {
     /// See `ChannelInboundHandler`.
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
         assert(ctx.channel.eventLoop.inEventLoop)
-        let req = unwrapInboundIn(data)
-        switch req {
+        switch unwrapInboundIn(data) {
         case .head(let head):
             switch state {
             case .ready:
-                if head.headers[.transferEncoding].first == "chunked" {
+                /// short circuit on `contains(name:)` which is faster
+                /// - note: for some reason using String instead of HTTPHeaderName is faster here...
+                if head.headers.contains(name: "Transfer-Encoding"), head.headers.firstValue(name: .transferEncoding) == "chunked" {
                     let stream = HTTPChunkedStream(on: ctx.eventLoop)
                     state = .streamingBody(stream)
                     writeResponse(for: head, body: .init(chunked: stream), ctx: ctx)
                 } else {
                     state = .collectingBody(head, nil)
                 }
-            default: fatalError("Unexpected state: \(state)")
+            default: assert(false, "Unexpected state: \(state)")
             }
         case .body(var chunk):
             switch state {
-            case .ready: fatalError()
+            case .ready: assert(false, "Unexpected state: \(state)")
             case .collectingBody(let head, let existingBody):
                 let body: ByteBuffer
                 if var existing = existingBody {
                     if existing.readableBytes + chunk.readableBytes > self.maxBodySize {
-                        print("[ERROR] [HTTP] Request size exceeded maximum, connection closed.")
+                        ERROR("[HTTP] Request size exceeded maximum, connection closed.")
                         ctx.close(promise: nil)
                     }
                     existing.write(buffer: &chunk)

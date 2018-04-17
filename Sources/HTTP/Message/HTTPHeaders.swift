@@ -54,6 +54,12 @@ extension HTTPHeaders {
         return self[name.lowercased]
     }
 
+    /// Returns `true` if the `HTTPHeaders` contains a value for the supplied name.
+    /// - Parameter name: The header field name to check.
+    public func contains(name: HTTPHeaderName) -> Bool {
+        return self.contains(name: name.lowercased)
+    }
+
     /// Returns the first header value with the supplied name.
     /// - Parameter name: The header field name whose values are to be retrieved.
     public func firstValue(name: HTTPHeaderName) -> String? {
