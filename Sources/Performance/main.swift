@@ -5,7 +5,7 @@ import Foundation
 let hostname = "localhost"
 let port: Int = 8123
 
-let res = HTTPResponse(body: HTTPBody(string: "Hello, world!"))
+let res = HTTPResponse(body: HTTPBody(string: "pong"))
 
 struct EchoResponder: HTTPServerResponder {
     func respond(to req: HTTPRequest, on worker: Worker) -> Future<HTTPResponse> {
