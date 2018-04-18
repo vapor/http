@@ -63,6 +63,8 @@ public struct HTTPRequest: HTTPMessage {
         return desc.joined(separator: "\n")
     }
 
+    // MARK: Init
+
     /// Creates a new `HTTPRequest`.
     ///
     ///     let httpReq = HTTPRequest(method: .GET, url: "/hello")

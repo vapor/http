@@ -1,4 +1,6 @@
 extension HTTPClient {
+    // MARK: Upgrade
+    
     /// Performs an HTTP protocol upgrade connected using the `HTTPClient`.
     ///
     ///     let webSocketUpgrader: ...

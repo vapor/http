@@ -1,8 +1,17 @@
 /// Simple HTTP server generic on an HTTP responder
 /// that will be used to generate responses to incoming requests.
+///
+///     let server = try HTTPServer.start(hostname: hostname, port: port, responder: EchoResponder(), on: group).wait()
+///     try server.onClose.wait()
+///
 public final class HTTPServer {
+    // MARK: Static
+
     /// Starts the server on the supplied hostname and port, using the supplied
     /// responder to generate HTTP responses for incoming requests.
+    ///
+    ///     let server = try HTTPServer.start(hostname: hostname, port: port, responder: EchoResponder(), on: group).wait()
+    ///     try server.onClose.wait()
     ///
     /// - parameters:
     ///     - hostname: Socket hostname to bind to. Usually `localhost` or `::1`.
@@ -65,6 +74,8 @@ public final class HTTPServer {
         }
     }
 
+    // MARK: Properties
+
     /// A future that will be signaled when the server closes.
     public var onClose: Future<Void> {
         return channel.closeFuture
@@ -77,6 +88,8 @@ public final class HTTPServer {
     private init(channel: Channel) {
         self.channel = channel
     }
+
+    // MARK: Methods
 
     /// Closes the server.
     public func close() -> Future<Void> {

@@ -1,5 +1,7 @@
 /// A single cookie (key/value pair).
 public struct HTTPCookieValue: ExpressibleByStringLiteral {
+    // MARK: Static
+
     /// An expired `HTTPCookieValue`.
     public static let expired: HTTPCookieValue = .init(string: "", expires: Date(timeIntervalSince1970: 0))
 
@@ -63,6 +65,8 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
         return (name, value)
     }
 
+    // MARK: Properties
+
     /// The cookie's value.
     public var string: String
 
@@ -88,6 +92,8 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
     ///
     /// This restriction mitigates attacks such as cross-site request forgery (XSRF).
     public var sameSite: HTTPSameSitePolicy?
+
+    // MARK: Init
 
     /// Creates a new `HTTPCookieValue`.
     ///
@@ -126,6 +132,8 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self.init(string: value)
     }
+
+    // MARK: Methods
 
     /// Seriaizes an `HTTPCookie` to a `String`.
     public func serialize(name: String) -> String {

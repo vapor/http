@@ -39,7 +39,6 @@ public struct HTTPPeer: CustomStringConvertible {
 
     /// The peer's scheme, like `http` or `https`.
     public var scheme: String? {
-        // FIXME: cleanup header names when NIO gets them
         return message.headers.firstValue(name: .forwarded).flatMap(Forwarded.parse)?.proto
             ?? message.headers.firstValue(name: .init("X-Forwarded-Proto"))
             ?? message.headers.firstValue(name: .init("X-Scheme"))
@@ -47,7 +46,6 @@ public struct HTTPPeer: CustomStringConvertible {
 
     /// The peer's hostname.
     public var hostname: String? {
-        // FIXME: cleanup header names when NIO gets them
         return message.headers.firstValue(name: .forwarded).flatMap(Forwarded.parse)?.for
             ?? message.headers.firstValue(name: .init("X-Forwarded-For"))
             ?? message.channel?.remoteAddress?.hostname
@@ -55,16 +53,15 @@ public struct HTTPPeer: CustomStringConvertible {
 
     /// The peer's port.
     public var port: Int? {
-        // FIXME: cleanup header names when NIO gets them
         return message.headers.firstValue(name: .init("X-Forwarded-Port")).flatMap(Int.init)
             ?? message.channel?.remoteAddress?.port.flatMap(Int.init)
-
     }
 }
 
 // MARK: Private
 
 private extension SocketAddress {
+    /// Returns the hostname for this `SocketAddress` if one exists.
     var hostname: String? {
         switch self {
         case .unixDomainSocket: return nil

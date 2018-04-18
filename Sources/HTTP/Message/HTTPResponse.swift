@@ -48,6 +48,8 @@ public struct HTTPResponse: HTTPMessage {
         return desc.joined(separator: "\n")
     }
 
+    // MARK: Init
+
     /// Creates a new `HTTPResponse`.
     ///
     ///     let httpRes = HTTPResponse(status: .ok)

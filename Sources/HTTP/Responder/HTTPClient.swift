@@ -1,11 +1,16 @@
 /// Connects to remote HTTP servers allowing you to send `HTTPRequest`s and
 /// receive `HTTPResponse`s.
 ///
-/// See `connect(...)` and `connectTLS(...)` to create an `HTTPClient`.
+///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: ...).map(to: HTTPResponse.self) { client in
+///         return client.send(...)
+///     }
+///
 public final class HTTPClient {
+    // MARK: Static
+
     /// Creates a new `HTTPClient` connected over TCP or TLS.
     ///
-    ///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: req).map(to: HTTPResponse.self) { client in
+    ///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: ...).map(to: HTTPResponse.self) { client in
     ///         return client.send(...)
     ///     }
     ///
@@ -42,6 +47,8 @@ public final class HTTPClient {
         }
     }
 
+    // MARK: Properties
+
     /// Private `HTTPClientHandler` that handles requests.
     private let handler: QueueHandler<HTTPResponse, HTTPRequest>
 
@@ -59,10 +66,7 @@ public final class HTTPClient {
         self.channel = channel
     }
 
-    /// Closes this `HTTPClient`'s connection to the remote server.
-    public func close() -> Future<Void> {
-        return channel.close(mode: .all)
-    }
+    // MARK: Methods
 
     /// Sends an `HTTPRequest` to the connected, remote server.
     ///
@@ -81,6 +85,11 @@ public final class HTTPClient {
         }.map(to: HTTPResponse.self) {
             return res!
         }
+    }
+
+    /// Closes this `HTTPClient`'s connection to the remote server.
+    public func close() -> Future<Void> {
+        return channel.close(mode: .all)
     }
 }
 
