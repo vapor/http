@@ -1,38 +1,41 @@
 import HTTP
-import Foundation
 import XCTest
 
 class HTTPClientTests: XCTestCase {
-    func testHTTPBin418() {
-        testFetchingURL(hostname: "httpbin.org", path: "/status/418", responseContains: "[ teapot ]")
+    func testHTTPBin418() throws {
+        try testURL("http://httpbin.org/status/418", contains: "[ teapot ]")
     }
 
-    func testHTTPBinRobots() {
-        testFetchingURL(hostname: "httpbin.org", path: "/robots.txt", responseContains: "Disallow: /deny")
+    func testHTTPBinRobots() throws {
+        try testURL("http://httpbin.org/robots.txt", contains: "Disallow: /deny")
     }
 
-    func testHTTPBinAnything() {
-        testFetchingURL(hostname: "httpbin.org", path: "/anything", responseContains: "http://httpbin.org/anything")
+    func testHTTPBinAnything() throws {
+        try testURL("http://httpbin.org/anything", contains: "http://httpbin.org/anything")
     }
 
-    func testGoogleAPIsFCM() {
-        testFetchingURL(hostname: "fcm.googleapis.com", path: "/fcm/send", responseContains: "<TITLE>Moved Temporarily</TITLE>")
+    func testGoogleAPIsFCM() throws {
+        try testURL("http://fcm.googleapis.com/fcm/send", contains: "<TITLE>Moved Temporarily</TITLE>")
     }
 
-    func testExampleCom() {
-        testFetchingURL(hostname: "example.com", path: "/", responseContains: "<title>Example Domain</title>")
+    func testExampleCom() throws {
+        try testURL("http://example.com", contains: "<title>Example Domain</title>")
     }
 
-    func testZombo() {
-        testFetchingURL(hostname: "zombo.com", path: "/", responseContains: "<title>ZOMBO</title>")
+    func testZombo() throws {
+        try testURL("http://zombo.com", contains: "<title>ZOMBO</title>")
     }
 
-    func testRomans() {
-        testFetchingURL(hostname: "romansgohome.com", path: "/", responseContains: "Romans Go Home!")
+    func testRomans() throws {
+        try testURL("http://romansgohome.com", times: 1, contains: "Romans Go Home!")
     }
 
-    func testAmazonWithTLS() {
-        testFetchingURL(hostname: "www.amazon.com", port: 443, tls: true, path: "/", responseContains: "Amazon.com, Inc.")
+    func testAmazonWithTLS() throws {
+        try testURL("https://www.amazon.com", contains: "Amazon.com, Inc.")
+    }
+
+    func testQuery() throws {
+        try testURL("http://httpbin.org/get?foo=bar", contains: "bar")
     }
 
     static let allTests = [
@@ -44,100 +47,39 @@ class HTTPClientTests: XCTestCase {
         ("testZombo", testZombo),
         ("testRomans", testRomans),
         ("testAmazonWithTLS", testAmazonWithTLS),
+        ("testQuery", testQuery),
     ]
 }
 
-/// MARK: Utilities
+// MARK: Private
 
-func testFetchingURL(
-    hostname: String,
-    port: Int? = nil,
-    tls: Bool = false,
-    path: String,
-    times: Int = 3,
-    responseContains: String,
-    file: StaticString = #file,
-    line: UInt = #line
-) {
-    for i in 0..<times {
-        do {
-            var content: String?
-            if tls {
-                content = try fetchURLTCPWithTLS(hostname: hostname, port: port ?? 443, path: path).wait()
-            } else {
-                content = try fetchURLTCP(hostname: hostname, port: port ?? 80, path: path).wait()
-            }
-            if content?.contains(responseContains) != true {
-                XCTFail("Bad response \(i)/\(times): \(content ?? "nil")", file: file, line: line)
-            }
-        } catch {
-            XCTFail("\(i)/\(times): \(error)", file: file, line: line)
+private func testURL(_ string: String, times: Int = 3, contains: String) throws {
+    try testURL(string, times: times) { res in
+        let string = String(data: res.body.data ?? Data(), encoding: .ascii) ?? ""
+        if string.contains(contains) != true {
+            throw HTTPError(identifier: "badResponse", reason: "Bad response: \(string)")
         }
     }
 }
 
-func fetchURLTCP(hostname: String, port: Int, path: String) throws -> Future<String?> {
-    let loop = MultiThreadedEventLoopGroup(numThreads: 1).next()
-    return HTTPClient.connect(hostname: hostname, port: port, on: loop).flatMap(to: HTTPResponse.self) { client in
-        var req = HTTPRequest(method: .GET, url: URL(string: path)!)
-        req.headers.replaceOrAdd(name: .host, value: hostname)
-        req.headers.replaceOrAdd(name: .userAgent, value: "vapor/engine")
-        return client.respond(to: req, on: loop)
-    }.map(to: String?.self) { res in
-        return String(data: res.body.data ?? Data(), encoding: .ascii)
+private func testURL(
+    _ string: String,
+    times: Int = 3,
+    check: (HTTPResponse) throws -> ()
+) throws {
+    guard let url = URL(string: string) else {
+        throw HTTPError(identifier: "parseURL", reason: "Could not parse URL: \(string)")
+    }
+    let scheme: HTTPScheme = url.scheme == "https" ? .https : .http
+    let worker = MultiThreadedEventLoopGroup(numThreads: 1)
+    for _ in 0..<times {
+        let res = try HTTPClient.connect(scheme: scheme, hostname: url.host ?? "", on: worker).flatMap(to: HTTPResponse.self) { client in
+            var comps =  URLComponents()
+            comps.path = url.path.isEmpty ? "/" : url.path
+            comps.query = url.query
+            let req = HTTPRequest(method: .GET, url: comps.url ?? .root)
+            return client.send(req)
+        }.wait()
+        try check(res)
     }
 }
-
-func fetchURLTCPWithTLS(hostname: String, port: Int, path: String) throws -> Future<String?> {
-    let loop = MultiThreadedEventLoopGroup(numThreads: 1).next()
-    return try HTTPClient.connectWithTLS(hostname: hostname, port: port, on: loop).flatMap(to: HTTPResponse.self) { client in
-        var req = HTTPRequest(method: .GET, url: URL(string: path)!)
-        req.headers.replaceOrAdd(name: .host, value: hostname)
-        req.headers.replaceOrAdd(name: .userAgent, value: "vapor/engine")
-        return client.respond(to: req, on: loop)
-        }.map(to: String?.self) { res in
-            return String(data: res.body.data ?? Data(), encoding: .ascii)
-    }
-}
-
-final class FakeLoop: EventLoop {
-    var inEventLoop: Bool {
-        return true
-    }
-
-    func execute(_ task: @escaping () -> Void) {
-        fatalError()
-    }
-
-    func scheduleTask<T>(in: TimeAmount, _ task: @escaping () throws -> (T)) -> Scheduled<T> {
-        fatalError()
-    }
-
-    func shutdownGracefully(queue: DispatchQueue, _ callback: @escaping (Error?) -> Void) {
-        fatalError()
-    }
-}
-
-//func fetchURLTLS(hostname: String, port: UInt16, path: String) throws -> String? {
-//    let eventLoop = try DefaultEventLoop(label: "codes.vapor.http.test.client")
-//    let tcpSocket = try TCPSocket(isNonBlocking: true)
-//    let tcpClient = try TCPClient(socket: tcpSocket)
-//    var settings = TLSClientSettings()
-//    settings.peerDomainName = hostname
-//    #if os(macOS)
-//    let tlsClient = try AppleTLSClient(tcp: tcpClient, using: settings)
-//    #else
-//    let tlsClient = try OpenSSLClient(tcp: tcpClient, using: settings)
-//    #endif
-//    try tlsClient.connect(hostname: hostname, port: port)
-//    let client = HTTPClient(
-//        stream: tlsClient.socket.stream(on: eventLoop),
-//        on: eventLoop
-//    )
-//    let req = HTTPRequest(method: .get, uri: URI(path: path), headers: [.host: hostname])
-//    let res = try client.send(req).flatMap(to: Data.self) { res in
-//        return res.body.makeData(max: 1_000_000)
-//    }.await(on: eventLoop)
-//    return String(data: res, encoding: .utf8)
-//}
-

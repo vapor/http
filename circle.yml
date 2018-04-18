@@ -34,8 +34,8 @@ jobs:
           command: git clone -b master https://github.com/vapor/vapor.git
           working_directory: ~/
       - run:
-          name: Switch Vapor to this Engine revision
-          command: swift package edit Engine --revision $CIRCLE_SHA1
+          name: Switch Vapor to this HTTP revision
+          command: swift package edit HTTP --revision $CIRCLE_SHA1
           working_directory: ~/vapor
       - run:
           name: Run Vapor unit tests
