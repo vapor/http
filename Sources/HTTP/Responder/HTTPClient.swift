@@ -107,7 +107,7 @@ private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
         let req = unwrapOutboundIn(data)
         var headers = req.headers
         headers.add(name: .host, value: hostname)
-        headers.replaceOrAdd(name: .userAgent, value: "vapor/engine")
+        headers.replaceOrAdd(name: .userAgent, value: "Vapor/3.0 (Swift)")
         var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.absoluteString)
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
@@ -166,7 +166,8 @@ private final class HTTPClientResponseParser: ChannelInboundHandler {
                     status: head.status,
                     version: head.version,
                     headersNoUpdate: head.headers,
-                    body: data.flatMap { HTTPBody(data: $0) } ?? HTTPBody()
+                    body: data.flatMap { HTTPBody(data: $0) } ?? HTTPBody(),
+                    channel: ctx.channel
                 )
                 ctx.fireChannelRead(wrapOutboundOut(res))
             }

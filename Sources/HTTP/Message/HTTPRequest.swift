@@ -36,6 +36,9 @@ public struct HTTPRequest: HTTPMessage {
         didSet { updateTransportHeaders() }
     }
 
+    /// If set, reference to the NIO `Channel` this request came from.
+    public var channel: Channel?
+
     // MARK: Computed
 
     /// The URL used on this request.
@@ -86,7 +89,8 @@ public struct HTTPRequest: HTTPMessage {
             urlString: url.convertToURL()?.absoluteString ?? "/",
             version: version,
             headersNoUpdate: headers,
-            body: body.convertToHTTPBody()
+            body: body.convertToHTTPBody(),
+            channel: nil
         )
         updateTransportHeaders()
     }
@@ -97,12 +101,14 @@ public struct HTTPRequest: HTTPMessage {
         urlString: String,
         version: HTTPVersion,
         headersNoUpdate headers: HTTPHeaders,
-        body: HTTPBody
+        body: HTTPBody,
+        channel: Channel?
     ) {
         self.method = method
         self.urlString = urlString
         self.version = version
         self.headers = headers
         self.body = body
+        self.channel = channel
     }
 }

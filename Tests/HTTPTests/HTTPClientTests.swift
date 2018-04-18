@@ -27,7 +27,7 @@ class HTTPClientTests: XCTestCase {
     }
 
     func testRomans() throws {
-        try testURL("http://romansgohome.com", contains: "Romans Go Home!")
+        try testURL("http://romansgohome.com", times: 1, contains: "Romans Go Home!")
     }
 
     func testAmazonWithTLS() throws {

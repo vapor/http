@@ -180,7 +180,8 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             urlString: head.uri,
             version: head.version,
             headersNoUpdate: head.headers,
-            body: body
+            body: body,
+            channel: ctx.channel
         )
         responder.respond(to: req, on: ctx.eventLoop).do { res in
             debugOnly {

@@ -22,8 +22,17 @@ class HTTPTests: XCTestCase {
         XCTAssertEqual(httpReq.accept.comparePreference(for: .html, to: .json), .orderedSame)
     }
 
+    func testRemotePeer() throws {
+        let worker = MultiThreadedEventLoopGroup(numThreads: 1)
+        let client = try HTTPClient.connect(hostname: "httpbin.org", on: worker).wait()
+        let httpReq = HTTPRequest(method: .GET, url: "/")
+        let httpRes = try client.send(httpReq).wait()
+        XCTAssertEqual(httpRes.remotePeer.port, 80)
+    }
+
     static let allTests = [
         ("testCookieParse", testCookieParse),
         ("testAcceptHeader", testAcceptHeader),
+        ("testRemotePeer", testRemotePeer),
     ]
 }

@@ -172,6 +172,8 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
 ///
 /// This restriction mitigates attacks such as cross-site request forgery (XSRF).
 public enum HTTPSameSitePolicy: String {
+    /// Strict mode.
     case strict = "Strict"
+    /// Relaxed mode.
     case lax = "Lax"
 }

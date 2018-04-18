@@ -22,6 +22,10 @@ public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertib
 
     /// The optional HTTP body.
     var body: HTTPBody { get set }
+
+    /// If this message came from an NIO pipeline, the `Channel` property
+    /// may be set. Use this to access things like the allocator or address.
+    var channel: Channel? { get }
 }
 
 extension HTTPMessage {

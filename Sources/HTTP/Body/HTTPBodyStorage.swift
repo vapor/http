@@ -1,5 +1,6 @@
-/// The internal storage medium. This is an implementation detail.
+/// The internal HTTP body storage enum. This is an implementation detail.
 enum HTTPBodyStorage {
+    /// Cases
     case none
     case buffer(ByteBuffer)
     case data(Data)

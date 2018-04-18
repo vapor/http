@@ -27,6 +27,9 @@ public struct HTTPResponse: HTTPMessage {
         didSet { updateTransportHeaders() }
     }
 
+    /// If set, reference to the NIO `Channel` this response came from.
+    public var channel: Channel?
+
     // MARK: Computed
 
     /// Get and set `HTTPCookies` for this `HTTPResponse`
@@ -67,7 +70,8 @@ public struct HTTPResponse: HTTPMessage {
             status: status,
             version: version,
             headersNoUpdate: headers,
-            body: body.convertToHTTPBody()
+            body: body.convertToHTTPBody(),
+            channel: nil
         )
         updateTransportHeaders()
     }
@@ -77,11 +81,13 @@ public struct HTTPResponse: HTTPMessage {
         status: HTTPResponseStatus,
         version: HTTPVersion,
         headersNoUpdate headers: HTTPHeaders,
-        body: HTTPBody
+        body: HTTPBody,
+        channel: Channel?
     ) {
         self.status = status
         self.version = version
         self.headers = headers
         self.body = body
+        self.channel = channel
     }
 }
