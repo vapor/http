@@ -40,6 +40,16 @@ public protocol HTTPMessageDecoder {
         where D: Decodable, M: HTTPMessage
 }
 
+extension HTTPMessageDecoder {
+    /// See `HTTPMessageDecoder`.
+    /// - note: This method will use a default max size of 1MB.
+    func decode<D, M>(_ decodable: D.Type, from message: M, on worker: Worker) throws -> Future<D>
+        where D: Decodable, M: HTTPMessage
+    {
+        return try decode(D.self, from: message, maxSize: 1_000_000, on: worker)
+    }
+}
+
 /// Capable of encoding an `Encodable` type to an `HTTPBody`.
 ///
 /// `HTTPMessageEncoder`s may encode data into an `HTTPBody` using any of the available

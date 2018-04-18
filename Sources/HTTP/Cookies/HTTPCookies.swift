@@ -1,29 +1,29 @@
 /// A collection of `HTTPCookie`s.
-public struct HTTPCookies: ExpressibleByArrayLiteral, Sequence {
+public struct HTTPCookies: ExpressibleByDictionaryLiteral {
     /// Internal storage.
-    private var cookies: [HTTPCookie]
+    private var cookies: [String: HTTPCookieValue]
 
     /// Creates an empty `HTTPCookies`
     public init() {
-        self.cookies = []
+        self.cookies = [:]
     }
 
     // MARK: Parse
 
     /// Parses a `Request` cookie
     public static func parse(cookieHeader: String) -> HTTPCookies? {
-        var cookies: HTTPCookies = []
+        var cookies: HTTPCookies = [:]
 
         // cookies are sent separated by semicolons
         let tokens = cookieHeader.components(separatedBy: ";")
 
         for token in tokens {
             // If a single deserialization fails, the cookies are malformed
-            guard let cookie = HTTPCookie.parse(token) else {
+            guard let (name, value) = HTTPCookieValue.parse(token) else {
                 return nil
             }
 
-            cookies.add(cookie)
+            cookies[name] = value
         }
 
         return cookies
@@ -31,35 +31,29 @@ public struct HTTPCookies: ExpressibleByArrayLiteral, Sequence {
 
     /// Parses a `Response` cookie
     public static func parse(setCookieHeaders: [String]) -> HTTPCookies? {
-        var cookies: HTTPCookies = []
+        var cookies: HTTPCookies = [:]
 
         for token in setCookieHeaders {
             // If a single deserialization fails, the cookies are malformed
-            guard let cookie = HTTPCookie.parse(token) else {
+            guard let (name, value) = HTTPCookieValue.parse(token) else {
                 return nil
             }
 
-            cookies.add(cookie)
+            cookies[name] = value
         }
 
         return cookies
     }
 
-    /// Creates a `Cookies` from the contents of a `Cookie` Sequence
-    public init<C>(cookies: C) where C.Iterator.Element == HTTPCookie, C: Sequence {
-        self.cookies = Array(cookies)
+    /// See `ExpressibleByDictionaryLiteral`.
+    public init(dictionaryLiteral elements: (String, HTTPCookieValue)...) {
+        var cookies: [String: HTTPCookieValue] = [:]
+        for (name, value) in elements {
+            cookies[name] = value
+        }
+        self.cookies = cookies
     }
-
-    /// See `ExpressibleByArrayLiteral`.
-    public init(arrayLiteral elements: HTTPCookie...) {
-        self.cookies = elements
-    }
-
-    /// Access `HTTPCookies` by name
-    public subscript(name: String) -> [HTTPCookie] {
-        return cookies.filter { $0.name == name }
-    }
-
+    
     // MARK: Serialize
 
     /// Seriaizes the `Cookies` for a `Request`
@@ -69,8 +63,8 @@ public struct HTTPCookies: ExpressibleByArrayLiteral, Sequence {
             return
         }
 
-        let cookie: String = map { cookie in
-            return cookie.serialize()
+        let cookie: String = cookies.map { (name, value) in
+            return value.serialize(name: name)
         }.joined(separator: "; ")
 
         request.headers.replaceOrAdd(name: .cookie, value: cookie)
@@ -83,48 +77,16 @@ public struct HTTPCookies: ExpressibleByArrayLiteral, Sequence {
             return
         }
 
-        for cookie in self {
-            response.headers.add(name: .setCookie, value: cookie.serialize())
+        for (name, value) in cookies {
+            response.headers.add(name: .setCookie, value: value.serialize(name: name))
         }
     }
 
     // MARK: Access
 
-    /// Fetches the first `HTTPCookie` with matching name.
-    public func firstCookie(named name: String) -> HTTPCookie? {
-        for cookie in cookies {
-            if cookie.name == name {
-                return cookie
-            }
-        }
-        return nil
-    }
-
-    /// Adds a new `HTTPCookie`, removing all existing cookies with the same name
-    /// if any exist.
-    ///
-    /// - parameters:
-    ///     - cookie: New `HTTPCookie` to add.
-    public mutating func replaceOrAdd(_ cookie: HTTPCookie) {
-        remove(name: cookie.name)
-        add(cookie)
-    }
-
-    /// Removes all `HTTPCookie`s with the supplied name.
-    public mutating func remove(name: String) {
-        cookies = cookies.filter { $0.name != name }
-    }
-
-    /// Adds a new `HTTPCookie`, even if one with the same name already exists.
-    ///
-    /// - parameters:
-    ///     - cookie: New `HTTPCookie` to add.
-    public mutating func add(_ cookie: HTTPCookie) {
-        cookies.append(cookie)
-    }
-
-    /// See `Sequence`.
-    public func makeIterator() -> IndexingIterator<[HTTPCookie]> {
-        return cookies.makeIterator()
+    /// Access `HTTPCookies` by name
+    public subscript(name: String) -> HTTPCookieValue? {
+        get { return cookies[name] }
+        set { cookies[name] = newValue }
     }
 }

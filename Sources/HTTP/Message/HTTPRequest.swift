@@ -36,6 +36,9 @@ public struct HTTPRequest: HTTPMessage {
         didSet { updateTransportHeaders() }
     }
 
+    /// If set, reference to the NIO `Channel` this request came from.
+    public var channel: Channel?
+
     // MARK: Computed
 
     /// The URL used on this request.
@@ -47,7 +50,7 @@ public struct HTTPRequest: HTTPMessage {
     /// Get and set `HTTPCookies` for this `HTTPRequest`
     /// This accesses the `"Cookie"` header.
     public var cookies: HTTPCookies {
-        get { return headers.firstValue(name: .cookie).flatMap(HTTPCookies.parse) ?? [] }
+        get { return headers.firstValue(name: .cookie).flatMap(HTTPCookies.parse) ?? [:] }
         set { newValue.serialize(into: &self) }
     }
 
@@ -59,6 +62,8 @@ public struct HTTPRequest: HTTPMessage {
         desc.append(body.description)
         return desc.joined(separator: "\n")
     }
+
+    // MARK: Init
 
     /// Creates a new `HTTPRequest`.
     ///
@@ -86,7 +91,8 @@ public struct HTTPRequest: HTTPMessage {
             urlString: url.convertToURL()?.absoluteString ?? "/",
             version: version,
             headersNoUpdate: headers,
-            body: body.convertToHTTPBody()
+            body: body.convertToHTTPBody(),
+            channel: nil
         )
         updateTransportHeaders()
     }
@@ -97,12 +103,14 @@ public struct HTTPRequest: HTTPMessage {
         urlString: String,
         version: HTTPVersion,
         headersNoUpdate headers: HTTPHeaders,
-        body: HTTPBody
+        body: HTTPBody,
+        channel: Channel?
     ) {
         self.method = method
         self.urlString = urlString
         self.version = version
         self.headers = headers
         self.body = body
+        self.channel = channel
     }
 }

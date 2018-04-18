@@ -1,8 +1,8 @@
-/// Represents an `HTTPMessage`'s Body.
+/// Represents an `HTTPMessage`'s body.
 ///
 ///     let body = HTTPBody(string: "Hello, world!")
 ///
-/// This can contain any data (streaming or static) and should match the Message's "Content-Type" header.
+/// This can contain any data (streaming or static) and should match the message's `"Content-Type"` header.
 public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, CustomDebugStringConvertible {
     /// An empty `HTTPBody`.
     public static let empty: HTTPBody = .init()
@@ -17,7 +17,7 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
         return storage.count
     }
 
-    /// See `CustomStringConvertible`
+    /// See `CustomStringConvertible`.
     public var description: String {
         switch storage {
         case .data, .buffer, .dispatchData, .staticString, .string, .none: return debugDescription
@@ -29,7 +29,7 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
         }
     }
 
-    /// See `CustomDebugStringConvertible`
+    /// See `CustomDebugStringConvertible`.
     public var debugDescription: String {
         switch storage {
         case .none: return "<no body>"
@@ -54,7 +54,7 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
     /// Internal storage.
     var storage: HTTPBodyStorage
 
-    /// Creates an empty body. Useful for `GET` requests where bodies are forbidden.
+    /// Creates an empty body. Useful for `GET` requests where HTTP bodies are forbidden.
     public init() {
         self.storage = .none
     }
@@ -69,12 +69,12 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
         storage = .dispatchData(dispatchData)
     }
 
-    /// Create a new body from the UTF-8 representation of a `StaticString`.
+    /// Create a new body from the UTF8 representation of a `StaticString`.
     public init(staticString: StaticString) {
         storage = .staticString(staticString)
     }
 
-    /// Create a new body from the UTF-8 representation of a `String`.
+    /// Create a new body from the UTF8 representation of a `String`.
     public init(string: String) {
         self.storage = .string(string)
     }
@@ -96,11 +96,14 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
 
     /// Consumes the body if it is a stream. Otherwise, returns the same value as the `data` property.
     ///
+    ///     let data = try httpRes.body.consumeData(max: 1_000_000, on: ...).wait()
+    ///
     /// - parameters:
     ///     - max: The maximum streaming body size to allow.
     ///            This only applies to streaming bodies, like chunked streams.
+    ///            Defaults to 1MB.
     ///     - worker: The event loop to perform this async work on.
-    public func consumeData(max: Int, on worker: Worker) -> Future<Data> {
+    public func consumeData(max: Int = 1_000_000, on worker: Worker) -> Future<Data> {
         return storage.consumeData(max: max, on: worker)
     }
 

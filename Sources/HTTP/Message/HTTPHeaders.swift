@@ -63,12 +63,8 @@ extension HTTPHeaders {
     /// Returns the first header value with the supplied name.
     /// - Parameter name: The header field name whose values are to be retrieved.
     public func firstValue(name: HTTPHeaderName) -> String? {
-        for header in self {
-            if header.name == name.lowercased {
-                return header.value
-            }
-        }
-        return nil
+        // fixme: optimize
+        return self[name.lowercased].first
     }
 }
 

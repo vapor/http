@@ -22,6 +22,10 @@ public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertib
 
     /// The optional HTTP body.
     var body: HTTPBody { get set }
+
+    /// If this message came from an NIO pipeline, the `Channel` property
+    /// may be set. Use this to access things like the allocator or address.
+    var channel: Channel? { get }
 }
 
 extension HTTPMessage {
@@ -35,6 +39,20 @@ extension HTTPMessage {
                 headers.remove(name: .contentType)
             }
         }
+    }
+
+    /// Returns a collection of `MediaTypePreference`s specified by this HTTP message's `"Accept"` header.
+    ///
+    /// You can returns all `MediaType`s in this collection to check membership.
+    ///
+    ///     httpReq.accept.mediaTypes.contains(.html)
+    ///
+    /// Or you can compare preferences for two `MediaType`s.
+    ///
+    ///     let pref = httpReq.accept.comparePreference(for: .json, to: .html)
+    ///
+    public var accept: [MediaTypePreference] {
+        return headers.firstValue(name: .accept).flatMap([MediaTypePreference].parse) ?? []
     }
 
     /// See `CustomDebugStringConvertible`

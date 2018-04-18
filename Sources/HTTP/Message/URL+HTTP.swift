@@ -16,5 +16,12 @@ extension URL: URLRepresentable {
     }
 }
 
+extension String: URLRepresentable {
+    /// See `URLRepresentable`.
+    public func convertToURL() -> URL? {
+        return URL(string: self)
+    }
+}
+
 /// Pre-initialized default value.
 private let _rootURL = URL(string: "/")!
