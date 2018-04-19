@@ -109,11 +109,7 @@ public struct HTTPRequest: HTTPMessage {
     }
 
     /// Internal init that creates a new `HTTPRequest` without sanitizing headers.
-    internal init(
-        head: HTTPRequestHead,
-        body: HTTPBody,
-        channel: Channel?
-    ) {
+    internal init(head: HTTPRequestHead, body: HTTPBody, channel: Channel?) {
         self.head = head
         self.body = body
         self.channel = channel

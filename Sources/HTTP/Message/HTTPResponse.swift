@@ -88,11 +88,7 @@ public struct HTTPResponse: HTTPMessage {
     }
 
     /// Internal init that creates a new `HTTPResponse` without sanitizing headers.
-    internal init(
-        head: HTTPResponseHead,
-        body: HTTPBody,
-        channel: Channel?
-    ) {
+    internal init(head: HTTPResponseHead, body: HTTPBody, channel: Channel?) {
         self.head = head
         self.body = body
         self.channel = channel
