@@ -99,7 +99,8 @@ public struct HTTPRequest: HTTPMessage {
         headers: HTTPHeaders = .init(),
         body: LosslessHTTPBodyRepresentable = HTTPBody()
     ) {
-        let head = HTTPRequestHead(version: version, method: method, uri: url.convertToURL()?.absoluteString ?? "/")
+        var head = HTTPRequestHead(version: version, method: method, uri: url.convertToURL()?.absoluteString ?? "/")
+        head.headers = headers
         self.init(
             head: head,
             body: body.convertToHTTPBody(),
