@@ -1,6 +1,6 @@
 import HTTP
 
-let hostname = "localhost"
+let hostname = "127.0.0.1"
 let port: Int = 8123
 
 let res = HTTPResponse(body: "pong" as StaticString)

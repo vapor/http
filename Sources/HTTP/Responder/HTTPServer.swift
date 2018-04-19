@@ -192,7 +192,6 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
     private func respond(to head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
         let req = HTTPRequest(head: head, body: body, channel: ctx.channel)
         let res = responder.respond(to: req, on: ctx.eventLoop)
-
         res.whenSuccess { res in
             debugOnly {
                 switch body.storage {
