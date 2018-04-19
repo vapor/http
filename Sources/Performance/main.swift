@@ -6,8 +6,8 @@ let port: Int = 8123
 let res = HTTPResponse(body: "pong" as StaticString)
 
 struct EchoResponder: HTTPServerResponder {
-    func respond(to req: HTTPRequest, on worker: Worker) -> Future<HTTPResponse> {
-        return worker.eventLoop.newSucceededFuture(result: res)
+    func respond(to req: HTTPRequest, on worker: Worker, response: (HTTPResponse) -> ()) {
+        response(res)
     }
 }
 

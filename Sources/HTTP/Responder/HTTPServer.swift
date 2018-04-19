@@ -142,7 +142,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             state = .awaitingBody(head)
         case .body(var chunk):
             switch state {
-            case .ready: assertionFailure("Unexpected state: \(state)")
+            case .ready: debugOnly { assertionFailure("Unexpected state: \(state)") }
             case .awaitingBody(let head):
                 /// 1: check to see which kind of body we are parsing from the head
                 ///
@@ -177,7 +177,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         case .end(let tailHeaders):
             debugOnly { assert(tailHeaders == nil, "Tail headers are not supported.") }
             switch state {
-            case .ready: assertionFailure("Unexpected state: \(state)")
+            case .ready: debugOnly { assertionFailure("Unexpected state: \(state)") }
             case .awaitingBody(let head): respond(to: head, body: .empty, ctx: ctx)
             case .collectingBody(let head, let body):
                 let body: HTTPBody = body.flatMap(HTTPBody.init(buffer:)) ?? .empty
@@ -191,9 +191,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
     /// Requests an `HTTPResponse` from the responder and serializes it.
     private func respond(to head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
         let req = HTTPRequest(head: head, body: body, channel: ctx.channel)
-        let res = responder.respond(to: req, on: ctx.eventLoop)
-
-        res.whenSuccess { res in
+        responder.respond(to: req, on: ctx.eventLoop) { res in
             debugOnly {
                 switch body.storage {
                 case .chunkedStream(let stream):
@@ -204,11 +202,6 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                 }
             }
             self.serialize(res, ctx: ctx)
-        }
-        res.whenFailure { error in
-            self.errorHandler(error)
-            ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
-            ctx.close(promise: nil)
         }
     }
 
