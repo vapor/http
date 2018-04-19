@@ -171,13 +171,8 @@ private final class HTTPClientResponseParser: ChannelInboundHandler {
             switch state {
             case .ready: assert(false, "Unexpected HTTPClientResponsePart.end when awaiting request head.")
             case .parsingBody(let head, let data):
-                let res = HTTPResponse(
-                    status: head.status,
-                    version: head.version,
-                    headersNoUpdate: head.headers,
-                    body: data.flatMap { HTTPBody(data: $0) } ?? HTTPBody(),
-                    channel: ctx.channel
-                )
+                let body: HTTPBody = data.flatMap { .init(data: $0) } ?? .init()
+                let res = HTTPResponse(head: head, body: body, channel: ctx.channel)
                 ctx.fireChannelRead(wrapOutboundOut(res))
             }
         }

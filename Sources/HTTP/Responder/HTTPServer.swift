@@ -129,7 +129,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 
     /// See `ChannelInboundHandler`.
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-        assert(ctx.channel.eventLoop.inEventLoop)
+        debugOnly { assert(ctx.channel.eventLoop.inEventLoop) }
         switch unwrapInboundIn(data) {
         case .head(let head):
             debugOnly {
@@ -175,7 +175,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             case .streamingBody(let stream): _ = stream.write(.chunk(chunk))
             }
         case .end(let tailHeaders):
-            assert(tailHeaders == nil, "Tail headers are not supported.")
+            debugOnly { assert(tailHeaders == nil, "Tail headers are not supported.") }
             switch state {
             case .ready: assertionFailure("Unexpected state: \(state)")
             case .awaitingBody(let head): respond(to: head, body: .empty, ctx: ctx)
@@ -188,14 +188,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 
     /// Requests an `HTTPResponse` from the responder and serializes it.
     private func respond(to head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
-        let req = HTTPRequest(
-            method: head.method,
-            urlString: head.uri,
-            version: head.version,
-            headersNoUpdate: head.headers,
-            body: body,
-            channel: ctx.channel
-        )
+        let req = HTTPRequest(head: head, body: body, channel: ctx.channel)
         responder.respond(to: req, on: ctx.eventLoop).do { res in
             debugOnly {
                 switch body.storage {
@@ -216,8 +209,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 
     /// Serializes the `HTTPResponse`.
     private func serialize(_ res: HTTPResponse, ctx: ChannelHandlerContext) {
-        let httpHead = HTTPResponseHead(version: res.version, status: res.status, headers: res.headers)
-        ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
+        ctx.write(wrapOutboundOut(.head(res.head)), promise: nil)
         switch res.body.storage {
         case .none: ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
         case .buffer(let buffer): write(buffer: buffer, ctx: ctx)
@@ -255,11 +247,6 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             ctx.write(wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
         }
         ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
-    }
-
-    /// See `ChannelInboundHandler`.
-    func channelInactive(ctx: ChannelHandlerContext) {
-        ctx.close(promise: nil)
     }
 
     /// See `ChannelInboundHandler`.
