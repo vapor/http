@@ -179,7 +179,9 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             switch state {
             case .ready: assertionFailure("Unexpected state: \(state)")
             case .awaitingBody(let head): respond(to: head, body: .empty, ctx: ctx)
-            case .collectingBody(let head, let body): respond(to: head, body: body.flatMap(HTTPBody.init(buffer:)) ?? .empty, ctx: ctx)
+            case .collectingBody(let head, let body):
+                let body: HTTPBody = body.flatMap(HTTPBody.init(buffer:)) ?? .empty
+                respond(to: head, body: body, ctx: ctx)
             case .streamingBody(let stream): _ = stream.write(.end)
             }
             state = .ready
