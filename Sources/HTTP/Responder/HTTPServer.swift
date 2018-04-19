@@ -55,9 +55,9 @@ public final class HTTPServer {
 
                 // configure the pipeline
                 return channel.pipeline.configureHTTPServerPipeline(
-                    withPipeliningAssistance: true, 
+                    withPipeliningAssistance: false,
                     withServerUpgrade: upgrade,
-                    withErrorHandling: true
+                    withErrorHandling: false
                 ).then {
                     return channel.pipeline.add(handler: handler)
                 }
@@ -191,7 +191,9 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
     /// Requests an `HTTPResponse` from the responder and serializes it.
     private func respond(to head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
         let req = HTTPRequest(head: head, body: body, channel: ctx.channel)
-        responder.respond(to: req, on: ctx.eventLoop).do { res in
+        let res = responder.respond(to: req, on: ctx.eventLoop)
+
+        res.whenSuccess { res in
             debugOnly {
                 switch body.storage {
                 case .chunkedStream(let stream):
@@ -202,7 +204,8 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                 }
             }
             self.serialize(res, ctx: ctx)
-        }.catch { error in
+        }
+        res.whenFailure { error in
             self.errorHandler(error)
             ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
             ctx.close(promise: nil)
@@ -214,23 +217,23 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         ctx.write(wrapOutboundOut(.head(res.head)), promise: nil)
         switch res.body.storage {
         case .none: ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
-        case .buffer(let buffer): write(buffer: buffer, ctx: ctx)
+        case .buffer(let buffer): writeAndflush(buffer: buffer, ctx: ctx)
         case .string(let string):
             var buffer = ctx.channel.allocator.buffer(capacity: string.count)
             buffer.write(string: string)
-            write(buffer: buffer, ctx: ctx)
+            writeAndflush(buffer: buffer, ctx: ctx)
         case .staticString(let string):
             var buffer = ctx.channel.allocator.buffer(capacity: string.count)
             buffer.write(staticString: string)
-            write(buffer: buffer, ctx: ctx)
+            writeAndflush(buffer: buffer, ctx: ctx)
         case .data(let data):
             var buffer = ctx.channel.allocator.buffer(capacity: data.count)
             buffer.write(bytes: data)
-            write(buffer: buffer, ctx: ctx)
+            writeAndflush(buffer: buffer, ctx: ctx)
         case .dispatchData(let data):
             var buffer = ctx.channel.allocator.buffer(capacity: data.count)
             buffer.write(bytes: data)
-            write(buffer: buffer, ctx: ctx)
+            writeAndflush(buffer: buffer, ctx: ctx)
         case .chunkedStream(let stream):
             stream.read { result, stream in
                 switch result {
@@ -244,7 +247,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         }
     }
     /// Writes a `ByteBuffer` to the ctx.
-    private func write(buffer: ByteBuffer, ctx: ChannelHandlerContext) {
+    private func writeAndflush(buffer: ByteBuffer, ctx: ChannelHandlerContext) {
         if buffer.readableBytes > 0 {
             ctx.write(wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
         }

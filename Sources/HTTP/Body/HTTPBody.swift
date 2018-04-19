@@ -71,7 +71,9 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
 
     /// Create a new body from the UTF8 representation of a `StaticString`.
     public init(staticString: StaticString) {
-        storage = .staticString(staticString)
+        var buffer = ByteBufferAllocator().buffer(capacity: staticString.utf8CodeUnitCount)
+        buffer.write(staticString: staticString)
+        storage = .buffer(buffer)
     }
 
     /// Create a new body from the UTF8 representation of a `String`.
