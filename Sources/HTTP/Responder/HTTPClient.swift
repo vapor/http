@@ -165,6 +165,7 @@ private final class HTTPClientResponseParser: ChannelInboundHandler {
                     body: data.flatMap { HTTPBody(data: $0) } ?? HTTPBody()
                 )
                 ctx.fireChannelRead(wrapOutboundOut(res))
+                state = .ready
             }
         }
     }
