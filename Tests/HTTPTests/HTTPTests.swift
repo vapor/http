@@ -4,14 +4,14 @@ import XCTest
 class HTTPTests: XCTestCase {
     func testCookieParse() throws {
         /// from https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
-        guard let cookie = HTTPCookie.parse("id=a3fWa; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
+        guard let (name, value) = HTTPCookieValue.parse("id=a3fWa; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
             throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
         }
 
-        XCTAssertEqual(cookie.name, "id")
-        XCTAssertEqual(cookie.expires, Date(rfc1123: "Wed, 21 Oct 2015 07:28:00 GMT"))
-        XCTAssertEqual(cookie.isSecure, true)
-        XCTAssertEqual(cookie.isHTTPOnly, true)
+        XCTAssertEqual(name, "id")
+        XCTAssertEqual(value.expires, Date(rfc1123: "Wed, 21 Oct 2015 07:28:00 GMT"))
+        XCTAssertEqual(value.isSecure, true)
+        XCTAssertEqual(value.isHTTPOnly, true)
     }
 
     func testAcceptHeader() throws {
@@ -22,8 +22,17 @@ class HTTPTests: XCTestCase {
         XCTAssertEqual(httpReq.accept.comparePreference(for: .html, to: .json), .orderedSame)
     }
 
+    func testRemotePeer() throws {
+        let worker = MultiThreadedEventLoopGroup(numThreads: 1)
+        let client = try HTTPClient.connect(hostname: "httpbin.org", on: worker).wait()
+        let httpReq = HTTPRequest(method: .GET, url: "/")
+        let httpRes = try client.send(httpReq).wait()
+        XCTAssertEqual(httpRes.remotePeer.port, 80)
+    }
+
     static let allTests = [
         ("testCookieParse", testCookieParse),
         ("testAcceptHeader", testAcceptHeader),
+        ("testRemotePeer", testRemotePeer),
     ]
 }

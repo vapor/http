@@ -1,4 +1,4 @@
-/// A `Transfer-Encoding: chunked` stream of data used by `HTTPBody`.
+/// A `"Transfer-Encoding: chunked"` stream of data used by `HTTPBody`.
 ///
 ///     let chunkedStream = HTTPChunkedStream(on: req)
 ///     background {

@@ -4,27 +4,48 @@
 ///
 /// See `HTTPClient` and `HTTPServer`.
 public struct HTTPRequest: HTTPMessage {
+    /// Internal storage is an NIO `HTTPRequestHead`
+    internal var head: HTTPRequestHead
+
     // MARK: Properties
 
     /// The HTTP method for this request.
     ///
     ///     httpReq.method = .GET
     ///
-    public var method: HTTPMethod
+    public var method: HTTPMethod {
+        get { return head.method }
+        set { head.method = newValue }
+    }
+
+    /// The URL used on this request.
+    public var url: URL {
+        get { return URL(string: urlString) ?? .root }
+        set { urlString = newValue.absoluteString }
+    }
 
     /// The unparsed URL string. This is usually set through the `url` property.
     ///
     ///     httpReq.urlString = "/welcome"
     ///
-    public var urlString: String
+    public var urlString: String {
+        get { return head.uri }
+        set { head.uri = newValue }
+    }
 
     /// The version for this HTTP request.
-    public var version: HTTPVersion
+    public var version: HTTPVersion {
+        get { return head.version }
+        set { head.version = newValue }
+    }
 
     /// The header fields for this HTTP request.
     /// The `"Content-Length"` and `"Transfer-Encoding"` headers will be set automatically
     /// when the `body` property is mutated.
-    public var headers: HTTPHeaders
+    public var headers: HTTPHeaders {
+        get { return head.headers }
+        set { head.headers = newValue }
+    }
 
     /// The `HTTPBody`. Updating this property will also update the associated transport headers.
     ///
@@ -36,18 +57,13 @@ public struct HTTPRequest: HTTPMessage {
         didSet { updateTransportHeaders() }
     }
 
-    // MARK: Computed
-
-    /// The URL used on this request.
-    public var url: URL {
-        get { return URL(string: urlString) ?? .root }
-        set { urlString = newValue.absoluteString }
-    }
+    /// If set, reference to the NIO `Channel` this request came from.
+    public var channel: Channel?
 
     /// Get and set `HTTPCookies` for this `HTTPRequest`
     /// This accesses the `"Cookie"` header.
     public var cookies: HTTPCookies {
-        get { return headers.firstValue(name: .cookie).flatMap(HTTPCookies.parse) ?? [] }
+        get { return headers.firstValue(name: .cookie).flatMap(HTTPCookies.parse) ?? [:] }
         set { newValue.serialize(into: &self) }
     }
 
@@ -59,6 +75,8 @@ public struct HTTPRequest: HTTPMessage {
         desc.append(body.description)
         return desc.joined(separator: "\n")
     }
+
+    // MARK: Init
 
     /// Creates a new `HTTPRequest`.
     ///
@@ -81,28 +99,20 @@ public struct HTTPRequest: HTTPMessage {
         headers: HTTPHeaders = .init(),
         body: LosslessHTTPBodyRepresentable = HTTPBody()
     ) {
+        var head = HTTPRequestHead(version: version, method: method, uri: url.convertToURL()?.absoluteString ?? "/")
+        head.headers = headers
         self.init(
-            method: method,
-            urlString: url.convertToURL()?.absoluteString ?? "/",
-            version: version,
-            headersNoUpdate: headers,
-            body: body.convertToHTTPBody()
+            head: head,
+            body: body.convertToHTTPBody(),
+            channel: nil
         )
         updateTransportHeaders()
     }
 
     /// Internal init that creates a new `HTTPRequest` without sanitizing headers.
-    internal init(
-        method: HTTPMethod,
-        urlString: String,
-        version: HTTPVersion,
-        headersNoUpdate headers: HTTPHeaders,
-        body: HTTPBody
-    ) {
-        self.method = method
-        self.urlString = urlString
-        self.version = version
-        self.headers = headers
+    internal init(head: HTTPRequestHead, body: HTTPBody, channel: Channel?) {
+        self.head = head
         self.body = body
+        self.channel = channel
     }
 }

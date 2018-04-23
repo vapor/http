@@ -1,14 +1,23 @@
 import Debugging
-import Foundation
 
 /// Errors that can be thrown while working with HTTP.
 public struct HTTPError: Debuggable {
+    /// See `Debuggable`.
     public static let readableName = "HTTP Error"
+
+    /// See `Debuggable`.
     public let identifier: String
+
+    /// See `Debuggable`.
     public var reason: String
+
+    /// See `Debuggable`.
     public var sourceLocation: SourceLocation?
+
+    /// See `Debuggable`.
     public var stackTrace: [String]
 
+    /// Creates a new `HTTPError`.
     public init(
         identifier: String,
         reason: String,
@@ -34,14 +43,6 @@ func DEBUG(_ string: @autoclosure () -> String, file: StaticString = #file, line
     #if VERBOSE
     print("[VERBOSE] \(string()) [\(file.description.split(separator: "/").last!):\(line)]")
     #endif
-}
-
-extension UnsafeMutableBufferPointer {
-    /// Calls `.initialize(from:)` and asserts there is no remaining data.
-    func initializeAssertingNoRemainder<S>(from sequence: S) where S: Sequence, S.Element == Element {
-        var (it, _) = initialize(from: sequence)
-        assert(it.next() == nil)
-    }
 }
 
 internal func debugOnly(_ body: () -> Void) {

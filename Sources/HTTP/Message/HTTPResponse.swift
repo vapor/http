@@ -4,18 +4,30 @@
 ///
 /// See `HTTPClient` and `HTTPServer`.
 public struct HTTPResponse: HTTPMessage {
+    /// Internal storage is an NIO `HTTPResponseHead`
+    internal var head: HTTPResponseHead
+
     // MARK: Properties
 
-    /// The HTTP response status.
-    public var status: HTTPResponseStatus
-
     /// The HTTP version that corresponds to this response.
-    public var version: HTTPVersion
+    public var version: HTTPVersion {
+        get { return head.version }
+        set { head.version = newValue }
+    }
+
+    /// The HTTP response status.
+    public var status: HTTPResponseStatus {
+        get { return head.status }
+        set { head.status = newValue }
+    }
 
     /// The header fields for this HTTP response.
     /// The `"Content-Length"` and `"Transfer-Encoding"` headers will be set automatically
     /// when the `body` property is mutated.
-    public var headers: HTTPHeaders
+    public var headers: HTTPHeaders {
+        get { return head.headers }
+        set { head.headers = newValue }
+    }
 
     /// The `HTTPBody`. Updating this property will also update the associated transport headers.
     ///
@@ -27,12 +39,13 @@ public struct HTTPResponse: HTTPMessage {
         didSet { updateTransportHeaders() }
     }
 
-    // MARK: Computed
+    /// If set, reference to the NIO `Channel` this response came from.
+    public var channel: Channel?
 
     /// Get and set `HTTPCookies` for this `HTTPResponse`
     /// This accesses the `"Set-Cookie"` header.
     public var cookies: HTTPCookies {
-        get { return HTTPCookies.parse(setCookieHeaders: headers[.setCookie]) ?? [] }
+        get { return HTTPCookies.parse(setCookieHeaders: headers[.setCookie]) ?? [:] }
         set { newValue.serialize(into: &self) }
     }
 
@@ -44,6 +57,8 @@ public struct HTTPResponse: HTTPMessage {
         desc.append(body.description)
         return desc.joined(separator: "\n")
     }
+
+    // MARK: Init
 
     /// Creates a new `HTTPResponse`.
     ///
@@ -63,25 +78,19 @@ public struct HTTPResponse: HTTPMessage {
         headers: HTTPHeaders = .init(),
         body: LosslessHTTPBodyRepresentable = HTTPBody()
     ) {
+        let head = HTTPResponseHead(version: version, status: status, headers: headers)
         self.init(
-            status: status,
-            version: version,
-            headersNoUpdate: headers,
-            body: body.convertToHTTPBody()
+            head: head,
+            body: body.convertToHTTPBody(),
+            channel: nil
         )
         updateTransportHeaders()
     }
 
     /// Internal init that creates a new `HTTPResponse` without sanitizing headers.
-    internal init(
-        status: HTTPResponseStatus,
-        version: HTTPVersion,
-        headersNoUpdate headers: HTTPHeaders,
-        body: HTTPBody
-    ) {
-        self.status = status
-        self.version = version
-        self.headers = headers
+    internal init(head: HTTPResponseHead, body: HTTPBody, channel: Channel?) {
+        self.head = head
         self.body = body
+        self.channel = channel
     }
 }

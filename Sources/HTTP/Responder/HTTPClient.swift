@@ -1,11 +1,16 @@
 /// Connects to remote HTTP servers allowing you to send `HTTPRequest`s and
 /// receive `HTTPResponse`s.
 ///
-/// See `connect(...)` and `connectTLS(...)` to create an `HTTPClient`.
+///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: ...).map(to: HTTPResponse.self) { client in
+///         return client.send(...)
+///     }
+///
 public final class HTTPClient {
+    // MARK: Static
+
     /// Creates a new `HTTPClient` connected over TCP or TLS.
     ///
-    ///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: req).map(to: HTTPResponse.self) { client in
+    ///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: ...).map(to: HTTPResponse.self) { client in
     ///         return client.send(...)
     ///     }
     ///
@@ -16,7 +21,7 @@ public final class HTTPClient {
     ///     - worker: `Worker` to perform async work on.
     /// - returns: A `Future` containing the connected `HTTPClient`.
     public static func connect(
-        scheme: HTTPScheme = .plainText,
+        scheme: HTTPScheme = .http,
         hostname: String,
         port: Int? = nil,
         on worker: Worker
@@ -31,7 +36,7 @@ public final class HTTPClient {
                     let defaultHandlers: [ChannelHandler] = [
                         HTTPRequestEncoder(),
                         HTTPResponseDecoder(),
-                        HTTPClientRequestSerializer(),
+                        HTTPClientRequestSerializer(hostname: hostname),
                         HTTPClientResponseParser()
                     ]
                     return channel.pipeline.addHandlers(defaultHandlers + [handler], first: false)
@@ -41,6 +46,8 @@ public final class HTTPClient {
             return .init(handler: handler, channel: channel)
         }
     }
+
+    // MARK: Properties
 
     /// Private `HTTPClientHandler` that handles requests.
     private let handler: QueueHandler<HTTPResponse, HTTPRequest>
@@ -59,10 +66,7 @@ public final class HTTPClient {
         self.channel = channel
     }
 
-    /// Closes this `HTTPClient`'s connection to the remote server.
-    public func close() -> Future<Void> {
-        return channel.close(mode: .all)
-    }
+    // MARK: Methods
 
     /// Sends an `HTTPRequest` to the connected, remote server.
     ///
@@ -82,6 +86,11 @@ public final class HTTPClient {
             return res!
         }
     }
+
+    /// Closes this `HTTPClient`'s connection to the remote server.
+    public func close() -> Future<Void> {
+        return channel.close(mode: .all)
+    }
 }
 
 // MARK: Private
@@ -94,16 +103,20 @@ private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
     /// See `ChannelOutboundHandler`.
     typealias OutboundOut = HTTPClientRequestPart
 
+    /// Hostname we are serializing responses to.
+    private let hostname: String
+
     /// Creates a new `HTTPClientRequestSerializer`.
-    init() { }
+    init(hostname: String) {
+        self.hostname = hostname
+    }
 
     /// See `ChannelOutboundHandler`.
     func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = unwrapOutboundIn(data)
         var headers = req.headers
-        if headers[.host].isEmpty, let host = req.url.host  {
-            headers.add(name: .host, value: host)
-        }
+        headers.add(name: .host, value: hostname)
+        headers.replaceOrAdd(name: .userAgent, value: "Vapor/3.0 (Swift)")
         var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.absoluteString)
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
@@ -158,12 +171,8 @@ private final class HTTPClientResponseParser: ChannelInboundHandler {
             switch state {
             case .ready: assert(false, "Unexpected HTTPClientResponsePart.end when awaiting request head.")
             case .parsingBody(let head, let data):
-                let res = HTTPResponse(
-                    status: head.status,
-                    version: head.version,
-                    headersNoUpdate: head.headers,
-                    body: data.flatMap { HTTPBody(data: $0) } ?? HTTPBody()
-                )
+                let body: HTTPBody = data.flatMap { .init(data: $0) } ?? .init()
+                let res = HTTPResponse(head: head, body: body, channel: ctx.channel)
                 ctx.fireChannelRead(wrapOutboundOut(res))
                 state = .ready
             }
