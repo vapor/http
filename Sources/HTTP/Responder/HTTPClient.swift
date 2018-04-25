@@ -174,6 +174,7 @@ private final class HTTPClientResponseParser: ChannelInboundHandler {
                 let body: HTTPBody = data.flatMap { .init(data: $0) } ?? .init()
                 let res = HTTPResponse(head: head, body: body, channel: ctx.channel)
                 ctx.fireChannelRead(wrapOutboundOut(res))
+                state = .ready
             }
         }
     }
