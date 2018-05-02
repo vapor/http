@@ -223,7 +223,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         // add a RFC1123 timestamp to the Date header to make this
         // a valid request
         var reshead = res.head
-        reshead.headers.add(name: "Date", value: dateCache.currentTimestamp())
+        reshead.headers.add(name: "date", value: dateCache.currentTimestamp())
 
         // begin serializing
         ctx.write(wrapOutboundOut(.head(reshead)), promise: nil)
