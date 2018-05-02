@@ -27,7 +27,7 @@ public final class HTTPClient {
         on worker: Worker
     ) -> Future<HTTPClient> {
         let handler = QueueHandler<HTTPResponse, HTTPRequest>(on: worker) { error in
-            ERROR("HTTPClient: \(error)")
+            ERROR("[HTTPClient] \(error)")
         }
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)

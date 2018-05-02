@@ -35,7 +35,7 @@ public struct HTTPError: Debuggable {
 
 /// For printing un-handleable errors.
 func ERROR(_ string: @autoclosure () -> String, file: StaticString = #file, line: Int = #line) {
-    print("[HTTP] \(string()) [\(file.description.split(separator: "/").last!):\(line)]")
+    print("[ERROR] [HTTP] \(string()) [\(file.description.split(separator: "/").last!):\(line)]")
 }
 
 /// For printing debug info.
