@@ -190,7 +190,11 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 
     /// Requests an `HTTPResponse` from the responder and serializes it.
     private func respond(to head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
-        let req = HTTPRequest(head: head, body: body, channel: ctx.channel)
+        var req = HTTPRequest(head: head, body: body, channel: ctx.channel)
+        switch head.method {
+        case .HEAD: req.method = .GET
+        default: break
+        }
         let res = responder.respond(to: req, on: ctx.eventLoop)
         res.whenSuccess { res in
             debugOnly {
@@ -202,7 +206,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                 default: break
                 }
             }
-            self.serialize(res, ctx: ctx)
+            self.serialize(res, for: head, ctx: ctx)
         }
         res.whenFailure { error in
             self.errorHandler(error)
@@ -211,35 +215,40 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
     }
 
     /// Serializes the `HTTPResponse`.
-    private func serialize(_ res: HTTPResponse, ctx: ChannelHandlerContext) {
+    private func serialize(_ res: HTTPResponse, for head: HTTPRequestHead, ctx: ChannelHandlerContext) {
         ctx.write(wrapOutboundOut(.head(res.head)), promise: nil)
-        switch res.body.storage {
-        case .none: ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
-        case .buffer(let buffer): writeAndflush(buffer: buffer, ctx: ctx)
-        case .string(let string):
-            var buffer = ctx.channel.allocator.buffer(capacity: string.count)
-            buffer.write(string: string)
-            writeAndflush(buffer: buffer, ctx: ctx)
-        case .staticString(let string):
-            var buffer = ctx.channel.allocator.buffer(capacity: string.count)
-            buffer.write(staticString: string)
-            writeAndflush(buffer: buffer, ctx: ctx)
-        case .data(let data):
-            var buffer = ctx.channel.allocator.buffer(capacity: data.count)
-            buffer.write(bytes: data)
-            writeAndflush(buffer: buffer, ctx: ctx)
-        case .dispatchData(let data):
-            var buffer = ctx.channel.allocator.buffer(capacity: data.count)
-            buffer.write(bytes: data)
-            writeAndflush(buffer: buffer, ctx: ctx)
-        case .chunkedStream(let stream):
-            stream.read { result, stream in
-                switch result {
-                case .chunk(let buffer): return ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
-                case .end: return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
-                case .error(let error):
-                    self.errorHandler(error)
-                    return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+        if head.method == .HEAD {
+            // skip sending the body for HEAD requests
+            ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
+        } else {
+            switch res.body.storage {
+            case .none: ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
+            case .buffer(let buffer): writeAndflush(buffer: buffer, ctx: ctx)
+            case .string(let string):
+                var buffer = ctx.channel.allocator.buffer(capacity: string.count)
+                buffer.write(string: string)
+                writeAndflush(buffer: buffer, ctx: ctx)
+            case .staticString(let string):
+                var buffer = ctx.channel.allocator.buffer(capacity: string.count)
+                buffer.write(staticString: string)
+                writeAndflush(buffer: buffer, ctx: ctx)
+            case .data(let data):
+                var buffer = ctx.channel.allocator.buffer(capacity: data.count)
+                buffer.write(bytes: data)
+                writeAndflush(buffer: buffer, ctx: ctx)
+            case .dispatchData(let data):
+                var buffer = ctx.channel.allocator.buffer(capacity: data.count)
+                buffer.write(bytes: data)
+                writeAndflush(buffer: buffer, ctx: ctx)
+            case .chunkedStream(let stream):
+                stream.read { result, stream in
+                    switch result {
+                    case .chunk(let buffer): return ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
+                    case .end: return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                    case .error(let error):
+                        self.errorHandler(error)
+                        return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                    }
                 }
             }
         }

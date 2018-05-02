@@ -19,18 +19,18 @@ public final class HTTPClient {
     ///     - hostname: Remote server's hostname.
     ///     - port: Remote server's port, defaults to 80 for TCP and 443 for TLS.
     ///     - worker: `Worker` to perform async work on.
-    ///     - onError: Optional closure, which fires when QueueHandler catch error
+    ///     - onError: Optional closure, which fires when a networking error is caught.
     /// - returns: A `Future` containing the connected `HTTPClient`.
     public static func connect(
         scheme: HTTPScheme = .http,
         hostname: String,
         port: Int? = nil,
         on worker: Worker,
-        onError: ((Error) -> ())? = nil
+        onError: @escaping (Error) -> () = { _ in }
     ) -> Future<HTTPClient> {
         let handler = QueueHandler<HTTPResponse, HTTPRequest>(on: worker) { error in
-            ERROR("HTTPClient: \(error)")
-            onError?(error)
+            ERROR("[HTTPClient] \(error)")
+            onError(error)
         }
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)

@@ -26,10 +26,6 @@ class HTTPClientTests: XCTestCase {
         try testURL("http://zombo.com", contains: "<title>ZOMBO</title>")
     }
 
-    func testRomans() throws {
-        try testURL("http://romansgohome.com", times: 1, contains: "Romans Go Home!")
-    }
-
     func testAmazonWithTLS() throws {
         try testURL("https://www.amazon.com", contains: "Amazon.com, Inc.")
     }
@@ -45,7 +41,6 @@ class HTTPClientTests: XCTestCase {
         ("testGoogleAPIsFCM", testGoogleAPIsFCM),
         ("testExampleCom", testExampleCom),
         ("testZombo", testZombo),
-        ("testRomans", testRomans),
         ("testAmazonWithTLS", testAmazonWithTLS),
         ("testQuery", testQuery),
     ]
