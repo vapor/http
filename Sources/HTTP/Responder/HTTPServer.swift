@@ -116,6 +116,9 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
     /// Handles any errors that may occur.
     private let errorHandler: (Error) -> ()
 
+    /// Caches RFC1123 dates for performant serialization
+    private var dateCache: RFC1123DateCache
+
     /// Current HTTP state.
     var state: HTTPServerState
 
@@ -124,6 +127,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         self.responder = responder
         self.maxBodySize = maxBodySize
         self.errorHandler = onError
+        self.dateCache = .init()
         self.state = .ready
     }
 
@@ -215,9 +219,15 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
     }
 
     /// Serializes the `HTTPResponse`.
-    private func serialize(_ res: HTTPResponse, for head: HTTPRequestHead, ctx: ChannelHandlerContext) {
-        ctx.write(wrapOutboundOut(.head(res.head)), promise: nil)
-        if head.method == .HEAD {
+    private func serialize(_ res: HTTPResponse, for reqhead: HTTPRequestHead, ctx: ChannelHandlerContext) {
+        // add a RFC1123 timestamp to the Date header to make this
+        // a valid request
+        var reshead = res.head
+        reshead.headers.add(name: "Date", value: dateCache.currentTimestamp())
+
+        // begin serializing
+        ctx.write(wrapOutboundOut(.head(reshead)), promise: nil)
+        if reqhead.method == .HEAD {
             // skip sending the body for HEAD requests
             ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
         } else {
