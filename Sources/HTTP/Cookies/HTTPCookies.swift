@@ -64,7 +64,7 @@ public struct HTTPCookies: ExpressibleByDictionaryLiteral {
         }
 
         let cookie: String = cookies.map { (name, value) in
-            return value.serialize(name: name)
+            return "\(name)=\(value.string)"
         }.joined(separator: "; ")
 
         request.headers.replaceOrAdd(name: .cookie, value: cookie)
