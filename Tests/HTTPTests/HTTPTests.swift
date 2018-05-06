@@ -13,6 +13,18 @@ class HTTPTests: XCTestCase {
         XCTAssertEqual(value.isSecure, true)
         XCTAssertEqual(value.isHTTPOnly, true)
     }
+    
+    func testCookieIsSerializedCorrectly() throws {
+        var httpReq = HTTPRequest(method: .GET, url: "/")
+
+        guard let (name, value) = HTTPCookieValue.parse("id=value; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
+            throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
+        }
+        
+        httpReq.cookies = HTTPCookies(dictionaryLiteral: (name, value))
+        
+        XCTAssertEqual(httpReq.headers.firstValue(name: .cookie), "id=value")
+    }
 
     func testAcceptHeader() throws {
         let httpReq = HTTPRequest(method: .GET, url: "/", headers: ["Accept": "text/html, application/json, application/xml;q=0.9, */*;q=0.8"])
