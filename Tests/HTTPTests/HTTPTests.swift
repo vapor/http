@@ -46,5 +46,6 @@ class HTTPTests: XCTestCase {
         ("testCookieParse", testCookieParse),
         ("testAcceptHeader", testAcceptHeader),
         ("testRemotePeer", testRemotePeer),
+        ("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
     ]
 }
