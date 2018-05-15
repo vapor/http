@@ -38,7 +38,7 @@ extension Date {
 /// Performant method for generating RFC1123 date headers.
 internal struct RFC1123DateCache {
     /// Currently cached timestamp.
-    private var cachedTimestamp: (timestamp: String, createdAt: Int)?
+    private var cachedTimestamp: (timestamp: String, expiration: Int)?
 
     /// Gets the current RFC 1123 date string.
     mutating func currentTimestamp() -> String {
