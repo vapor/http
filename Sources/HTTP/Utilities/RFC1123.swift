@@ -46,7 +46,7 @@ internal struct RFC1123DateCache {
         var date = COperatingSystem.time(nil)
 
         // check if the cached timestamp is still valid
-        if let (timestamp, createdAt) = cachedTimestamp, date < createdAt + accuracy {
+        if let (timestamp, expiration) = cachedTimestamp, date < expiration {
             return timestamp
         }
 
@@ -95,8 +95,8 @@ internal struct RFC1123DateCache {
         rfc1123.append(stringNumbers[seconds])
         rfc1123.append(" GMT")
 
-        // cache the new timestamp
-        cachedTimestamp = (rfc1123, date)
+        // cache the new timestamp and its expiration
+        cachedTimestamp = (rfc1123, date + accuracy)
 
         return rfc1123
     }
