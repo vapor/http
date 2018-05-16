@@ -75,6 +75,9 @@ public struct HTTPRequest: HTTPMessage {
         desc.append(body.description)
         return desc.joined(separator: "\n")
     }
+    
+    /// Request caching policy
+    public let cachePolicy: URLRequest.CachePolicy?
 
     // MARK: Init
 
@@ -92,27 +95,32 @@ public struct HTTPRequest: HTTPMessage {
     ///                The `"Content-Length"` and `"Transfer-Encoding"` headers will be set automatically.
     ///     - body: `HTTPBody` for this request, defaults to an empty body.
     ///             See `LosslessHTTPBodyRepresentable` for more information.
+    ///     - cachePolicy: `URLRequest.CachePolicy` for this request, defaults to nil.
+    ///             Overrides `FoundationClient.cachePolicy` default caching policy.
     public init(
         method: HTTPMethod = .GET,
         url: URLRepresentable = URL.root,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
-        body: LosslessHTTPBodyRepresentable = HTTPBody()
+        body: LosslessHTTPBodyRepresentable = HTTPBody(),
+        cachePolicy: URLRequest.CachePolicy? = nil
     ) {
         var head = HTTPRequestHead(version: version, method: method, uri: url.convertToURL()?.absoluteString ?? "/")
         head.headers = headers
         self.init(
             head: head,
             body: body.convertToHTTPBody(),
-            channel: nil
+            channel: nil,
+            cachePolicy: cachePolicy
         )
         updateTransportHeaders()
     }
 
     /// Internal init that creates a new `HTTPRequest` without sanitizing headers.
-    internal init(head: HTTPRequestHead, body: HTTPBody, channel: Channel?) {
+    internal init(head: HTTPRequestHead, body: HTTPBody, channel: Channel?, cachePolicy: URLRequest.CachePolicy? = nil) {
         self.head = head
         self.body = body
         self.channel = channel
+        self.cachePolicy = cachePolicy
     }
 }
