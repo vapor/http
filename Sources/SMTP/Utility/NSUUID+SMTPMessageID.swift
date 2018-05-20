@@ -17,8 +17,13 @@ extension NSUUID {
     static internal func currentHostName() -> String {
         let hname = UnsafeMutablePointer<Int8>.allocate(capacity: Int(NI_MAXHOST))
         defer {
+            #if swift(>=4.1)
+            hname.deinitialize(count: Int(NI_MAXHOST))
+            hname.deallocate()
+            #else
             hname.deinitialize()
             hname.deallocate(capacity: Int(NI_MAXHOST))
+            #endif
         }
         let r = gethostname(hname, Int(NI_MAXHOST))
         if r < 0 || hname[0] == 0 {
