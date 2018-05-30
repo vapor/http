@@ -4,6 +4,7 @@ import XCTest
 import Transport
 @testable import HTTP
 
+import XCTest
 class HTTPParsingTests: XCTestCase {
     static let allTests = [
        ("testParser", testParser),
@@ -23,7 +24,11 @@ class HTTPParsingTests: XCTestCase {
         data += "Accept-Language: en-us\r\n"
         data += "Cookie: 1=1;2=2\r\n"
         data += "Content-Type: application/json; charset=utf-8\r\n"
+        #if swift(>=4.0)
+        data += "Content-Length: \(content.count)\r\n"
+        #else
         data += "Content-Length: \(content.characters.count)\r\n"
+        #endif
         data += "\r\n"
         data += content
 
@@ -83,7 +88,11 @@ class HTTPParsingTests: XCTestCase {
         data += "Host: localhost:8080\r\n"
         data += "Cookie: 1=1;2=2\r\n"
         data += "Content-Type: application/json; charset=utf-8\r\n"
+        #if swift(>=4.0)
+        data += "Content-Length: \(content.count)\r\n"
+        #else
         data += "Content-Length: \(content.characters.count)\r\n"
+        #endif
         data += "\r\n"
         data += content
 

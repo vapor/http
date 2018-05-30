@@ -55,8 +55,13 @@ extension ParseResults {
     static func remove(from parser: inout http_parser) {
         if let results = parser.data {
             let pointer = results.assumingMemoryBound(to: ParseResults.self)
+            #if swift(>=4.1)
+            pointer.deinitialize(count: 1)
+            pointer.deallocate()
+            #else
             pointer.deinitialize()
             pointer.deallocate(capacity: 1)
+            #endif
         }
     }
     

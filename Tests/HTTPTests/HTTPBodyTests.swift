@@ -15,7 +15,11 @@ class HTTPBodyTests: XCTestCase {
             let stream = TestStream()
             _ = try stream.write("GET / HTTP/1.1")
             _ = try stream.writeLineEnd()
+            #if swift(>=4.0)
+            _ = try stream.write("Content-Length: \(expected.count.description)")
+            #else
             _ = try stream.write("Content-Length: \(expected.characters.count.description)")
+            #endif
             _ = try stream.writeLineEnd()
             _ = try stream.writeLineEnd()
             _ = try stream.write(expected)
