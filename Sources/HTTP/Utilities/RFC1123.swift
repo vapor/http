@@ -37,6 +37,9 @@ extension Date {
 
 /// Performant method for generating RFC1123 date headers.
 internal struct RFC1123DateCache {
+    /// Currently cached time components.
+    private var cachedTimeComponents: (key: time_t, components: COperatingSystem.tm)?
+
     /// Currently cached timestamp.
     private var cachedTimestamp: (timestamp: String, expiration: Int)?
 
@@ -59,7 +62,8 @@ internal struct RFC1123DateCache {
         if let cached = cachedTimeComponents, cached.key == key {
             dateComponents = cached.components
         } else {
-            let tc = gmtime(&date).pointee
+            var tc = tm.init()
+            gmtime_r(&date, &tc)
             dateComponents = tc
             cachedTimeComponents = (key: key, components: tc)
         }
@@ -124,8 +128,6 @@ private let stringNumbers = [
     "80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
     "90", "91", "92", "93", "94", "95", "96", "97", "98", "99"
 ]
-
-private var cachedTimeComponents: (key: time_t, components: COperatingSystem.tm)?
 
 private let secondsInDay = 60 * 60 * 24
 private let accuracy: Int = 1 // seconds
