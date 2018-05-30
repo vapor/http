@@ -17,6 +17,10 @@ class HTTPClientTests: XCTestCase {
     func testGoogleAPIsFCM() throws {
         try testURL("http://fcm.googleapis.com/fcm/send", contains: "<TITLE>Moved Temporarily</TITLE>")
     }
+    
+    func testGoogleAPIsFCMWithTLS() throws {
+        try testURL("https://fcm.googleapis.com/fcm/send", contains: "<TITLE>Moved Temporarily</TITLE>")
+    }
 
     func testExampleCom() throws {
         try testURL("http://example.com", contains: "<title>Example Domain</title>")
@@ -68,13 +72,14 @@ private func testURL(
     let scheme: HTTPScheme = url.scheme == "https" ? .https : .http
     let worker = MultiThreadedEventLoopGroup(numThreads: 1)
     for _ in 0..<times {
-        let res = try HTTPClient.connect(scheme: scheme, hostname: url.host ?? "", on: worker).flatMap(to: HTTPResponse.self) { client in
-            var comps =  URLComponents()
-            comps.path = url.path.isEmpty ? "/" : url.path
-            comps.query = url.query
-            let req = HTTPRequest(method: .GET, url: comps.url ?? .root)
-            return client.send(req)
-        }.wait()
+        let client = try HTTPClient.connect(scheme: scheme, hostname: url.host ?? "", on: worker).wait()
+        var comps =  URLComponents()
+        comps.path = url.path.isEmpty ? "/" : url.path
+        comps.query = url.query
+        let req = HTTPRequest(method: .GET, url: comps.url ?? .root)
+        let res = try client.send(req).wait()
         try check(res)
+        try client.close().wait()
     }
+    try worker.syncShutdownGracefully()
 }
