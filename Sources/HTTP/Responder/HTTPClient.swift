@@ -18,6 +18,7 @@ public final class HTTPClient {
     ///     - scheme: Transport layer security to use, either tls or plainText.
     ///     - hostname: Remote server's hostname.
     ///     - port: Remote server's port, defaults to 80 for TCP and 443 for TLS.
+    ///     - connectTimeout: The timeout that will apply to the connection attempt.
     ///     - worker: `Worker` to perform async work on.
     ///     - onError: Optional closure, which fires when a networking error is caught.
     /// - returns: A `Future` containing the connected `HTTPClient`.
@@ -25,6 +26,7 @@ public final class HTTPClient {
         scheme: HTTPScheme = .http,
         hostname: String,
         port: Int? = nil,
+        connectTimeout: TimeAmount = TimeAmount.seconds(10),
         on worker: Worker,
         onError: @escaping (Error) -> () = { _ in }
     ) -> Future<HTTPClient> {
@@ -33,6 +35,7 @@ public final class HTTPClient {
             onError(error)
         }
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
+            .connectTimeout(connectTimeout)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 return scheme.configureChannel(channel).then {
