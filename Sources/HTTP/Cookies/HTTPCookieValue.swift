@@ -43,7 +43,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
             switch key {
             case "domain": domain = val
             case "path": path = val
-            case "expires": expires = Date(rfc1123: val)
+            case "expires": expires = RFC1123.shared.date(from: val)
             case "httponly": httpOnly = true
             case "secure": secure = true
             case "max-age": maxAge = Int(val) ?? 0
@@ -140,7 +140,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
         var serialized = "\(name)=\(string)"
 
         if let expires = self.expires {
-            serialized += "; Expires=\(expires.rfc1123)"
+            serialized += "; Expires=\(RFC1123.shared.string(from: expires))"
         }
 
         if let maxAge = self.maxAge {

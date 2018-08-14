@@ -126,9 +126,6 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 
     /// Optional server header.
     private let serverHeader: String?
-    
-    /// Caches RFC1123 dates for performant serialization
-    private var dateCache: RFC1123DateCache
 
     /// Current HTTP state.
     var state: HTTPServerState
@@ -139,7 +136,6 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         self.maxBodySize = maxBodySize
         self.errorHandler = onError
         self.serverHeader = serverHeader
-        self.dateCache = .init()
         self.state = .ready
     }
 
@@ -235,7 +231,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         // add a RFC1123 timestamp to the Date header to make this
         // a valid request
         var reshead = res.head
-        reshead.headers.add(name: "date", value: dateCache.currentTimestamp())
+        reshead.headers.add(name: "date", value: RFC1123DateCache.shared.currentTimestamp())
         if let server = serverHeader {
             reshead.headers.add(name: "server", value: server)
         }
