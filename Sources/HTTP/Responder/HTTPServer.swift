@@ -22,6 +22,7 @@ public final class HTTPServer {
     ///     - backlog: OS socket backlog size.
     ///     - reuseAddress: When `true`, can prevent errors re-binding to a socket after successive server restarts.
     ///     - tcpNoDelay: When `true`, OS will attempt to minimize TCP packet delay.
+    ///     - supportCompression: When `true`, HTTP server will support gzip and deflate compression.
     ///     - upgraders: An array of `HTTPProtocolUpgrader` to check for with each request.
     ///     - worker: `Worker` to perform async work on.
     ///     - onError: Any uncaught server or responder errors will go here.
@@ -33,6 +34,7 @@ public final class HTTPServer {
         backlog: Int = 256,
         reuseAddress: Bool = true,
         tcpNoDelay: Bool = true,
+        supportCompression: Bool = false,
         upgraders: [HTTPProtocolUpgrader] = [],
         on worker: Worker,
         onError: @escaping (Error) -> () = { _ in }
@@ -59,7 +61,11 @@ public final class HTTPServer {
                     withServerUpgrade: upgrade,
                     withErrorHandling: false
                 ).then {
-                    return channel.pipeline.add(handler: handler)
+                    if supportCompression {
+                        return channel.pipeline.addHandlers([HTTPResponseCompressor(), handler], first: false)
+                    } else {
+                        return channel.pipeline.add(handler: handler)
+                    }
                 }
             }
 
