@@ -66,7 +66,7 @@ private func testURL(
         throw HTTPError(identifier: "parseURL", reason: "Could not parse URL: \(string)")
     }
     let scheme: HTTPScheme = url.scheme == "https" ? .https : .http
-    let worker = MultiThreadedEventLoopGroup(numThreads: 1)
+    let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     for _ in 0..<times {
         let res = try HTTPClient.connect(scheme: scheme, hostname: url.host ?? "", on: worker).flatMap(to: HTTPResponse.self) { client in
             var comps =  URLComponents()

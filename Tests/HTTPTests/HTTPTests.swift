@@ -35,7 +35,7 @@ class HTTPTests: XCTestCase {
     }
 
     func testRemotePeer() throws {
-        let worker = MultiThreadedEventLoopGroup(numThreads: 1)
+        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         let client = try HTTPClient.connect(hostname: "httpbin.org", on: worker).wait()
         let httpReq = HTTPRequest(method: .GET, url: "/")
         let httpRes = try client.send(httpReq).wait()
