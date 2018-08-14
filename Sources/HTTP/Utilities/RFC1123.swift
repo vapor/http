@@ -1,50 +1,86 @@
 import Foundation
 import COperatingSystem
-
+import NIO
 
 /// An internal helper that formats cookie dates as RFC1123
-internal struct RFC1123 {
+private final class RFC1123 {
+    /// Thread-specific RFC1123
+    private static let thread: ThreadSpecificVariable<RFC1123> = .init()
+    
     /// A static RFC1123 helper instance
-    internal static let shared = RFC1123()
+    static var shared: RFC1123 {
+        if let existing = thread.currentValue {
+            return existing
+        } else {
+            let new = RFC1123()
+            thread.currentValue = new
+            return new
+        }
+    }
 
     /// The RFC1123 formatter
-    internal let formatter: DateFormatter
+    private let formatter: DateFormatter
 
     /// Creates a new RFC1123 helper
-    internal init() {
+    private init() {
         let formatter = DateFormatter()
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss z"
         self.formatter = formatter
+    }
+    
+    func string(from date: Date) -> String {
+        return formatter.string(from: date)
+    }
+    
+    func date(from string: String) -> Date? {
+        return formatter.date(from: string)
     }
 }
 
 extension Date {
     /// Formats a `Date` as RFC1123
     public var rfc1123: String {
-        return RFC1123.shared.formatter.string(from: self)
+        return RFC1123.shared.string(from: self)
     }
-
+    
     /// Creates a `Date` from an RFC1123 string
     public init?(rfc1123: String) {
-        guard let date = RFC1123.shared.formatter.date(from: rfc1123) else {
+        guard let date = RFC1123.shared.date(from: rfc1123) else {
             return nil
         }
-
+        
         self = date
     }
 }
 
 /// Performant method for generating RFC1123 date headers.
-internal struct RFC1123DateCache {
+internal final class RFC1123DateCache {
+    /// Thread-specific RFC1123
+    private static let thread: ThreadSpecificVariable<RFC1123DateCache> = .init()
+    
+    /// A static RFC1123 helper instance
+    public static var shared: RFC1123DateCache {
+        if let existing = thread.currentValue {
+            return existing
+        } else {
+            let new = RFC1123DateCache()
+            thread.currentValue = new
+            return new
+        }
+    }
+    
     /// Currently cached time components.
     private var cachedTimeComponents: (key: time_t, components: COperatingSystem.tm)?
 
     /// Currently cached timestamp.
     private var cachedTimestamp: (timestamp: String, expiration: Int)?
 
+    /// Creates a new `RFC1123DateCache`.
+    private init() { }
+    
     /// Gets the current RFC 1123 date string.
-    mutating func currentTimestamp() -> String {
+    func currentTimestamp() -> String {
         // get the current time
         var date = COperatingSystem.time(nil)
 

@@ -22,6 +22,8 @@ public final class HTTPServer {
     ///     - backlog: OS socket backlog size.
     ///     - reuseAddress: When `true`, can prevent errors re-binding to a socket after successive server restarts.
     ///     - tcpNoDelay: When `true`, OS will attempt to minimize TCP packet delay.
+    ///     - supportCompression: When `true`, HTTP server will support gzip and deflate compression.
+    ///     - serverName: If set, this name will be serialized as the `Server` header in outgoing responses.
     ///     - upgraders: An array of `HTTPProtocolUpgrader` to check for with each request.
     ///     - worker: `Worker` to perform async work on.
     ///     - onError: Any uncaught server or responder errors will go here.
@@ -33,6 +35,8 @@ public final class HTTPServer {
         backlog: Int = 256,
         reuseAddress: Bool = true,
         tcpNoDelay: Bool = true,
+        supportCompression: Bool = false,
+        serverName: String? = nil,
         upgraders: [HTTPProtocolUpgrader] = [],
         on worker: Worker,
         onError: @escaping (Error) -> () = { _ in }
@@ -45,7 +49,7 @@ public final class HTTPServer {
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
                 // create HTTPServerResponder-based handler
-                let handler = HTTPServerHandler(responder: responder, maxBodySize: maxBodySize, onError: onError)
+                let handler = HTTPServerHandler(responder: responder, maxBodySize: maxBodySize, serverHeader: serverName, onError: onError)
 
                 // re-use subcontainer for an event loop here
                 let upgrade: HTTPUpgradeConfiguration = (upgraders: upgraders, completionHandler: { ctx in
@@ -59,7 +63,11 @@ public final class HTTPServer {
                     withServerUpgrade: upgrade,
                     withErrorHandling: false
                 ).then {
-                    return channel.pipeline.add(handler: handler)
+                    if supportCompression {
+                        return channel.pipeline.addHandlers([HTTPResponseCompressor(), handler], first: false)
+                    } else {
+                        return channel.pipeline.add(handler: handler)
+                    }
                 }
             }
 
@@ -116,18 +124,18 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
     /// Handles any errors that may occur.
     private let errorHandler: (Error) -> ()
 
-    /// Caches RFC1123 dates for performant serialization
-    private var dateCache: RFC1123DateCache
+    /// Optional server header.
+    private let serverHeader: String?
 
     /// Current HTTP state.
     var state: HTTPServerState
 
     /// Create a new `HTTPServerHandler`.
-    init(responder: R, maxBodySize: Int = 1_000_000, onError: @escaping (Error) -> ()) {
+    init(responder: R, maxBodySize: Int = 1_000_000, serverHeader: String?, onError: @escaping (Error) -> ()) {
         self.responder = responder
         self.maxBodySize = maxBodySize
         self.errorHandler = onError
-        self.dateCache = .init()
+        self.serverHeader = serverHeader
         self.state = .ready
     }
 
@@ -223,7 +231,10 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         // add a RFC1123 timestamp to the Date header to make this
         // a valid request
         var reshead = res.head
-        reshead.headers.add(name: "date", value: dateCache.currentTimestamp())
+        reshead.headers.add(name: "date", value: RFC1123DateCache.shared.currentTimestamp())
+        if let server = serverHeader {
+            reshead.headers.add(name: "server", value: server)
+        }
 
         // begin serializing
         ctx.write(wrapOutboundOut(.head(reshead)), promise: nil)

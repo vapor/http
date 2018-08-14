@@ -19,6 +19,6 @@ let package = Package(
     targets: [
         .target(name: "HTTP", dependencies: ["Async", "Bits", "Core", "Debugging", "NIO", "NIOOpenSSL", "NIOHTTP1"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
-        .target(name: "Performance", dependencies: ["HTTP"]),
+        .target(name: "HTTPPerformance", dependencies: ["HTTP"]),
     ]
 )

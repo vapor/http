@@ -83,6 +83,12 @@ public struct HTTPCookies: ExpressibleByDictionaryLiteral {
     }
 
     // MARK: Access
+    
+    /// All cookies.
+    public var all: [String: HTTPCookieValue] {
+        get { return cookies }
+        set { cookies = newValue }
+    }
 
     /// Access `HTTPCookies` by name
     public subscript(name: String) -> HTTPCookieValue? {
