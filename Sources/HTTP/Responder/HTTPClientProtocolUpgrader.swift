@@ -19,16 +19,16 @@ extension HTTPClient {
         upgrader: Upgrader,
         on worker: Worker
     ) -> Future<Upgrader.UpgradeResult> where Upgrader: HTTPClientProtocolUpgrader {
-        let defaultHandlers: [ChannelHandler] = [
-            HTTPRequestEncoder(),
-            HTTPResponseDecoder()
-        ]
-        let handler = HTTPClientUpgradeHandler(upgrader: upgrader, extraHTTPHandlers: defaultHandlers, on: worker)
+        let handler = HTTPClientUpgradeHandler(upgrader: upgrader, extraHTTPHandlerNames: ["HTTPRequestEncoder", "HTTPResponseDecoder"], on: worker)
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                return scheme.configureChannel(channel).then {
-                    return channel.pipeline.addHandlers(defaultHandlers + [handler], first: false)
+                return scheme.configureChannel(channel).then { _ in
+                    return channel.pipeline.add(name: "HTTPRequestEncoder", handler: HTTPRequestEncoder(), first: false).then { _ in
+                        return channel.pipeline.add(name: "HTTPResponseDecoder", handler: HTTPResponseDecoder(), first: false).then { _ in
+                            return channel.pipeline.add(handler: handler, first: false)
+                        }
+                    }
                 }
         }
         return bootstrap.connect(
@@ -74,7 +74,7 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
     private let upgrader: Upgrader
 
     /// References to extraneous handlers that should be removed once the upgrade completes.
-    private let extraHTTPHandlers: [ChannelHandler]
+    private let extraHTTPHandlerNames: [String]
 
     /// If `true`, we are currently upgrading.
     private var upgrading: Bool
@@ -94,9 +94,9 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
     }
 
     /// Creates a new `HTTPClientUpgradeHandler`.
-    init(upgrader: Upgrader, extraHTTPHandlers: [ChannelHandler], on worker: Worker) {
+    init(upgrader: Upgrader, extraHTTPHandlerNames: [String], on worker: Worker) {
         self.upgrader = upgrader
-        self.extraHTTPHandlers = extraHTTPHandlers
+        self.extraHTTPHandlerNames = extraHTTPHandlerNames
         self.upgrading = false
         self.receivedMessages = []
         self.seenFirstResponse = false
@@ -150,10 +150,11 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
 
     /// Removes any extra HTTP-related handlers from the channel pipeline.
     private func removeExtraHandlers(ctx: ChannelHandlerContext) -> EventLoopFuture<Void> {
-        guard self.extraHTTPHandlers.count > 0 else {
+        guard self.extraHTTPHandlerNames.count > 0 else {
             return ctx.eventLoop.newSucceededFuture(result: ())
         }
-        return EventLoopFuture<Void>.andAll(self.extraHTTPHandlers.map { ctx.pipeline.remove(handler: $0).map { (_: Bool) in () }},
+        return EventLoopFuture<Void>.andAll(self.extraHTTPHandlerNames.map { ctx.pipeline.remove(name: $0)
+            .map { (_: Bool) in () }},
                                             eventLoop: ctx.eventLoop)
     }
 }
