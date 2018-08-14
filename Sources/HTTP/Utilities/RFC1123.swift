@@ -3,12 +3,12 @@ import COperatingSystem
 import NIO
 
 /// An internal helper that formats cookie dates as RFC1123
-internal final class RFC1123 {
+private final class RFC1123 {
     /// Thread-specific RFC1123
     private static let thread: ThreadSpecificVariable<RFC1123> = .init()
     
     /// A static RFC1123 helper instance
-    internal static var shared: RFC1123 {
+    static var shared: RFC1123 {
         if let existing = thread.currentValue {
             return existing
         } else {
@@ -29,12 +29,28 @@ internal final class RFC1123 {
         self.formatter = formatter
     }
     
-    internal func string(from date: Date) -> String {
+    func string(from date: Date) -> String {
         return formatter.string(from: date)
     }
     
-    internal func date(from string: String) -> Date? {
+    func date(from string: String) -> Date? {
         return formatter.date(from: string)
+    }
+}
+
+extension Date {
+    /// Formats a `Date` as RFC1123
+    public var rfc1123: String {
+        return RFC1123.shared.string(from: self)
+    }
+    
+    /// Creates a `Date` from an RFC1123 string
+    public init?(rfc1123: String) {
+        guard let date = RFC1123.shared.date(from: rfc1123) else {
+            return nil
+        }
+        
+        self = date
     }
 }
 
