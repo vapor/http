@@ -12,13 +12,22 @@ let package = Package(
         
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
         .package(url: "https://github.com/apple/swift-nio.git", from: "1.4.0"),
-
-        // Bindings to OpenSSL-compatible libraries for TLS support in SwiftNIO
-        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.0.1"),
     ],
     targets: [
-        .target(name: "HTTP", dependencies: ["Async", "Bits", "Core", "Debugging", "NIO", "NIOOpenSSL", "NIOHTTP1"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
         .target(name: "HTTPPerformance", dependencies: ["HTTP"]),
     ]
 )
+
+var dependencies: [Target.Dependency] = ["Async", "Bits", "Core", "Debugging", "NIO", "NIOHTTP1"]
+
+#if os(Linux)
+// Bindings to OpenSSL-compatible libraries for TLS support in SwiftNIO
+package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.0.1"))
+dependencies.append("NIOOpenSSL")
+#else
+// Extensions for SwiftNIO to support Apple platforms as first-class citizens.
+package.dependencies.append(.package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "0.1.0"))
+dependencies.append("NIOTransportServices")
+#endif
+package.targets.append(.target(name: "HTTP", dependencies: dependencies))

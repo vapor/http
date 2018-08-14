@@ -9,10 +9,15 @@ public struct HTTPScheme {
     public static var https: HTTPScheme {
         return .init(443) { channel in
             return Future.flatMap(on: channel.eventLoop) {
+                #if os(Linux)
                 let tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
                 let sslContext = try SSLContext(configuration: tlsConfiguration)
                 let tlsHandler = try OpenSSLClientHandler(context: sslContext)
                 return channel.pipeline.add(handler: tlsHandler)
+                #else
+                #warning("Add support for Network.framework TLS")
+                return .done(on: channel.eventLoop)
+                #endif
             }
         }
     }

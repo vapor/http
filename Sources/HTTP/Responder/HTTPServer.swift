@@ -41,7 +41,13 @@ public final class HTTPServer {
         on worker: Worker,
         onError: @escaping (Error) -> () = { _ in }
     ) -> Future<HTTPServer> where R: HTTPServerResponder {
-        let bootstrap = ServerBootstrap(group: worker)
+        #if os(Linux)
+        let bootstrapType = ServerBootstrap.self
+        #else
+        let bootstrapType = NIOTSListenerBootstrap.self
+        #endif
+        
+        let bootstrap = bootstrapType.init(group: worker as! NIOTSEventLoopGroup)
             // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: Int32(backlog))
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: reuseAddress ? SocketOptionValue(1) : SocketOptionValue(0))
