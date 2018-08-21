@@ -238,8 +238,9 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 
         // begin serializing
         ctx.write(wrapOutboundOut(.head(reshead)), promise: nil)
-        if reqhead.method == .HEAD {
+        if reqhead.method == .HEAD || res.status == .noContent {
             // skip sending the body for HEAD requests
+            // also don't send bodies for 204 (no content) requests
             ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
         } else {
             switch res.body.storage {
