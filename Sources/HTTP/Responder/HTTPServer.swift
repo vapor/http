@@ -224,6 +224,11 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             self.errorHandler(error)
             ctx.close(promise: nil)
         }
+        res.whenComplete {
+            if !head.isKeepAlive {
+                ctx.close(promise: nil)
+            }
+        }
     }
 
     /// Serializes the `HTTPResponse`.
