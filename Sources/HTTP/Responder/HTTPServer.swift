@@ -219,15 +219,14 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                 }
             }
             self.serialize(res, for: head, ctx: ctx)
+
+            if !head.isKeepAlive {
+                ctx.close(promise: nil)
+            }
         }
         res.whenFailure { error in
             self.errorHandler(error)
             ctx.close(promise: nil)
-        }
-        res.whenComplete {
-            if !head.isKeepAlive {
-                ctx.close(promise: nil)
-            }
         }
     }
 
