@@ -236,8 +236,24 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         // a valid request
         var reshead = res.head
         reshead.headers.add(name: "date", value: RFC1123DateCache.shared.currentTimestamp())
+
         if let server = serverHeader {
             reshead.headers.add(name: "server", value: server)
+        }
+
+        // add 'Connection' header if needed
+        let connectionHeaders = reshead.headers[canonicalForm: "connection"].map { $0.lowercased() }
+
+        if !connectionHeaders.contains("keep-alive") && !connectionHeaders.contains("close") {
+            // the user hasn't pre-set either 'keep-alive' or 'close', so we might need to add headers
+            switch reqhead.isKeepAlive {
+            case true:
+                // the request has 'Connection: keep-alive', we should mirror that
+                reshead.headers.add(name: "Connection", value: "keep-alive")
+            case false:
+                // the request has 'Connection: close', we should mirror that
+                reshead.headers.add(name: "Connection", value: "close")
+            }
         }
 
         // begin serializing
