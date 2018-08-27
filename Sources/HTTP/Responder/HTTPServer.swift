@@ -246,14 +246,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 
         if !connectionHeaders.contains("keep-alive") && !connectionHeaders.contains("close") {
             // the user hasn't pre-set either 'keep-alive' or 'close', so we might need to add headers
-            switch reqhead.isKeepAlive {
-            case true:
-                // the request has 'Connection: keep-alive', we should mirror that
-                reshead.headers.add(name: "Connection", value: "keep-alive")
-            case false:
-                // the request has 'Connection: close', we should mirror that
-                reshead.headers.add(name: "Connection", value: "close")
-            }
+            reshead.headers.add(name: "Connection", value: reqhead.isKeepAlive ? "keep-alive" : "close")
         }
 
         // begin serializing
