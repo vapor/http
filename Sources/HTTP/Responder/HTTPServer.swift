@@ -219,6 +219,10 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                 }
             }
             self.serialize(res, for: head, ctx: ctx)
+
+            if !head.isKeepAlive {
+                ctx.close(promise: nil)
+            }
         }
         res.whenFailure { error in
             self.errorHandler(error)
@@ -232,8 +236,17 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         // a valid request
         var reshead = res.head
         reshead.headers.add(name: "date", value: RFC1123DateCache.shared.currentTimestamp())
+
         if let server = serverHeader {
             reshead.headers.add(name: "server", value: server)
+        }
+
+        // add 'Connection' header if needed
+        let connectionHeaders = reshead.headers[canonicalForm: "connection"].map { $0.lowercased() }
+
+        if !connectionHeaders.contains("keep-alive") && !connectionHeaders.contains("close") {
+            // the user hasn't pre-set either 'keep-alive' or 'close', so we might need to add headers
+            reshead.headers.add(name: "Connection", value: reqhead.isKeepAlive ? "keep-alive" : "close")
         }
 
         // begin serializing
