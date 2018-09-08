@@ -301,7 +301,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             if !reqhead.isKeepAlive {
                 switch res.body.storage {
                 case .chunkedStream:
-                    // chunked stream will the connection async
+                    // chunked stream will close the connection async
                     break
                 default:
                     // close connection now
