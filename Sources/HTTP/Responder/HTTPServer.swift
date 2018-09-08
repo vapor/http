@@ -219,10 +219,6 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                 }
             }
             self.serialize(res, for: head, ctx: ctx)
-
-            if !head.isKeepAlive {
-                ctx.close(promise: nil)
-            }
         }
         res.whenFailure { error in
             self.errorHandler(error)
@@ -277,13 +273,39 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                 writeAndflush(buffer: buffer, ctx: ctx)
             case .chunkedStream(let stream):
                 stream.read { result, stream in
+                    let future: Future<Void>
                     switch result {
-                    case .chunk(let buffer): return ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
-                    case .end: return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                    case .chunk(let buffer):
+                        future = ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
+                    case .end:
+                        future = ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
                     case .error(let error):
                         self.errorHandler(error)
-                        return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                        future = ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
                     }
+                
+                    if !reqhead.isKeepAlive {
+                        switch result {
+                        case .end, .error:
+                            return future.map {
+                                ctx.close(promise: nil)
+                            }
+                        default: return future
+                        }
+                    } else {
+                        return future
+                    }
+                }
+            }
+            
+            if !reqhead.isKeepAlive {
+                switch res.body.storage {
+                case .chunkedStream:
+                    // chunked stream will the connection async
+                    break
+                default:
+                    // close connection now
+                    ctx.close(promise: nil)
                 }
             }
         }
