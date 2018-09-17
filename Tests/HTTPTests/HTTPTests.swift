@@ -41,11 +41,41 @@ class HTTPTests: XCTestCase {
         let httpRes = try client.send(httpReq).wait()
         XCTAssertEqual(httpRes.remotePeer.port, 80)
     }
+    
+    func testLargeResponseClose() throws {
+        struct LargeResponder: HTTPServerResponder {
+            func respond(to request: HTTPRequest, on worker: Worker) -> EventLoopFuture<HTTPResponse> {
+                let res = HTTPResponse(
+                    status: .ok,
+                    body: String(repeating: "0", count: 2_000_000)
+                )
+                return worker.future(res)
+            }
+        }
+        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let server = try HTTPServer.start(
+            hostname: "localhost",
+            port: 8080,
+            responder: LargeResponder(),
+            on: worker
+        ) { error in
+            XCTFail("\(error)")
+        }.wait()
+        
+        let client = try HTTPClient.connect(hostname: "localhost", port: 8080, on: worker).wait()
+        var req = HTTPRequest(method: .GET, url: "/")
+        req.headers.replaceOrAdd(name: .connection, value: "close")
+        let res = try client.send(req).wait()
+        XCTAssertEqual(res.body.count, 2_000_000)
+        try server.close().wait()
+        try server.onClose.wait()
+    }
 
     static let allTests = [
         ("testCookieParse", testCookieParse),
         ("testAcceptHeader", testAcceptHeader),
         ("testRemotePeer", testRemotePeer),
         ("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
+        ("testLargeResponseClose", testLargeResponseClose),
     ]
 }
