@@ -7,11 +7,19 @@ class HTTPTests: XCTestCase {
         guard let (name, value) = HTTPCookieValue.parse("id=a3fWa; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
             throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
         }
-
         XCTAssertEqual(name, "id")
+        XCTAssertEqual(value.string, "a3fWa")
         XCTAssertEqual(value.expires, Date(rfc1123: "Wed, 21 Oct 2015 07:28:00 GMT"))
         XCTAssertEqual(value.isSecure, true)
         XCTAssertEqual(value.isHTTPOnly, true)
+        
+        guard let cookie: (name: String, value: HTTPCookieValue) = HTTPCookieValue.parse("vapor=; Secure; HttpOnly") else {
+            throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
+        }
+        XCTAssertEqual(cookie.name, "vapor")
+        XCTAssertEqual(cookie.value.string, "")
+        XCTAssertEqual(cookie.value.isSecure, true)
+        XCTAssertEqual(cookie.value.isHTTPOnly, true)
     }
     
     func testCookieIsSerializedCorrectly() throws {
