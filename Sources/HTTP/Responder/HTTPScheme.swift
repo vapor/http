@@ -2,16 +2,17 @@
 public struct HTTPScheme {
     /// Plaintext data over TCP. Uses port `80` by default.
     public static var http: HTTPScheme {
-        return .init(80) { .done(on: $0.eventLoop) }
+        return .init(80) { channel, _ in .done(on: channel.eventLoop) }
     }
 
     /// Enables TLS (SSL). Uses port `443` by default.
     public static var https: HTTPScheme {
-        return .init(443) { channel in
+        return .init(443) { channel, hostname in
             return Future.flatMap(on: channel.eventLoop) {
                 let tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
                 let sslContext = try SSLContext(configuration: tlsConfiguration)
-                let tlsHandler = try OpenSSLClientHandler(context: sslContext)
+                let sniName = hostname.isIPAddress() ? nil : hostname
+                let tlsHandler = try OpenSSLClientHandler(context: sslContext, serverHostname: sniName)
                 return channel.pipeline.add(handler: tlsHandler)
             }
         }
@@ -27,11 +28,10 @@ public struct HTTPScheme {
     public let defaultPort: Int
 
     /// Internal callback for configuring a client channel.
-    /// This should be expanded with server support at some point.
-    internal let configureChannel: (Channel) -> Future<Void>
+    internal let configureChannel: (Channel, String) -> Future<Void>
 
     /// Internal initializer, end users will take advantage of pre-defined static variables.
-    internal init(_ defaultPort: Int, configureChannel: @escaping (Channel) -> Future<Void>) {
+    internal init(_ defaultPort: Int, configureChannel: @escaping (Channel, String) -> Future<Void>) {
         self.defaultPort = defaultPort
         self.configureChannel = configureChannel
     }
