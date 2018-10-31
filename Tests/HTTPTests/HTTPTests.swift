@@ -78,6 +78,33 @@ class HTTPTests: XCTestCase {
         try server.close().wait()
         try server.onClose.wait()
     }
+    
+    func testUpgradeFail() throws {
+        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        struct FakeUpgrader: HTTPClientProtocolUpgrader {
+            typealias UpgradeResult = String
+            
+            func buildUpgradeRequest() -> HTTPRequestHead {
+                return .init(version: .init(major: 1, minor: 1), method: .GET, uri: "/")
+            }
+            
+            func isValidUpgradeResponse(_ upgradeResponse: HTTPResponseHead) -> Bool {
+                return true
+            }
+            
+            func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<String> {
+                return ctx.eventLoop.future("hello")
+            }
+            
+            
+        }
+        do {
+            _ = try HTTPClient.upgrade(hostname: "foo", upgrader: FakeUpgrader(), on: worker).wait()
+            XCTFail("expected error")
+        } catch {
+            XCTAssert(error is ChannelError)
+        }
+    }
 
     static let allTests = [
         ("testCookieParse", testCookieParse),
@@ -85,5 +112,6 @@ class HTTPTests: XCTestCase {
         ("testRemotePeer", testRemotePeer),
         ("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
         ("testLargeResponseClose", testLargeResponseClose),
+        ("testUpgradeFail", testUpgradeFail),
     ]
 }
