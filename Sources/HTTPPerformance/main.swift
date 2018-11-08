@@ -12,8 +12,12 @@ struct EchoResponder: HTTPServerResponder {
 }
 
 print("Server starting on http://\(hostname):\(port)")
+#if os(Linux)
 let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 defer { try! group.syncShutdownGracefully() }
+#else
+let group = NIOTSEventLoopGroup(loopCount: System.coreCount, defaultQoS: .default)
+#endif
 
 let server = try HTTPServer.start(hostname: hostname, port: port, responder: EchoResponder(), on: group).wait()
 try server.onClose.wait()
