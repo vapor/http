@@ -26,8 +26,8 @@ class HTTPClientTests: XCTestCase {
         try testURL("http://zombo.com", contains: "<title>ZOMBO</title>")
     }
 
-    func testAmazonWithTLS() throws {
-        try testURL("https://www.amazon.com", contains: "Amazon.com, Inc.")
+    func testVaporWithTLS() throws {
+        try testURL("https://vapor.codes", contains: "Server-side Swift")
     }
 
     func testQuery() throws {
@@ -41,7 +41,7 @@ class HTTPClientTests: XCTestCase {
         ("testGoogleAPIsFCM", testGoogleAPIsFCM),
         ("testExampleCom", testExampleCom),
         ("testZombo", testZombo),
-        ("testAmazonWithTLS", testAmazonWithTLS),
+        ("testVaporWithTLS", testVaporWithTLS),
         ("testQuery", testQuery),
     ]
 }
