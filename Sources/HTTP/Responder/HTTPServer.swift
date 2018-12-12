@@ -23,6 +23,7 @@ public final class HTTPServer {
     ///     - reuseAddress: When `true`, can prevent errors re-binding to a socket after successive server restarts.
     ///     - tcpNoDelay: When `true`, OS will attempt to minimize TCP packet delay.
     ///     - supportCompression: When `true`, HTTP server will support gzip and deflate compression.
+    ///     - supportPipelining: When `true`, HTTP server will support pipelined HTTP requests.
     ///     - serverName: If set, this name will be serialized as the `Server` header in outgoing responses.
     ///     - upgraders: An array of `HTTPProtocolUpgrader` to check for with each request.
     ///     - worker: `Worker` to perform async work on.
@@ -36,6 +37,7 @@ public final class HTTPServer {
         reuseAddress: Bool = true,
         tcpNoDelay: Bool = true,
         supportCompression: Bool = false,
+        supportPipelining: Bool = false,
         serverName: String? = nil,
         upgraders: [HTTPProtocolUpgrader] = [],
         on worker: Worker,
@@ -59,7 +61,7 @@ public final class HTTPServer {
 
                 // configure the pipeline
                 return channel.pipeline.configureHTTPServerPipeline(
-                    withPipeliningAssistance: false,
+                    withPipeliningAssistance: supportPipelining,
                     withServerUpgrade: upgrade,
                     withErrorHandling: false
                 ).then {
@@ -126,6 +128,9 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 
     /// Optional server header.
     private let serverHeader: String?
+    
+    /// If true, we are waiting for a response to be sent.
+    var awaitingReponse: Bool
 
     /// Current HTTP state.
     var state: HTTPServerState
@@ -137,10 +142,12 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         self.errorHandler = onError
         self.serverHeader = serverHeader
         self.state = .ready
+        self.awaitingReponse = false
     }
 
     /// See `ChannelInboundHandler`.
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+        debugOnly { assert(!self.awaitingReponse, "Pipelined HTTP request detected. Enable pipelining to prevent this error.")}
         debugOnly { assert(ctx.channel.eventLoop.inEventLoop) }
         switch unwrapInboundIn(data) {
         case .head(let head):
@@ -197,6 +204,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             case .streamingBody(let stream): _ = stream.write(.end)
             }
             state = .ready
+            self.awaitingReponse = true
         }
     }
 
@@ -246,6 +254,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         }
 
         // begin serializing
+        self.awaitingReponse = false
         ctx.write(wrapOutboundOut(.head(reshead)), promise: nil)
         if reqhead.method == .HEAD || res.status == .noContent {
             // skip sending the body for HEAD requests

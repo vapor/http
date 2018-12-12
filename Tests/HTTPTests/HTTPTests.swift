@@ -95,8 +95,6 @@ class HTTPTests: XCTestCase {
             func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<String> {
                 return ctx.eventLoop.future("hello")
             }
-            
-            
         }
         do {
             _ = try HTTPClient.upgrade(hostname: "foo", upgrader: FakeUpgrader(), on: worker).wait()
