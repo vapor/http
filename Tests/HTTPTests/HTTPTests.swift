@@ -103,6 +103,115 @@ class HTTPTests: XCTestCase {
             XCTAssert(error is ChannelError)
         }
     }
+    
+    func testPipelining() throws {
+        struct SlowResponder: HTTPServerResponder {
+            func respond(to request: HTTPRequest, on worker: Worker) -> EventLoopFuture<HTTPResponse> {
+                // the first request takes the longest
+                // in other words: the server will respond in reverse order
+                let timeout : Int = 5 - Int(request.url.lastPathComponent)!
+                let scheduled = worker.eventLoop.scheduleTask(in: .milliseconds(timeout * 50)) { () -> HTTPResponse in
+                    let res = HTTPResponse(
+                        status: .ok,
+                        body: request.url.lastPathComponent
+                    )
+                    return res
+                }
+                
+                return scheduled.futureResult
+            }
+        }
+        let serverWorker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let clientWorker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let server = try HTTPServer.start(
+            hostname: "localhost",
+            port: 8080,
+            responder: SlowResponder(),
+            supportPipelining: true,
+            on: serverWorker
+        ) { error in
+            XCTFail("\(error)")
+            }.wait()
+        
+        let client = try HTTPClient.connect(hostname: "localhost", port: 8080, on: clientWorker).wait()
+        
+        var responses = [String]()
+        var futures : [Future<()>] = []
+        
+        for i in 0..<5 {
+            var req = HTTPRequest(method: .GET, url: "/hello/\(i)")
+            req.headers.replaceOrAdd(name: .connection, value: "keep-alive")
+            let resFuture = client.send(req).map({ res in
+                let body = String(data: res.body.data!, encoding: .utf8)!
+                responses.append(body)
+            })
+            futures.append(resFuture)
+        }
+        
+        assert(futures.count == 5)
+        
+        try Future<()>.andAll(futures, eventLoop: serverWorker.eventLoop).wait()
+        
+        XCTAssertEqual([ "0", "1", "2", "3", "4" ], responses)
+        
+        try server.close().wait()
+        try server.onClose.wait()
+        
+        try serverWorker.syncShutdownGracefully()
+        try clientWorker.syncShutdownGracefully()
+    }
+    
+    func testPipeliningWithoutDelay() throws {
+        struct FastResponder: HTTPServerResponder {
+            func respond(to request: HTTPRequest, on worker: Worker) -> EventLoopFuture<HTTPResponse> {
+                // the server responds immediately
+                return worker.eventLoop.newSucceededFuture(result: HTTPResponse(status: .ok,
+                                                                                body: request.url.lastPathComponent))
+            }
+        }
+        
+        let serverWorker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let clientWorker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        
+        let server = try HTTPServer.start(
+            hostname: "localhost",
+            port: 8080,
+            responder: FastResponder(),
+            supportPipelining: true,
+            on: serverWorker
+        ) { error in
+            XCTFail("\(error)")
+            }.wait()
+        
+        let client = try HTTPClient.connect(hostname: "localhost", port: 8080, on: clientWorker).wait()
+        
+        var responses = [String]()
+        var futures : [Future<()>] = []
+        
+        for i in 0..<5 {
+            var req = HTTPRequest(method: .GET, url: "/hello/\(i)")
+            req.headers.replaceOrAdd(name: .connection, value: "keep-alive")
+            let resFuture = client.send(req).map({ res in
+                let body = String(data: res.body.data!, encoding: .utf8)!
+                responses.append(body)
+            })
+            futures.append(resFuture)
+        }
+        
+        assert(futures.count == 5)
+        
+        try Future<()>.andAll(futures, eventLoop: serverWorker.eventLoop).wait()
+        
+        XCTAssertEqual([ "0", "1", "2", "3", "4" ], responses)
+        
+        try server.close().wait()
+        try server.onClose.wait()
+        
+        try serverWorker.syncShutdownGracefully()
+        try clientWorker.syncShutdownGracefully()
+    }
+    
+
 
     static let allTests = [
         ("testCookieParse", testCookieParse),
@@ -111,5 +220,7 @@ class HTTPTests: XCTestCase {
         ("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
         ("testLargeResponseClose", testLargeResponseClose),
         ("testUpgradeFail", testUpgradeFail),
+        ("testPipelining", testPipelining),
+        ("testPipeliningWithoutDelay", testPipeliningWithoutDelay),
     ]
 }
