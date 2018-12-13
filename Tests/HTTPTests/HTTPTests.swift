@@ -221,5 +221,6 @@ class HTTPTests: XCTestCase {
         ("testLargeResponseClose", testLargeResponseClose),
         ("testUpgradeFail", testUpgradeFail),
         ("testPipelining", testPipelining),
+        ("testPipeliningWithoutDelay", testPipeliningWithoutDelay),
     ]
 }
