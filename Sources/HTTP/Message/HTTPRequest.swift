@@ -1,3 +1,7 @@
+import Foundation
+import NIO
+import NIOHTTP1
+
 /// An HTTP request from a client to a server.
 ///
 ///     let httpReq = HTTPRequest(method: .GET, url: "/hello")

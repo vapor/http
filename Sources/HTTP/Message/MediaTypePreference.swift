@@ -1,7 +1,9 @@
+import Foundation
+
 /// Represents a `MediaType` and its associated preference, `q`.
 public struct MediaTypePreference {
     /// The `MediaType` in question.
-    public var mediaType: MediaType
+    public var mediaType: HTTPMediaType
 
     /// Its associated preference.
     public var q: Double?
@@ -12,23 +14,21 @@ extension Array where Element == MediaTypePreference {
     ///
     /// - parameters:
     ///     - data: The accept header value to parse.
-    public static func parse(_ data: LosslessDataConvertible) -> [MediaTypePreference] {
-        return data.convertToData().split(separator: .comma).compactMap { token in
-            let parts = token.split(separator: .semicolon, maxSplits: 1)
-            guard let value = String(data: parts[0], encoding: .utf8)?.trimmingCharacters(in: .whitespaces) else {
-                return nil
-            }
-            guard let mediaType = MediaType.parse(value) else {
+    public static func parse(_ data: String) -> [MediaTypePreference] {
+        return data.split(separator: ",").compactMap { token in
+            let parts = token.split(separator: ";", maxSplits: 1)
+            let value = String(parts[0]).trimmingCharacters(in: .whitespaces)
+            guard let mediaType = HTTPMediaType.parse(value) else {
                 return nil
             }
             switch parts.count {
             case 1: return .init(mediaType: mediaType, q: nil)
             case 2:
-                let qparts = parts[1].split(separator: .equals, maxSplits: 1)
+                let qparts = parts[1].split(separator: "=", maxSplits: 1)
                 guard qparts.count == 2 else {
                     return nil
                 }
-                guard let preference = String(data: qparts[1], encoding: .ascii).flatMap(Double.init) else {
+                guard let preference = Double(qparts[1]) else {
                     return nil
                 }
                 return .init(mediaType: mediaType, q: preference)
@@ -41,7 +41,7 @@ extension Array where Element == MediaTypePreference {
     ///
     ///     httpReq.accept.mediaTypes.contains(.html)
     ///
-    public var mediaTypes: [MediaType] {
+    public var mediaTypes: [HTTPMediaType] {
         return map { $0.mediaType }
     }
 
@@ -49,7 +49,7 @@ extension Array where Element == MediaTypePreference {
     ///
     ///     let pref = httpReq.accept.comparePreference(for: .json, to: .html)
     ///
-    public func comparePreference(for a: MediaType, to b: MediaType) -> ComparisonResult {
+    public func comparePreference(for a: HTTPMediaType, to b: HTTPMediaType) -> ComparisonResult {
         var aq: Double?
         var bq: Double?
         for pref in self {

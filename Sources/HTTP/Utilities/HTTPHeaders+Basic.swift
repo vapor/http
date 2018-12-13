@@ -1,4 +1,5 @@
-import Bits
+import Foundation
+import NIOHTTP1
 
 /// A basic username and password.
 public struct BasicAuthorization {
@@ -32,7 +33,7 @@ extension HTTPHeaders {
                 return nil
             }
             
-            let parts = decodedToken.split(separator: .colon)
+            let parts = decodedToken.split(separator: 0x3A) // colon
             
             guard parts.count == 2 else {
                 return nil

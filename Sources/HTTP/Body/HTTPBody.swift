@@ -1,3 +1,6 @@
+import Foundation
+import NIO
+
 /// Represents an `HTTPMessage`'s body.
 ///
 ///     let body = HTTPBody(string: "Hello, world!")
@@ -102,9 +105,9 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
     ///     - max: The maximum streaming body size to allow.
     ///            This only applies to streaming bodies, like chunked streams.
     ///            Defaults to 1MB.
-    ///     - worker: The event loop to perform this async work on.
-    public func consumeData(max: Int = 1_000_000, on worker: Worker) -> Future<Data> {
-        return storage.consumeData(max: max, on: worker)
+    ///     - eventLoop: The event loop to perform this async work on.
+    public func consumeData(max: Int = 1_000_000, on eventLoop: EventLoop) -> EventLoopFuture<Data> {
+        return storage.consumeData(max: max, on: eventLoop)
     }
 
     /// See `LosslessHTTPBodyRepresentable`.

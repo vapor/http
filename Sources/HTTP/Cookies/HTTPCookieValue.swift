@@ -1,3 +1,5 @@
+import Foundation
+
 /// A single cookie (key/value pair).
 public struct HTTPCookieValue: ExpressibleByStringLiteral {
     // MARK: Static
@@ -12,9 +14,9 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
     /// - parameters:
     ///     - data: `LosslessDataConvertible` to parse the cookie from.
     /// - returns: `HTTPCookie` or `nil` if the data is invalid.
-    public static func parse(_ data: LosslessDataConvertible) -> (String, HTTPCookieValue)? {
+    public static func parse(_ data: String) -> (String, HTTPCookieValue)? {
         /// Parse `HeaderValue` or return nil.
-        guard let header = HeaderValue.parse(data) else {
+        guard let header = HTTPHeaderValue.parse(data) else {
             return nil
         }
 

@@ -1,3 +1,6 @@
+import Foundation
+import NIO
+
 /// A `"Transfer-Encoding: chunked"` stream of data used by `HTTPBody`.
 ///
 ///     let chunkedStream = HTTPChunkedStream(on: req)
@@ -11,16 +14,16 @@
 ///
 /// `HTTPChunkedStream` allows you to send data asynchronously without a predefined length.
 /// The `HTTPMessage` will be considered complete when the end chunk is sent.
-public final class HTTPChunkedStream: BasicWorker, LosslessHTTPBodyRepresentable {
+public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
     /// Handles an incoming `HTTPChunkedStreamResult`.
-    public typealias HTTPChunkedHandler = (HTTPChunkedStreamResult, HTTPChunkedStream) -> Future<Void>
+    public typealias HTTPChunkedHandler = (HTTPChunkedStreamResult, HTTPChunkedStream) -> EventLoopFuture<Void>
 
     /// This stream's `HTTPChunkedHandler`, if one is set.
     private var handler: HTTPChunkedHandler?
 
     /// If a `handler` has not been set when `write(_:)` is called, this property
     /// is used to store the waiting data.
-    private var waiting: (HTTPChunkedStreamResult, Promise<Void>)?
+    private var waiting: (HTTPChunkedStreamResult, EventLoopPromise<Void>)?
 
     /// See `BasicWorker`.
     public var eventLoop: EventLoop
@@ -32,8 +35,8 @@ public final class HTTPChunkedStream: BasicWorker, LosslessHTTPBodyRepresentable
     ///
     /// - parameters:
     ///     - worker: `Worker` to complete futures on.
-    public init(on worker: Worker) {
-        self.eventLoop = worker.eventLoop
+    public init(on eventLoop: EventLoop) {
+        self.eventLoop = eventLoop
         self.isClosed = false
     }
 
@@ -63,7 +66,7 @@ public final class HTTPChunkedStream: BasicWorker, LosslessHTTPBodyRepresentable
     ///     - chunk: A `HTTPChunkedStreamResult` to write to the stream.
     /// - returns: A `Future` that will be completed when the write was successful.
     ///            You must wait for this future to complete before calling `write(_:)` again.
-    public func write(_ chunk: HTTPChunkedStreamResult) -> Future<Void> {
+    public func write(_ chunk: HTTPChunkedStreamResult) -> EventLoopFuture<Void> {
         if case .end = chunk {
             self.isClosed = true
         }
@@ -71,7 +74,7 @@ public final class HTTPChunkedStream: BasicWorker, LosslessHTTPBodyRepresentable
         if let handler = handler {
             return handler(chunk, self)
         } else {
-            let promise = eventLoop.newPromise(Void.self)
+            let promise = eventLoop.makePromise(of: Void.self)
             assert(waiting == nil)
             waiting = (chunk, promise)
             return promise.futureResult
@@ -88,8 +91,8 @@ public final class HTTPChunkedStream: BasicWorker, LosslessHTTPBodyRepresentable
     ///     - max: The maximum number of bytes to allow before throwing an error.
     ///            Use this to prevent using excessive memory on your server.
     /// - returns: `Future` containing the collected `Data`.
-    public func drain(max: Int) -> Future<Data> {
-        let promise = eventLoop.newPromise(Data.self)
+    public func drain(max: Int) -> EventLoopFuture<Data> {
+        let promise = eventLoop.makePromise(of: Data.self)
         var data = Data()
         handler = { chunk, stream in
             switch chunk {
@@ -103,7 +106,7 @@ public final class HTTPChunkedStream: BasicWorker, LosslessHTTPBodyRepresentable
             case .error(let error): promise.fail(error: error)
             case .end: promise.succeed(result: data)
             }
-            return .done(on: stream)
+            return self.eventLoop.makeSucceededFuture(result: ())
         }
         return promise.futureResult
     }

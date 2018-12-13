@@ -1,3 +1,6 @@
+import NIO
+import NIOHTTP1
+
 /// An HTTP response from a server back to the client.
 ///
 ///     let httpRes = HTTPResponse(status: .ok)

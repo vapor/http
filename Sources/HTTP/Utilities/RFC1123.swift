@@ -1,5 +1,9 @@
+#if os(Linux)
+import Glibc
+#else
+import Darwin.C
+#endif
 import Foundation
-import COperatingSystem
 import NIO
 
 /// An internal helper that formats cookie dates as RFC1123
@@ -71,7 +75,7 @@ internal final class RFC1123DateCache {
     }
     
     /// Currently cached time components.
-    private var cachedTimeComponents: (key: time_t, components: COperatingSystem.tm)?
+    private var cachedTimeComponents: (key: time_t, components: tm)?
 
     /// Currently cached timestamp.
     private var cachedTimestamp: (timestamp: String, expiration: Int)?
@@ -82,7 +86,7 @@ internal final class RFC1123DateCache {
     /// Gets the current RFC 1123 date string.
     func currentTimestamp() -> String {
         // get the current time
-        var date = COperatingSystem.time(nil)
+        var date = time(nil)
 
         // check if the cached timestamp is still valid
         if let (timestamp, expiration) = cachedTimestamp, date < expiration {
@@ -111,10 +115,10 @@ internal final class RFC1123DateCache {
         let weekDay: Int = numericCast(dateComponents.tm_wday) // days since Sunday [0-6]
 
         // get basic time info
-        let time: Int = date % secondsInDay
-        let hours: Int = numericCast(time / 3600)
-        let minutes: Int = numericCast((time / 60) % 60)
-        let seconds: Int = numericCast(time % 60)
+        let t: Int = date % secondsInDay
+        let hours: Int = numericCast(t / 3600)
+        let minutes: Int = numericCast((t / 60) % 60)
+        let seconds: Int = numericCast(t % 60)
 
         // generate the RFC 1123 formatted string
         var rfc1123 = ""

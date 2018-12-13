@@ -1,3 +1,5 @@
+import NIOHTTP1
+
 extension HTTPHeaders {
     /// Add a header name/value pair to the block.
     ///

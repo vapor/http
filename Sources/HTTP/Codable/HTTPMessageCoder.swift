@@ -1,4 +1,5 @@
 import Foundation
+import NIO
 
 /// Capable of decoding a `Decodable` type from an `HTTPBody`.
 ///
@@ -33,17 +34,17 @@ public protocol HTTPMessageDecoder {
     ///     - decodable: `Decodable` type to decode from the `HTTPBody`.
     ///     - from: `HTTPMessage` to decode the `Decodable` type from. The `HTTPBody` may be static or streaming.
     ///     - maxSize: Maximum size in bytes for streaming bodies.
-    ///     - on: `Worker` to perform asynchronous tasks on.
+    ///     - on: `EventLoop` to perform asynchronous tasks on.
     /// - returns: `Future` containing the decoded type.
     /// - throws: Any errors that may have occurred while decoding the `HTTPMessage`.
-    func decode<D, M>(_ decodable: D.Type, from message: M, maxSize: Int, on worker: Worker) throws -> Future<D>
+    func decode<D, M>(_ decodable: D.Type, from message: M, maxSize: Int, on eventLoop: EventLoop) throws -> EventLoopFuture<D>
         where D: Decodable, M: HTTPMessage
 }
 
 extension HTTPMessageDecoder {
     /// See `HTTPMessageDecoder`.
     /// - note: This method will use a default max size of 1MB.
-    func decode<D, M>(_ decodable: D.Type, from message: M, on worker: Worker) throws -> Future<D>
+    func decode<D, M>(_ decodable: D.Type, from message: M, on worker: EventLoop) throws -> EventLoopFuture<D>
         where D: Decodable, M: HTTPMessage
     {
         return try decode(D.self, from: message, maxSize: 1_000_000, on: worker)
@@ -85,7 +86,7 @@ public protocol HTTPMessageEncoder {
     ///     - from: `Encodable` object that will be encoded to the `HTTPMessage`.
     /// - returns: Encoded HTTP body.
     /// - throws: Any errors that may occur while encoding the object.
-    func encode<E, M>(_ encodable: E, to message: inout M, on worker: Worker) throws
+    func encode<E, M>(_ encodable: E, to message: inout M, on worker: EventLoop) throws
         where E: Encodable, M: HTTPMessage
 }
 
@@ -93,13 +94,13 @@ public protocol HTTPMessageEncoder {
 
 extension JSONDecoder: HTTPMessageDecoder {
     /// See `HTTPMessageDecoder`
-    public func decode<D, M>(_ decodable: D.Type, from message: M, maxSize: Int, on worker: Worker) throws -> EventLoopFuture<D>
+    public func decode<D, M>(_ decodable: D.Type, from message: M, maxSize: Int, on worker: EventLoop) throws -> EventLoopFuture<D>
         where D: Decodable, M: HTTPMessage
     {
         guard message.contentType == .json else {
             throw HTTPError(identifier: "contentType", reason: "HTTP message did not have JSON-compatible content-type.")
         }
-        return message.body.consumeData(max: maxSize, on: worker).map(to: D.self) { data in
+        return message.body.consumeData(max: maxSize, on: worker).thenThrowing { data in
             return try self.decode(D.self, from: data)
         }
     }
@@ -107,7 +108,7 @@ extension JSONDecoder: HTTPMessageDecoder {
 
 extension JSONEncoder: HTTPMessageEncoder {
     /// See `HTTPMessageEncoder`
-    public func encode<E, M>(_ encodable: E, to message: inout M, on worker: Worker) throws
+    public func encode<E, M>(_ encodable: E, to message: inout M, on worker: EventLoop) throws
         where E: Encodable, M: HTTPMessage
     {
         message.contentType = .json

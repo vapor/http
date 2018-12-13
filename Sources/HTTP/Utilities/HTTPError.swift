@@ -1,7 +1,6 @@
-import Debugging
-
+#warning("TODO: consider moving to enum")
 /// Errors that can be thrown while working with HTTP.
-public struct HTTPError: Debuggable {
+public struct HTTPError: Error {
     /// See `Debuggable`.
     public static let readableName = "HTTP Error"
 
@@ -10,12 +9,6 @@ public struct HTTPError: Debuggable {
 
     /// See `Debuggable`.
     public var reason: String
-
-    /// See `Debuggable`.
-    public var sourceLocation: SourceLocation?
-
-    /// See `Debuggable`.
-    public var stackTrace: [String]
 
     /// Creates a new `HTTPError`.
     public init(
@@ -28,8 +21,6 @@ public struct HTTPError: Debuggable {
     ) {
         self.identifier = identifier
         self.reason = reason
-        self.sourceLocation = SourceLocation(file: file, function: function, line: line, column: column, range: nil)
-        self.stackTrace = HTTPError.makeStackTrace()
     }
 }
 

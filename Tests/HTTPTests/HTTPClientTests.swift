@@ -1,3 +1,4 @@
+import NIO
 import HTTP
 import XCTest
 
@@ -68,7 +69,7 @@ private func testURL(
     let scheme: HTTPScheme = url.scheme == "https" ? .https : .http
     let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     for _ in 0..<times {
-        let res = try HTTPClient.connect(scheme: scheme, hostname: url.host ?? "", on: worker).flatMap(to: HTTPResponse.self) { client in
+        let res = try HTTPClient.connect(scheme: scheme, hostname: url.host ?? "", on: worker.next()).then { client -> EventLoopFuture<HTTPResponse> in
             var comps =  URLComponents()
             comps.path = url.path.isEmpty ? "/" : url.path
             comps.query = url.query

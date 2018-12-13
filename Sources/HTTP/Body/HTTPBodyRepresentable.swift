@@ -1,3 +1,6 @@
+import Foundation
+import NIO
+
 /// Can be converted to an `HTTPBody` without the possibility of failure.
 public protocol LosslessHTTPBodyRepresentable {
     /// Converts `self` to an `HTTPBody`.

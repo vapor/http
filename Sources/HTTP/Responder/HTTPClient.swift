@@ -1,3 +1,7 @@
+import Foundation
+import NIO
+import NIOHTTP1
+
 /// Connects to remote HTTP servers allowing you to send `HTTPRequest`s and
 /// receive `HTTPResponse`s.
 ///
@@ -27,14 +31,11 @@ public final class HTTPClient {
         hostname: String,
         port: Int? = nil,
         connectTimeout: TimeAmount = TimeAmount.seconds(10),
-        on worker: Worker,
+        on eventLoop: EventLoop,
         onError: @escaping (Error) -> () = { _ in }
-    ) -> Future<HTTPClient> {
-        let handler = QueueHandler<HTTPResponse, HTTPRequest>(on: worker) { error in
-            ERROR("[HTTPClient] \(error)")
-            onError(error)
-        }
-        let bootstrap = ClientBootstrap(group: worker.eventLoop)
+    ) -> EventLoopFuture<HTTPClient> {
+        #warning("TODO: replace missing queue handler")
+        let bootstrap = ClientBootstrap(group: eventLoop)
             .connectTimeout(connectTimeout)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
@@ -45,30 +46,26 @@ public final class HTTPClient {
                         HTTPClientRequestSerializer(hostname: hostname),
                         HTTPClientResponseParser()
                     ]
-                    return channel.pipeline.addHandlers(defaultHandlers + [handler], first: false)
+                    return channel.pipeline.addHandlers(defaultHandlers, first: false)
                 }
         }
-        return bootstrap.connect(host: hostname, port: port ?? scheme.defaultPort).map(to: HTTPClient.self) { channel in
-            return .init(handler: handler, channel: channel)
+        return bootstrap.connect(host: hostname, port: port ?? scheme.defaultPort).map { channel in
+            return .init(channel: channel)
         }
     }
 
     // MARK: Properties
 
-    /// Private `HTTPClientHandler` that handles requests.
-    private let handler: QueueHandler<HTTPResponse, HTTPRequest>
-
     /// Private NIO channel powering this client.
     private let channel: Channel
 
     /// A `Future` that will complete when this `HTTPClient` closes.
-    public var onClose: Future<Void> {
+    public var onClose: EventLoopFuture<Void> {
         return channel.closeFuture
     }
 
     /// Private init for creating a new `HTTPClient`. Use the `connect` methods.
-    private init(handler: QueueHandler<HTTPResponse, HTTPRequest>, channel: Channel) {
-        self.handler = handler
+    private init(channel: Channel) {
         self.channel = channel
     }
 
@@ -83,18 +80,19 @@ public final class HTTPClient {
     /// - parameters:
     ///     - request: `HTTPRequest` to send to the remote server.
     /// - returns: A `Future` `HTTPResponse` containing the server's response.
-    public func send(_ request: HTTPRequest) -> Future<HTTPResponse> {
-        var res: HTTPResponse?
-        return handler.enqueue([request]) { _res in
-            res = _res
-            return true
-        }.map(to: HTTPResponse.self) {
-            return res!
-        }
+    public func send(_ request: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
+        #warning("TODO: implement me")
+        return self.channel.eventLoop.makeSucceededFuture(result: .init())
+//        return handler.enqueue([request]) { _res in
+//            res = _res
+//            return true
+//        }.map(to: HTTPResponse.self) {
+//            return res!
+//        }
     }
 
     /// Closes this `HTTPClient`'s connection to the remote server.
-    public func close() -> Future<Void> {
+    public func close() -> EventLoopFuture<Void> {
         return channel.close(mode: .all)
     }
 }

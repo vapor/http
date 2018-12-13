@@ -1,3 +1,6 @@
+import NIO
+import NIOHTTP1
+
 /// An HTTP message.
 /// This is the basis of `HTTPRequest` and `HTTPResponse`. It has the general structure of:
 ///
@@ -30,8 +33,8 @@ public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertib
 
 extension HTTPMessage {
     /// `MediaType` specified by this message's `"Content-Type"` header.
-    public var contentType: MediaType? {
-        get { return headers.firstValue(name: .contentType).flatMap(MediaType.parse) }
+    public var contentType: HTTPMediaType? {
+        get { return headers.firstValue(name: .contentType).flatMap(HTTPMediaType.parse) }
         set {
             if let new = newValue?.serialize() {
                 headers.replaceOrAdd(name: .contentType, value: new)

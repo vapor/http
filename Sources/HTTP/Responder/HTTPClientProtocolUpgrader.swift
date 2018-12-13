@@ -1,3 +1,6 @@
+import NIO
+import NIOHTTP1
+
 extension HTTPClient {
     // MARK: Upgrade
     
@@ -17,10 +20,10 @@ extension HTTPClient {
         hostname: String,
         port: Int? = nil,
         upgrader: Upgrader,
-        on worker: Worker
-    ) -> Future<Upgrader.UpgradeResult> where Upgrader: HTTPClientProtocolUpgrader {
-        let handler = HTTPClientUpgradeHandler(upgrader: upgrader, extraHTTPHandlerNames: ["HTTPRequestEncoder", "HTTPResponseDecoder"], on: worker)
-        let bootstrap = ClientBootstrap(group: worker.eventLoop)
+        on eventLoop: EventLoop
+    ) -> EventLoopFuture<Upgrader.UpgradeResult> where Upgrader: HTTPClientProtocolUpgrader {
+        let handler = HTTPClientUpgradeHandler(upgrader: upgrader, extraHTTPHandlerNames: ["HTTPRequestEncoder", "HTTPResponseDecoder"], on: eventLoop)
+        let bootstrap = ClientBootstrap(group: eventLoop)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 return scheme.configureChannel(channel).then { _ in
@@ -55,7 +58,7 @@ public protocol HTTPClientProtocolUpgrader {
 
     /// Called if `isValidUpgradeResponse` returns `true`. This should return the `UpgradeResult`
     /// that will ultimately be returned by `HTTPClient.upgrade(...)`.
-    func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> Future<UpgradeResult>
+    func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<UpgradeResult>
 }
 
 // MARK: Private
@@ -87,21 +90,21 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
     private var receivedMessages: [NIOAny]
 
     /// Will be fulfilled with the upgrade result when the upgrade completes.
-    var upgradePromise: Promise<Upgrader.UpgradeResult>
+    var upgradePromise: EventLoopPromise<Upgrader.UpgradeResult>
 
     /// Internal future to use for awaiting the upgrade result.
-    var onUpgrade: Future<Upgrader.UpgradeResult> {
+    var onUpgrade: EventLoopFuture<Upgrader.UpgradeResult> {
         return upgradePromise.futureResult
     }
 
     /// Creates a new `HTTPClientUpgradeHandler`.
-    init(upgrader: Upgrader, extraHTTPHandlerNames: [String], on worker: Worker) {
+    init(upgrader: Upgrader, extraHTTPHandlerNames: [String], on eventLoop: EventLoop) {
         self.upgrader = upgrader
         self.extraHTTPHandlerNames = extraHTTPHandlerNames
         self.upgrading = false
         self.receivedMessages = []
         self.seenFirstResponse = false
-        self.upgradePromise = worker.eventLoop.newPromise(Upgrader.UpgradeResult.self)
+        self.upgradePromise = eventLoop.makePromise(of: Upgrader.UpgradeResult.self)
     }
 
     /// See `ChannelInboundHandler`.
@@ -153,7 +156,7 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
     /// Removes any extra HTTP-related handlers from the channel pipeline.
     private func removeExtraHandlers(ctx: ChannelHandlerContext) -> EventLoopFuture<Void> {
         guard self.extraHTTPHandlerNames.count > 0 else {
-            return ctx.eventLoop.newSucceededFuture(result: ())
+            return ctx.eventLoop.makeSucceededFuture(result: ())
         }
         return EventLoopFuture<Void>.andAll(self.extraHTTPHandlerNames.map { ctx.pipeline.remove(name: $0)
             .map { (_: Bool) in () }},

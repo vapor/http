@@ -1,3 +1,5 @@
+import Foundation
+
 /// Capable of converting `self` to a `URL`, returning `nil` if the conversion fails.
 public protocol URLRepresentable {
     /// Converts `Self` to a `URL`, returning `nil` if the conversion fails.

@@ -1,3 +1,5 @@
+import NIO
+
 extension HTTPMessage {
     /// Represents the information we have about the remote peer of this message.
     ///
@@ -83,8 +85,8 @@ private struct Forwarded {
     var by: String?
 
     /// Creates a new `Forwaded` header object from the header value.
-    static func parse(_ data: LosslessDataConvertible) -> Forwarded? {
-        guard let value = HeaderValue.parse(data) else {
+    static func parse(_ data: String) -> Forwarded? {
+        guard let value = HTTPHeaderValue.parse(data) else {
             return nil
         }
 

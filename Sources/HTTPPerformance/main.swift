@@ -1,4 +1,5 @@
 import HTTP
+import NIO
 
 let hostname = "127.0.0.1"
 let port: Int = 8123
@@ -6,8 +7,8 @@ let port: Int = 8123
 let res = HTTPResponse(body: "pong" as StaticString)
 
 struct EchoResponder: HTTPServerResponder {
-    func respond(to req: HTTPRequest, on worker: Worker) -> Future<HTTPResponse> {
-        return worker.eventLoop.newSucceededFuture(result: res)
+    func respond(to request: HTTPRequest, on eventLoop: EventLoop) -> EventLoopFuture<HTTPResponse> {
+        return eventLoop.makeSucceededFuture(result: res)
     }
 }
 

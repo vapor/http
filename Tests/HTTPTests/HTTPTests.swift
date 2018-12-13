@@ -1,3 +1,5 @@
+import NIO
+import NIOHTTP1
 import HTTP
 import XCTest
 
@@ -44,7 +46,7 @@ class HTTPTests: XCTestCase {
 
     func testRemotePeer() throws {
         let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let client = try HTTPClient.connect(hostname: "httpbin.org", on: worker).wait()
+        let client = try HTTPClient.connect(hostname: "httpbin.org", on: worker.next()).wait()
         let httpReq = HTTPRequest(method: .GET, url: "/")
         let httpRes = try client.send(httpReq).wait()
         XCTAssertEqual(httpRes.remotePeer.port, 80)
@@ -52,12 +54,12 @@ class HTTPTests: XCTestCase {
     
     func testLargeResponseClose() throws {
         struct LargeResponder: HTTPServerResponder {
-            func respond(to request: HTTPRequest, on worker: Worker) -> EventLoopFuture<HTTPResponse> {
+            func respond(to request: HTTPRequest, on eventLoop: EventLoop) -> EventLoopFuture<HTTPResponse> {
                 let res = HTTPResponse(
                     status: .ok,
                     body: String(repeating: "0", count: 2_000_000)
                 )
-                return worker.future(res)
+                return eventLoop.makeSucceededFuture(result: res)
             }
         }
         let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
@@ -70,7 +72,7 @@ class HTTPTests: XCTestCase {
             XCTFail("\(error)")
         }.wait()
         
-        let client = try HTTPClient.connect(hostname: "localhost", port: 8080, on: worker).wait()
+        let client = try HTTPClient.connect(hostname: "localhost", port: 8080, on: worker.next()).wait()
         var req = HTTPRequest(method: .GET, url: "/")
         req.headers.replaceOrAdd(name: .connection, value: "close")
         let res = try client.send(req).wait()
@@ -93,13 +95,13 @@ class HTTPTests: XCTestCase {
             }
             
             func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<String> {
-                return ctx.eventLoop.future("hello")
+                return ctx.eventLoop.makeSucceededFuture(result: "hello")
             }
             
             
         }
         do {
-            _ = try HTTPClient.upgrade(hostname: "foo", upgrader: FakeUpgrader(), on: worker).wait()
+            _ = try HTTPClient.upgrade(hostname: "foo", upgrader: FakeUpgrader(), on: worker.next()).wait()
             XCTFail("expected error")
         } catch {
             XCTAssert(error is ChannelError)

@@ -1,3 +1,6 @@
+import NIO
+import NIOHTTP1
+
 /// Simple HTTP server generic on an HTTP responder
 /// that will be used to generate responses to incoming requests.
 ///
@@ -6,6 +9,8 @@
 ///
 public final class HTTPServer {
     // MARK: Static
+    
+    #warning("TODO: cleanup start method with HTTPServerConfig")
 
     /// Starts the server on the supplied hostname and port, using the supplied
     /// responder to generate HTTP responses for incoming requests.
@@ -38,10 +43,10 @@ public final class HTTPServer {
         supportCompression: Bool = false,
         serverName: String? = nil,
         upgraders: [HTTPProtocolUpgrader] = [],
-        on worker: Worker,
+        on eventLoop: EventLoopGroup,
         onError: @escaping (Error) -> () = { _ in }
-    ) -> Future<HTTPServer> where R: HTTPServerResponder {
-        let bootstrap = ServerBootstrap(group: worker)
+    ) -> EventLoopFuture<HTTPServer> where R: HTTPServerResponder {
+        let bootstrap = ServerBootstrap(group: eventLoop)
             // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: Int32(backlog))
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: reuseAddress ? SocketOptionValue(1) : SocketOptionValue(0))
@@ -77,7 +82,7 @@ public final class HTTPServer {
             .childChannelOption(ChannelOptions.maxMessagesPerRead, value: 1)
             // .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: 1)
 
-        return bootstrap.bind(host: hostname, port: port).map(to: HTTPServer.self) { channel in
+        return bootstrap.bind(host: hostname, port: port).map { channel in
             return HTTPServer(channel: channel)
         }
     }
@@ -85,7 +90,7 @@ public final class HTTPServer {
     // MARK: Properties
 
     /// A future that will be signaled when the server closes.
-    public var onClose: Future<Void> {
+    public var onClose: EventLoopFuture<Void> {
         return channel.closeFuture
     }
 
@@ -100,7 +105,7 @@ public final class HTTPServer {
     // MARK: Methods
 
     /// Closes the server.
-    public func close() -> Future<Void> {
+    public func close() -> EventLoopFuture<Void> {
         return channel.close(mode: .all)
     }
 }
@@ -273,7 +278,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                 writeAndflush(buffer: buffer, ctx: ctx, shouldClose: !reqhead.isKeepAlive)
             case .chunkedStream(let stream):
                 stream.read { result, stream in
-                    let future: Future<Void>
+                    let future: EventLoopFuture<Void>
                     switch result {
                     case .chunk(let buffer):
                         future = ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))

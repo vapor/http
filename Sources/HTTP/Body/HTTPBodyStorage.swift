@@ -1,3 +1,9 @@
+import Foundation
+import NIO
+import NIOFoundationCompat
+
+#warning("TODO: move to ByteBuffer as main storage method")
+
 /// The internal HTTP body storage enum. This is an implementation detail.
 enum HTTPBodyStorage {
     /// Cases
@@ -26,7 +32,7 @@ enum HTTPBodyStorage {
     /// Returns static data if not streaming.
     var data: Data? {
         switch self {
-        case .buffer(let buffer): return buffer.getData(at: 0, length: buffer.readableBytes)
+        case .buffer(var buffer): return buffer.readData(length: buffer.readableBytes)
         case .data(let data): return data
         case .dispatchData(let dispatch): return Data(dispatch)
         case .staticString(let string): return Data(bytes: string.utf8Start, count: string.utf8CodeUnitCount)
@@ -37,13 +43,13 @@ enum HTTPBodyStorage {
     }
 
     /// Consumes data if streaming or returns static data.
-    func consumeData(max: Int, on worker: Worker) -> Future<Data> {
+    func consumeData(max: Int, on eventLoop: EventLoop) -> EventLoopFuture<Data> {
         if let data = self.data {
-            return Future.map(on: worker) { data }
+            return eventLoop.makeSucceededFuture(result: data)
         } else {
             switch self {
             case .chunkedStream(let stream): return stream.drain(max: max)
-            case .none: return Future.map(on: worker) { Data() }
+            case .none: return eventLoop.makeSucceededFuture(result: .init())
             default: fatalError("Unexpected HTTP body storage: \(self)")
             }
         }
