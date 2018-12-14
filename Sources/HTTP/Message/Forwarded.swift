@@ -9,8 +9,8 @@ extension HTTPMessage {
     /// balancers communicate the information about the original client in certain headers.
     ///
     /// See https://en.wikipedia.org/wiki/X-Forwarded-For
-    public func remotePeer(channel: Channel? = nil) -> HTTPPeer {
-        return .init(self, channel)
+    public var remotePeer: HTTPPeer {
+        return .init(self)
     }
 }
 
@@ -18,9 +18,6 @@ extension HTTPMessage {
 public struct HTTPPeer: CustomStringConvertible {
     /// `HTTPMessage` that peer info will be extracted from.
     let message: HTTPMessage
-    
-    /// Optional channel the message was recv'd on.
-    let channel: Channel?
 
     /// See `CustomStringConvertible`.
     public var description: String {
@@ -38,29 +35,28 @@ public struct HTTPPeer: CustomStringConvertible {
     }
 
     /// Creates a new `HTTPPeer` wrapper around an `HTTPMessage`.
-    init(_ message: HTTPMessage, _ channel: Channel? = nil) {
+    init(_ message: HTTPMessage) {
         self.message = message
-        self.channel = channel
     }
 
     /// The peer's scheme, like `http` or `https`.
     public var scheme: String? {
-        return message.headers.firstValue(name: .forwarded).flatMap(Forwarded.parse)?.proto
-            ?? message.headers.firstValue(name: .init("X-Forwarded-Proto"))
-            ?? message.headers.firstValue(name: .init("X-Scheme"))
+        return self.message.headers.firstValue(name: .forwarded).flatMap(Forwarded.parse)?.proto
+            ?? self.message.headers.firstValue(name: .init("X-Forwarded-Proto"))
+            ?? self.message.headers.firstValue(name: .init("X-Scheme"))
     }
 
     /// The peer's hostname.
     public var hostname: String? {
-        return message.headers.firstValue(name: .forwarded).flatMap(Forwarded.parse)?.for
-            ?? message.headers.firstValue(name: .init("X-Forwarded-For"))
-            ?? self.channel?.remoteAddress?.hostname
+        return self.message.headers.firstValue(name: .forwarded).flatMap(Forwarded.parse)?.for
+            ?? self.message.headers.firstValue(name: .init("X-Forwarded-For"))
+            ?? self.message.channel?.remoteAddress?.hostname
     }
 
     /// The peer's port.
     public var port: Int? {
-        return message.headers.firstValue(name: .init("X-Forwarded-Port")).flatMap(Int.init)
-            ?? self.channel?.remoteAddress?.port.flatMap(Int.init)
+        return self.message.headers.firstValue(name: .init("X-Forwarded-Port")).flatMap(Int.init)
+            ?? self.message.channel?.remoteAddress?.port.flatMap(Int.init)
     }
 }
 

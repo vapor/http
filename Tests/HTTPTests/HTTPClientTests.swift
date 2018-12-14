@@ -27,8 +27,8 @@ class HTTPClientTests: XCTestCase {
         try testURL("http://zombo.com", contains: "<title>ZOMBO</title>")
     }
 
-    func testAmazonWithTLS() throws {
-        try testURL("https://www.amazon.com", contains: "Amazon.com, Inc.")
+    func testVaporWithTLS() throws {
+        try testURL("https://vapor.codes", contains: "Server-side Swift")
     }
 
     func testQuery() throws {
@@ -42,7 +42,7 @@ class HTTPClientTests: XCTestCase {
         ("testGoogleAPIsFCM", testGoogleAPIsFCM),
         ("testExampleCom", testExampleCom),
         ("testZombo", testZombo),
-        ("testAmazonWithTLS", testAmazonWithTLS),
+        ("testVaporWithTLS", testVaporWithTLS),
         ("testQuery", testQuery),
     ]
 }
@@ -69,12 +69,14 @@ private func testURL(
     let scheme: HTTPScheme = url.scheme == "https" ? .https : .http
     let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     for _ in 0..<times {
-        let res = try HTTPClient.connect(scheme: scheme, hostname: url.host ?? "", on: worker.next()).then { client -> EventLoopFuture<HTTPResponse> in
+        let res = try HTTPClient.connect(
+            config: .init(scheme: scheme, hostname: url.host ?? "", eventLoop: worker.next()
+        )).then { client -> EventLoopFuture<HTTPResponse> in
             var comps =  URLComponents()
             comps.path = url.path.isEmpty ? "/" : url.path
             comps.query = url.query
             let req = HTTPRequest(method: .GET, url: comps.url ?? .root)
-            return client.send(req)
+            return client.respond(to: req)
         }.wait()
         try check(res)
     }

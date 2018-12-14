@@ -1,7 +1,3 @@
-import Foundation
-import NIO
-import NIOHTTP1
-
 /// Connects to remote HTTP servers allowing you to send `HTTPRequest`s and
 /// receive `HTTPResponse`s.
 ///
@@ -9,48 +5,52 @@ import NIOHTTP1
 ///         return client.send(...)
 ///     }
 ///
-public final class HTTPClient {
+public final class HTTPClient: HTTPResponder {
     // MARK: Static
 
     /// Creates a new `HTTPClient` connected over TCP or TLS.
     ///
-    ///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: ...).map(to: HTTPResponse.self) { client in
+    ///     let httpRes = HTTPClient.connect(config: .init(hostname: "vapor.codes")).then { client in
     ///         return client.send(...)
     ///     }
     ///
     /// - parameters:
-    ///     - scheme: Transport layer security to use, either tls or plainText.
-    ///     - hostname: Remote server's hostname.
-    ///     - port: Remote server's port, defaults to 80 for TCP and 443 for TLS.
-    ///     - connectTimeout: The timeout that will apply to the connection attempt.
-    ///     - worker: `Worker` to perform async work on.
-    ///     - onError: Optional closure, which fires when a networking error is caught.
+    ///     - config: Specifies client connection options such as hostname, port, and more.
     /// - returns: A `Future` containing the connected `HTTPClient`.
     public static func connect(
-        scheme: HTTPScheme = .http,
-        hostname: String,
-        port: Int? = nil,
-        connectTimeout: TimeAmount = TimeAmount.seconds(10),
-        on eventLoop: EventLoop,
-        onError: @escaping (Error) -> () = { _ in }
+        config: HTTPClientConfig
     ) -> EventLoopFuture<HTTPClient> {
-        #warning("TODO: replace missing queue handler")
-        let bootstrap = ClientBootstrap(group: eventLoop)
-            .connectTimeout(connectTimeout)
+        let handler = HTTPClientHandler()
+        let bootstrap = ClientBootstrap(group: config.worker.eventLoop)
+            .connectTimeout(config.connectTimeout)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                return scheme.configureChannel(channel).then {
+                return config.scheme.configureChannel(channel).then {
                     let defaultHandlers: [ChannelHandler] = [
                         HTTPRequestEncoder(),
                         HTTPResponseDecoder(),
-                        HTTPClientRequestSerializer(hostname: hostname),
-                        HTTPClientResponseParser()
+                        HTTPClientRequestSerializer(hostname: config.hostname),
+                        HTTPClientResponseParser(),
+                        handler
                     ]
                     return channel.pipeline.addHandlers(defaultHandlers, first: false)
                 }
         }
-        return bootstrap.connect(host: hostname, port: port ?? scheme.defaultPort).map { channel in
-            return .init(channel: channel)
+        return bootstrap.connect(host: config.hostname, port: config.port ?? config.scheme.defaultPort).map { channel in
+            return HTTPClient(channel: channel, handler: handler)
+        }.map { client -> HTTPClient in
+            client.onClose.whenComplete {
+                switch config.worker {
+                case .owned(let group):
+                    group.shutdownGracefully { error in
+                        if let error = error {
+                            ERROR("HTTPClient EventLoopGroup shutdown failed: \(error)")
+                        }
+                    }
+                default: break
+                }
+            }
+            return client
         }
     }
 
@@ -58,6 +58,8 @@ public final class HTTPClient {
 
     /// Private NIO channel powering this client.
     public let channel: Channel
+    
+    private let handler: HTTPClientHandler
 
     /// A `Future` that will complete when this `HTTPClient` closes.
     public var onClose: EventLoopFuture<Void> {
@@ -65,8 +67,9 @@ public final class HTTPClient {
     }
 
     /// Private init for creating a new `HTTPClient`. Use the `connect` methods.
-    private init(channel: Channel) {
+    private init(channel: Channel, handler: HTTPClientHandler) {
         self.channel = channel
+        self.handler = handler
     }
 
     // MARK: Methods
@@ -74,21 +77,14 @@ public final class HTTPClient {
     /// Sends an `HTTPRequest` to the connected, remote server.
     ///
     ///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: req).map(to: HTTPResponse.self) { client in
-    ///         return client.send(...)
+    ///         return client.respond(to: ...)
     ///     }
     ///
     /// - parameters:
     ///     - request: `HTTPRequest` to send to the remote server.
     /// - returns: A `Future` `HTTPResponse` containing the server's response.
-    public func send(_ request: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
-        #warning("TODO: implement me")
-        return self.channel.eventLoop.makeSucceededFuture(result: .init())
-//        return handler.enqueue([request]) { _res in
-//            res = _res
-//            return true
-//        }.map(to: HTTPResponse.self) {
-//            return res!
-//        }
+    public func respond(to req: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
+        return self.handler.send(req, on: self.channel)
     }
 
     /// Closes this `HTTPClient`'s connection to the remote server.
@@ -98,6 +94,51 @@ public final class HTTPClient {
 }
 
 // MARK: Private
+
+private final class HTTPClientHandler: ChannelInboundHandler {
+    typealias InboundIn = HTTPResponse
+    typealias OutboundOut = HTTPRequest
+    
+    var waiters: [EventLoopPromise<HTTPResponse>]
+    
+    init() {
+        self.waiters = .init()
+    }
+    
+    func send(_ request: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
+        let promise = channel.eventLoop.makePromise(of: HTTPResponse.self)
+        self.waiters.append(promise)
+        channel.write(self.wrapOutboundOut(request))
+            .cascadeFailure(promise: promise)
+        channel.flush()
+        return promise.futureResult
+    }
+    
+    func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+        // print("PostgresConnection.ChannelHandler.errorCaught(\(error))")
+        switch waiters.count {
+        case 0:
+            print("Discarding \(error)")
+        default:
+            // fail the current waiter
+            let waiter = waiters.removeFirst()
+            waiter.fail(error: error)
+        }
+    }
+    
+    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+        let response = unwrapInboundIn(data)
+        switch waiters.count {
+        case 0:
+            print("Discarding \(response)")
+            break
+        default:
+            // succeed the current waiter
+            let waiter = waiters.removeFirst()
+            waiter.succeed(result: response)
+        }
+    }
+}
 
 /// Private `ChannelOutboundHandler` that serializes `HTTPRequest` to `HTTPClientRequestPart`.
 private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
@@ -120,7 +161,7 @@ private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
         let req = unwrapOutboundIn(data)
         var headers = req.headers
         headers.add(name: .host, value: hostname)
-        headers.replaceOrAdd(name: .userAgent, value: "Vapor/3.0 (Swift)")
+        headers.replaceOrAdd(name: .userAgent, value: "Vapor/4.0 (Swift)")
         var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.absoluteString)
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
@@ -176,7 +217,11 @@ private final class HTTPClientResponseParser: ChannelInboundHandler {
             case .ready: assert(false, "Unexpected HTTPClientResponsePart.end when awaiting request head.")
             case .parsingBody(let head, let data):
                 let body: HTTPBody = data.flatMap { .init(data: $0) } ?? .init()
-                let res = HTTPResponse(head: head, body: body, channel: ctx.channel)
+                let res = HTTPResponse(
+                    head: head,
+                    body: body,
+                    channel: ctx.channel
+                )
                 ctx.fireChannelRead(wrapOutboundOut(res))
                 state = .ready
             }

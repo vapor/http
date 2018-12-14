@@ -25,7 +25,7 @@ class HTTPTests: XCTestCase {
     }
     
     func testCookieIsSerializedCorrectly() throws {
-        var httpReq = HTTPRequest(method: .GET, url: "/")
+        let httpReq = HTTPRequest(method: .GET, url: "/")
 
         guard let (name, value) = HTTPCookieValue.parse("id=value; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
             throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
@@ -46,36 +46,42 @@ class HTTPTests: XCTestCase {
 
     func testRemotePeer() throws {
         let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let client = try HTTPClient.connect(hostname: "httpbin.org", on: worker.next()).wait()
+        let client = try HTTPClient.connect(
+            config: .init(hostname: "httpbin.org", eventLoop: worker.next())
+        ).wait()
         let httpReq = HTTPRequest(method: .GET, url: "/")
-        let httpRes = try client.send(httpReq).wait()
-        XCTAssertEqual(httpRes.remotePeer(channel: client.channel).port, 80)
+        let httpRes = try client.respond(to: httpReq).wait()
+        XCTAssertEqual(httpRes.remotePeer.port, 80)
     }
     
     func testLargeResponseClose() throws {
-        struct LargeResponder: HTTPServerResponder {
-            func respond(to request: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
+        struct LargeResponder: HTTPResponder {
+            func respond(to request: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
                 let res = HTTPResponse(
                     status: .ok,
                     body: String(repeating: "0", count: 2_000_000)
                 )
-                return channel.eventLoop.makeSucceededFuture(result: res)
+                return request.channel!.eventLoop.makeSucceededFuture(result: res)
             }
         }
-        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         let server = try HTTPServer.start(
-            hostname: "localhost",
-            port: 8080,
-            responder: LargeResponder(),
-            on: worker
-        ) { error in
-            XCTFail("\(error)")
-        }.wait()
+            config: .init(
+                hostname: "localhost",
+                port: 8080,
+                errorHandler: { error in
+                    XCTFail("\(error)")
+                }
+            ),
+            responder: LargeResponder()
+        ) .wait()
         
-        let client = try HTTPClient.connect(hostname: "localhost", port: 8080, on: worker.next()).wait()
-        var req = HTTPRequest(method: .GET, url: "/")
+        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let client = try HTTPClient.connect(
+            config: .init(hostname: "localhost", port: 8080, eventLoop: worker.next())
+        ).wait()
+        let req = HTTPRequest(method: .GET, url: "/")
         req.headers.replaceOrAdd(name: .connection, value: "close")
-        let res = try client.send(req).wait()
+        let res = try client.respond(to: req).wait()
         XCTAssertEqual(res.body.count, 2_000_000)
         try server.close().wait()
         try server.onClose.wait()
@@ -104,7 +110,7 @@ class HTTPTests: XCTestCase {
             _ = try HTTPClient.upgrade(hostname: "foo", upgrader: FakeUpgrader(), on: worker.next()).wait()
             XCTFail("expected error")
         } catch {
-            XCTAssert(error is ChannelError)
+            XCTAssert(error is NIOConnectionError)
         }
     }
 

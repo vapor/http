@@ -172,59 +172,59 @@ public struct HTTPMediaType: Hashable, CustomStringConvertible, Equatable {
 
 public extension HTTPMediaType {
     /// Any media type (*/*).
-    public static let any = HTTPMediaType(type: "*", subType: "*")
+    static let any = HTTPMediaType(type: "*", subType: "*")
     /// Plain text media type.
-    public static let plainText = HTTPMediaType(type: "text", subType: "plain", parameters: ["charset": "utf-8"])
+    static let plainText = HTTPMediaType(type: "text", subType: "plain", parameters: ["charset": "utf-8"])
     /// HTML media type.
-    public static let html = HTTPMediaType(type: "text", subType: "html", parameters: ["charset": "utf-8"])
+    static let html = HTTPMediaType(type: "text", subType: "html", parameters: ["charset": "utf-8"])
     /// CSS media type.
-    public static let css = HTTPMediaType(type: "text", subType: "css", parameters: ["charset": "utf-8"])
+    static let css = HTTPMediaType(type: "text", subType: "css", parameters: ["charset": "utf-8"])
     /// URL encoded form media type.
-    public static let urlEncodedForm = HTTPMediaType(type: "application", subType: "x-www-form-urlencoded", parameters: ["charset": "utf-8"])
+    static let urlEncodedForm = HTTPMediaType(type: "application", subType: "x-www-form-urlencoded", parameters: ["charset": "utf-8"])
     /// Multipart encoded form data.
-    public static let formData = HTTPMediaType(type: "multipart", subType: "form-data")
+    static let formData = HTTPMediaType(type: "multipart", subType: "form-data")
     /// Mixed multipart encoded data.
-    public static let multipart = HTTPMediaType(type: "multipart", subType: "mixed")
+    static let multipart = HTTPMediaType(type: "multipart", subType: "mixed")
     /// JSON media type.
-    public static let json = HTTPMediaType(type: "application", subType: "json", parameters: ["charset": "utf-8"])
+    static let json = HTTPMediaType(type: "application", subType: "json", parameters: ["charset": "utf-8"])
     /// XML media type.
-    public static let xml = HTTPMediaType(type: "application", subType: "xml", parameters: ["charset": "utf-8"])
+    static let xml = HTTPMediaType(type: "application", subType: "xml", parameters: ["charset": "utf-8"])
     /// DTD media type.
-    public static let dtd = HTTPMediaType(type: "application", subType: "xml-dtd", parameters: ["charset": "utf-8"])
+    static let dtd = HTTPMediaType(type: "application", subType: "xml-dtd", parameters: ["charset": "utf-8"])
     /// PDF data.
-    public static let pdf = HTTPMediaType(type: "application", subType: "pdf")
+    static let pdf = HTTPMediaType(type: "application", subType: "pdf")
     /// Zip file.
-    public static let zip = HTTPMediaType(type: "application", subType: "zip")
+    static let zip = HTTPMediaType(type: "application", subType: "zip")
     /// tar file.
-    public static let tar = HTTPMediaType(type: "application", subType: "x-tar")
+    static let tar = HTTPMediaType(type: "application", subType: "x-tar")
     /// Gzip file.
-    public static let gzip = HTTPMediaType(type: "application", subType: "x-gzip")
+    static let gzip = HTTPMediaType(type: "application", subType: "x-gzip")
     /// Bzip2 file.
-    public static let bzip2 = HTTPMediaType(type: "application", subType: "x-bzip2")
+    static let bzip2 = HTTPMediaType(type: "application", subType: "x-bzip2")
     /// Binary data.
-    public static let binary = HTTPMediaType(type: "application", subType: "octet-stream")
+    static let binary = HTTPMediaType(type: "application", subType: "octet-stream")
     /// GIF image.
-    public static let gif = HTTPMediaType(type: "image", subType: "gif")
+    static let gif = HTTPMediaType(type: "image", subType: "gif")
     /// JPEG image.
-    public static let jpeg = HTTPMediaType(type: "image", subType: "jpeg")
+    static let jpeg = HTTPMediaType(type: "image", subType: "jpeg")
     /// PNG image.
-    public static let png = HTTPMediaType(type: "image", subType: "png")
+    static let png = HTTPMediaType(type: "image", subType: "png")
     /// SVG image.
-    public static let svg = HTTPMediaType(type: "image", subType: "svg+xml")
+    static let svg = HTTPMediaType(type: "image", subType: "svg+xml")
     /// Basic audio.
-    public static let audio = HTTPMediaType(type: "audio", subType: "basic")
+    static let audio = HTTPMediaType(type: "audio", subType: "basic")
     /// MIDI audio.
-    public static let midi = HTTPMediaType(type: "audio", subType: "x-midi")
+    static let midi = HTTPMediaType(type: "audio", subType: "x-midi")
     /// MP3 audio.
-    public static let mp3 = HTTPMediaType(type: "audio", subType: "mpeg")
+    static let mp3 = HTTPMediaType(type: "audio", subType: "mpeg")
     /// Wave audio.
-    public static let wave = HTTPMediaType(type: "audio", subType: "wav")
+    static let wave = HTTPMediaType(type: "audio", subType: "wav")
     /// OGG audio.
-    public static let ogg = HTTPMediaType(type: "audio", subType: "vorbis")
+    static let ogg = HTTPMediaType(type: "audio", subType: "vorbis")
     /// AVI video.
-    public static let avi = HTTPMediaType(type: "video", subType: "avi")
+    static let avi = HTTPMediaType(type: "video", subType: "avi")
     /// MPEG video.
-    public static let mpeg = HTTPMediaType(type: "video", subType: "mpeg")
+    static let mpeg = HTTPMediaType(type: "video", subType: "mpeg")
 }
 
 // MARK: Extensions

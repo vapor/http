@@ -16,7 +16,7 @@ import NIOHTTP1
 ///
 /// This protocol is useful for adding methods to both requests and responses, such as the ability to serialize
 /// content to both message types.
-public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertible {
+public protocol HTTPMessage: class, CustomStringConvertible, CustomDebugStringConvertible {
     /// The HTTP version of this message.
     var version: HTTPVersion { get set }
 
@@ -25,6 +25,11 @@ public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertib
 
     /// The optional HTTP body.
     var body: HTTPBody { get set }
+    
+    /// Channel this HTTP message was recieved on, if any.
+    var channel: Channel? { get set }
+
+    var userInfo: [AnyHashable: Any] { get set }
 }
 
 extension HTTPMessage {
@@ -58,19 +63,21 @@ extension HTTPMessage {
     public var debugDescription: String {
         return description
     }
+}
 
+extension HTTPHeaders {
     /// Updates transport headers for current body.
     /// This should be called automatically be `HTTPRequest` and `HTTPResponse` when their `body` property is set.
-    internal mutating func updateTransportHeaders() {
+    internal mutating func updateTransportHeaders(for body: HTTPBody) {
         if let count = body.count?.description {
-            headers.remove(name: .transferEncoding)
-            if count != headers[.contentLength].first {
-                headers.replaceOrAdd(name: .contentLength, value: count)
+            self.remove(name: .transferEncoding)
+            if count != self[.contentLength].first {
+                self.replaceOrAdd(name: .contentLength, value: count)
             }
         } else {
-            headers.remove(name: .contentLength)
-            if headers[.transferEncoding].first != "chunked" {
-                headers.replaceOrAdd(name: .transferEncoding, value: "chunked")
+            self.remove(name: .contentLength)
+            if self[.transferEncoding].first != "chunked" {
+                self.replaceOrAdd(name: .transferEncoding, value: "chunked")
             }
         }
     }

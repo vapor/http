@@ -1,46 +1,9 @@
-import Foundation
-
 /// Engine server config struct.
 ///
 ///     let serverConfig = HTTPServerConfig.default(port: 8123)
 ///     services.register(serverConfig)
 ///
 public struct HTTPServerConfig {
-    /// Detects `HTTPServerConfig` from the environment.
-    ///
-    /// - parameters:
-    ///     - hostname: Socket hostname to bind to. Usually `localhost` or `::1`.
-    ///     - port: Socket port to bind to. Usually `8080` for development and `80` for production.
-    ///     - backlog: OS socket backlog size.
-    ///     - workerCount: Number of `Worker`s to use for responding to incoming requests.
-    ///                    This should be (and is by default) equal to the number of logical cores.
-    ///     - maxBodySize: Requests with bodies larger than this maximum will be rejected.
-    ///                    Streaming bodies, like chunked bodies, ignore this maximum.
-    ///     - reuseAddress: When `true`, can prevent errors re-binding to a socket after successive server restarts.
-    ///     - tcpNoDelay: When `true`, OS will attempt to minimize TCP packet delay.
-    ///     - webSocketMaxFrameSize: Number of webSocket maxFrameSize.
-    public static func `default`(
-        hostname: String = "127.0.0.1",
-        port: Int = 8080,
-        backlog: Int = 256,
-        workerCount: Int = ProcessInfo.processInfo.activeProcessorCount,
-        maxBodySize: Int = 1_000_000,
-        reuseAddress: Bool = true,
-        tcpNoDelay: Bool = true,
-        webSocketMaxFrameSize: Int = 1 << 14
-    ) -> HTTPServerConfig {
-        return HTTPServerConfig(
-            hostname: hostname,
-            port: port,
-            backlog: backlog,
-            workerCount: workerCount,
-            maxBodySize: maxBodySize,
-            reuseAddress: reuseAddress,
-            tcpNoDelay: tcpNoDelay,
-            webSocketMaxFrameSize: webSocketMaxFrameSize
-        )
-    }
-    
     /// Host name the server will bind to.
     public var hostname: String
     
@@ -66,17 +29,54 @@ public struct HTTPServerConfig {
     /// Number of webSocket maxFrameSize.
     public var webSocketMaxFrameSize: Int
     
-    /// Creates a new `NIOServerConfig`.
+    /// When `true`, HTTP server will support gzip and deflate compression.
+    public var supportCompression: Bool
+    
+    /// When `true`, HTTP server will support pipelined requests.
+    public var supportPipelining: Bool
+    
+    /// If set, this name will be serialized as the `Server` header in outgoing responses.
+    public var serverName: String?
+    
+    /// An array of `HTTPProtocolUpgrader` to check for with each request.
+    public var upgraders: [HTTPProtocolUpgrader]
+    
+    /// Any uncaught server or responder errors will go here.
+    public var errorHandler: (Error) -> ()
+    
+    /// Creates a new `HTTPServerConfig`.
+    ///
+    /// - parameters:
+    ///     - hostname: Socket hostname to bind to. Usually `localhost` or `::1`.
+    ///     - port: Socket port to bind to. Usually `8080` for development and `80` for production.
+    ///     - backlog: OS socket backlog size.
+    ///     - workerCount: Number of `Worker`s to use for responding to incoming requests.
+    ///                    This should be (and is by default) equal to the number of logical cores.
+    ///     - maxBodySize: Requests with bodies larger than this maximum will be rejected.
+    ///                    Streaming bodies, like chunked bodies, ignore this maximum.
+    ///     - reuseAddress: When `true`, can prevent errors re-binding to a socket after successive server restarts.
+    ///     - tcpNoDelay: When `true`, OS will attempt to minimize TCP packet delay.
+    ///     - webSocketMaxFrameSize: Number of webSocket maxFrameSize.
+    ///     - supportCompression: When `true`, HTTP server will support gzip and deflate compression.
+    ///     - supportPipelining: When `true`, HTTP server will support pipelined requests.
+    ///     - serverName: If set, this name will be serialized as the `Server` header in outgoing responses.
+    ///     - upgraders: An array of `HTTPProtocolUpgrader` to check for with each request.
+    ///     - errorHandler: Any uncaught server or responder errors will go here.
     public init(
-        hostname: String,
-        port: Int,
-        backlog: Int,
-        workerCount: Int,
-        maxBodySize: Int,
-        reuseAddress: Bool,
-        tcpNoDelay: Bool,
-        webSocketMaxFrameSize: Int = 1 << 14
-        ) {
+        hostname: String = "127.0.0.1",
+        port: Int = 8080,
+        backlog: Int = 256,
+        workerCount: Int = ProcessInfo.processInfo.activeProcessorCount,
+        maxBodySize: Int = 1_000_000,
+        reuseAddress: Bool = true,
+        tcpNoDelay: Bool = true,
+        webSocketMaxFrameSize: Int = 1 << 14,
+        supportCompression: Bool = false,
+        supportPipelining: Bool = false,
+        serverName: String? = nil,
+        upgraders: [HTTPProtocolUpgrader] = [],
+        errorHandler: @escaping (Error) -> () = { _ in }
+    ) {
         self.hostname = hostname
         self.port = port
         self.backlog = backlog
@@ -85,5 +85,10 @@ public struct HTTPServerConfig {
         self.reuseAddress = reuseAddress
         self.tcpNoDelay = tcpNoDelay
         self.webSocketMaxFrameSize = webSocketMaxFrameSize
+        self.supportCompression = supportCompression
+        self.supportPipelining = supportPipelining
+        self.serverName = serverName
+        self.upgraders = upgraders
+        self.errorHandler = errorHandler
     }
 }

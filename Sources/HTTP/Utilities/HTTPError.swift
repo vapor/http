@@ -35,7 +35,7 @@ func DEBUG(_ string: @autoclosure () -> String, file: StaticString = #file, line
     print("[VERBOSE] \(string()) [\(file.description.split(separator: "/").last!):\(line)]")
     #endif
 }
-
-internal func debugOnly(_ body: () -> Void) {
-    assert({ body(); return true }())
-}
+//
+//internal func debugOnly(_ body: () -> Void) {
+//    assert({ body(); return true }())
+//}

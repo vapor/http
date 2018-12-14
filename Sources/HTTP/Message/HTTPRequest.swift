@@ -7,7 +7,7 @@ import NIOHTTP1
 ///     let httpReq = HTTPRequest(method: .GET, url: "/hello")
 ///
 /// See `HTTPClient` and `HTTPServer`.
-public struct HTTPRequest: HTTPMessage {
+public final class HTTPRequest: HTTPMessage {
     /// Internal storage is an NIO `HTTPRequestHead`
     internal var head: HTTPRequestHead
 
@@ -24,8 +24,8 @@ public struct HTTPRequest: HTTPMessage {
 
     /// The URL used on this request.
     public var url: URL {
-        get { return URL(string: urlString) ?? .root }
-        set { urlString = newValue.absoluteString }
+        get { return URL(string: self.urlString) ?? .root }
+        set { self.urlString = newValue.absoluteString }
     }
 
     /// The unparsed URL string. This is usually set through the `url` property.
@@ -50,6 +50,12 @@ public struct HTTPRequest: HTTPMessage {
         get { return head.headers }
         set { head.headers = newValue }
     }
+    
+    /// See `HTTPMessage`.
+    public var channel: Channel?
+    
+    /// See `HTTPMessage`.
+    public var userInfo: [AnyHashable : Any]
 
     /// The `HTTPBody`. Updating this property will also update the associated transport headers.
     ///
@@ -58,14 +64,14 @@ public struct HTTPRequest: HTTPMessage {
     /// Also be sure to set this message's `contentType` property to a `MediaType` that correctly
     /// represents the `HTTPBody`.
     public var body: HTTPBody {
-        didSet { updateTransportHeaders() }
+        didSet { self.head.headers.updateTransportHeaders(for: self.body) }
     }
 
     /// Get and set `HTTPCookies` for this `HTTPRequest`
     /// This accesses the `"Cookie"` header.
     public var cookies: HTTPCookies {
         get { return headers.firstValue(name: .cookie).flatMap(HTTPCookies.parse) ?? [:] }
-        set { newValue.serialize(into: &self) }
+        set { newValue.serialize(into: self) }
     }
 
     /// See `CustomStringConvertible`
@@ -93,7 +99,7 @@ public struct HTTPRequest: HTTPMessage {
     ///                The `"Content-Length"` and `"Transfer-Encoding"` headers will be set automatically.
     ///     - body: `HTTPBody` for this request, defaults to an empty body.
     ///             See `LosslessHTTPBodyRepresentable` for more information.
-    public init(
+    public convenience init(
         method: HTTPMethod = .GET,
         url: URLRepresentable = URL.root,
         version: HTTPVersion = .init(major: 1, minor: 1),
@@ -101,17 +107,21 @@ public struct HTTPRequest: HTTPMessage {
         body: LosslessHTTPBodyRepresentable = HTTPBody()
     ) {
         var head = HTTPRequestHead(version: version, method: method, uri: url.convertToURL()?.absoluteString ?? "/")
+        let body = body.convertToHTTPBody()
         head.headers = headers
+        head.headers.updateTransportHeaders(for: body)
         self.init(
             head: head,
-            body: body.convertToHTTPBody()
+            body: body,
+            channel: nil
         )
-        updateTransportHeaders()
     }
 
     /// Internal init that creates a new `HTTPRequest` without sanitizing headers.
-    internal init(head: HTTPRequestHead, body: HTTPBody) {
+    internal init(head: HTTPRequestHead, body: HTTPBody, channel: Channel?) {
         self.head = head
         self.body = body
+        self.channel = channel
+        self.userInfo = [:]
     }
 }

@@ -6,7 +6,7 @@ import NIOHTTP1
 ///     let httpRes = HTTPResponse(status: .ok)
 ///
 /// See `HTTPClient` and `HTTPServer`.
-public struct HTTPResponse: HTTPMessage {
+public final class HTTPResponse: HTTPMessage {
     /// Internal storage is an NIO `HTTPResponseHead`
     internal var head: HTTPResponseHead
 
@@ -39,27 +39,30 @@ public struct HTTPResponse: HTTPMessage {
     /// Also be sure to set this message's `contentType` property to a `MediaType` that correctly
     /// represents the `HTTPBody`.
     public var body: HTTPBody {
-        didSet { updateTransportHeaders() }
+        didSet { self.head.headers.updateTransportHeaders(for: self.body) }
     }
-
-    /// If set, reference to the NIO `Channel` this response came from.
-    public var channel: Channel?
 
     /// Get and set `HTTPCookies` for this `HTTPResponse`
     /// This accesses the `"Set-Cookie"` header.
     public var cookies: HTTPCookies {
-        get { return HTTPCookies.parse(setCookieHeaders: headers[.setCookie]) ?? [:] }
-        set { newValue.serialize(into: &self) }
+        get { return HTTPCookies.parse(setCookieHeaders: self.head.headers[.setCookie]) ?? [:] }
+        set { newValue.serialize(into: self) }
     }
 
     /// See `CustomStringConvertible`
     public var description: String {
         var desc: [String] = []
-        desc.append("HTTP/\(version.major).\(version.minor) \(status.code) \(status.reasonPhrase)")
-        desc.append(headers.debugDescription)
+        desc.append("HTTP/\(self.head.version.major).\(self.head.version.minor) \(self.head.status.code) \(self.head.status.reasonPhrase)")
+        desc.append(self.head.headers.debugDescription)
         desc.append(body.description)
         return desc.joined(separator: "\n")
     }
+    
+    /// See `HTTPMessage`.
+    public var channel: Channel?
+    
+    /// See `HTTPMessage`.
+    public var userInfo: [AnyHashable : Any]
 
     // MARK: Init
 
@@ -75,19 +78,21 @@ public struct HTTPResponse: HTTPMessage {
     ///                The `"Content-Length"` and `"Transfer-Encoding"` headers will be set automatically.
     ///     - body: `HTTPBody` for this response, defaults to an empty body.
     ///             See `LosslessHTTPBodyRepresentable` for more information.
-    public init(
+    public convenience init(
         status: HTTPResponseStatus = .ok,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
         body: LosslessHTTPBodyRepresentable = HTTPBody()
     ) {
-        let head = HTTPResponseHead(version: version, status: status, headers: headers)
+        var head = HTTPResponseHead(version: version, status: status, headers: headers)
+        let body = body.convertToHTTPBody()
+        head.headers = headers
+        head.headers.updateTransportHeaders(for: body)
         self.init(
             head: head,
-            body: body.convertToHTTPBody(),
+            body: body,
             channel: nil
         )
-        updateTransportHeaders()
     }
 
     /// Internal init that creates a new `HTTPResponse` without sanitizing headers.
@@ -95,5 +100,6 @@ public struct HTTPResponse: HTTPMessage {
         self.head = head
         self.body = body
         self.channel = channel
+        self.userInfo = [:]
     }
 }
