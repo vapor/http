@@ -77,7 +77,7 @@ public protocol HTTPMessageEncoder {
     ///     - from: `Encodable` object that will be encoded to the `HTTPMessage`.
     /// - returns: Encoded HTTP body.
     /// - throws: Any errors that may occur while encoding the object.
-    func encode<E, M>(_ encodable: E, to message: inout M) throws
+    func encode<E, M>(_ encodable: E, to message: M) throws
         where E: Encodable, M: HTTPMessage
 }
 
@@ -100,7 +100,7 @@ extension JSONDecoder: HTTPMessageDecoder {
 
 extension JSONEncoder: HTTPMessageEncoder {
     /// See `HTTPMessageEncoder`
-    public func encode<E, M>(_ encodable: E, to message: inout M) throws
+    public func encode<E, M>(_ encodable: E, to message: M) throws
         where E: Encodable, M: HTTPMessage
     {
         message.contentType = .json
