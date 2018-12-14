@@ -207,12 +207,12 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
 
     /// Requests an `HTTPResponse` from the responder and serializes it.
     private func respond(to head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
-        var req = HTTPRequest(head: head, body: body, channel: ctx.channel)
+        var req = HTTPRequest(head: head, body: body)
         switch head.method {
         case .HEAD: req.method = .GET
         default: break
         }
-        let res = responder.respond(to: req, on: ctx.eventLoop)
+        let res = responder.respond(to: req, on: ctx.channel)
         res.whenSuccess { res in
             debugOnly {
                 switch body.storage {

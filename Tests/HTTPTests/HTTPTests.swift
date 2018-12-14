@@ -49,17 +49,17 @@ class HTTPTests: XCTestCase {
         let client = try HTTPClient.connect(hostname: "httpbin.org", on: worker.next()).wait()
         let httpReq = HTTPRequest(method: .GET, url: "/")
         let httpRes = try client.send(httpReq).wait()
-        XCTAssertEqual(httpRes.remotePeer.port, 80)
+        XCTAssertEqual(httpRes.remotePeer(channel: client.channel).port, 80)
     }
     
     func testLargeResponseClose() throws {
         struct LargeResponder: HTTPServerResponder {
-            func respond(to request: HTTPRequest, on eventLoop: EventLoop) -> EventLoopFuture<HTTPResponse> {
+            func respond(to request: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
                 let res = HTTPResponse(
                     status: .ok,
                     body: String(repeating: "0", count: 2_000_000)
                 )
-                return eventLoop.makeSucceededFuture(result: res)
+                return channel.eventLoop.makeSucceededFuture(result: res)
             }
         }
         let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)

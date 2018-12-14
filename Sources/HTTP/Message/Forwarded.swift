@@ -9,8 +9,8 @@ extension HTTPMessage {
     /// balancers communicate the information about the original client in certain headers.
     ///
     /// See https://en.wikipedia.org/wiki/X-Forwarded-For
-    public var remotePeer: HTTPPeer {
-        return .init(self)
+    public func remotePeer(channel: Channel? = nil) -> HTTPPeer {
+        return .init(self, channel)
     }
 }
 
@@ -18,6 +18,9 @@ extension HTTPMessage {
 public struct HTTPPeer: CustomStringConvertible {
     /// `HTTPMessage` that peer info will be extracted from.
     let message: HTTPMessage
+    
+    /// Optional channel the message was recv'd on.
+    let channel: Channel?
 
     /// See `CustomStringConvertible`.
     public var description: String {
@@ -35,8 +38,9 @@ public struct HTTPPeer: CustomStringConvertible {
     }
 
     /// Creates a new `HTTPPeer` wrapper around an `HTTPMessage`.
-    init(_ message: HTTPMessage) {
+    init(_ message: HTTPMessage, _ channel: Channel? = nil) {
         self.message = message
+        self.channel = channel
     }
 
     /// The peer's scheme, like `http` or `https`.
@@ -50,13 +54,13 @@ public struct HTTPPeer: CustomStringConvertible {
     public var hostname: String? {
         return message.headers.firstValue(name: .forwarded).flatMap(Forwarded.parse)?.for
             ?? message.headers.firstValue(name: .init("X-Forwarded-For"))
-            ?? message.channel?.remoteAddress?.hostname
+            ?? self.channel?.remoteAddress?.hostname
     }
 
     /// The peer's port.
     public var port: Int? {
         return message.headers.firstValue(name: .init("X-Forwarded-Port")).flatMap(Int.init)
-            ?? message.channel?.remoteAddress?.port.flatMap(Int.init)
+            ?? self.channel?.remoteAddress?.port.flatMap(Int.init)
     }
 }
 

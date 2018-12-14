@@ -57,7 +57,7 @@ public final class HTTPClient {
     // MARK: Properties
 
     /// Private NIO channel powering this client.
-    private let channel: Channel
+    public let channel: Channel
 
     /// A `Future` that will complete when this `HTTPClient` closes.
     public var onClose: EventLoopFuture<Void> {

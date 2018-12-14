@@ -61,9 +61,6 @@ public struct HTTPRequest: HTTPMessage {
         didSet { updateTransportHeaders() }
     }
 
-    /// If set, reference to the NIO `Channel` this request came from.
-    public var channel: Channel?
-
     /// Get and set `HTTPCookies` for this `HTTPRequest`
     /// This accesses the `"Cookie"` header.
     public var cookies: HTTPCookies {
@@ -107,16 +104,14 @@ public struct HTTPRequest: HTTPMessage {
         head.headers = headers
         self.init(
             head: head,
-            body: body.convertToHTTPBody(),
-            channel: nil
+            body: body.convertToHTTPBody()
         )
         updateTransportHeaders()
     }
 
     /// Internal init that creates a new `HTTPRequest` without sanitizing headers.
-    internal init(head: HTTPRequestHead, body: HTTPBody, channel: Channel?) {
+    internal init(head: HTTPRequestHead, body: HTTPBody) {
         self.head = head
         self.body = body
-        self.channel = channel
     }
 }

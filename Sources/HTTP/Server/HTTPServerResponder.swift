@@ -6,7 +6,7 @@ public protocol HTTPServerResponder {
     ///
     /// - parameters:
     ///     - request: `HTTPRequest` received by the `HTTPServer`.
-    ///     - worker: `EventLoop` to perform async work on.
+    ///     - channel: `Channel` message was recv'd on.
     /// - returns: Future `HTTPResponse` to send back to peer.
-    func respond(to request: HTTPRequest, on eventLoop: EventLoop) -> EventLoopFuture<HTTPResponse>
+    func respond(to request: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse>
 }
