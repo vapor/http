@@ -131,6 +131,7 @@ private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
         var headers = req.headers
         headers.add(name: .host, value: hostname)
         headers.replaceOrAdd(name: .userAgent, value: "Vapor/3.0 (Swift)")
+        headers.replaceOrAdd(name: .acceptEncoding, value: "identity")
         var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.absoluteString)
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
