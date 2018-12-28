@@ -34,6 +34,14 @@ public final class HTTPClient {
             ERROR("[HTTPClient] \(error)")
             onError(error)
         }
+        
+        let hostnameHeaderValue: String
+        if let port = port, port != scheme.defaultPort {
+            hostnameHeaderValue = "\(hostname):\(port)"
+        } else {
+            hostnameHeaderValue = hostname
+        }
+        
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
             .connectTimeout(connectTimeout)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
@@ -42,7 +50,7 @@ public final class HTTPClient {
                     let defaultHandlers: [ChannelHandler] = [
                         HTTPRequestEncoder(),
                         HTTPResponseDecoder(),
-                        HTTPClientRequestSerializer(hostname: hostname),
+                        HTTPClientRequestSerializer(hostname: hostnameHeaderValue),
                         HTTPClientResponseParser()
                     ]
                     return channel.pipeline.addHandlers(defaultHandlers + [handler], first: false)
