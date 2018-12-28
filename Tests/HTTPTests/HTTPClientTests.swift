@@ -45,7 +45,7 @@ class HTTPClientTests: XCTestCase {
             let promise: Promise<Bool>
             func respond(to request: HTTPRequest, on worker: Worker) -> EventLoopFuture<HTTPResponse> {
                 let host = request.headers.firstValue(name: HTTPHeaderName.host)!
-                promise.succeed(result: host.contains("5000"))
+                promise.succeed(result: host.hasSuffix(":5000"))
                 return worker.future().map {
                     return HTTPResponse(status: .ok)
                 }
