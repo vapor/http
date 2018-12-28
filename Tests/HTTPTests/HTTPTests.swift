@@ -105,34 +105,6 @@ class HTTPTests: XCTestCase {
             XCTAssert(error is ChannelError)
         }
     }
-    
-    func testClientHostHeaderPortSpecification() throws {
-        
-        class Responder: HTTPServerResponder {
-            
-            init(promise: Promise<Bool>) {
-                self.promise = promise
-            }
-            
-            let promise: Promise<Bool>
-            func respond(to request: HTTPRequest, on worker: Worker) -> EventLoopFuture<HTTPResponse> {
-                let host = request.headers.firstValue(name: HTTPHeaderName.host)!
-                promise.succeed(result: host.contains("5000"))
-                return worker.future().map {
-                    return HTTPResponse(status: .ok)
-                }
-            }
-        }
-        
-        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let promise = worker.next().newPromise(of: Bool.self)
-        let responder = Responder(promise: promise)
-        let _ = try HTTPServer.start(hostname: "localhost", port: 5000, responder: responder, on: worker).wait()
-        let client = try HTTPClient.connect(hostname: "localhost", port: 5000, on: worker).wait()
-        let _ = try client.send(HTTPRequest(url: "/")).wait()
-        XCTAssertTrue(try promise.futureResult.wait(), "Client didn't add port to Host header")
-        
-    }
 
     static let allTests = [
         ("testCookieParse", testCookieParse),
