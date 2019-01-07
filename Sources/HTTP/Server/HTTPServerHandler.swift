@@ -139,7 +139,7 @@ internal final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPRe
                 buffer.write(string: string)
                 self.writeAndflush(buffer: buffer, ctx: ctx, shouldClose: !req.head.isKeepAlive)
             case .staticString(let string):
-                var buffer = ctx.channel.allocator.buffer(capacity: string.count)
+                var buffer = ctx.channel.allocator.buffer(capacity: string.utf8CodeUnitCount)
                 buffer.write(staticString: string)
                 self.writeAndflush(buffer: buffer, ctx: ctx, shouldClose: !req.head.isKeepAlive)
             case .data(let data):

@@ -39,7 +39,7 @@ public final class HTTPClient: HTTPResponder {
         return bootstrap.connect(host: config.hostname, port: config.port ?? config.scheme.defaultPort).map { channel in
             return HTTPClient(channel: channel, handler: handler)
         }.map { client -> HTTPClient in
-            client.onClose.whenComplete {
+            client.onClose.whenComplete { _ in
                 switch config.worker {
                 case .owned(let group):
                     group.shutdownGracefully { error in

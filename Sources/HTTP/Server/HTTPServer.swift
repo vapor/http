@@ -72,7 +72,7 @@ public final class HTTPServer {
             return HTTPServer(channel: channel)
         }.map { server in
             // shutdown event loop when server closes
-            server.onClose.whenComplete {
+            server.onClose.whenComplete { _ in
                 do {
                     try group.syncShutdownGracefully()
                 } catch {
