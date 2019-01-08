@@ -34,32 +34,73 @@ public final class HTTPServer {
 
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
-                // create HTTPServerResponder-based handler
+                // create main responder handler
                 let handler = HTTPServerHandler(
                     responder: responder,
                     maxBodySize: config.maxBodySize,
                     serverHeader: config.serverName,
                     onError: config.errorHandler
                 )
+                
+                // create server pipeline array
+                var handlers: [ChannelHandler] = []
+                
+                // add TLS handlers if configured
+                if let tlsConfig = config.tlsConfig {
+                    let sslContext = try! SSLContext(configuration: tlsConfig)
+                    let tlsHandler = try! OpenSSLServerHandler(context: sslContext)
+                    handlers.append(tlsHandler)
+                }
 
-                // re-use subcontainer for an event loop here
-                let upgrade: HTTPUpgradeConfiguration = (upgraders: config.upgraders, completionHandler: { ctx in
-                    // shouldn't need to wait for this
-                    _ = channel.pipeline.remove(handler: handler)
-                })
-
-                // configure the pipeline
-                return channel.pipeline.configureHTTPServerPipeline(
-                    withPipeliningAssistance: config.supportPipelining,
-                    withServerUpgrade: upgrade,
-                    withErrorHandling: false
-                ).then {
-                    if config.supportCompression {
-                        return channel.pipeline.addHandlers([HTTPResponseCompressor(), handler], first: false)
-                    } else {
-                        return channel.pipeline.add(handler: handler)
+                // configure HTTP/1
+                do {
+                    // add http parsing and serializing
+                    let responseEncoder = HTTPResponseEncoder()
+                    let requestDecoder = HTTPRequestDecoder(
+                        leftOverBytesStrategy: config.upgraders.isEmpty ? .dropBytes : .forwardBytes
+                    )
+                    handlers += [responseEncoder, requestDecoder]
+                    
+                    // add pipelining support if configured
+                    if config.supportPipelining {
+                        handlers.append(HTTPServerPipelineHandler())
+                    }
+                    
+                    // if upgraders, add handler
+                    if !config.upgraders.isEmpty {
+                        let upgrader = HTTPServerUpgradeHandler(
+                            upgraders: config.upgraders,
+                            httpEncoder: responseEncoder,
+                            extraHTTPHandlers: Array(handlers.dropFirst()),
+                            upgradeCompletionHandler: { ctx in
+                                // shouldn't need to wait for this
+                                _ = ctx.channel.pipeline.remove(handler: handler)
+                            }
+                        )
+                        handlers.append(upgrader)
                     }
                 }
+                
+                // configure HTTP/2
+                do {
+//                    let multiplexer = HTTP2StreamMultiplexer { (channel, streamID) -> EventLoopFuture<Void> in
+//                        return channel.pipeline.add(handler: HTTP2ToHTTP1ServerCodec(streamID: streamID)).then { () -> EventLoopFuture<Void> in
+//                            channel.pipeline.add(handler: HTTP1TestServer())
+//                        }
+//                    }
+//
+//                    return channel.pipeline.add(handler: multiplexer)
+                }
+                
+                if config.supportCompression {
+                    handlers.append(HTTPResponseCompressor())
+                }
+                
+                // finally add responder handler
+                handlers.append(handler)
+                
+                // configure the pipeline
+                return channel.pipeline.addHandlers(handlers, first: false)
             }
 
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels

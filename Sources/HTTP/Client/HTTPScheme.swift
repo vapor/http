@@ -1,7 +1,5 @@
-import NIO
-import NIOOpenSSL
-
 /// Specifies an HTTP transport-layer scheme.
+#warning("consider using tlsConfig option like HTTPServer")
 public struct HTTPScheme {
     /// Plaintext data over TCP. Uses port `80` by default.
     public static var http: HTTPScheme {

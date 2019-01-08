@@ -1,3 +1,5 @@
+import Foundation
+
 /// Engine server config struct.
 ///
 ///     let serverConfig = HTTPServerConfig.default(port: 8123)
@@ -34,6 +36,10 @@ public struct HTTPServerConfig {
     
     /// When `true`, HTTP server will support pipelined requests.
     public var supportPipelining: Bool
+    
+    public var supportHTTP2: Bool
+    
+    public var tlsConfig: TLSConfiguration?
     
     /// If set, this name will be serialized as the `Server` header in outgoing responses.
     public var serverName: String?
@@ -73,6 +79,8 @@ public struct HTTPServerConfig {
         webSocketMaxFrameSize: Int = 1 << 14,
         supportCompression: Bool = false,
         supportPipelining: Bool = false,
+        supportHTTP2: Bool = false,
+        tlsConfig: TLSConfiguration? = nil,
         serverName: String? = nil,
         upgraders: [HTTPProtocolUpgrader] = [],
         errorHandler: @escaping (Error) -> () = { _ in }
@@ -87,6 +95,8 @@ public struct HTTPServerConfig {
         self.webSocketMaxFrameSize = webSocketMaxFrameSize
         self.supportCompression = supportCompression
         self.supportPipelining = supportPipelining
+        self.supportHTTP2 = supportHTTP2
+        self.tlsConfig = tlsConfig
         self.serverName = serverName
         self.upgraders = upgraders
         self.errorHandler = errorHandler

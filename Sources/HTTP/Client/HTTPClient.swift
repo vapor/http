@@ -1,3 +1,5 @@
+import Foundation
+
 /// Connects to remote HTTP servers allowing you to send `HTTPRequest`s and
 /// receive `HTTPResponse`s.
 ///
