@@ -25,7 +25,7 @@ extension HTTPClient {
             .channelInitializer { channel in
                 return scheme.configureChannel(channel).then { _ in
                     return channel.pipeline.add(name: "HTTPRequestEncoder", handler: HTTPRequestEncoder(), first: false).then { _ in
-                        return channel.pipeline.add(name: "HTTPResponseDecoder", handler: HTTPResponseDecoder(), first: false).then { _ in
+                        return channel.pipeline.add(name: "HTTPResponseDecoder", handler: HTTPResponseDecoder(leftOverBytesStrategy: .forwardBytes), first: false).then { _ in
                             return channel.pipeline.add(handler: handler, first: false)
                         }
                     }
@@ -79,10 +79,10 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
 
     /// If `true`, we are currently upgrading.
     private var upgrading: Bool
-
-    /// If `true`, the first `HTTPResponse` has already been seen.
-    private var seenFirstResponse: Bool
-
+    
+    /// The head we need to upgrade
+    private var res: HTTPResponseHead? = nil
+    
     /// Used to backlog messages while upgrading.
     private var receivedMessages: [NIOAny]
 
@@ -100,7 +100,6 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
         self.extraHTTPHandlerNames = extraHTTPHandlerNames
         self.upgrading = false
         self.receivedMessages = []
-        self.seenFirstResponse = false
         self.upgradePromise = worker.eventLoop.newPromise(Upgrader.UpgradeResult.self)
     }
 
@@ -118,28 +117,32 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
             return
         }
 
-        // We're trying to remove ourselves from the pipeline but not upgrading, so just pass this on.
-        if seenFirstResponse {
-            ctx.fireChannelRead(data)
-            return
-        }
-
         let responsePart = unwrapInboundIn(data)
-        seenFirstResponse = true
 
         // We should only ever see a request header: by the time the body comes in we should
         // be out of the pipeline. Anything else is an error.
-        guard case .head(let res) = responsePart, res.status == .switchingProtocols, upgrader.isValidUpgradeResponse(res) else {
+        if case .head(let res) = responsePart, res.status == .switchingProtocols, upgrader.isValidUpgradeResponse(res) {
+            self.res = res
+        } else if case .end(_) = responsePart, let res = self.res {
+            upgrading = true
+            
+            removeExtraHandlers(ctx: ctx).then {
+                return self.upgrader.upgrade(ctx: ctx, upgradeResponse: res)
+                }.then { handler in
+                    let p: EventLoopPromise<Bool> = ctx.eventLoop.newPromise()
+                    let resultFuture = p.futureResult.map { _ -> Upgrader.UpgradeResult in
+                        self.receivedMessages.forEach {
+                            ctx.fireChannelRead($0)
+                        }
+                        return handler
+                    }
+                    ctx.pipeline.remove(ctx: ctx, promise: p)
+                    return resultFuture
+                }.cascade(promise: upgradePromise)
+        } else {
             notUpgrading(ctx: ctx, data: data)
             return
         }
-
-        upgrading = true
-        removeExtraHandlers(ctx: ctx).then {
-            return ctx.pipeline.remove(ctx: ctx)
-        }.then { _ in
-            return self.upgrader.upgrade(ctx: ctx, upgradeResponse: res)
-        }.cascade(promise: upgradePromise)
     }
 
     /// Called when we know we're not upgrading. Passes the data on and then removes this object from the pipeline.
