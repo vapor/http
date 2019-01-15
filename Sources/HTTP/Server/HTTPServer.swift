@@ -15,17 +15,17 @@ public final class HTTPServer {
     ///
     ///     let server = try HTTPServer.start(
     ///         config: .init(hostname: hostname, port: port),
-    ///         responder: EchoResponder()
+    ///         delegate: EchoResponder()
     ///     ).wait()
     ///     try server.onClose.wait()
     ///
     /// - parameters:
     ///     - config: Specifies server start options such as hostname, port, and more.
     ///     - responder: Responds to incoming requests.
-    public static func start<R>(
+    public static func start<Delegate>(
         config: HTTPServerConfig,
-        responder: R
-    ) -> EventLoopFuture<HTTPServer> where R: HTTPResponder {
+        delegate: Delegate
+    ) -> EventLoopFuture<HTTPServer> where Delegate: HTTPServerDelegate {
         let group = MultiThreadedEventLoopGroup(numberOfThreads: config.workerCount)
         let bootstrap = ServerBootstrap(group: group)
             // Specify backlog and enable SO_REUSEADDR for the server itself
@@ -36,7 +36,7 @@ public final class HTTPServer {
             .childChannelInitializer { channel in
                 // create main responder handler
                 let handler = HTTPServerHandler(
-                    responder: responder,
+                    delegate: delegate,
                     maxBodySize: config.maxBodySize,
                     serverHeader: config.serverName,
                     onError: config.errorHandler
@@ -47,6 +47,7 @@ public final class HTTPServer {
                 
                 // add TLS handlers if configured
                 if let tlsConfig = config.tlsConfig {
+                    #warning("TODO: fix force try")
                     let sslContext = try! SSLContext(configuration: tlsConfig)
                     let tlsHandler = try! OpenSSLServerHandler(context: sslContext)
                     handlers.append(tlsHandler)
@@ -57,27 +58,14 @@ public final class HTTPServer {
                     // add http parsing and serializing
                     let responseEncoder = HTTPResponseEncoder()
                     let requestDecoder = HTTPRequestDecoder(
-                        leftOverBytesStrategy: config.upgraders.isEmpty ? .dropBytes : .forwardBytes
+                        leftOverBytesStrategy: .forwardBytes
                     )
                     handlers += [responseEncoder, requestDecoder]
+                    handler.httpDecoder = requestDecoder
                     
                     // add pipelining support if configured
                     if config.supportPipelining {
-                        handlers.append(HTTPServerPipelineHandler())
-                    }
-                    
-                    // if upgraders, add handler
-                    if !config.upgraders.isEmpty {
-                        let upgrader = HTTPServerUpgradeHandler(
-                            upgraders: config.upgraders,
-                            httpEncoder: responseEncoder,
-                            extraHTTPHandlers: Array(handlers.dropFirst()),
-                            upgradeCompletionHandler: { ctx in
-                                // shouldn't need to wait for this
-                                _ = ctx.channel.pipeline.remove(handler: handler)
-                            }
-                        )
-                        handlers.append(upgrader)
+                        //handlers.append(HTTPServerPipelineHandler())
                     }
                 }
                 

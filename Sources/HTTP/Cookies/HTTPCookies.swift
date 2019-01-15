@@ -57,7 +57,7 @@ public struct HTTPCookies: ExpressibleByDictionaryLiteral {
     // MARK: Serialize
 
     /// Seriaizes the `Cookies` for a `Request`
-    public func serialize(into request: HTTPRequest) {
+    public func serialize(into request: inout HTTPRequest) {
         guard !cookies.isEmpty else {
             request.headers.remove(name: .cookie)
             return
@@ -71,14 +71,14 @@ public struct HTTPCookies: ExpressibleByDictionaryLiteral {
     }
 
     /// Seriaizes the `Cookies` for a `Response`
-    public func serialize(into response: HTTPResponse)  {
+    public func serialize(into response: inout HTTPResponse)  {
         guard !cookies.isEmpty else {
-            response.head.headers.remove(name: .setCookie)
+            response.headers.remove(name: .setCookie)
             return
         }
 
         for (name, value) in cookies {
-            response.head.headers.add(name: .setCookie, value: value.serialize(name: name))
+            response.headers.add(name: .setCookie, value: value.serialize(name: name))
         }
     }
 

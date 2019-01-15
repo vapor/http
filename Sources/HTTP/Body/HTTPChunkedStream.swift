@@ -14,6 +14,7 @@ import NIO
 ///
 /// `HTTPChunkedStream` allows you to send data asynchronously without a predefined length.
 /// The `HTTPMessage` will be considered complete when the end chunk is sent.
+#warning("TODO: cleanup")
 public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
     /// Handles an incoming `HTTPChunkedStreamResult`.
     public typealias HTTPChunkedHandler = (HTTPChunkedStreamResult, HTTPChunkedStream) -> EventLoopFuture<Void>
@@ -75,6 +76,7 @@ public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
             return handler(chunk, self)
         } else {
             let promise = eventLoop.makePromise(of: Void.self)
+            #warning("TODO: properly buffer this")
             assert(waiting == nil)
             waiting = (chunk, promise)
             return promise.futureResult

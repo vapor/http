@@ -7,7 +7,7 @@ import Foundation
 ///         return client.send(...)
 ///     }
 ///
-public final class HTTPClient: HTTPResponder {
+public final class HTTPClient {
     // MARK: Static
 
     /// Creates a new `HTTPClient` connected over TCP or TLS.
@@ -219,11 +219,7 @@ private final class HTTPClientResponseParser: ChannelInboundHandler {
             case .ready: assert(false, "Unexpected HTTPClientResponsePart.end when awaiting request head.")
             case .parsingBody(let head, let data):
                 let body: HTTPBody = data.flatMap { .init(data: $0) } ?? .init()
-                let res = HTTPResponse(
-                    head: head,
-                    body: body,
-                    channel: ctx.channel
-                )
+                let res = HTTPResponse(status: head.status, version: head.version, headersNoUpdate: head.headers, body: body)
                 ctx.fireChannelRead(wrapOutboundOut(res))
                 state = .ready
             }

@@ -7,20 +7,14 @@ import NIOHTTP1
 ///     let httpReq = HTTPRequest(method: .GET, url: "/hello")
 ///
 /// See `HTTPClient` and `HTTPServer`.
-public final class HTTPRequest: HTTPMessage {
-    /// Internal storage is an NIO `HTTPRequestHead`
-    internal var head: HTTPRequestHead
-
+public struct HTTPRequest: HTTPMessage {
     // MARK: Properties
 
     /// The HTTP method for this request.
     ///
     ///     httpReq.method = .GET
     ///
-    public var method: HTTPMethod {
-        get { return head.method }
-        set { head.method = newValue }
-    }
+    public var method: HTTPMethod
 
     /// The URL used on this request.
     public var url: URL {
@@ -32,30 +26,15 @@ public final class HTTPRequest: HTTPMessage {
     ///
     ///     httpReq.urlString = "/welcome"
     ///
-    public var urlString: String {
-        get { return head.uri }
-        set { head.uri = newValue }
-    }
+    public var urlString: String
 
     /// The version for this HTTP request.
-    public var version: HTTPVersion {
-        get { return head.version }
-        set { head.version = newValue }
-    }
+    public var version: HTTPVersion
 
     /// The header fields for this HTTP request.
     /// The `"Content-Length"` and `"Transfer-Encoding"` headers will be set automatically
     /// when the `body` property is mutated.
-    public var headers: HTTPHeaders {
-        get { return head.headers }
-        set { head.headers = newValue }
-    }
-    
-    /// See `HTTPMessage`.
-    public var channel: Channel?
-    
-    /// See `HTTPMessage`.
-    public var userInfo: [AnyHashable : Any]
+    public var headers: HTTPHeaders
 
     /// The `HTTPBody`. Updating this property will also update the associated transport headers.
     ///
@@ -64,22 +43,22 @@ public final class HTTPRequest: HTTPMessage {
     /// Also be sure to set this message's `contentType` property to a `MediaType` that correctly
     /// represents the `HTTPBody`.
     public var body: HTTPBody {
-        didSet { self.head.headers.updateTransportHeaders(for: self.body) }
+        didSet { self.headers.updateTransportHeaders(for: self.body) }
     }
 
     /// Get and set `HTTPCookies` for this `HTTPRequest`
     /// This accesses the `"Cookie"` header.
     public var cookies: HTTPCookies {
         get { return headers.firstValue(name: .cookie).flatMap(HTTPCookies.parse) ?? [:] }
-        set { newValue.serialize(into: self) }
+        set { newValue.serialize(into: &self) }
     }
 
     /// See `CustomStringConvertible`
     public var description: String {
         var desc: [String] = []
-        desc.append("\(method) \(url) HTTP/\(version.major).\(version.minor)")
-        desc.append(headers.debugDescription)
-        desc.append(body.description)
+        desc.append("\(self.method) \(self.url) HTTP/\(self.version.major).\(self.version.minor)")
+        desc.append(self.headers.debugDescription)
+        desc.append(self.body.description)
         return desc.joined(separator: "\n")
     }
 
@@ -99,29 +78,35 @@ public final class HTTPRequest: HTTPMessage {
     ///                The `"Content-Length"` and `"Transfer-Encoding"` headers will be set automatically.
     ///     - body: `HTTPBody` for this request, defaults to an empty body.
     ///             See `LosslessHTTPBodyRepresentable` for more information.
-    public convenience init(
+    public init(
         method: HTTPMethod = .GET,
         url: URLRepresentable = URL.root,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
         body: LosslessHTTPBodyRepresentable = HTTPBody()
     ) {
-        var head = HTTPRequestHead(version: version, method: method, uri: url.convertToURL()?.absoluteString ?? "/")
-        let body = body.convertToHTTPBody()
-        head.headers = headers
-        head.headers.updateTransportHeaders(for: body)
         self.init(
-            head: head,
-            body: body,
-            channel: nil
+            method: method,
+            urlString: url.convertToURL()?.absoluteString ?? "/",
+            version: version,
+            headersNoUpdate: headers,
+            body: body.convertToHTTPBody()
         )
+        self.headers.updateTransportHeaders(for: self.body)
     }
 
     /// Internal init that creates a new `HTTPRequest` without sanitizing headers.
-    internal init(head: HTTPRequestHead, body: HTTPBody, channel: Channel?) {
-        self.head = head
+    public init(
+        method: HTTPMethod,
+        urlString: String,
+        version: HTTPVersion,
+        headersNoUpdate headers: HTTPHeaders,
+        body: HTTPBody
+    ) {
+        self.method = method
+        self.urlString = urlString
+        self.version = version
+        self.headers = headers
         self.body = body
-        self.channel = channel
-        self.userInfo = [:]
     }
 }
