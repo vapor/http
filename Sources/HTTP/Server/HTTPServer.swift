@@ -15,17 +15,17 @@ public final class HTTPServer {
     ///
     ///     let server = try HTTPServer.start(
     ///         config: .init(hostname: hostname, port: port),
-    ///         responder: EchoResponder()
+    ///         delegate: EchoResponder()
     ///     ).wait()
     ///     try server.onClose.wait()
     ///
     /// - parameters:
     ///     - config: Specifies server start options such as hostname, port, and more.
     ///     - responder: Responds to incoming requests.
-    public static func start<R>(
+    public static func start<Delegate>(
         config: HTTPServerConfig,
-        responder: R
-    ) -> EventLoopFuture<HTTPServer> where R: HTTPResponder {
+        delegate: Delegate
+    ) -> EventLoopFuture<HTTPServer> where Delegate: HTTPServerDelegate {
         let group = MultiThreadedEventLoopGroup(numberOfThreads: config.workerCount)
         let bootstrap = ServerBootstrap(group: group)
             // Specify backlog and enable SO_REUSEADDR for the server itself
@@ -34,69 +34,70 @@ public final class HTTPServer {
 
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
-                // create main responder handler
-                let handler = HTTPServerHandler(
-                    responder: responder,
-                    maxBodySize: config.maxBodySize,
-                    serverHeader: config.serverName,
-                    onError: config.errorHandler
-                )
-                
                 // create server pipeline array
                 var handlers: [ChannelHandler] = []
+                var otherHTTPHandlers: [ChannelHandler] = []
                 
                 // add TLS handlers if configured
                 if let tlsConfig = config.tlsConfig {
+                    #warning("TODO: fix force try")
                     let sslContext = try! SSLContext(configuration: tlsConfig)
                     let tlsHandler = try! OpenSSLServerHandler(context: sslContext)
                     handlers.append(tlsHandler)
                 }
 
                 // configure HTTP/1
-                do {
-                    // add http parsing and serializing
-                    let responseEncoder = HTTPResponseEncoder()
-                    let requestDecoder = HTTPRequestDecoder(
-                        leftOverBytesStrategy: config.upgraders.isEmpty ? .dropBytes : .forwardBytes
-                    )
-                    handlers += [responseEncoder, requestDecoder]
-                    
-                    // add pipelining support if configured
-                    if config.supportPipelining {
-                        handlers.append(HTTPServerPipelineHandler())
-                    }
-                    
-                    // if upgraders, add handler
-                    if !config.upgraders.isEmpty {
-                        let upgrader = HTTPServerUpgradeHandler(
-                            upgraders: config.upgraders,
-                            httpEncoder: responseEncoder,
-                            extraHTTPHandlers: Array(handlers.dropFirst()),
-                            upgradeCompletionHandler: { ctx in
-                                // shouldn't need to wait for this
-                                _ = ctx.channel.pipeline.remove(handler: handler)
-                            }
-                        )
-                        handlers.append(upgrader)
-                    }
+                // add http parsing and serializing
+                let httpResEncoder = HTTPResponseEncoder()
+                let httpReqDecoder = HTTPRequestDecoder(
+                    leftOverBytesStrategy: .forwardBytes
+                )
+                handlers += [httpResEncoder, httpReqDecoder]
+                otherHTTPHandlers += [httpResEncoder]
+                
+                // add pipelining support if configured
+                if config.supportPipelining {
+                    let pipelineHandler = HTTPServerPipelineHandler()
+                    handlers.append(pipelineHandler)
+                    otherHTTPHandlers.append(pipelineHandler)
                 }
                 
-                // configure HTTP/2
-                do {
-//                    let multiplexer = HTTP2StreamMultiplexer { (channel, streamID) -> EventLoopFuture<Void> in
-//                        return channel.pipeline.add(handler: HTTP2ToHTTP1ServerCodec(streamID: streamID)).then { () -> EventLoopFuture<Void> in
-//                            channel.pipeline.add(handler: HTTP1TestServer())
-//                        }
-//                    }
-//
-//                    return channel.pipeline.add(handler: multiplexer)
-                }
-                
+                // add response compressor if configured
                 if config.supportCompression {
-                    handlers.append(HTTPResponseCompressor())
+                    let compressionHandler = HTTPResponseCompressor()
+                    handlers.append(compressionHandler)
+                    otherHTTPHandlers.append(compressionHandler)
                 }
                 
-                // finally add responder handler
+                // add NIO -> HTTP request decoder
+                let serverReqDecoder = HTTPServerRequestDecoder(
+                    maxBodySize: config.maxBodySize
+                )
+                handlers.append(serverReqDecoder)
+                otherHTTPHandlers.append(serverReqDecoder)
+                
+                // add NIO -> HTTP response encoder
+                let serverResEncoder = HTTPServerResponseEncoder(
+                    serverHeader: config.serverName
+                )
+                handlers.append(serverResEncoder)
+                otherHTTPHandlers.append(serverResEncoder)
+                
+                // add server request -> response delegate
+                let handler = HTTPServerHandler(
+                    delegate: delegate,
+                    errorHandler: config.errorHandler
+                )
+                otherHTTPHandlers.append(handler)
+                
+                // add HTTP upgrade handler
+                let upgrader = HTTPServerUpgradeHandler(
+                    httpRequestDecoder: httpReqDecoder,
+                    otherHTTPHandlers: otherHTTPHandlers
+                )
+                handlers.append(upgrader)
+                
+                // wait to add delegate as final step
                 handlers.append(handler)
                 
                 // configure the pipeline

@@ -16,7 +16,7 @@ import NIOHTTP1
 ///
 /// This protocol is useful for adding methods to both requests and responses, such as the ability to serialize
 /// content to both message types.
-public protocol HTTPMessage: class, CustomStringConvertible, CustomDebugStringConvertible {
+public protocol HTTPMessage: CustomStringConvertible, CustomDebugStringConvertible {
     /// The HTTP version of this message.
     var version: HTTPVersion { get set }
 
@@ -25,11 +25,6 @@ public protocol HTTPMessage: class, CustomStringConvertible, CustomDebugStringCo
 
     /// The optional HTTP body.
     var body: HTTPBody { get set }
-    
-    /// Channel this HTTP message was recieved on, if any.
-    var channel: Channel? { get set }
-
-    var userInfo: [AnyHashable: Any] { get set }
 }
 
 extension HTTPMessage {

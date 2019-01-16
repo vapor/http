@@ -13,6 +13,7 @@ enum HTTPBodyStorage {
     case staticString(StaticString)
     case dispatchData(DispatchData)
     case string(String)
+    #warning("TODO: consider always collecting HTTP body with separate API for streaming routes")
     case chunkedStream(HTTPChunkedStream)
 
     /// The size of the HTTP body's data.
