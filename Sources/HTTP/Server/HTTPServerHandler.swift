@@ -47,8 +47,12 @@ final class HTTPServerHandler: ChannelInboundHandler {
         
         var res = res
         res.headers.add(name: .connection, value: req.isKeepAlive ? "keep-alive" : "close")
-        _ = ctx.write(self.wrapOutboundOut(res)).then {
-            return ctx.close()
+        let done = ctx.write(self.wrapOutboundOut(res))
+        
+        if !req.isKeepAlive {
+            _ = done.then {
+                return ctx.close()
+            }
         }
     }
 }

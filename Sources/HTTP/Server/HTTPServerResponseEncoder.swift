@@ -4,16 +4,18 @@ final class HTTPServerResponseEncoder: ChannelOutboundHandler {
     
     /// Optional server header.
     private let serverHeader: String?
+    private let dateCache: RFC1123DateCache
     
-    init(serverHeader: String?) {
+    init(serverHeader: String?, dateCache: RFC1123DateCache) {
         self.serverHeader = serverHeader
+        self.dateCache = dateCache
     }
     
     func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         var res = self.unwrapOutboundIn(data)
         // add a RFC1123 timestamp to the Date header to make this
         // a valid request
-        res.headers.add(name: "date", value: RFC1123DateCache.shared.currentTimestamp())
+        res.headers.add(name: "date", value: self.dateCache.currentTimestamp())
         
         if let server = self.serverHeader {
             res.headers.add(name: "server", value: server)
@@ -75,6 +77,4 @@ final class HTTPServerResponseEncoder: ChannelOutboundHandler {
         }
         ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: promise)
     }
-    
-
 }

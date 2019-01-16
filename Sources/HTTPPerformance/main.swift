@@ -9,9 +9,9 @@ do {
     let res1 = client.send(.init(url: "/status/201"))
     let res2 = client.send(.init(url: "/status/202"))
     
-    try print(res0.wait())
-    try print(res1.wait())
-    try print(res2.wait())
+    try print(res0.wait().status)
+    try print(res1.wait().status)
+    try print(res2.wait().status)
 }
 
 let res = HTTPResponse(body: "pong" as StaticString)

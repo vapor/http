@@ -44,7 +44,7 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
     func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let res = self.unwrapOutboundIn(data)
         
-        ctx.write(self.wrapOutboundOut(res), promise: nil)
+        ctx.write(self.wrapOutboundOut(res), promise: promise)
         
         // check upgrade
         switch self.upgradeState {
@@ -62,8 +62,8 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
                             uri: req.urlString
                         )
                     )
-                    }.then {
-                        return ctx.pipeline.remove(handler: buffer)
+                }.then {
+                    return ctx.pipeline.remove(handler: buffer)
                 }
                 self.upgradeState = .upgraded
             } else {

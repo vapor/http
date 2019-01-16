@@ -78,7 +78,8 @@ public final class HTTPServer {
                 
                 // add NIO -> HTTP response encoder
                 let serverResEncoder = HTTPServerResponseEncoder(
-                    serverHeader: config.serverName
+                    serverHeader: config.serverName,
+                    dateCache: .eventLoop(channel.eventLoop)
                 )
                 handlers.append(serverResEncoder)
                 otherHTTPHandlers.append(serverResEncoder)

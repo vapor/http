@@ -60,38 +60,44 @@ extension Date {
 
 /// Performant method for generating RFC1123 date headers.
 internal final class RFC1123DateCache {
-    /// Thread-specific RFC1123
-    private static let thread: ThreadSpecificVariable<RFC1123DateCache> = .init()
-    
-    /// A static RFC1123 helper instance
-    public static var shared: RFC1123DateCache {
+    static func eventLoop(_ eventLoop: EventLoop) -> RFC1123DateCache {
+        assert(eventLoop.inEventLoop)
+        
         if let existing = thread.currentValue {
             return existing
         } else {
             let new = RFC1123DateCache()
+            eventLoop.scheduleRepeatedTask(initialDelay: .seconds(1), delay: .seconds(1)) { task in
+                new.updateTimestamp()
+            }
             thread.currentValue = new
             return new
         }
     }
     
+    /// Thread-specific RFC1123
+    private static let thread: ThreadSpecificVariable<RFC1123DateCache> = .init()
+    
     /// Currently cached time components.
     private var cachedTimeComponents: (key: time_t, components: tm)?
 
     /// Currently cached timestamp.
-    private var cachedTimestamp: (timestamp: String, expiration: Int)?
+    private var timestamp: String
 
     /// Creates a new `RFC1123DateCache`.
-    private init() { }
+    private init() {
+        self.timestamp = ""
+        self.updateTimestamp()
+    }
     
-    /// Gets the current RFC 1123 date string.
     func currentTimestamp() -> String {
+        return self.timestamp
+    }
+    
+    /// Updates the current RFC 1123 date string.
+    func updateTimestamp() {
         // get the current time
         var date = time(nil)
-
-        // check if the cached timestamp is still valid
-        if let (timestamp, expiration) = cachedTimestamp, date < expiration {
-            return timestamp
-        }
 
         // generate a key used for caching
         // this key is a unique id for each day
@@ -99,13 +105,13 @@ internal final class RFC1123DateCache {
 
         // get time components
         let dateComponents: tm
-        if let cached = cachedTimeComponents, cached.key == key {
+        if let cached = self.cachedTimeComponents, cached.key == key {
             dateComponents = cached.components
         } else {
             var tc = tm.init()
             gmtime_r(&date, &tc)
             dateComponents = tc
-            cachedTimeComponents = (key: key, components: tc)
+            self.cachedTimeComponents = (key: key, components: tc)
         }
 
         // parse components
@@ -140,9 +146,7 @@ internal final class RFC1123DateCache {
         rfc1123.append(" GMT")
 
         // cache the new timestamp and its expiration
-        cachedTimestamp = (rfc1123, date + accuracy)
-
-        return rfc1123
+        self.timestamp = rfc1123
     }
 }
 
