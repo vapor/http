@@ -45,6 +45,10 @@ public struct HTTPRequest: HTTPMessage {
     public var body: HTTPBody {
         didSet { self.headers.updateTransportHeaders(for: self.body) }
     }
+    
+    public var isKeepAlive: Bool
+    
+    public var upgrader: HTTPClientProtocolUpgrader?
 
     /// Get and set `HTTPCookies` for this `HTTPRequest`
     /// This accesses the `"Cookie"` header.
@@ -108,5 +112,6 @@ public struct HTTPRequest: HTTPMessage {
         self.version = version
         self.headers = headers
         self.body = body
+        self.isKeepAlive = true
     }
 }

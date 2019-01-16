@@ -1,10 +1,11 @@
-// swift-tools-version:4.2
+// swift-tools-version:5.0
 import PackageDescription
 
 let package = Package(
-    name: "http",
+    name: "engine",
     products: [
         .library(name: "HTTP", targets: ["HTTP"]),
+        .library(name: "WebSocket", targets: ["WebSocket"]),
     ],
     dependencies: [
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
@@ -17,5 +18,8 @@ let package = Package(
         .target(name: "HTTP", dependencies: ["NIO", "NIOFoundationCompat", "NIOHTTP1", "NIOOpenSSL"]),
         .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
         .target(name: "HTTPPerformance", dependencies: ["HTTP"]),
+        .target(name: "WebSocket", dependencies: ["HTTP", "NIO", "NIOWebSocket"]),
+        .target(name: "WebSocketDevelopment", dependencies: ["WebSocket"]),
+        .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
     ]
 )
