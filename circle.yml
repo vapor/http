@@ -8,3 +8,9 @@ jobs:
       - checkout
       - run: swift build
       - run: swift test
+
+workflows:
+  version: 2
+  tests:
+    jobs:
+      - linux
