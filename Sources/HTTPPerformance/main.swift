@@ -3,11 +3,11 @@ import HTTP
 let hostname = "127.0.0.1"
 
 do {
-    let client = try HTTPClient.connect(config: .init(hostname: "httpbin.org")).wait()
+    let client = HTTPClient()
     
-    let res0 = client.send(.init(url: "/status/200"))
-    let res1 = client.send(.init(url: "/status/201"))
-    let res2 = client.send(.init(url: "/status/202"))
+    let res0 = client.get("http://httpbin.org/status/200")
+    let res1 = client.get("http://httpbin.org/status/201")
+    let res2 = client.get("http://httpbin.org/status/202")
     
     try print(res0.wait().status)
     try print(res1.wait().status)

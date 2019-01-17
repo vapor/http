@@ -1,16 +1,9 @@
 /// Configuration options for `HTTPClient`.
 public struct HTTPClientConfig {
-    /// Transport layer security to use, either tls or plainText.
-    public var scheme: HTTPScheme
-    
-    /// Remote server's hostname.
-    public var hostname: String
-    
-    /// Remote server's port, defaults to 80 for TCP and 443 for TLS.
-    public var port: Int?
-    
     /// The timeout that will apply to the connection attempt.
     public var connectTimeout: TimeAmount
+    
+    public var tlsConfig: TLSConfiguration?
     
     enum Worker {
         case unowned(EventLoop)
@@ -39,17 +32,13 @@ public struct HTTPClientConfig {
     ///     - worker: `Worker` to perform async work on.
     ///     - errorHandler: Optional closure, which fires when a networking error is caught.
     public init(
-        scheme: HTTPScheme = .http,
-        hostname: String,
-        port: Int? = nil,
         connectTimeout: TimeAmount = TimeAmount.seconds(10),
+        tlsConfig: TLSConfiguration? = nil,
         eventLoop: EventLoop? = nil,
         errorHandler: @escaping (Error) -> () = { _ in }
     ) {
-        self.scheme = scheme
-        self.hostname = hostname
-        self.port = port
         self.connectTimeout = connectTimeout
+        self.tlsConfig = tlsConfig
         if let eventLoop = eventLoop {
             self.worker = .unowned(eventLoop)
         } else {
