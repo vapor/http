@@ -15,10 +15,6 @@ public struct HTTPServerConfig {
     /// Listen backlog.
     public var backlog: Int
     
-    /// Number of client accepting workers.
-    /// Should be equal to the number of logical cores.
-    public var workerCount: Int
-    
     /// Requests containing bodies larger than this maximum will be rejected, closing the connection.
     public var maxBodySize: Int
     
@@ -47,6 +43,10 @@ public struct HTTPServerConfig {
     /// An array of `HTTPProtocolUpgrader` to check for with each request.
     public var upgraders: [HTTPProtocolUpgrader]
     
+    public var delegate: HTTPServerDelegate
+    
+    public var eventLoopGroup: EventLoopGroup
+    
     /// Any uncaught server or responder errors will go here.
     public var errorHandler: (Error) -> ()
     
@@ -72,7 +72,6 @@ public struct HTTPServerConfig {
         hostname: String = "127.0.0.1",
         port: Int = 8080,
         backlog: Int = 256,
-        workerCount: Int = ProcessInfo.processInfo.activeProcessorCount,
         maxBodySize: Int = 1_000_000,
         reuseAddress: Bool = true,
         tcpNoDelay: Bool = true,
@@ -83,12 +82,13 @@ public struct HTTPServerConfig {
         tlsConfig: TLSConfiguration? = nil,
         serverName: String? = nil,
         upgraders: [HTTPProtocolUpgrader] = [],
+        delegate: HTTPServerDelegate,
+        on eventLoopGroup: EventLoopGroup,
         errorHandler: @escaping (Error) -> () = { _ in }
     ) {
         self.hostname = hostname
         self.port = port
         self.backlog = backlog
-        self.workerCount = workerCount
         self.maxBodySize = maxBodySize
         self.reuseAddress = reuseAddress
         self.tcpNoDelay = tcpNoDelay
@@ -99,6 +99,8 @@ public struct HTTPServerConfig {
         self.tlsConfig = tlsConfig
         self.serverName = serverName
         self.upgraders = upgraders
+        self.delegate = delegate
+        self.eventLoopGroup = eventLoopGroup
         self.errorHandler = errorHandler
     }
 }

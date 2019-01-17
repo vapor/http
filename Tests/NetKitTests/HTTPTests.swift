@@ -1,6 +1,4 @@
-import NIO
-import NIOHTTP1
-import HTTP
+import NetKit
 import XCTest
 
 class HTTPTests: XCTestCase {
@@ -25,7 +23,7 @@ class HTTPTests: XCTestCase {
     }
     
     func testCookieIsSerializedCorrectly() throws {
-        let httpReq = HTTPRequest(method: .GET, url: "/")
+        var httpReq = HTTPRequest(method: .GET, url: "/")
 
         guard let (name, value) = HTTPCookieValue.parse("id=value; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
             throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
@@ -47,71 +45,45 @@ class HTTPTests: XCTestCase {
     func testRemotePeer() throws {
         let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         let client = try HTTPClient.connect(
-            config: .init(hostname: "httpbin.org", eventLoop: worker.next())
+            config: .init(hostname: "httpbin.org", on: worker)
         ).wait()
         let httpReq = HTTPRequest(method: .GET, url: "/")
-        let httpRes = try client.respond(to: httpReq).wait()
-        XCTAssertEqual(httpRes.remotePeer.port, 80)
+        let httpRes = try client.send(httpReq).wait()
+        XCTAssertEqual(httpRes.remotePeer(on: client.channel).port, 80)
+        try worker.syncShutdownGracefully()
     }
     
     func testLargeResponseClose() throws {
-        struct LargeResponder: HTTPResponder {
-            func respond(to request: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
+        struct LargeResponder: HTTPServerDelegate {
+            func respond(to request: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
                 let res = HTTPResponse(
                     status: .ok,
                     body: String(repeating: "0", count: 2_000_000)
                 )
-                return request.channel!.eventLoop.makeSucceededFuture(result: res)
+                return channel.eventLoop.makeSucceededFuture(result: res)
             }
         }
-        let server = try HTTPServer.start(
-            config: .init(
-                hostname: "localhost",
-                port: 8080,
-                errorHandler: { error in
-                    XCTFail("\(error)")
-                }
-            ),
-            responder: LargeResponder()
-        ) .wait()
-        
         let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let server = try HTTPServer.start(config: .init(
+            hostname: "localhost",
+            port: 8080,
+            delegate: LargeResponder(),
+            on: worker,
+            errorHandler: { error in
+                XCTFail("\(error)")
+            }
+        )) .wait()
+    
         let client = try HTTPClient.connect(
-            config: .init(hostname: "localhost", port: 8080, eventLoop: worker.next())
+            config: .init(hostname: "localhost", port: 8080, on: worker)
         ).wait()
-        let req = HTTPRequest(method: .GET, url: "/")
+        var req = HTTPRequest(method: .GET, url: "/")
         req.headers.replaceOrAdd(name: .connection, value: "close")
-        let res = try client.respond(to: req).wait()
+        let res = try client.send(req).wait()
         XCTAssertEqual(res.body.count, 2_000_000)
         try server.close().wait()
         try server.onClose.wait()
-    }
-    
-    func testUpgradeFail() throws {
-        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        struct FakeUpgrader: HTTPClientProtocolUpgrader {
-            typealias UpgradeResult = String
-            
-            func buildUpgradeRequest() -> HTTPRequestHead {
-                return .init(version: .init(major: 1, minor: 1), method: .GET, uri: "/")
-            }
-            
-            func isValidUpgradeResponse(_ upgradeResponse: HTTPResponseHead) -> Bool {
-                return true
-            }
-            
-            func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<String> {
-                return ctx.eventLoop.makeSucceededFuture(result: "hello")
-            }
-            
-            
-        }
-        do {
-            _ = try HTTPClient.upgrade(hostname: "foo", upgrader: FakeUpgrader(), on: worker.next()).wait()
-            XCTFail("expected error")
-        } catch {
-            XCTAssert(error is NIOConnectionError)
-        }
+        try worker.syncShutdownGracefully()
     }
 
     static let allTests = [
@@ -120,6 +92,5 @@ class HTTPTests: XCTestCase {
         ("testRemotePeer", testRemotePeer),
         ("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
         ("testLargeResponseClose", testLargeResponseClose),
-        ("testUpgradeFail", testUpgradeFail),
     ]
 }

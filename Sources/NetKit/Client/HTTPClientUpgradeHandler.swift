@@ -5,7 +5,7 @@ internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler {
     
     enum UpgradeState {
         case ready
-        case pending(HTTPRequest)
+        case pending(HTTPClientProtocolUpgrader)
     }
 
     var state: UpgradeState
@@ -19,31 +19,33 @@ internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler {
     }
 
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+        ctx.fireChannelRead(data)
+        
         switch self.state {
-        case .pending(let req):
-            let res = unwrapInboundIn(data)
-            if res.status == .switchingProtocols, let upgrader = req.upgrader {
-                _ = upgrader.upgrade(ctx: ctx, upgradeResponse: .init(
+        case .pending(let upgrader):
+            let res = self.unwrapInboundIn(data)
+            if res.status == .switchingProtocols {
+                ctx.pipeline.remove(handler: self, promise: nil)
+                self.otherHTTPHandlers.forEach { ctx.pipeline.remove(handler: $0, promise: nil) }
+                upgrader.upgrade(ctx: ctx, upgradeResponse: .init(
                     version: res.version,
                     status: res.status,
                     headers: res.headers
-                )).then { _ in
-                    return EventLoopFuture<Void>.andAll(([self] + self.otherHTTPHandlers).map { handler in
-                        return ctx.pipeline.remove(handler: handler).map { _ in Void() }
-                    }, eventLoop: ctx.eventLoop)
+                )).whenFailure { error in
+                    self.errorCaught(ctx: ctx, error: error)
                 }
-            } else {
-                ctx.fireChannelRead(data)
             }
-        case .ready:
-            ctx.fireChannelRead(data)
+        case .ready: break
         }
     }
     
     func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
-        let req = self.unwrapOutboundIn(data)
-        if req.upgrader != nil {
-            self.state = .pending(req)
+        var req = self.unwrapOutboundIn(data)
+        if let upgrader = req.upgrader {
+            for (name, value) in upgrader.buildUpgradeRequest() {
+                req.headers.add(name: name, value: value)
+            }
+            self.state = .pending(upgrader)
         }
         ctx.write(self.wrapOutboundOut(req), promise: promise)
     }

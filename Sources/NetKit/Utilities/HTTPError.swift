@@ -13,7 +13,7 @@ public struct HTTPError: Error {
     /// Creates a new `HTTPError`.
     public init(
         identifier: String,
-        reason: String,
+        reason: String = "",
         file: String = #file,
         function: String = #function,
         line: UInt = #line,

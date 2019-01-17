@@ -2,10 +2,9 @@
 import PackageDescription
 
 let package = Package(
-    name: "engine",
+    name: "net-kit",
     products: [
-        .library(name: "HTTP", targets: ["HTTP"]),
-        .library(name: "WebSocket", targets: ["WebSocket"]),
+        .library(name: "NetKit", targets: ["NetKit"]),
     ],
     dependencies: [
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
@@ -15,11 +14,14 @@ let package = Package(
         .package(url: "https://github.com/tanner0101/swift-nio-ssl.git", .branch("master")),
     ],
     targets: [
-        .target(name: "HTTP", dependencies: ["NIO", "NIOFoundationCompat", "NIOHTTP1", "NIOOpenSSL"]),
-        .testTarget(name: "HTTPTests", dependencies: ["HTTP"]),
-        .target(name: "HTTPPerformance", dependencies: ["HTTP"]),
-        .target(name: "WebSocket", dependencies: ["HTTP", "NIO", "NIOWebSocket"]),
-        .target(name: "WebSocketDevelopment", dependencies: ["WebSocket"]),
-        .testTarget(name: "WebSocketTests", dependencies: ["WebSocket"]),
+        .target(name: "NetKit", dependencies: [
+            "NIO",
+            "NIOFoundationCompat",
+            "NIOHTTP1",
+            "NIOOpenSSL",
+            "NIOWebSocket"
+        ]),
+        .target(name: "NetKitExample", dependencies: ["NetKit"]),
+        .testTarget(name: "NetKitTests", dependencies: ["NetKit"]),
     ]
 )

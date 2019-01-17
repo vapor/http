@@ -1,5 +1,4 @@
-import NIO
-import HTTP
+import NetKit
 import XCTest
 
 class HTTPClientTests: XCTestCase {
@@ -28,7 +27,7 @@ class HTTPClientTests: XCTestCase {
     }
 
     func testVaporWithTLS() throws {
-        try testURL("https://vapor.codes", contains: "Server-side Swift")
+        try! testURL("https://vapor.codes", contains: "Server-side Swift")
     }
 
     func testQuery() throws {
@@ -66,18 +65,21 @@ private func testURL(
     guard let url = URL(string: string) else {
         throw HTTPError(identifier: "parseURL", reason: "Could not parse URL: \(string)")
     }
-    let scheme: HTTPScheme = url.scheme == "https" ? .https : .http
+    let tlsConfig: TLSConfiguration? = (url.scheme == "https" ? .forClient(certificateVerification: .none) : nil)
     let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     for _ in 0..<times {
-        let res = try HTTPClient.connect(
-            config: .init(scheme: scheme, hostname: url.host ?? "", eventLoop: worker.next()
+        let res = try HTTPClient.connect(config: .init(
+            hostname: url.host ?? "",
+            tlsConfig: tlsConfig,
+            on: worker
         )).then { client -> EventLoopFuture<HTTPResponse> in
             var comps =  URLComponents()
             comps.path = url.path.isEmpty ? "/" : url.path
             comps.query = url.query
             let req = HTTPRequest(method: .GET, url: comps.url ?? .root)
-            return client.respond(to: req)
+            return client.send(req)
         }.wait()
         try check(res)
     }
+    try worker.syncShutdownGracefully()
 }

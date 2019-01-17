@@ -22,12 +22,8 @@ public final class HTTPServer {
     /// - parameters:
     ///     - config: Specifies server start options such as hostname, port, and more.
     ///     - responder: Responds to incoming requests.
-    public static func start<Delegate>(
-        config: HTTPServerConfig,
-        delegate: Delegate
-    ) -> EventLoopFuture<HTTPServer> where Delegate: HTTPServerDelegate {
-        let group = MultiThreadedEventLoopGroup(numberOfThreads: config.workerCount)
-        let bootstrap = ServerBootstrap(group: group)
+    public static func start(config: HTTPServerConfig) -> EventLoopFuture<HTTPServer> {
+        let bootstrap = ServerBootstrap(group: config.eventLoopGroup)
             // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: Int32(config.backlog))
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: config.reuseAddress ? SocketOptionValue(1) : SocketOptionValue(0))
@@ -86,7 +82,7 @@ public final class HTTPServer {
                 
                 // add server request -> response delegate
                 let handler = HTTPServerHandler(
-                    delegate: delegate,
+                    delegate: config.delegate,
                     errorHandler: config.errorHandler
                 )
                 otherHTTPHandlers.append(handler)
@@ -113,16 +109,6 @@ public final class HTTPServer {
 
         return bootstrap.bind(host: config.hostname, port: config.port).map { channel in
             return HTTPServer(channel: channel)
-        }.map { server in
-            // shutdown event loop when server closes
-            server.onClose.whenComplete { _ in
-                do {
-                    try group.syncShutdownGracefully()
-                } catch {
-                    ERROR("Failed shutting down HTTPServer EventLoopGroup: \(error)")
-                }
-            }
-            return server
         }
     }
 

@@ -1,23 +1,15 @@
 /// Configuration options for `HTTPClient`.
 public struct HTTPClientConfig {
+    
+    public var hostname: String
+    public var port: Int
+    public var tlsConfig: TLSConfiguration?
+    
     /// The timeout that will apply to the connection attempt.
     public var connectTimeout: TimeAmount
     
-    public var tlsConfig: TLSConfiguration?
     
-    enum Worker {
-        case unowned(EventLoop)
-        case owned(MultiThreadedEventLoopGroup)
-        
-        var eventLoop: EventLoop {
-            switch self {
-            case .unowned(let eventLoop): return eventLoop
-            case .owned(let group): return group.next()
-            }
-        }
-    }
-    
-    var worker: Worker
+    public var eventLoopGroup: EventLoopGroup
     
     /// Optional closure, which fires when a networking error is caught.
     public var errorHandler: (Error) -> ()
@@ -32,18 +24,18 @@ public struct HTTPClientConfig {
     ///     - worker: `Worker` to perform async work on.
     ///     - errorHandler: Optional closure, which fires when a networking error is caught.
     public init(
-        connectTimeout: TimeAmount = TimeAmount.seconds(10),
+        hostname: String,
+        port: Int? = nil,
         tlsConfig: TLSConfiguration? = nil,
-        eventLoop: EventLoop? = nil,
+        connectTimeout: TimeAmount = TimeAmount.seconds(10),
+        on eventLoopGroup: EventLoopGroup,
         errorHandler: @escaping (Error) -> () = { _ in }
     ) {
-        self.connectTimeout = connectTimeout
+        self.hostname = hostname
+        self.port = port ?? (tlsConfig != nil ? 443 : 80)
         self.tlsConfig = tlsConfig
-        if let eventLoop = eventLoop {
-            self.worker = .unowned(eventLoop)
-        } else {
-            self.worker = .owned(MultiThreadedEventLoopGroup(numberOfThreads: 1))
-        }
+        self.connectTimeout = connectTimeout
+        self.eventLoopGroup = eventLoopGroup
         self.errorHandler = errorHandler
     }
 }

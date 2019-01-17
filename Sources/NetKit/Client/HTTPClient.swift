@@ -7,7 +7,7 @@ import Foundation
 ///         return client.send(...)
 ///     }
 ///
-internal final class HTTPConnectedClient {
+public final class HTTPClient {
     // MARK: Static
 
     /// Creates a new `HTTPClient` connected over TCP or TLS.
@@ -19,23 +19,20 @@ internal final class HTTPConnectedClient {
     /// - parameters:
     ///     - config: Specifies client connection options such as hostname, port, and more.
     /// - returns: A `Future` containing the connected `HTTPClient`.
-    static func connect(
-        hostname: String,
-        port: Int,
-        tlsConfig: TLSConfiguration?,
+    public static func connect(
         config: HTTPClientConfig
-    ) -> EventLoopFuture<HTTPConnectedClient> {
-        let bootstrap = ClientBootstrap(group: config.worker.eventLoop)
+    ) -> EventLoopFuture<HTTPClient> {
+        let bootstrap = ClientBootstrap(group: config.eventLoopGroup)
             .connectTimeout(config.connectTimeout)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 var handlers: [ChannelHandler] = []
                 var otherHTTPHandlers: [ChannelHandler] = []
                 
-                if let tlsConfig = tlsConfig {
+                if let tlsConfig = config.tlsConfig {
                     #warning("TODO: fix force try")
                     let sslContext = try! SSLContext(configuration: tlsConfig)
-                    let tlsHandler = try! OpenSSLServerHandler(context: sslContext)
+                    let tlsHandler = try! OpenSSLClientHandler(context: sslContext)
                     handlers.append(tlsHandler)
                 }
                     
@@ -51,20 +48,24 @@ internal final class HTTPConnectedClient {
                 handlers.append(clientResDecoder)
                 otherHTTPHandlers.append(clientResDecoder)
                 
-                let clientReqEncoder = HTTPClientRequestEncoder(hostname: hostname)
+                let clientReqEncoder = HTTPClientRequestEncoder(hostname: config.hostname)
                 handlers.append(clientReqEncoder)
                 otherHTTPHandlers.append(clientReqEncoder)
                 
+                let handler = HTTPClientHandler()
+                otherHTTPHandlers.append(handler)
+                
                 let upgrader = HTTPClientUpgradeHandler(otherHTTPHandlers: otherHTTPHandlers)
                 handlers.append(upgrader)
+                handlers.append(handler)
                 
                 return channel.pipeline.addHandlers(handlers, first: false)
         }
         return bootstrap.connect(
-            host: hostname,
-            port: port
+            host: config.hostname,
+            port: config.port
         ).map { channel in
-            return HTTPConnectedClient(channel: channel)
+            return HTTPClient(channel: channel)
         }
     }
 
@@ -96,14 +97,9 @@ internal final class HTTPConnectedClient {
     /// - returns: A `Future` `HTTPResponse` containing the server's response.
     public func send(_ req: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
         let promise = self.channel.eventLoop.makePromise(of: HTTPResponse.self)
-        let handler = HTTPClientHandler(promise: promise)
-        self.channel.pipeline.add(handler: handler).then {
-            return self.channel.writeAndFlush(NIOAny(req))
-        }.cascadeFailure(promise: promise)
-        return promise.futureResult.then { res in
-            return self.channel.pipeline.remove(handler: handler)
-                .map { _ in res }
-        }
+        let ctx = HTTPClientRequestContext(request: req, promise: promise)
+        self.channel.write(ctx, promise: nil)
+        return promise.futureResult
     }
 
     /// Closes this `HTTPClient`'s connection to the remote server.

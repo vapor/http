@@ -14,7 +14,7 @@ internal final class HTTPClientRequestEncoder: ChannelOutboundHandler {
     func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = unwrapOutboundIn(data)
         var headers = req.headers
-        headers.add(name: .host, value: hostname)
+        headers.add(name: .host, value: self.hostname)
         headers.replaceOrAdd(name: .userAgent, value: "Vapor/4.0 (Swift)")
         var httpHead = HTTPRequestHead(
             version: req.version,

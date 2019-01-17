@@ -71,14 +71,14 @@ extension HTTPRequest {
 // MARK: Private
 
 /// Private `HTTPClientProtocolUpgrader` for use with `HTTPClient.upgrade(...)`.
-private final class WebSocketClientUpgrader: HTTPClientProtocolUpgrader {
+public final class WebSocketClientUpgrader: HTTPClientProtocolUpgrader {
     /// Maximum frame size for decoder.
     private let maxFrameSize: Int
     
     private let upgradePipelineHandler: (Channel, HTTPResponseHead) -> EventLoopFuture<Void>
 
     /// Creates a new `WebSocketClientUpgrader`.
-    init(
+    public init(
         maxFrameSize: Int = 1 << 14,
         upgradePipelineHandler: @escaping (Channel, HTTPResponseHead) -> EventLoopFuture<Void>
     ) {
@@ -87,7 +87,7 @@ private final class WebSocketClientUpgrader: HTTPClientProtocolUpgrader {
     }
 
     /// See `HTTPClientProtocolUpgrader`.
-    func buildUpgradeRequest() -> HTTPHeaders {
+    public func buildUpgradeRequest() -> HTTPHeaders {
         var headers = HTTPHeaders()
         headers.add(name: .connection, value: "Upgrade")
         headers.add(name: .upgrade, value: "websocket")
@@ -104,17 +104,7 @@ private final class WebSocketClientUpgrader: HTTPClientProtocolUpgrader {
     }
 
     /// See `HTTPClientProtocolUpgrader`.
-    func isValidUpgradeResponse(_ upgradeRes: HTTPResponseHead) -> Bool {
-        switch upgradeRes.status {
-        case .switchingProtocols:
-            // fixme: do additional checks
-            return true
-        default: return false
-        }
-    }
-
-    /// See `HTTPClientProtocolUpgrader`.
-    func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<Void> {
+    public func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<Void> {
         return ctx.channel.pipeline.addHandlers([
             WebSocketFrameEncoder(),
             ByteToMessageHandler(WebSocketFrameDecoder(maxFrameSize: maxFrameSize))

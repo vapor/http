@@ -19,7 +19,8 @@ internal final class HTTPClientResponseDecoder: ChannelInboundHandler {
     
     /// See `ChannelInboundHandler`.
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-        switch unwrapInboundIn(data) {
+        let res = self.unwrapInboundIn(data)
+        switch res {
         case .head(let head):
             switch self.state {
             case .ready: self.state = .parsingBody(head, nil)
