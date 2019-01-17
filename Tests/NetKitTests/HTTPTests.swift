@@ -85,12 +85,4 @@ class HTTPTests: XCTestCase {
         try server.onClose.wait()
         try worker.syncShutdownGracefully()
     }
-
-    static let allTests = [
-        ("testCookieParse", testCookieParse),
-        ("testAcceptHeader", testAcceptHeader),
-        ("testRemotePeer", testRemotePeer),
-        ("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
-        ("testLargeResponseClose", testLargeResponseClose),
-    ]
 }

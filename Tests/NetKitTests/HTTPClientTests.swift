@@ -33,17 +33,6 @@ class HTTPClientTests: XCTestCase {
     func testQuery() throws {
         try testURL("http://httpbin.org/get?foo=bar", contains: "bar")
     }
-
-    static let allTests = [
-        ("testHTTPBin418", testHTTPBin418),
-        ("testHTTPBinRobots", testHTTPBinRobots),
-        ("testHTTPBinAnything", testHTTPBinAnything),
-        ("testGoogleAPIsFCM", testGoogleAPIsFCM),
-        ("testExampleCom", testExampleCom),
-        ("testZombo", testZombo),
-        ("testVaporWithTLS", testVaporWithTLS),
-        ("testQuery", testQuery),
-    ]
 }
 
 // MARK: Private

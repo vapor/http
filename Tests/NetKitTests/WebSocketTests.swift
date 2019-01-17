@@ -130,13 +130,6 @@ class WebSocketTests: XCTestCase {
         try client.close().wait()
         try server.close().wait()
     }
-
-    static let allTests = [
-        ("testClient", testClient),
-        ("testClientTLS", testClientTLS),
-        ("testServer", testServer),
-        ("testServerContinuation", testServerContinuation),
-    ]
     
     var eventLoopGroup: EventLoopGroup!
     
@@ -174,10 +167,3 @@ struct WebSocketServerDelegate: HTTPServerDelegate {
     
     
 }
-
-//struct HelloResponder: HTTPServerResponder {
-//    func respond(to request: HTTPRequest, on worker: Worker) -> EventLoopFuture<HTTPResponse> {
-//        let res = HTTPResponse(status: .ok, body: "This is a WebSocket server")
-//        return worker.eventLoop.newSucceededFuture(result: res)
-//    }
-//}
