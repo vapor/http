@@ -1,7 +1,6 @@
 import Foundation
 import NIO
 
-
 #warning("TODO: add HTTPStreamingMessageEncoder / HTTPStreamingMessageDecoder")
 
 /// Capable of decoding a `Decodable` type from an `HTTPBody`.
