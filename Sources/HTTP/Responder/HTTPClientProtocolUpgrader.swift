@@ -116,9 +116,9 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
             receivedMessages.append(data)
             return
         }
-
+        
         let responsePart = unwrapInboundIn(data)
-
+        
         // We should only ever see a request header: by the time the body comes in we should
         // be out of the pipeline. Anything else is an error.
         if case .head(let res) = responsePart, res.status == .switchingProtocols, upgrader.isValidUpgradeResponse(res) {
@@ -128,17 +128,17 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
             
             removeExtraHandlers(ctx: ctx).then {
                 return self.upgrader.upgrade(ctx: ctx, upgradeResponse: res)
-                }.then { handler in
-                    let p: EventLoopPromise<Bool> = ctx.eventLoop.newPromise()
-                    let resultFuture = p.futureResult.map { _ -> Upgrader.UpgradeResult in
-                        self.receivedMessages.forEach {
-                            ctx.fireChannelRead($0)
-                        }
-                        return handler
+            }.then { handler in
+                let p: EventLoopPromise<Bool> = ctx.eventLoop.newPromise()
+                let resultFuture = p.futureResult.map { _ -> Upgrader.UpgradeResult in
+                    self.receivedMessages.forEach {
+                        ctx.fireChannelRead($0)
                     }
-                    ctx.pipeline.remove(ctx: ctx, promise: p)
-                    return resultFuture
-                }.cascade(promise: upgradePromise)
+                    return handler
+                }
+                ctx.pipeline.remove(ctx: ctx, promise: p)
+                return resultFuture
+            }.cascade(promise: upgradePromise)
         } else {
             notUpgrading(ctx: ctx, data: data)
             return
