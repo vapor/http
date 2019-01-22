@@ -30,6 +30,16 @@ public struct HTTPClientProxy {
         return .init(storage: .none)
     }
     
+    public static func server(url: URLRepresentable) -> HTTPClientProxy? {
+        guard let url = url.convertToURL() else {
+            return nil
+        }
+        guard let hostname = url.host else {
+            return nil
+        }
+        return .server(hostname: hostname, port: url.port ?? 80)
+    }
+    
     public static func server(hostname: String, port: Int) -> HTTPClientProxy {
         return .init(storage: .server(hostname: hostname, port: port))
     }

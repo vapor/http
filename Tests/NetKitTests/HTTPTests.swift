@@ -46,7 +46,7 @@ class HTTPTests: HTTPKitTestCase {
         let client = HTTPClient(on: self.eventLoopGroup)
         let httpReq = HTTPRequest(method: .GET, url: "http://vapor.codes/")
         let httpRes = try client.send(httpReq).wait()
-        #warning("TODO: how to get access to channel?")
+        // TODO: how to get access to channel?
         // XCTAssertEqual(httpRes.remotePeer(on: client.channel).port, 80)
     }
     
