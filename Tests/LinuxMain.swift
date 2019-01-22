@@ -24,6 +24,7 @@ extension NetKitTests.HTTPTests {
 		("testAcceptHeader", testAcceptHeader),
 		("testRemotePeer", testRemotePeer),
 		("testLargeResponseClose", testLargeResponseClose),
+		("testUncleanShutdown", testUncleanShutdown),
 	]
 }
 
