@@ -110,7 +110,7 @@ class HTTPTests: HTTPKitTestCase {
             proxy: .server(hostname: proxyHostname, port: 8888),
             on: self.eventLoopGroup
         ))
-        let res = try! client.send(.init(method: .GET, url: "http://httpbin.org/anything")).wait()
+        let res = try client.send(.init(method: .GET, url: "http://httpbin.org/anything")).wait()
         XCTAssertEqual(res.status, .ok)
     }
     
