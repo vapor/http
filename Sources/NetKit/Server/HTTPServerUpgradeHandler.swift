@@ -32,7 +32,7 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
         if connectionHeaders.contains("upgrade") {
             // remove http decoder
             let buffer = UpgradeBufferHandler()
-            _ = ctx.channel.pipeline.add(handler: buffer, after: self.httpRequestDecoder).then {
+            _ = ctx.channel.pipeline.add(handler: buffer, after: self.httpRequestDecoder).flatMap {
                 return ctx.channel.pipeline.remove(handler: self.httpRequestDecoder)
             }
             self.upgradeState = .pending(req, buffer)
@@ -53,7 +53,7 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
                 // do upgrade
                 _ = EventLoopFuture<Void>.andAll(([self] + self.otherHTTPHandlers).map { handler in
                     return ctx.pipeline.remove(handler: handler).map { _ in Void() }
-                }, eventLoop: ctx.eventLoop).then { _ in
+                }, eventLoop: ctx.eventLoop).flatMap { _ in
                     return upgrader.upgrade(
                         ctx: ctx,
                         upgradeRequest: .init(
@@ -62,14 +62,14 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
                             uri: req.urlString
                         )
                     )
-                }.then {
+                }.flatMap {
                     return ctx.pipeline.remove(handler: buffer)
                 }
                 self.upgradeState = .upgraded
             } else {
                 // reset handlers
                 self.upgradeState = .ready
-                _ = ctx.channel.pipeline.add(handler: self.httpRequestDecoder, after: buffer).then {
+                _ = ctx.channel.pipeline.add(handler: self.httpRequestDecoder, after: buffer).flatMap {
                     return ctx.channel.pipeline.remove(handler: buffer)
                 }
             }

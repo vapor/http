@@ -85,4 +85,22 @@ class HTTPTests: XCTestCase {
         try server.onClose.wait()
         try worker.syncShutdownGracefully()
     }
+    
+    func testUncleanShutdown() throws {
+        // https://www.google.com/search?q=vapor
+        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let client = try HTTPClient.connect(config: .init(
+            hostname: "www.google.com",
+            tlsConfig: .forClient(certificateVerification: .none),
+            on: worker,
+            errorHandler: { error in
+                XCTFail("\(error)")
+            }
+        )).wait()
+        let res = try client.send(.init(method: .GET, url: "/search?q=vapor")).wait()
+        XCTAssertEqual(res.status, .ok)
+        try! client.close().wait()
+        try! client.onClose.wait()
+        try worker.syncShutdownGracefully()
+    }
 }

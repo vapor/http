@@ -30,6 +30,41 @@ internal final class HTTPClientHandler: ChannelDuplexHandler {
             self.queue.removeFirst().promise.fail(error: error)
         }
     }
+    
+    func close(ctx: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
+        if let promise = promise {
+            // we need to do some error mapping here, so create a new promise
+            let p = ctx.eventLoop.makePromise(of: Void.self)
+            
+            // forward the close request with our new promise
+            ctx.close(mode: mode, promise: p)
+            
+            // forward close future results based on whether
+            // the close was successful
+            p.futureResult.whenSuccess { promise.succeed(result: ()) }
+            p.futureResult.whenFailure { error in
+                if
+                    let sslError = error as? OpenSSLError,
+                    case .uncleanShutdown = sslError,
+                    self.queue.isEmpty
+                {
+                    // we can ignore unclear shutdown errors
+                    // since no requests are pending
+                    //
+                    // NOTE: this logic assumes that when self.queue is empty,
+                    // all HTTP responses have been completely recieved.
+                    // Special attention should be given to this if / when
+                    // streaming body support is added.
+                    promise.succeed(result: ())
+                } else {
+                    promise.fail(error: error)
+                }
+            }
+        } else {
+            // no close promise anyway, just forward request
+            ctx.close(mode: mode, promise: nil)
+        }
+    }
 }
 
 internal final class HTTPClientRequestContext {
