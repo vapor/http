@@ -24,7 +24,12 @@ public final class HTTPClient {
             errorHandler: self.config.errorHandler
         ).flatMap { client in
             return client.send(req).flatMap { res in
-                return client.close().map { res }
+                if req.upgrader != nil {
+                    #warning("TODO: check if actually upgraded here before not closing")
+                    return client.channel.eventLoop.makeSucceededFuture(result: res)
+                } else {
+                    return client.close().map { res }
+                }
             }
         }
     }

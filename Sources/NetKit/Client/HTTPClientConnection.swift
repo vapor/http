@@ -5,7 +5,7 @@
 ///         return client.send(...)
 ///     }
 ///
-public final class HTTPClientConnection {
+internal final class HTTPClientConnection {
     // MARK: Static
     
     /// Creates a new `HTTPClient` connected over TCP or TLS.
@@ -17,7 +17,7 @@ public final class HTTPClientConnection {
     /// - parameters:
     ///     - config: Specifies client connection options such as hostname, port, and more.
     /// - returns: A `Future` containing the connected `HTTPClient`.
-    public static func connect(
+    static func connect(
         hostname: String,
         port: Int? = nil,
         tlsConfig: TLSConfiguration? = nil,
