@@ -5,6 +5,7 @@
 ///         return client.send(...)
 ///     }
 ///
+#warning("TODO: consider remaing to HTTPTransport / RoundTripper")
 internal final class HTTPClientConnection {
     // MARK: Static
     
