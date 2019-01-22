@@ -3,10 +3,10 @@ import NetKit
 let hostname = "127.0.0.1"
 let elg = MultiThreadedEventLoopGroup(numberOfThreads: 8)
 
-let client = try HTTPClient.connect(config: .init(
+let client = try HTTPClientConnection.connect(
     hostname: "httpbin.org",
     on: elg
-)).wait()
+).wait()
 
 let res0 = client.send(.init(url: "/status/200"))
 let res1 = client.send(.init(url: "/status/201"))

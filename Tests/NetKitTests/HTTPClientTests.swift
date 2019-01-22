@@ -27,7 +27,7 @@ class HTTPClientTests: XCTestCase {
     }
 
     func testVaporWithTLS() throws {
-        try! testURL("https://vapor.codes", contains: "Server-side Swift")
+        try testURL("https://vapor.codes", contains: "Server-side Swift")
     }
 
     func testQuery() throws {
@@ -57,11 +57,11 @@ private func testURL(
     let tlsConfig: TLSConfiguration? = (url.scheme == "https" ? .forClient(certificateVerification: .none) : nil)
     let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     for _ in 0..<times {
-        let res = try HTTPClient.connect(config: .init(
+        let res = try HTTPClientConnection.connect(
             hostname: url.host ?? "",
             tlsConfig: tlsConfig,
             on: worker
-        )).flatMap { client -> EventLoopFuture<HTTPResponse> in
+        ).flatMap { client -> EventLoopFuture<HTTPResponse> in
             var comps =  URLComponents()
             comps.path = url.path.isEmpty ? "/" : url.path
             comps.query = url.query

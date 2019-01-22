@@ -4,6 +4,8 @@ jobs:
   linux:
     docker:
       - image: codevapor/swift:5.0
+      - image: vimagick/tinyproxy
+        name: tinyproxy
     steps:
       - checkout
       - run: swift build

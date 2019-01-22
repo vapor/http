@@ -1,13 +1,13 @@
 import NetKit
 import XCTest
 
-class WebSocketTests: XCTestCase {
+class WebSocketTests: HTTPKitTestCase {
     func testClient() throws {
         // ws://echo.websocket.org
-        let client = try HTTPClient.connect(config: .init(
+        let client = try HTTPClientConnection.connect(
             hostname: "echo.websocket.org",
             on: self.eventLoopGroup
-        )).wait()
+        ).wait()
         
         let message = "Hello, world!"
         let promise = self.eventLoopGroup.next().makePromise(of: String.self)
@@ -32,11 +32,11 @@ class WebSocketTests: XCTestCase {
 
     func testClientTLS() throws {
         // wss://echo.websocket.org
-        let client = try HTTPClient.connect(config: .init(
+        let client = try HTTPClientConnection.connect(
             hostname: "echo.websocket.org",
             tlsConfig: .forClient(certificateVerification: .none),
             on: self.eventLoopGroup
-        )).wait()
+        ).wait()
 
         let message = "Hello, world!"
         let promise = self.eventLoopGroup.next().makePromise(of: String.self)
@@ -108,11 +108,11 @@ class WebSocketTests: XCTestCase {
 
         
         // ws://echo.websocket.org
-        let client = try HTTPClient.connect(config: .init(
+        let client = try HTTPClientConnection.connect(
             hostname: "127.0.0.1",
             port: 8888,
             on: self.eventLoopGroup
-        )).wait()
+        ).wait()
         
         var req = HTTPRequest()
         req.webSocketUpgrade { ws in
@@ -129,16 +129,6 @@ class WebSocketTests: XCTestCase {
         try XCTAssertEqual(promise.futureResult.wait(), "Hello, world!")
         try client.close().wait()
         try server.close().wait()
-    }
-    
-    var eventLoopGroup: EventLoopGroup!
-    
-    override func setUp() {
-        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 8)
-    }
-    
-    override func tearDown() {
-        try! self.eventLoopGroup.syncShutdownGracefully()
     }
 }
 
@@ -164,6 +154,4 @@ struct WebSocketServerDelegate: HTTPServerDelegate {
             return channel.eventLoop.makeFailedFuture(error: error)
         }
     }
-    
-    
 }

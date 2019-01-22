@@ -25,6 +25,8 @@ extension NetKitTests.HTTPTests {
 		("testRemotePeer", testRemotePeer),
 		("testLargeResponseClose", testLargeResponseClose),
 		("testUncleanShutdown", testUncleanShutdown),
+		("testClientProxyPlaintext", testClientProxyPlaintext),
+		("testClientProxyTLS", testClientProxyTLS),
 	]
 }
 

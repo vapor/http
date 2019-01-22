@@ -103,9 +103,9 @@ public struct HTTPRequest: HTTPMessage {
     public init(
         method: HTTPMethod,
         urlString: String,
-        version: HTTPVersion,
-        headersNoUpdate headers: HTTPHeaders,
-        body: HTTPBody
+        version: HTTPVersion = .init(major: 1, minor: 1),
+        headersNoUpdate headers: HTTPHeaders = .init(),
+        body: HTTPBody = .init()
     ) {
         self.method = method
         self.urlString = urlString
