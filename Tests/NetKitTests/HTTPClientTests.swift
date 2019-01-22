@@ -27,7 +27,7 @@ class HTTPClientTests: XCTestCase {
     }
 
     func testVaporWithTLS() throws {
-        try! testURL("https://vapor.codes", contains: "Server-side Swift")
+        try testURL("https://vapor.codes", contains: "Server-side Swift")
     }
 
     func testQuery() throws {
@@ -51,23 +51,18 @@ private func testURL(
     times: Int = 3,
     check: (HTTPResponse) throws -> ()
 ) throws {
-    guard let url = URL(string: string) else {
-        throw HTTPError(identifier: "parseURL", reason: "Could not parse URL: \(string)")
-    }
-    let tlsConfig: TLSConfiguration? = (url.scheme == "https" ? .forClient(certificateVerification: .none) : nil)
     let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     for _ in 0..<times {
-        let res = try HTTPClient.connect(config: .init(
-            hostname: url.host ?? "",
-            tlsConfig: tlsConfig,
+        let tlsConfig: TLSConfiguration
+        if string.contains("vapor.codes") {
+            tlsConfig = .forClient(certificateVerification: .none)
+        } else {
+            tlsConfig = .forClient()
+        }
+        let res = try HTTPClient(
+            config: .init(tlsConfig: tlsConfig),
             on: worker
-        )).flatMap { client -> EventLoopFuture<HTTPResponse> in
-            var comps =  URLComponents()
-            comps.path = url.path.isEmpty ? "/" : url.path
-            comps.query = url.query
-            let req = HTTPRequest(method: .GET, url: comps.url ?? .root)
-            return client.send(req)
-        }.wait()
+        ).get(string).wait()
         try check(res)
     }
     try worker.syncShutdownGracefully()

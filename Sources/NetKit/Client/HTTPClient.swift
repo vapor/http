@@ -1,110 +1,39 @@
 import Foundation
 
-/// Connects to remote HTTP servers allowing you to send `HTTPRequest`s and
-/// receive `HTTPResponse`s.
-///
-///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: ...).map(to: HTTPResponse.self) { client in
-///         return client.send(...)
-///     }
-///
 public final class HTTPClient {
-    // MARK: Static
-
-    /// Creates a new `HTTPClient` connected over TCP or TLS.
-    ///
-    ///     let httpRes = HTTPClient.connect(config: .init(hostname: "vapor.codes")).then { client in
-    ///         return client.send(...)
-    ///     }
-    ///
-    /// - parameters:
-    ///     - config: Specifies client connection options such as hostname, port, and more.
-    /// - returns: A `Future` containing the connected `HTTPClient`.
-    public static func connect(
-        config: HTTPClientConfig
-    ) -> EventLoopFuture<HTTPClient> {
-        let bootstrap = ClientBootstrap(group: config.eventLoopGroup)
-            .connectTimeout(config.connectTimeout)
-            .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
-            .channelInitializer { channel in
-                var handlers: [ChannelHandler] = []
-                var otherHTTPHandlers: [ChannelHandler] = []
-                
-                if let tlsConfig = config.tlsConfig {
-                    #warning("TODO: fix force try")
-                    let sslContext = try! SSLContext(configuration: tlsConfig)
-                    let tlsHandler = try! OpenSSLClientHandler(context: sslContext)
-                    handlers.append(tlsHandler)
-                }
-                    
-                let httpReqEncoder = HTTPRequestEncoder()
-                handlers.append(httpReqEncoder)
-                otherHTTPHandlers.append(httpReqEncoder)
-                
-                let httpResDecoder = HTTPResponseDecoder()
-                handlers.append(httpResDecoder)
-                otherHTTPHandlers.append(httpResDecoder)
-                
-                let clientResDecoder = HTTPClientResponseDecoder()
-                handlers.append(clientResDecoder)
-                otherHTTPHandlers.append(clientResDecoder)
-                
-                let clientReqEncoder = HTTPClientRequestEncoder(hostname: config.hostname)
-                handlers.append(clientReqEncoder)
-                otherHTTPHandlers.append(clientReqEncoder)
-                
-                let handler = HTTPClientHandler()
-                otherHTTPHandlers.append(handler)
-                
-                let upgrader = HTTPClientUpgradeHandler(otherHTTPHandlers: otherHTTPHandlers)
-                handlers.append(upgrader)
-                handlers.append(handler)
-                
-                return channel.pipeline.addHandlers(handlers, first: false)
-        }
-        return bootstrap.connect(
-            host: config.hostname,
-            port: config.port
-        ).map { channel in
-            return HTTPClient(channel: channel)
-        }
+    public let config: HTTPClientConfig
+    
+    public let eventLoopGroup: EventLoopGroup
+    
+    public init(config: HTTPClientConfig = .init(), on eventLoopGroup: EventLoopGroup) {
+        self.config = config
+        self.eventLoopGroup = eventLoopGroup
     }
-
-    // MARK: Properties
-
-    /// Private NIO channel powering this client.
-    public let channel: Channel
-
-    /// A `Future` that will complete when this `HTTPClient` closes.
-    public var onClose: EventLoopFuture<Void> {
-        return channel.closeFuture
+    
+    public func get(_ url: URLRepresentable) -> EventLoopFuture<HTTPResponse> {
+        return self.send(.init(method: .GET, url: url))
     }
-
-    /// Private init for creating a new `HTTPClient`. Use the `connect` methods.
-    private init(channel: Channel) {
-        self.channel = channel
-    }
-
-    // MARK: Methods
-
-    /// Sends an `HTTPRequest` to the connected, remote server.
-    ///
-    ///     let httpRes = HTTPClient.connect(hostname: "vapor.codes", on: req).map(to: HTTPResponse.self) { client in
-    ///         return client.respond(to: ...)
-    ///     }
-    ///
-    /// - parameters:
-    ///     - request: `HTTPRequest` to send to the remote server.
-    /// - returns: A `Future` `HTTPResponse` containing the server's response.
+    
     public func send(_ req: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
-        let promise = self.channel.eventLoop.makePromise(of: HTTPResponse.self)
-        let ctx = HTTPClientRequestContext(request: req, promise: promise)
-        self.channel.write(ctx, promise: nil)
-        return promise.futureResult
-    }
-
-    /// Closes this `HTTPClient`'s connection to the remote server.
-    public func close() -> EventLoopFuture<Void> {
-        return channel.close(mode: .all)
+        let hostname = req.url.host ?? ""
+        let port = req.url.port ?? (req.url.scheme == "https" ? 443 : 80)
+        return HTTPClientConnection.connect(
+            hostname: hostname,
+            port: port,
+            tlsConfig: req.url.scheme == "https" ? self.config.tlsConfig : nil,
+            proxy: self.config.proxy,
+            connectTimeout: self.config.connectTimeout,
+            on: self.eventLoopGroup.next(),
+            errorHandler: self.config.errorHandler
+        ).flatMap { client in
+            return client.send(req).flatMap { res in
+                if req.upgrader != nil {
+                    #warning("TODO: check if actually upgraded here before not closing")
+                    return client.channel.eventLoop.makeSucceededFuture(result: res)
+                } else {
+                    return client.close().map { res }
+                }
+            }
+        }
     }
 }
-

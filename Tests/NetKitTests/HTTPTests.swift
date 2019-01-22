@@ -1,7 +1,7 @@
 import NetKit
 import XCTest
 
-class HTTPTests: XCTestCase {
+class HTTPTests: HTTPKitTestCase {
     func testCookieParse() throws {
         /// from https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
         guard let (name, value) = HTTPCookieValue.parse("id=a3fWa; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
@@ -43,14 +43,11 @@ class HTTPTests: XCTestCase {
     }
 
     func testRemotePeer() throws {
-        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let client = try HTTPClient.connect(
-            config: .init(hostname: "httpbin.org", on: worker)
-        ).wait()
-        let httpReq = HTTPRequest(method: .GET, url: "/")
+        let client = HTTPClient(on: self.eventLoopGroup)
+        let httpReq = HTTPRequest(method: .GET, url: "http://vapor.codes/")
         let httpRes = try client.send(httpReq).wait()
-        XCTAssertEqual(httpRes.remotePeer(on: client.channel).port, 80)
-        try worker.syncShutdownGracefully()
+        // TODO: how to get access to channel?
+        // XCTAssertEqual(httpRes.remotePeer(on: client.channel).port, 80)
     }
     
     func testLargeResponseClose() throws {
@@ -63,44 +60,62 @@ class HTTPTests: XCTestCase {
                 return channel.eventLoop.makeSucceededFuture(result: res)
             }
         }
-        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let server = try HTTPServer.start(config: .init(
-            hostname: "localhost",
-            port: 8080,
-            delegate: LargeResponder(),
-            on: worker,
-            errorHandler: { error in
-                XCTFail("\(error)")
-            }
-        )) .wait()
+        let server = HTTPServer(
+            config: .init(
+                hostname: "localhost",
+                port: 8080,
+                errorHandler: { error in
+                    XCTFail("\(error)")
+                }
+            ),
+            on: self.eventLoopGroup
+        )
+        try server.start(delegate: LargeResponder()).wait()
     
-        let client = try HTTPClient.connect(
-            config: .init(hostname: "localhost", port: 8080, on: worker)
-        ).wait()
-        var req = HTTPRequest(method: .GET, url: "/")
+        var req = HTTPRequest(method: .GET, url: "http://localhost:8080/")
         req.headers.replaceOrAdd(name: .connection, value: "close")
-        let res = try client.send(req).wait()
+        let res = try HTTPClient(on: self.eventLoopGroup)
+            .send(req).wait()
         XCTAssertEqual(res.body.count, 2_000_000)
         try server.close().wait()
         try server.onClose.wait()
-        try worker.syncShutdownGracefully()
     }
     
     func testUncleanShutdown() throws {
-        // https://www.google.com/search?q=vapor
-        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let client = try HTTPClient.connect(config: .init(
-            hostname: "www.google.com",
-            tlsConfig: .forClient(certificateVerification: .none),
-            on: worker,
-            errorHandler: { error in
-                XCTFail("\(error)")
-            }
-        )).wait()
-        let res = try client.send(.init(method: .GET, url: "/search?q=vapor")).wait()
+        let res = try HTTPClient(
+            config: .init(
+                tlsConfig: .forClient(certificateVerification: .none)
+            ),
+            on: self.eventLoopGroup
+        ).get("https://www.google.com/search?q=vapor").wait()
         XCTAssertEqual(res.status, .ok)
-        try! client.close().wait()
-        try! client.onClose.wait()
-        try worker.syncShutdownGracefully()
+    }
+    
+    func testClientProxyPlaintext() throws {
+        let res = try HTTPClient(
+            config: .init(
+                proxy: .server(hostname: proxyHostname, port: 8888)
+            ),
+            on: self.eventLoopGroup
+        ).get("http://httpbin.org/anything").wait()
+        XCTAssertEqual(res.status, .ok)
+    }
+    
+    func testClientProxyTLS() throws {
+        let res = try HTTPClient(
+            config: .init(
+                tlsConfig: .forClient(certificateVerification: .none),
+                proxy: .server(hostname: proxyHostname, port: 8888)
+            ),
+            on: self.eventLoopGroup
+        ).get("https://vapor.codes/").wait()
+        XCTAssertEqual(res.status, .ok)
     }
 }
+
+
+#if os(Linux)
+let proxyHostname = "tinyproxy"
+#else
+let proxyHostname = "127.0.0.1"
+#endif

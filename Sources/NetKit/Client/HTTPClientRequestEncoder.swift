@@ -15,11 +15,19 @@ internal final class HTTPClientRequestEncoder: ChannelOutboundHandler {
         let req = unwrapOutboundIn(data)
         var headers = req.headers
         headers.add(name: .host, value: self.hostname)
+        
+        let path: String
+        if let query = req.url.query {
+            path = req.url.path + "?" + query
+        } else {
+            path = req.url.path
+        }
+        
         headers.replaceOrAdd(name: .userAgent, value: "Vapor/4.0 (Swift)")
         var httpHead = HTTPRequestHead(
             version: req.version,
             method: req.method,
-            uri: req.url.absoluteString
+            uri: path.hasPrefix("/") ? path : "/" + path
         )
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)

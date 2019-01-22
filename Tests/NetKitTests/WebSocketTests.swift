@@ -1,18 +1,15 @@
 import NetKit
 import XCTest
 
-class WebSocketTests: XCTestCase {
+class WebSocketTests: HTTPKitTestCase {
     func testClient() throws {
         // ws://echo.websocket.org
-        let client = try HTTPClient.connect(config: .init(
-            hostname: "echo.websocket.org",
-            on: self.eventLoopGroup
-        )).wait()
+        let client = HTTPClient(on: self.eventLoopGroup)
         
         let message = "Hello, world!"
         let promise = self.eventLoopGroup.next().makePromise(of: String.self)
         
-        var req = HTTPRequest()
+        var req = HTTPRequest(url: "ws://echo.websocket.org/")
         req.webSocketUpgrade { ws in
             ws.onText { ws, text in
                 promise.succeed(result: text)
@@ -27,21 +24,21 @@ class WebSocketTests: XCTestCase {
             promise.fail(error: error)
         }
         try XCTAssertEqual(promise.futureResult.wait(), message)
-        try client.close().wait()
     }
 
     func testClientTLS() throws {
         // wss://echo.websocket.org
-        let client = try HTTPClient.connect(config: .init(
-            hostname: "echo.websocket.org",
-            tlsConfig: .forClient(certificateVerification: .none),
+        let client = HTTPClient(
+            config: .init(
+                tlsConfig: .forClient(certificateVerification: .none)
+            ),
             on: self.eventLoopGroup
-        )).wait()
+        )
 
         let message = "Hello, world!"
         let promise = self.eventLoopGroup.next().makePromise(of: String.self)
         
-        var req = HTTPRequest()
+        var req = HTTPRequest(url: "wss://echo.websocket.org/")
         req.webSocketUpgrade { ws in
             ws.onText { ws, text in
                 promise.succeed(result: text)
@@ -56,7 +53,6 @@ class WebSocketTests: XCTestCase {
             promise.fail(error: error)
         }
         try XCTAssertEqual(promise.futureResult.wait(), message)
-        try client.close().wait()
     }
 
     func testServer() throws {
@@ -78,13 +74,14 @@ class WebSocketTests: XCTestCase {
                 print("closed")
             }
         }
-        let server = try HTTPServer.start(config: .init(
-            hostname: "127.0.0.1",
-            port: 8888,
-            delegate: delegate,
+        let server = HTTPServer(
+            config: .init(
+                hostname: "127.0.0.1",
+                port: 8888
+            ),
             on: self.eventLoopGroup
-        )).wait()
-        print(server)
+        )
+        try server.start(delegate: delegate).wait()
         try server.close().wait()
         // uncomment to test websocket server
         // try server.onClose.wait()
@@ -98,23 +95,16 @@ class WebSocketTests: XCTestCase {
                 promise.succeed(result: text)
             }
         }
-        let server = try HTTPServer.start(config: .init(
-            hostname: "127.0.0.1",
-            port: 8888,
-            delegate: delegate,
+        let server = HTTPServer(
+            config: .init(
+                hostname: "127.0.0.1",
+                port: 8888
+            ),
             on: self.eventLoopGroup
-        )).wait()
-        print(server)
-
-        
-        // ws://echo.websocket.org
-        let client = try HTTPClient.connect(config: .init(
-            hostname: "127.0.0.1",
-            port: 8888,
-            on: self.eventLoopGroup
-        )).wait()
-        
-        var req = HTTPRequest()
+        )
+        try server.start(delegate: delegate).wait()
+        let client = HTTPClient(on: self.eventLoopGroup)
+        var req = HTTPRequest(url: "ws://127.0.0.1:8888/")
         req.webSocketUpgrade { ws in
             ws.send(raw: Array("Hello, ".utf8), opcode: .text, fin: false)
             ws.send(raw: Array("world".utf8), opcode: .continuation, fin: false)
@@ -127,18 +117,7 @@ class WebSocketTests: XCTestCase {
             promise.fail(error: error)
         }
         try XCTAssertEqual(promise.futureResult.wait(), "Hello, world!")
-        try client.close().wait()
         try server.close().wait()
-    }
-    
-    var eventLoopGroup: EventLoopGroup!
-    
-    override func setUp() {
-        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 8)
-    }
-    
-    override func tearDown() {
-        try! self.eventLoopGroup.syncShutdownGracefully()
     }
 }
 
@@ -164,6 +143,4 @@ struct WebSocketServerDelegate: HTTPServerDelegate {
             return channel.eventLoop.makeFailedFuture(error: error)
         }
     }
-    
-    
 }
