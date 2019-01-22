@@ -43,7 +43,7 @@ class HTTPTests: HTTPKitTestCase {
     }
 
     func testRemotePeer() throws {
-        let client = HTTPClient(config: .init(on: self.eventLoopGroup))
+        let client = HTTPClient(on: self.eventLoopGroup)
         let httpReq = HTTPRequest(method: .GET, url: "http://vapor.codes/")
         let httpRes = try client.send(httpReq).wait()
         #warning("TODO: how to get access to channel?")
@@ -60,51 +60,55 @@ class HTTPTests: HTTPKitTestCase {
                 return channel.eventLoop.makeSucceededFuture(result: res)
             }
         }
-        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-        let server = try HTTPServer.start(config: .init(
-            hostname: "localhost",
-            port: 8080,
-            delegate: LargeResponder(),
-            on: worker,
-            errorHandler: { error in
-                XCTFail("\(error)")
-            }
-        )) .wait()
+        let server = HTTPServer(
+            config: .init(
+                hostname: "localhost",
+                port: 8080,
+                errorHandler: { error in
+                    XCTFail("\(error)")
+                }
+            ),
+            on: self.eventLoopGroup
+        )
+        try server.start(delegate: LargeResponder()).wait()
     
-        let client = HTTPClient(config: .init(on: worker))
         var req = HTTPRequest(method: .GET, url: "http://localhost:8080/")
         req.headers.replaceOrAdd(name: .connection, value: "close")
-        let res = try client.send(req).wait()
+        let res = try HTTPClient(on: self.eventLoopGroup)
+            .send(req).wait()
         XCTAssertEqual(res.body.count, 2_000_000)
         try server.close().wait()
         try server.onClose.wait()
-        try worker.syncShutdownGracefully()
     }
     
     func testUncleanShutdown() throws {
-        let res = try! HTTPClient(config: .init(
-            tlsConfig: .forClient(certificateVerification: .none),
+        let res = try HTTPClient(
+            config: .init(
+                tlsConfig: .forClient(certificateVerification: .none)
+            ),
             on: self.eventLoopGroup
-        )).get("https://www.google.com/search?q=vapor").wait()
+        ).get("https://www.google.com/search?q=vapor").wait()
         XCTAssertEqual(res.status, .ok)
     }
     
     func testClientProxyPlaintext() throws {
-        let client = HTTPClient(config: .init(
-            proxy: .server(hostname: proxyHostname, port: 8888),
+        let res = try HTTPClient(
+            config: .init(
+                proxy: .server(hostname: proxyHostname, port: 8888)
+            ),
             on: self.eventLoopGroup
-        ))
-        let res = try client.send(.init(method: .GET, url: "http://httpbin.org/anything")).wait()
+        ).get("http://httpbin.org/anything").wait()
         XCTAssertEqual(res.status, .ok)
     }
     
     func testClientProxyTLS() throws {
-        let client = HTTPClient(config: .init(
-            tlsConfig: .forClient(certificateVerification: .none),
-            proxy: .server(hostname: proxyHostname, port: 8888),
+        let res = try HTTPClient(
+            config: .init(
+                tlsConfig: .forClient(certificateVerification: .none),
+                proxy: .server(hostname: proxyHostname, port: 8888)
+            ),
             on: self.eventLoopGroup
-        ))
-        let res = try client.get("https://vapor.codes/").wait()
+        ).get("https://vapor.codes/").wait()
         XCTAssertEqual(res.status, .ok)
     }
 }

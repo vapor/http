@@ -4,7 +4,7 @@ import XCTest
 class WebSocketTests: HTTPKitTestCase {
     func testClient() throws {
         // ws://echo.websocket.org
-        let client = HTTPClient(config: .init(on: self.eventLoopGroup))
+        let client = HTTPClient(on: self.eventLoopGroup)
         
         let message = "Hello, world!"
         let promise = self.eventLoopGroup.next().makePromise(of: String.self)
@@ -28,10 +28,12 @@ class WebSocketTests: HTTPKitTestCase {
 
     func testClientTLS() throws {
         // wss://echo.websocket.org
-        let client = HTTPClient(config: .init(
-            tlsConfig: .forClient(certificateVerification: .none),
+        let client = HTTPClient(
+            config: .init(
+                tlsConfig: .forClient(certificateVerification: .none)
+            ),
             on: self.eventLoopGroup
-        ))
+        )
 
         let message = "Hello, world!"
         let promise = self.eventLoopGroup.next().makePromise(of: String.self)
@@ -72,13 +74,14 @@ class WebSocketTests: HTTPKitTestCase {
                 print("closed")
             }
         }
-        let server = try HTTPServer.start(config: .init(
-            hostname: "127.0.0.1",
-            port: 8888,
-            delegate: delegate,
+        let server = HTTPServer(
+            config: .init(
+                hostname: "127.0.0.1",
+                port: 8888
+            ),
             on: self.eventLoopGroup
-        )).wait()
-        print(server)
+        )
+        try server.start(delegate: delegate).wait()
         try server.close().wait()
         // uncomment to test websocket server
         // try server.onClose.wait()
@@ -92,15 +95,15 @@ class WebSocketTests: HTTPKitTestCase {
                 promise.succeed(result: text)
             }
         }
-        let server = try HTTPServer.start(config: .init(
-            hostname: "127.0.0.1",
-            port: 8888,
-            delegate: delegate,
+        let server = HTTPServer(
+            config: .init(
+                hostname: "127.0.0.1",
+                port: 8888
+            ),
             on: self.eventLoopGroup
-        )).wait()
-        print(server)
-
-        let client = HTTPClient(config: .init(on: self.eventLoopGroup))
+        )
+        try server.start(delegate: delegate).wait()
+        let client = HTTPClient(on: self.eventLoopGroup)
         var req = HTTPRequest(url: "ws://127.0.0.1:8888/")
         req.webSocketUpgrade { ws in
             ws.send(raw: Array("Hello, ".utf8), opcode: .text, fin: false)

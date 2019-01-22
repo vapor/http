@@ -3,7 +3,7 @@ import NetKit
 let hostname = "127.0.0.1"
 let elg = MultiThreadedEventLoopGroup(numberOfThreads: 8)
 
-let client = HTTPClient(config: .init(on: elg))
+let client = HTTPClient(on: elg)
 
 let res0 = client.get("http://httpbin.org/status/200")
 let res1 = client.get("http://httpbin.org/status/201")
@@ -20,31 +20,37 @@ struct EchoResponder: HTTPServerDelegate {
         return channel.eventLoop.makeSucceededFuture(result: res)
     }
 }
+let responder = EchoResponder()
 
 print("Plaintext server starting on http://\(hostname):8080")
 
-let plaintextServer = try HTTPServer.start(config: .init(
-    hostname: hostname,
-    port: 8080,
-    delegate: EchoResponder(),
+let plaintextServer = HTTPServer(
+    config: .init(
+        hostname: hostname,
+        port: 8080
+    ),
     on: elg
-)).wait()
+)
+try plaintextServer.start(delegate: responder).wait()
+
 
 // Uncomment to start only plaintext server
 // plaintextServer.onClose.wait()
 
 print("TLS server starting on https://\(hostname):8443")
 
-let tlsServer = try HTTPServer.start(config: .init(
-    hostname: hostname,
-    port: 8443,
-    tlsConfig: .forServer(
-        certificateChain: [.file("/Users/tanner0101/dev/vapor/http/certs/cert.pem")],
-        privateKey: .file("/Users/tanner0101/dev/vapor/http/certs/key.pem")
+let tlsServer = HTTPServer(
+    config: .init(
+        hostname: hostname,
+        port: 8443,
+        tlsConfig: .forServer(
+            certificateChain: [.file("/Users/tanner0101/dev/vapor/http/certs/cert.pem")],
+            privateKey: .file("/Users/tanner0101/dev/vapor/http/certs/key.pem")
+        )
     ),
-    delegate: EchoResponder(),
     on: elg
-)).wait()
+)
+try tlsServer.start(delegate: responder).wait()
 
 _ = try plaintextServer.onClose
     .and(tlsServer.onClose).wait()

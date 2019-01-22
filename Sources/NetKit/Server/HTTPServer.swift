@@ -1,5 +1,30 @@
-import NIO
-import NIOHTTP1
+public final class HTTPServer {
+    public let config: HTTPServerConfig
+    public let eventLoopGroup: EventLoopGroup
+    
+    private var server: HTTPServerConnection?
+    
+    public init(config: HTTPServerConfig = .init(), on eventLoopGroup: EventLoopGroup) {
+        self.config = config
+        self.eventLoopGroup = eventLoopGroup
+    }
+    
+    public func start(delegate: HTTPServerDelegate) -> EventLoopFuture<Void> {
+        return HTTPServerConnection
+            .start(config: self.config, on: self.eventLoopGroup, delegate: delegate)
+            .map { server in
+                self.server = server
+            }
+    }
+    
+    public func close() -> EventLoopFuture<Void> {
+        return self.server!.channel.close(mode: .all)
+    }
+    
+    public var onClose: EventLoopFuture<Void> {
+        return self.server!.channel.closeFuture
+    }
+}
 
 /// Simple HTTP server generic on an HTTP responder
 /// that will be used to generate responses to incoming requests.
@@ -7,7 +32,7 @@ import NIOHTTP1
 ///     let server = try HTTPServer.start(hostname: hostname, port: port, responder: EchoResponder(), on: group).wait()
 ///     try server.onClose.wait()
 ///
-public final class HTTPServer {
+final class HTTPServerConnection {
     /// MARK: Start
     
     /// Starts the server on the supplied hostname and port, using the supplied
@@ -22,8 +47,12 @@ public final class HTTPServer {
     /// - parameters:
     ///     - config: Specifies server start options such as hostname, port, and more.
     ///     - responder: Responds to incoming requests.
-    public static func start(config: HTTPServerConfig) -> EventLoopFuture<HTTPServer> {
-        let bootstrap = ServerBootstrap(group: config.eventLoopGroup)
+    static func start(
+        config: HTTPServerConfig,
+        on eventLoopGroup: EventLoopGroup,
+        delegate: HTTPServerDelegate
+    ) -> EventLoopFuture<HTTPServerConnection> {
+        let bootstrap = ServerBootstrap(group: eventLoopGroup)
             // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: Int32(config.backlog))
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: config.reuseAddress ? SocketOptionValue(1) : SocketOptionValue(0))
@@ -82,7 +111,7 @@ public final class HTTPServer {
                 
                 // add server request -> response delegate
                 let handler = HTTPServerHandler(
-                    delegate: config.delegate,
+                    delegate: delegate,
                     errorHandler: config.errorHandler
                 )
                 otherHTTPHandlers.append(handler)
@@ -108,29 +137,15 @@ public final class HTTPServer {
             // .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: 1)
 
         return bootstrap.bind(host: config.hostname, port: config.port).map { channel in
-            return HTTPServer(channel: channel)
+            return HTTPServerConnection(channel: channel)
         }
     }
-
-    // MARK: Properties
-
-    /// A future that will be signaled when the server closes.
-    public var onClose: EventLoopFuture<Void> {
-        return channel.closeFuture
-    }
-
+    
     /// The running channel.
-    public var channel: Channel
+    var channel: Channel
 
     /// Creates a new `HTTPServer`. Use the public static `.start` method.
     private init(channel: Channel) {
         self.channel = channel
-    }
-
-    // MARK: Methods
-
-    /// Closes the server.
-    public func close() -> EventLoopFuture<Void> {
-        return channel.close(mode: .all)
     }
 }

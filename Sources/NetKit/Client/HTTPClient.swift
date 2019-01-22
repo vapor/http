@@ -3,8 +3,11 @@ import Foundation
 public final class HTTPClient {
     public let config: HTTPClientConfig
     
-    public init(config: HTTPClientConfig) {
+    public let eventLoopGroup: EventLoopGroup
+    
+    public init(config: HTTPClientConfig = .init(), on eventLoopGroup: EventLoopGroup) {
         self.config = config
+        self.eventLoopGroup = eventLoopGroup
     }
     
     public func get(_ url: URLRepresentable) -> EventLoopFuture<HTTPResponse> {
@@ -20,7 +23,7 @@ public final class HTTPClient {
             tlsConfig: req.url.scheme == "https" ? self.config.tlsConfig : nil,
             proxy: self.config.proxy,
             connectTimeout: self.config.connectTimeout,
-            on: self.config.eventLoopGroup.next(),
+            on: self.eventLoopGroup.next(),
             errorHandler: self.config.errorHandler
         ).flatMap { client in
             return client.send(req).flatMap { res in

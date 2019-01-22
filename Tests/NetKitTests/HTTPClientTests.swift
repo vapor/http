@@ -59,10 +59,10 @@ private func testURL(
         } else {
             tlsConfig = .forClient()
         }
-        let res = try HTTPClient(config: .init(
-            tlsConfig: tlsConfig,
+        let res = try HTTPClient(
+            config: .init(tlsConfig: tlsConfig),
             on: worker
-        )).get(string).wait()
+        ).get(string).wait()
         try check(res)
     }
     try worker.syncShutdownGracefully()

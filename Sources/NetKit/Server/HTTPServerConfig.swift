@@ -40,13 +40,6 @@ public struct HTTPServerConfig {
     /// If set, this name will be serialized as the `Server` header in outgoing responses.
     public var serverName: String?
     
-    /// An array of `HTTPProtocolUpgrader` to check for with each request.
-    public var upgraders: [HTTPProtocolUpgrader]
-    
-    public var delegate: HTTPServerDelegate
-    
-    public var eventLoopGroup: EventLoopGroup
-    
     /// Any uncaught server or responder errors will go here.
     public var errorHandler: (Error) -> ()
     
@@ -81,9 +74,6 @@ public struct HTTPServerConfig {
         supportHTTP2: Bool = false,
         tlsConfig: TLSConfiguration? = nil,
         serverName: String? = nil,
-        upgraders: [HTTPProtocolUpgrader] = [],
-        delegate: HTTPServerDelegate,
-        on eventLoopGroup: EventLoopGroup,
         errorHandler: @escaping (Error) -> () = { _ in }
     ) {
         self.hostname = hostname
@@ -98,9 +88,6 @@ public struct HTTPServerConfig {
         self.supportHTTP2 = supportHTTP2
         self.tlsConfig = tlsConfig
         self.serverName = serverName
-        self.upgraders = upgraders
-        self.delegate = delegate
-        self.eventLoopGroup = eventLoopGroup
         self.errorHandler = errorHandler
     }
 }

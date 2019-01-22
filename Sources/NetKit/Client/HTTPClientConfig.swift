@@ -1,13 +1,11 @@
 /// Configuration options for `HTTPClient`.
 public struct HTTPClientConfig {
-    public var tlsConfig: TLSConfiguration
+    public var tlsConfig: TLSConfiguration?
     
     /// The timeout that will apply to the connection attempt.
     public var connectTimeout: TimeAmount
     
     public var proxy: HTTPClientProxy
-    
-    public var eventLoopGroup: EventLoopGroup
     
     /// Optional closure, which fires when a networking error is caught.
     public var errorHandler: (Error) -> ()
@@ -15,16 +13,14 @@ public struct HTTPClientConfig {
     /// Creates a new `HTTPClientConfig`.
     ///
     public init(
-        tlsConfig: TLSConfiguration = .forClient(),
+        tlsConfig: TLSConfiguration? = nil,
         connectTimeout: TimeAmount = TimeAmount.seconds(10),
         proxy: HTTPClientProxy = .none,
-        on eventLoopGroup: EventLoopGroup,
         errorHandler: @escaping (Error) -> () = { _ in }
     ) {
         self.tlsConfig = tlsConfig
         self.connectTimeout = connectTimeout
         self.proxy = proxy
-        self.eventLoopGroup = eventLoopGroup
         self.errorHandler = errorHandler
     }
 }
