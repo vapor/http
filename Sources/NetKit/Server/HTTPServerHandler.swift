@@ -50,7 +50,7 @@ final class HTTPServerHandler: ChannelInboundHandler {
         let done = ctx.write(self.wrapOutboundOut(res))
         
         if !req.isKeepAlive {
-            _ = done.then {
+            _ = done.flatMap {
                 return ctx.close()
             }
         }

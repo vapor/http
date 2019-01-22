@@ -108,7 +108,7 @@ public final class WebSocketClientUpgrader: HTTPClientProtocolUpgrader {
         return ctx.channel.pipeline.addHandlers([
             WebSocketFrameEncoder(),
             ByteToMessageHandler(WebSocketFrameDecoder(maxFrameSize: maxFrameSize))
-        ], first: false).then {
+        ], first: false).flatMap {
             self.upgradePipelineHandler(ctx.channel, upgradeResponse)
         }
     }

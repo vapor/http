@@ -61,7 +61,7 @@ private func testURL(
             hostname: url.host ?? "",
             tlsConfig: tlsConfig,
             on: worker
-        )).then { client -> EventLoopFuture<HTTPResponse> in
+        )).flatMap { client -> EventLoopFuture<HTTPResponse> in
             var comps =  URLComponents()
             comps.path = url.path.isEmpty ? "/" : url.path
             comps.query = url.query

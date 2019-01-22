@@ -139,7 +139,7 @@ private final class WebSocketHandler: ChannelInboundHandler {
                 data: data
         )
 
-        _ = ctx.writeAndFlush(self.wrapOutboundOut(frame)).then {
+        _ = ctx.writeAndFlush(self.wrapOutboundOut(frame)).flatMap {
             ctx.close(mode: .output)
         }
         webSocket.isClosed = true
