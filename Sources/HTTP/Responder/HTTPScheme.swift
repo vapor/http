@@ -9,7 +9,7 @@ public struct HTTPScheme {
     public static var https: HTTPScheme {
         return .init(443) { channel, hostname in
             return Future.flatMap(on: channel.eventLoop) {
-                let tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
+                let tlsConfiguration = TLSConfiguration.forClient()
                 let sslContext = try SSLContext(configuration: tlsConfiguration)
                 let sniName = hostname.isIPAddress() ? nil : hostname
                 let tlsHandler = try OpenSSLClientHandler(context: sslContext, serverHostname: sniName)
