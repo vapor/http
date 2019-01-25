@@ -22,7 +22,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
         var name: String
         var string: String
 
-        let parts = header.value.split(separator: "=", maxSplits: 1)
+        let parts = header.value.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
         switch parts.count {
         case 2:
             name = String(parts[0]).trimmingCharacters(in: .whitespaces)

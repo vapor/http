@@ -232,54 +232,84 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         // a valid request
         var reshead = res.head
         reshead.headers.add(name: "date", value: RFC1123DateCache.shared.currentTimestamp())
+
         if let server = serverHeader {
             reshead.headers.add(name: "server", value: server)
         }
 
+        // add 'Connection' header if needed
+        let connectionHeaders = reshead.headers[canonicalForm: "connection"].map { $0.lowercased() }
+
+        if !connectionHeaders.contains("keep-alive") && !connectionHeaders.contains("close") {
+            // the user hasn't pre-set either 'keep-alive' or 'close', so we might need to add headers
+            reshead.headers.add(name: "Connection", value: reqhead.isKeepAlive ? "keep-alive" : "close")
+        }
+
         // begin serializing
         ctx.write(wrapOutboundOut(.head(reshead)), promise: nil)
-        if reqhead.method == .HEAD {
+        if reqhead.method == .HEAD || res.status == .noContent {
             // skip sending the body for HEAD requests
+            // also don't send bodies for 204 (no content) requests
             ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
         } else {
             switch res.body.storage {
             case .none: ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
-            case .buffer(let buffer): writeAndflush(buffer: buffer, ctx: ctx)
+            case .buffer(let buffer): writeAndflush(buffer: buffer, ctx: ctx, shouldClose: !reqhead.isKeepAlive)
             case .string(let string):
                 var buffer = ctx.channel.allocator.buffer(capacity: string.count)
                 buffer.write(string: string)
-                writeAndflush(buffer: buffer, ctx: ctx)
+                writeAndflush(buffer: buffer, ctx: ctx, shouldClose: !reqhead.isKeepAlive)
             case .staticString(let string):
                 var buffer = ctx.channel.allocator.buffer(capacity: string.count)
                 buffer.write(staticString: string)
-                writeAndflush(buffer: buffer, ctx: ctx)
+                writeAndflush(buffer: buffer, ctx: ctx, shouldClose: !reqhead.isKeepAlive)
             case .data(let data):
                 var buffer = ctx.channel.allocator.buffer(capacity: data.count)
                 buffer.write(bytes: data)
-                writeAndflush(buffer: buffer, ctx: ctx)
+                writeAndflush(buffer: buffer, ctx: ctx, shouldClose: !reqhead.isKeepAlive)
             case .dispatchData(let data):
                 var buffer = ctx.channel.allocator.buffer(capacity: data.count)
                 buffer.write(bytes: data)
-                writeAndflush(buffer: buffer, ctx: ctx)
+                writeAndflush(buffer: buffer, ctx: ctx, shouldClose: !reqhead.isKeepAlive)
             case .chunkedStream(let stream):
                 stream.read { result, stream in
+                    let future: Future<Void>
                     switch result {
-                    case .chunk(let buffer): return ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
-                    case .end: return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                    case .chunk(let buffer):
+                        future = ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
+                    case .end:
+                        future = ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
                     case .error(let error):
                         self.errorHandler(error)
-                        return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                        future = ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                    }
+                
+                    if !reqhead.isKeepAlive {
+                        switch result {
+                        case .end, .error:
+                            return future.map {
+                                ctx.close(promise: nil)
+                            }
+                        default: return future
+                        }
+                    } else {
+                        return future
                     }
                 }
             }
         }
     }
     /// Writes a `ByteBuffer` to the ctx.
-    private func writeAndflush(buffer: ByteBuffer, ctx: ChannelHandlerContext) {
+    private func writeAndflush(buffer: ByteBuffer, ctx: ChannelHandlerContext, shouldClose: Bool) {
         if buffer.readableBytes > 0 {
-            ctx.write(wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
+            _ = ctx.write(wrapOutboundOut(.body(.byteBuffer(buffer))))
         }
-        ctx.writeAndFlush(wrapOutboundOut(.end(nil)), promise: nil)
+        _ = ctx.writeAndFlush(wrapOutboundOut(.end(nil))).map {
+            if shouldClose {
+                // close connection now
+                ctx.close(promise: nil)
+            }
+        }
     }
 
     /// See `ChannelInboundHandler`.

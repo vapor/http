@@ -7,11 +7,19 @@ class HTTPTests: XCTestCase {
         guard let (name, value) = HTTPCookieValue.parse("id=a3fWa; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
             throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
         }
-
         XCTAssertEqual(name, "id")
+        XCTAssertEqual(value.string, "a3fWa")
         XCTAssertEqual(value.expires, Date(rfc1123: "Wed, 21 Oct 2015 07:28:00 GMT"))
         XCTAssertEqual(value.isSecure, true)
         XCTAssertEqual(value.isHTTPOnly, true)
+        
+        guard let cookie: (name: String, value: HTTPCookieValue) = HTTPCookieValue.parse("vapor=; Secure; HttpOnly") else {
+            throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
+        }
+        XCTAssertEqual(cookie.name, "vapor")
+        XCTAssertEqual(cookie.value.string, "")
+        XCTAssertEqual(cookie.value.isSecure, true)
+        XCTAssertEqual(cookie.value.isHTTPOnly, true)
     }
     
     func testCookieIsSerializedCorrectly() throws {
@@ -41,11 +49,69 @@ class HTTPTests: XCTestCase {
         let httpRes = try client.send(httpReq).wait()
         XCTAssertEqual(httpRes.remotePeer.port, 80)
     }
+    
+    func testLargeResponseClose() throws {
+        struct LargeResponder: HTTPServerResponder {
+            func respond(to request: HTTPRequest, on worker: Worker) -> EventLoopFuture<HTTPResponse> {
+                let res = HTTPResponse(
+                    status: .ok,
+                    body: String(repeating: "0", count: 2_000_000)
+                )
+                return worker.future(res)
+            }
+        }
+        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let server = try HTTPServer.start(
+            hostname: "localhost",
+            port: 8080,
+            responder: LargeResponder(),
+            on: worker
+        ) { error in
+            XCTFail("\(error)")
+        }.wait()
+        
+        let client = try HTTPClient.connect(hostname: "localhost", port: 8080, on: worker).wait()
+        var req = HTTPRequest(method: .GET, url: "/")
+        req.headers.replaceOrAdd(name: .connection, value: "close")
+        let res = try client.send(req).wait()
+        XCTAssertEqual(res.body.count, 2_000_000)
+        try server.close().wait()
+        try server.onClose.wait()
+    }
+    
+    func testUpgradeFail() throws {
+        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        struct FakeUpgrader: HTTPClientProtocolUpgrader {
+            typealias UpgradeResult = String
+            
+            func buildUpgradeRequest() -> HTTPRequestHead {
+                return .init(version: .init(major: 1, minor: 1), method: .GET, uri: "/")
+            }
+            
+            func isValidUpgradeResponse(_ upgradeResponse: HTTPResponseHead) -> Bool {
+                return true
+            }
+            
+            func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<String> {
+                return ctx.eventLoop.future("hello")
+            }
+            
+            
+        }
+        do {
+            _ = try HTTPClient.upgrade(hostname: "foo", upgrader: FakeUpgrader(), on: worker).wait()
+            XCTFail("expected error")
+        } catch {
+            XCTAssert(error is ChannelError)
+        }
+    }
 
     static let allTests = [
         ("testCookieParse", testCookieParse),
         ("testAcceptHeader", testAcceptHeader),
         ("testRemotePeer", testRemotePeer),
         ("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
+        ("testLargeResponseClose", testLargeResponseClose),
+        ("testUpgradeFail", testUpgradeFail),
     ]
 }

@@ -31,12 +31,13 @@ extension HTTPClient {
                     }
                 }
         }
-        return bootstrap.connect(
+        
+        bootstrap.connect(
             host: hostname,
             port: port ?? scheme.defaultPort
-        ).flatMap(to: Upgrader.UpgradeResult.self) { channel in
-            return handler.onUpgrade
-        }
+        ).cascadeFailure(promise: handler.upgradePromise)
+
+        return handler.onUpgrade
     }
 }
 
@@ -86,7 +87,7 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
     private var receivedMessages: [NIOAny]
 
     /// Will be fulfilled with the upgrade result when the upgrade completes.
-    private var upgradePromise: Promise<Upgrader.UpgradeResult>
+    var upgradePromise: Promise<Upgrader.UpgradeResult>
 
     /// Internal future to use for awaiting the upgrade result.
     var onUpgrade: Future<Upgrader.UpgradeResult> {
@@ -136,9 +137,9 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
         upgrading = true
         removeExtraHandlers(ctx: ctx).then {
             return ctx.pipeline.remove(ctx: ctx)
-            }.then { _ in
-                return self.upgrader.upgrade(ctx: ctx, upgradeResponse: res)
-            }.cascade(promise: upgradePromise)
+        }.then { _ in
+            return self.upgrader.upgrade(ctx: ctx, upgradeResponse: res)
+        }.cascade(promise: upgradePromise)
     }
 
     /// Called when we know we're not upgrading. Passes the data on and then removes this object from the pipeline.
@@ -146,6 +147,7 @@ private final class HTTPClientUpgradeHandler<Upgrader>: ChannelInboundHandler wh
         assert(self.receivedMessages.count == 0)
         ctx.fireChannelRead(data)
         _ = ctx.pipeline.remove(ctx: ctx)
+        self.upgradePromise.fail(error: HTTPError(identifier: "notUpgrading", reason: "Did not recieve a valid upgrade response."))
     }
 
     /// Removes any extra HTTP-related handlers from the channel pipeline.
