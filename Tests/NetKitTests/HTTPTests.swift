@@ -57,7 +57,7 @@ class HTTPTests: HTTPKitTestCase {
                     status: .ok,
                     body: String(repeating: "0", count: 2_000_000)
                 )
-                return channel.eventLoop.makeSucceededFuture(result: res)
+                return channel.eventLoop.makeSucceededFuture(res)
             }
         }
         let server = HTTPServer(
