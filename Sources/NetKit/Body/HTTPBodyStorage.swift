@@ -46,11 +46,11 @@ enum HTTPBodyStorage {
     /// Consumes data if streaming or returns static data.
     func consumeData(max: Int, on eventLoop: EventLoop) -> EventLoopFuture<Data> {
         if let data = self.data {
-            return eventLoop.makeSucceededFuture(result: data)
+            return eventLoop.makeSucceededFuture(data)
         } else {
             switch self {
             case .chunkedStream(let stream): return stream.drain(max: max)
-            case .none: return eventLoop.makeSucceededFuture(result: .init())
+            case .none: return eventLoop.makeSucceededFuture(.init())
             default: fatalError("Unexpected HTTP body storage: \(self)")
             }
         }

@@ -17,7 +17,7 @@ let res = HTTPResponse(body: "pong" as StaticString)
 
 struct EchoResponder: HTTPServerDelegate {
     func respond(to req: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
-        return channel.eventLoop.makeSucceededFuture(result: res)
+        return channel.eventLoop.makeSucceededFuture(res)
     }
 }
 let responder = EchoResponder()

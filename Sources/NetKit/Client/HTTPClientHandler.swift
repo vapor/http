@@ -11,7 +11,7 @@ internal final class HTTPClientHandler: ChannelDuplexHandler {
     
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
         let res = self.unwrapInboundIn(data)
-        self.queue[0].promise.succeed(result: res)
+        self.queue[0].promise.succeed(res)
         self.queue.removeFirst()
     }
     
@@ -27,7 +27,7 @@ internal final class HTTPClientHandler: ChannelDuplexHandler {
         case 0:
             ctx.fireErrorCaught(error)
         default:
-            self.queue.removeFirst().promise.fail(error: error)
+            self.queue.removeFirst().promise.fail(error)
         }
     }
     
@@ -41,7 +41,7 @@ internal final class HTTPClientHandler: ChannelDuplexHandler {
             
             // forward close future results based on whether
             // the close was successful
-            p.futureResult.whenSuccess { promise.succeed(result: ()) }
+            p.futureResult.whenSuccess { promise.succeed(()) }
             p.futureResult.whenFailure { error in
                 if
                     let sslError = error as? OpenSSLError,
@@ -55,9 +55,9 @@ internal final class HTTPClientHandler: ChannelDuplexHandler {
                     // all HTTP responses have been completely recieved.
                     // Special attention should be given to this if / when
                     // streaming body support is added.
-                    promise.succeed(result: ())
+                    promise.succeed(())
                 } else {
-                    promise.fail(error: error)
+                    promise.fail(error)
                 }
             }
         } else {

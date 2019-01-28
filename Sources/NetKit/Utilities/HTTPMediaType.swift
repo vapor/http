@@ -125,14 +125,16 @@ public struct HTTPMediaType: Hashable, CustomStringConvertible, Equatable {
     }
     
     /// See `Hashable`.
-    public let hashValue: Int
+    public func hash(into hasher: inout Hasher) {
+        self.type.hash(into: &hasher)
+        self.subType.hash(into: &hasher)
+    }
     
     /// Create a new `MediaType`.
     public init(type: String, subType: String, parameters: [CaseInsensitiveString: String] = [:]) {
         self.type = type
         self.subType = subType
         self.parameters = parameters
-        self.hashValue = type.hashValue &+ subType.hashValue
     }
     
     /// Parse a `MediaType` from a `String`.

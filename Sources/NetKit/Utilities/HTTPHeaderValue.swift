@@ -94,8 +94,8 @@ public struct HTTPHeaderValue {
         
         /// loop over all parts after the value
         parse: while remaining.count > 0 {
-            let semicolon = remaining.index(of: ";")
-            let equals = remaining.index(of: "=")
+            let semicolon = remaining.firstIndex(of: ";")
+            let equals = remaining.firstIndex(of: "=")
             
             let key: Substring
             let val: Substring
@@ -157,7 +157,7 @@ public struct HTTPHeaderValue {
                         val = valpart
                         
                         let rest = trailing[trailing.index(after: trailing.startIndex)...]
-                        if let nextSemicolon = rest.index(of: ";") {
+                        if let nextSemicolon = rest.firstIndex(of: ";") {
                             remaining = rest[rest.index(after: nextSemicolon)...]
                         } else {
                             remaining = .init()

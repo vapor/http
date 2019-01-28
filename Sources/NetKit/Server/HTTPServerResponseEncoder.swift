@@ -59,10 +59,10 @@ final class HTTPServerResponseEncoder: ChannelOutboundHandler {
                     case .chunk(let buffer):
                         return ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
                     case .end:
-                        promise?.succeed(result: ())
+                        promise?.succeed(())
                         return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
                     case .error(let error):
-                        promise?.fail(error: error)
+                        promise?.fail(error)
                         return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
                     }
                 }

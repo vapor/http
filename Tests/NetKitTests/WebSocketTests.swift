@@ -12,7 +12,7 @@ class WebSocketTests: HTTPKitTestCase {
         var req = HTTPRequest(url: "ws://echo.websocket.org/")
         req.webSocketUpgrade { ws in
             ws.onText { ws, text in
-                promise.succeed(result: text)
+                promise.succeed(text)
                 ws.close(code: .normalClosure)
             }
             ws.send(text: message)
@@ -21,7 +21,7 @@ class WebSocketTests: HTTPKitTestCase {
             let res = try client.send(req).wait()
             XCTAssertEqual(res.status, .switchingProtocols)
         } catch {
-            promise.fail(error: error)
+            promise.fail(error)
         }
         try XCTAssertEqual(promise.futureResult.wait(), message)
     }
@@ -41,7 +41,7 @@ class WebSocketTests: HTTPKitTestCase {
         var req = HTTPRequest(url: "wss://echo.websocket.org/")
         req.webSocketUpgrade { ws in
             ws.onText { ws, text in
-                promise.succeed(result: text)
+                promise.succeed(text)
                 ws.close(code: .normalClosure)
             }
             ws.send(text: message)
@@ -50,7 +50,7 @@ class WebSocketTests: HTTPKitTestCase {
             let res = try client.send(req).wait()
             XCTAssertEqual(res.status, .switchingProtocols)
         } catch {
-            promise.fail(error: error)
+            promise.fail(error)
         }
         try XCTAssertEqual(promise.futureResult.wait(), message)
     }
@@ -92,7 +92,7 @@ class WebSocketTests: HTTPKitTestCase {
         let promise = self.eventLoopGroup.next().makePromise(of: String.self)
         let delegate = WebSocketServerDelegate { ws, req in
             ws.onText { ws, text in
-                promise.succeed(result: text)
+                promise.succeed(text)
             }
         }
         let server = HTTPServer(
@@ -114,7 +114,7 @@ class WebSocketTests: HTTPKitTestCase {
             let res = try client.send(req).wait()
             XCTAssertEqual(res.status, .switchingProtocols)
         } catch {
-            promise.fail(error: error)
+            promise.fail(error)
         }
         try XCTAssertEqual(promise.futureResult.wait(), "Hello, world!")
         try server.close().wait()

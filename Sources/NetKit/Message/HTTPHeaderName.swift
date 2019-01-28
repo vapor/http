@@ -1,16 +1,16 @@
 /// Type used for the name of a HTTP header in the `HTTPHeaders` storage.
 public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
-    /// See `Hashable.hashValue`
-    public let hashValue: Int
-
+    /// See `Hashable`
+    public func hash(into hasher: inout Hasher) {
+        self.lowercased.hash(into: &hasher)
+    }
+    
     /// Lowercased-ASCII version of the header.
     internal let lowercased: String
 
     /// Create a HTTP header name with the provided String.
     public init(_ name: String) {
-        let lowercased = name.lowercased()
-        self.lowercased = lowercased
-        self.hashValue = lowercased.hashValue
+        self.lowercased = name.lowercased()
     }
 
     /// See `ExpressibleByStringLiteral.init(stringLiteral:)`

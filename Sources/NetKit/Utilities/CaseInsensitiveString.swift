@@ -18,8 +18,8 @@ public struct CaseInsensitiveString: ExpressibleByStringLiteral, Comparable, Equ
     private let storage: String
     
     /// See `Hashable`.
-    public var hashValue: Int {
-        return storage.lowercased().hashValue
+    public func hash(into hasher: inout Hasher) {
+        self.storage.lowercased().hash(into: &hasher)
     }
     
     /// See `CustomStringConvertible`.

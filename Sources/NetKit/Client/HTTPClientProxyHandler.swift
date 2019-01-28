@@ -31,7 +31,7 @@ final class HTTPClientProxyHandler: ChannelDuplexHandler {
     func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = self.unwrapOutboundIn(data)
         self.buffer.append(req)
-        promise?.succeed(result: ())
+        promise?.succeed(())
     }
     
     func channelActive(ctx: ChannelHandlerContext) {

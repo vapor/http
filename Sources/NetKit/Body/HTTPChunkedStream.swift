@@ -101,14 +101,14 @@ public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
             case .chunk(var buffer):
                 if data.count + buffer.readableBytes >= max {
                     let error = HTTPError(identifier: "bodySize", reason: "HTTPBody was larger than max limit.")
-                    promise.fail(error: error)
+                    promise.fail(error)
                 } else {
                     data += buffer.readData(length: buffer.readableBytes) ?? Data()
                 }
-            case .error(let error): promise.fail(error: error)
-            case .end: promise.succeed(result: data)
+            case .error(let error): promise.fail(error)
+            case .end: promise.succeed(data)
             }
-            return self.eventLoop.makeSucceededFuture(result: ())
+            return self.eventLoop.makeSucceededFuture(())
         }
         return promise.futureResult
     }
