@@ -37,7 +37,7 @@ public protocol HTTPMessageDecoder {
     ///     - from: `HTTPMessage` to decode the `Decodable` type from. The `HTTPBody` may be static or streaming.
     /// - returns: `Future` containing the decoded type.
     /// - throws: Any errors that may have occurred while decoding the `HTTPMessage`.
-    func decode<D, M>(_ decodable: D.Type, from message: inout M) throws -> D
+    func decode<D, M>(_ decodable: D.Type, from message: M) throws -> D
         where D: Decodable, M: HTTPMessage
 }
 
@@ -68,8 +68,8 @@ public protocol HTTPMessageDecoder {
 public protocol HTTPMessageEncoder {
     /// Encodes the supplied `Encodable` object to an `HTTPMessage`.
     ///
-    ///     let jsonEncoder: HTTPMessageEncoder = JSONEncoder()
-    ///     let body = try jsonEncoder.encodeBody(from: "hello")
+    ///     var req = HTTPRequest()
+    ///     let body = try JSONEncoder().encode("hello", to: req)
     ///     print(body) /// HTTPBody containing the string "hello"
     ///
     /// - parameters:
@@ -84,7 +84,7 @@ public protocol HTTPMessageEncoder {
 
 extension JSONDecoder: HTTPMessageDecoder {
     /// See `HTTPMessageDecoder`
-    public func decode<D, M>(_ decodable: D.Type, from message: inout M) throws -> D
+    public func decode<D, M>(_ decodable: D.Type, from message: M) throws -> D
         where D: Decodable, M: HTTPMessage
     {
         guard message.contentType == .json else {
