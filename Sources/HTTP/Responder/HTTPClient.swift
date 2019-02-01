@@ -38,7 +38,7 @@ public final class HTTPClient {
             .connectTimeout(connectTimeout)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                return scheme.configureChannel(channel).then {
+                return scheme.configureChannel(channel, hostname).then {
                     let defaultHandlers: [ChannelHandler] = [
                         HTTPRequestEncoder(),
                         HTTPResponseDecoder(),

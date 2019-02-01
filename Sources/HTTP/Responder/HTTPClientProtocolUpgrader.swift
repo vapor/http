@@ -23,7 +23,7 @@ extension HTTPClient {
         let bootstrap = ClientBootstrap(group: worker.eventLoop)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                return scheme.configureChannel(channel).then { _ in
+                return scheme.configureChannel(channel, hostname).then { _ in
                     return channel.pipeline.add(name: "HTTPRequestEncoder", handler: HTTPRequestEncoder(), first: false).then { _ in
                         return channel.pipeline.add(name: "HTTPResponseDecoder", handler: HTTPResponseDecoder(leftOverBytesStrategy: .forwardBytes), first: false).then { _ in
                             return channel.pipeline.add(handler: handler, first: false)
