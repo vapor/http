@@ -38,7 +38,7 @@ internal final class HTTPClientConnection {
                 case .none:
                     if let tlsConfig = tlsConfig {
                         let sslContext = try! SSLContext(configuration: tlsConfig)
-                        let tlsHandler = try! OpenSSLClientHandler(context: sslContext)
+                        let tlsHandler = try! OpenSSLClientHandler(context: sslContext, serverHostname: hostname)
                         handlers.append(tlsHandler)
                     }
                 case .server:
@@ -65,7 +65,7 @@ internal final class HTTPClientConnection {
                         // if necessary, add TLS handlers
                         if let tlsConfig = tlsConfig {
                             let sslContext = try! SSLContext(configuration: tlsConfig)
-                            let tlsHandler = try! OpenSSLClientHandler(context: sslContext)
+                            let tlsHandler = try! OpenSSLClientHandler(context: sslContext, serverHostname: hostname)
                             _ = ctx.pipeline.add(handler: tlsHandler, first: true)
                         }
                     }

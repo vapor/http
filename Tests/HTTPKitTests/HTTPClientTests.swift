@@ -54,11 +54,7 @@ private func testURL(
     let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
     for _ in 0..<times {
         let tlsConfig: TLSConfiguration
-        if string.contains("vapor.codes") {
-            tlsConfig = .forClient(certificateVerification: .none)
-        } else {
-            tlsConfig = .forClient()
-        }
+        tlsConfig = .forClient()
         let res = try HTTPClient(
             config: .init(tlsConfig: tlsConfig),
             on: worker
