@@ -3,7 +3,7 @@ version: 2
 jobs:
   linux:
     docker:
-      - image: codevapor/swift:5.0
+      - image: vapor/swift:5.0
       - image: vimagick/tinyproxy
         name: tinyproxy
     steps:

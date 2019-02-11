@@ -51,9 +51,9 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
         case .pending(let req, let buffer):
             if res.status == .switchingProtocols, let upgrader = res.upgrader {
                 // do upgrade
-                _ = EventLoopFuture<Void>.andAll(([self] + self.otherHTTPHandlers).map { handler in
+                _ = EventLoopFuture<Void>.andAllComplete(([self] + self.otherHTTPHandlers).map { handler in
                     return ctx.pipeline.remove(handler: handler).map { _ in Void() }
-                }, eventLoop: ctx.eventLoop).flatMap { _ in
+                }, on: ctx.eventLoop).flatMap { _ in
                     return upgrader.upgrade(
                         ctx: ctx,
                         upgradeRequest: .init(

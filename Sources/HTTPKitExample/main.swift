@@ -1,4 +1,4 @@
-import NetKit
+import HTTPKit
 
 let hostname = "127.0.0.1"
 let elg = MultiThreadedEventLoopGroup(numberOfThreads: 8)

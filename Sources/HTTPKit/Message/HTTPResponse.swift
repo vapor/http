@@ -28,7 +28,7 @@ public struct HTTPResponse: HTTPMessage {
         didSet { self.headers.updateTransportHeaders(for: self.body) }
     }
     
-    public var upgrader: HTTPProtocolUpgrader?
+    public var upgrader: HTTPServerProtocolUpgrader?
 
     /// Get and set `HTTPCookies` for this `HTTPResponse`
     /// This accesses the `"Set-Cookie"` header.

@@ -1,4 +1,4 @@
-import NetKit
+import HTTPKit
 import XCTest
 
 class HTTPTests: HTTPKitTestCase {
