@@ -1,10 +1,10 @@
 import XCTest
 
-@testable import NetKitTests
+@testable import HTTPKitTests
 
 // MARK: NetKitTests
 
-extension NetKitTests.HTTPClientTests {
+extension HTTPKitTests.HTTPClientTests {
 	static let __allHTTPClientTestsTests = [
 		("testHTTPBin418", testHTTPBin418),
 		("testHTTPBinRobots", testHTTPBinRobots),
@@ -17,7 +17,7 @@ extension NetKitTests.HTTPClientTests {
 	]
 }
 
-extension NetKitTests.HTTPTests {
+extension HTTPKitTests.HTTPTests {
 	static let __allHTTPTestsTests = [
 		("testCookieParse", testCookieParse),
 		("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
@@ -30,7 +30,7 @@ extension NetKitTests.HTTPTests {
 	]
 }
 
-extension NetKitTests.WebSocketTests {
+extension HTTPKitTests.WebSocketTests {
 	static let __allWebSocketTestsTests = [
 		("testClient", testClient),
 		("testClientTLS", testClientTLS),
