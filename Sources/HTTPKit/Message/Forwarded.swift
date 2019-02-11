@@ -3,11 +3,6 @@ import NIO
 extension HTTPMessage {
     /// Represents the information we have about the remote peer of this message.
     ///
-    /// The peer (remote/client) address is important for availability (block bad clients by their IP) or even security.
-    /// We can always get the remote IP of the connection from the `Channel`. However, when clients go through
-    /// a proxy or a load balancer, we'd like to get the original client's IP. Most proxy servers and load
-    /// balancers communicate the information about the original client in certain headers.
-    ///
     /// See https://en.wikipedia.org/wiki/X-Forwarded-For
     public func remotePeer(on channel: Channel? = nil) -> HTTPPeer {
         return .init(self, channel: channel)

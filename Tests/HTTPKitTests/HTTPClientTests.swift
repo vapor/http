@@ -49,8 +49,15 @@ private func testURL(_ string: String, times: Int = 3, contains: String) throws 
     try testURL(string, times: times) { res in
         let string = String(data: res.body.data ?? Data(), encoding: .ascii) ?? ""
         if string.contains(contains) != true {
-            throw HTTPError(identifier: "badResponse", reason: "Bad response: \(string)")
+            throw TestError(string)
         }
+    }
+}
+
+struct TestError: Error {
+    let string: String
+    init(_ string: String) {
+        self.string = string
     }
 }
 

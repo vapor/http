@@ -100,7 +100,7 @@ public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
             switch chunk {
             case .chunk(var buffer):
                 if data.count + buffer.readableBytes >= max {
-                    let error = HTTPError(identifier: "bodySize", reason: "HTTPBody was larger than max limit.")
+                    let error = HTTPError(.maxBodySize)
                     promise.fail(error)
                 } else {
                     data += buffer.readData(length: buffer.readableBytes) ?? Data()

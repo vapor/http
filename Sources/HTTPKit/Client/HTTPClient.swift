@@ -28,7 +28,7 @@ public final class HTTPClient {
         ).flatMap { client in
             return client.send(req).flatMap { res in
                 if req.upgrader != nil {
-                    #warning("TODO: check if actually upgraded here before not closing")
+                    // upgrader is responsible for closing
                     return client.channel.eventLoop.makeSucceededFuture(res)
                 } else {
                     return client.close().map { res }

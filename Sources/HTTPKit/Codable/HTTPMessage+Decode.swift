@@ -88,17 +88,16 @@ extension HTTPMessage {
     
     /// Looks up a `HTTPMessageDecoder` for the supplied `MediaType`.
     private func requireDecoder() throws -> HTTPMessageDecoder {
-        guard let contentType = self.contentType else {
-            if self.body.count == 0 {
-                fatalError()
-                #warning("TODO:")
-                // throw Abort(.unsupportedMediaType, reason: "No content.", identifier: "httpContentType")
-            } else {
-                fatalError()
-                #warning("TODO:")
-                // throw Abort(.unsupportedMediaType, reason: "No content-type header.", identifier: "httpContentType")
-            }
+        guard let count = self.body.count, count > 0 else {
+            throw HTTPError(.noContent)
         }
-        return try HTTPContentConfig.global.requireDecoder(for: contentType)
+        
+        guard let contentType = self.contentType else {
+            throw HTTPError(.noContentType)
+        }
+        
+        return try HTTPContentConfig.global.requireDecoder(
+            for: contentType
+        )
     }
 }

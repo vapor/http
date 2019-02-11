@@ -58,7 +58,7 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler {
                 let body: ByteBuffer
                 if var existing = existingBody {
                     if existing.readableBytes + chunk.readableBytes > self.maxBodySize {
-                        ERROR("[HTTP] Request size exceeded maximum, connection closed.")
+                        // Request size exceeded maximum, connection closed.
                         ctx.close(promise: nil)
                     }
                     existing.write(buffer: &chunk)

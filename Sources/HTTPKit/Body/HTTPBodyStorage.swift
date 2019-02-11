@@ -1,8 +1,5 @@
 import Foundation
-import NIO
 import NIOFoundationCompat
-
-#warning("TODO: move to ByteBuffer as main storage method")
 
 /// The internal HTTP body storage enum. This is an implementation detail.
 enum HTTPBodyStorage {
@@ -13,7 +10,6 @@ enum HTTPBodyStorage {
     case staticString(StaticString)
     case dispatchData(DispatchData)
     case string(String)
-    #warning("TODO: consider always collecting HTTP body with separate API for streaming routes")
     case chunkedStream(HTTPChunkedStream)
 
     /// The size of the HTTP body's data.

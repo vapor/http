@@ -46,10 +46,10 @@ extension JSONDecoder: HTTPMessageDecoder {
         where D: Decodable, M: HTTPMessage
     {
         guard message.contentType == .json else {
-            throw HTTPError(identifier: "contentType", reason: "HTTP message did not have JSON-compatible content-type.")
+            throw HTTPError(.unknownContentType)
         }
         guard let data = message.body.data else {
-            throw HTTPError(identifier: "messageBody", reason: "HTTP message did not have a body.")
+            throw HTTPError(.noContent)
         }
         return try self.decode(D.self, from: data)
     }

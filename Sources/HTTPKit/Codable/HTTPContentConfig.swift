@@ -38,7 +38,7 @@ public struct HTTPContentConfig {
                 encoder.dateEncodingStrategy = .iso8601
                 decoder.dateDecodingStrategy = .iso8601
             } else {
-                ERROR("macOS SDK < 10.12 detected, no ISO-8601 JSON support")
+                // macOS SDK < 10.12 detected, no ISO-8601 JSON support
             }
             config.use(encoder: encoder, for: .json)
             config.use(decoder: decoder, for: .json)
@@ -125,9 +125,7 @@ public struct HTTPContentConfig {
     ///     - HTTPMediaType: A decoder for this `MediaType` will be returned.
     public func requireDecoder(for mediaType: HTTPMediaType) throws -> HTTPMessageDecoder {
         guard let decoder = self.decoders[mediaType] else {
-            #warning("TODO:")
-            fatalError()
-            // throw Abort(.unsupportedMediaType, identifier: "httpDecoder")
+            throw HTTPError(.unknownContentType)
         }
         
         return decoder

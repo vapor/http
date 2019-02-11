@@ -129,7 +129,7 @@ struct WebSocketServerDelegate: HTTPServerDelegate {
     
     func respond(to req: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
         guard req.isRequestingUpgrade(to: "websocket") else {
-            return channel.eventLoop.makeFailedFuture(HTTPError(identifier: "upgrade"))
+            return channel.eventLoop.makeFailedFuture(CookieError())
         }
         
         
