@@ -13,6 +13,8 @@ extension HTTPKitTests.HTTPClientTests {
 		("testExampleCom", testExampleCom),
 		("testZombo", testZombo),
 		("testVaporWithTLS", testVaporWithTLS),
+        ("testGoogleWithTLS", testGoogleWithTLS),
+        ("testSNIWebsite", testSNIWebsite),
 		("testQuery", testQuery),
 	]
 }

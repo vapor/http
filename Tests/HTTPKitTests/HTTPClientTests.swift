@@ -29,6 +29,14 @@ class HTTPClientTests: XCTestCase {
     func testVaporWithTLS() throws {
         try testURL("https://vapor.codes", contains: "Server-side Swift")
     }
+    
+    func testGoogleWithTLS() throws {
+        try testURL("https://www.google.com/search?q=vapor+swift", contains: "web framework")
+    }
+    
+    func testSNIWebsite() throws {
+        try testURL("https://chrismeller.com", contains: "Chris")
+    }
 
     func testQuery() throws {
         try testURL("http://httpbin.org/get?foo=bar", contains: "bar")
