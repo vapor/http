@@ -1,4 +1,4 @@
-import Logging
+// import Logging
 
 final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPServerRequestPart
@@ -24,25 +24,25 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHan
     /// Maximum body size allowed per request.
     private let maxBodySize: Int
     
-    private let logger: Logger
+    // private let logger: Logger
     
     init(maxBodySize: Int) {
         self.maxBodySize = maxBodySize
         self.requestState = .ready
-        self.logger = Logging.make("http-kit.server-decoder")
+        // self.logger = Logging.make("http-kit.server-decoder")
     }
     
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
         assert(ctx.channel.eventLoop.inEventLoop)
         switch self.unwrapInboundIn(data) {
         case .head(let head):
-            self.logger.trace("got req head \(head)")
+            // self.logger.trace("got req head \(head)")
             switch self.requestState {
             case .ready: self.requestState = .awaitingBody(head)
             default: assertionFailure("Unexpected state: \(self.requestState)")
             }
         case .body(var chunk):
-            self.logger.trace("got req body \(chunk)")
+            // self.logger.trace("got req body \(chunk)")
             switch self.requestState {
             case .ready: assertionFailure("Unexpected state: \(self.requestState)")
             case .awaitingBody(let head):
@@ -77,7 +77,7 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHan
             case .streamingBody(let stream): _ = stream.write(.chunk(chunk))
             }
         case .end(let tailHeaders):
-            self.logger.trace("got req end")
+            // self.logger.trace("got req end")
             assert(tailHeaders == nil, "Tail headers are not supported.")
             switch self.requestState {
             case .ready: assertionFailure("Unexpected state: \(self.requestState)")

@@ -14,11 +14,11 @@ let package = Package(
         .package(url: "https://github.com/tanner0101/swift-nio-ssl.git", .branch("master")),
         
         // Swift logging API
-        .package(url: "https://github.com/weissi/swift-server-logging-api-proposal", .branch("master")),
+        // .package(url: "https://github.com/weissi/swift-server-logging-api-proposal", .branch("master")),
     ],
     targets: [
         .target(name: "HTTPKit", dependencies: [
-            "Logging", 
+            // "Logging", 
             "NIO",
             "NIOFoundationCompat",
             "NIOHTTP1",
