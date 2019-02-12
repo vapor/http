@@ -61,7 +61,7 @@ final class HTTPServerConnection {
             .childChannelInitializer { channel in
                 // create server pipeline array
                 var handlers: [ChannelHandler] = []
-                var otherHTTPHandlers: [ChannelHandler] = []
+                var otherHTTPHandlers: [RemovableChannelHandler] = []
                 
                 // add TLS handlers if configured
                 if let tlsConfig = config.tlsConfig {

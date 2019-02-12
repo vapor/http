@@ -1,4 +1,4 @@
-internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler {
+internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPResponse
     typealias OutboundIn = HTTPRequest
     typealias OutboundOut = HTTPRequest
@@ -9,10 +9,10 @@ internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler {
     }
 
     var state: UpgradeState
-    let otherHTTPHandlers: [ChannelHandler]
+    let otherHTTPHandlers: [RemovableChannelHandler]
 
     init(
-        otherHTTPHandlers: [ChannelHandler]
+        otherHTTPHandlers: [RemovableChannelHandler]
     ) {
         self.otherHTTPHandlers = otherHTTPHandlers
         self.state = .ready

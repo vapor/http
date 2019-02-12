@@ -1,5 +1,5 @@
 /// Private `ChannelOutboundHandler` that serializes `HTTPRequest` to `HTTPClientRequestPart`.
-internal final class HTTPClientRequestEncoder: ChannelOutboundHandler {
+internal final class HTTPClientRequestEncoder: ChannelOutboundHandler, RemovableChannelHandler {
     typealias OutboundIn = HTTPRequest
     typealias OutboundOut = HTTPClientRequestPart
 
@@ -33,7 +33,7 @@ internal final class HTTPClientRequestEncoder: ChannelOutboundHandler {
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
         if let data = req.body.data {
             var buffer = ByteBufferAllocator().buffer(capacity: data.count)
-            buffer.write(bytes: data)
+            buffer.writeBytes(data)
             ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
         }
         ctx.write(self.wrapOutboundOut(.end(nil)), promise: promise)

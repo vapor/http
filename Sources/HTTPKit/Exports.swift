@@ -8,3 +8,7 @@ extension FixedWidthInteger {
         return Self.random(in: Self.min..<Self.max)
     }
 }
+
+extension HTTPResponseDecoder: RemovableChannelHandler { }
+extension HTTPRequestEncoder: RemovableChannelHandler { }
+extension HTTPResponseCompressor: RemovableChannelHandler { }

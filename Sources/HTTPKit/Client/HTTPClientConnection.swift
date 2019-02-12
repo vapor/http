@@ -32,7 +32,7 @@ internal final class HTTPClientConnection {
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 var handlers: [ChannelHandler] = []
-                var otherHTTPHandlers: [ChannelHandler] = []
+                var otherHTTPHandlers: [RemovableChannelHandler] = []
                 
                 switch proxy.storage {
                 case .none:
@@ -61,10 +61,12 @@ internal final class HTTPClientConnection {
                 case .none: break
                 case .server:
                     let proxy = HTTPClientProxyHandler(hostname: hostname, port: port ?? 443) { ctx in
+                        
                         // re-add HTTPDecoder since it may consider the connection to be closed
                         _ = ctx.pipeline.remove(handler: httpResDecoder)
                         _ = ctx.pipeline.add(handler: httpResDecoder, after: httpReqEncoder)
                         
+
                         // if necessary, add TLS handlers
                         if let tlsConfig = tlsConfig {
                             let sslContext = try! SSLContext(configuration: tlsConfig)

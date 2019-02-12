@@ -1,4 +1,4 @@
-final class HTTPClientProxyHandler: ChannelDuplexHandler {
+final class HTTPClientProxyHandler: ChannelDuplexHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPClientResponsePart
     typealias OutboundIn = HTTPClientRequestPart
     typealias OutboundOut = HTTPClientRequestPart

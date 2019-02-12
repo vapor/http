@@ -141,7 +141,7 @@ public final class WebSocket {
     public func send<S>(text: S, promise: EventLoopPromise<Void>? = nil) where S: Collection, S.Element == Character {
         let string = String(text)
         var buffer = channel.allocator.buffer(capacity: text.count)
-        buffer.write(string: string)
+        buffer.writeString(string)
         self.send(buffer, opcode: .text, fin: true, promise: promise)
         
     }
@@ -173,7 +173,7 @@ public final class WebSocket {
     ///     - promise: Optional `Promise` to complete when the send is finished.
     public func send(raw data: [UInt8], opcode: WebSocketOpcode, fin: Bool = true, promise: EventLoopPromise<Void>? = nil) {
         var buffer = channel.allocator.buffer(capacity: data.count)
-        buffer.write(bytes: data)
+        buffer.writeBytes(data)
         self.send(buffer, opcode: opcode, fin: fin, promise: promise)
     }
 

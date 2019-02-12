@@ -1,4 +1,6 @@
-final class HTTPServerRequestDecoder: ChannelInboundHandler {
+import Logging
+
+final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPServerRequestPart
     typealias InboundOut = HTTPRequest
     
@@ -22,20 +24,25 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler {
     /// Maximum body size allowed per request.
     private let maxBodySize: Int
     
+    private let logger: Logger
+    
     init(maxBodySize: Int) {
         self.maxBodySize = maxBodySize
         self.requestState = .ready
+        self.logger = Logging.make("http-kit.server-decoder")
     }
     
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
         assert(ctx.channel.eventLoop.inEventLoop)
         switch self.unwrapInboundIn(data) {
         case .head(let head):
+            self.logger.trace("got req head \(head)")
             switch self.requestState {
             case .ready: self.requestState = .awaitingBody(head)
             default: assertionFailure("Unexpected state: \(self.requestState)")
             }
         case .body(var chunk):
+            self.logger.trace("got req body \(chunk)")
             switch self.requestState {
             case .ready: assertionFailure("Unexpected state: \(self.requestState)")
             case .awaitingBody(let head):
@@ -61,7 +68,7 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler {
                         // Request size exceeded maximum, connection closed.
                         ctx.close(promise: nil)
                     }
-                    existing.write(buffer: &chunk)
+                    existing.writeBuffer(&chunk)
                     body = existing
                 } else {
                     body = chunk
@@ -70,6 +77,7 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler {
             case .streamingBody(let stream): _ = stream.write(.chunk(chunk))
             }
         case .end(let tailHeaders):
+            self.logger.trace("got req end")
             assert(tailHeaders == nil, "Tail headers are not supported.")
             switch self.requestState {
             case .ready: assertionFailure("Unexpected state: \(self.requestState)")

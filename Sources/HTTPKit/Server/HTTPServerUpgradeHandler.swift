@@ -1,4 +1,4 @@
-final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
+final class HTTPServerUpgradeHandler: ChannelDuplexHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPRequest
     typealias OutboundIn = HTTPResponse
     typealias OutboundOut = HTTPResponse
@@ -13,11 +13,11 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
     
     private var upgradeState: UpgradeState
     let httpRequestDecoder: HTTPRequestDecoder
-    let otherHTTPHandlers: [ChannelHandler]
+    let otherHTTPHandlers: [RemovableChannelHandler]
     
     init(
         httpRequestDecoder: HTTPRequestDecoder,
-        otherHTTPHandlers: [ChannelHandler]
+        otherHTTPHandlers: [RemovableChannelHandler]
     ) {
         self.upgradeState = .ready
         self.httpRequestDecoder = httpRequestDecoder
@@ -51,8 +51,9 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
         case .pending(let req, let buffer):
             if res.status == .switchingProtocols, let upgrader = res.upgrader {
                 // do upgrade
-                _ = EventLoopFuture<Void>.andAllComplete(([self] + self.otherHTTPHandlers).map { handler in
-                    return ctx.pipeline.remove(handler: handler).map { _ in Void() }
+                let handlers: [RemovableChannelHandler] = [self] + self.otherHTTPHandlers
+                _ = EventLoopFuture<Void>.andAllComplete(handlers.map { handler in
+                    return ctx.pipeline.remove(handler: handler)
                 }, on: ctx.eventLoop).flatMap { _ in
                     return upgrader.upgrade(
                         ctx: ctx,
@@ -79,7 +80,7 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler {
     }
 }
 
-private final class UpgradeBufferHandler: ChannelInboundHandler {
+private final class UpgradeBufferHandler: ChannelInboundHandler, RemovableChannelHandler {
     typealias InboundIn = ByteBuffer
     
     var buffer: [ByteBuffer]

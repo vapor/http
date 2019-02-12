@@ -1,5 +1,5 @@
 /// Private `ChannelInboundHandler` that parses `HTTPClientResponsePart` to `HTTPResponse`.
-internal final class HTTPClientResponseDecoder: ChannelInboundHandler {
+internal final class HTTPClientResponseDecoder: ChannelInboundHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPClientResponsePart
     typealias OutboundOut = HTTPResponse
     
@@ -32,7 +32,7 @@ internal final class HTTPClientResponseDecoder: ChannelInboundHandler {
             case .parsingBody(let head, let existingData):
                 let buffer: ByteBuffer
                 if var existing = existingData {
-                    existing.write(buffer: &body)
+                    existing.writeBuffer(&body)
                     buffer = existing
                 } else {
                     buffer = body

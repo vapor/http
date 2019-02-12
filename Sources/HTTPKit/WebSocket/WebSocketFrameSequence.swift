@@ -45,7 +45,7 @@ struct WebSocketFrameSequence {
         switch type {
         case .binary:
             if var existing = self.binaryBuffer {
-                existing.write(buffer: &data)
+                existing.writeBuffer(&data)
                 self.binaryBuffer = existing
             } else {
                 self.binaryBuffer = data
