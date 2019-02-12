@@ -1,4 +1,4 @@
-internal final class HTTPClientHandler: ChannelDuplexHandler {
+internal final class HTTPClientHandler: ChannelDuplexHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPResponse
     typealias OutboundIn = HTTPClientRequestContext
     typealias OutboundOut = HTTPRequest

@@ -1,4 +1,4 @@
-final class HTTPServerResponseEncoder: ChannelOutboundHandler {
+final class HTTPServerResponseEncoder: ChannelOutboundHandler, RemovableChannelHandler {
     typealias OutboundIn = HTTPResponse
     typealias OutboundOut = HTTPServerResponsePart
     
@@ -39,19 +39,20 @@ final class HTTPServerResponseEncoder: ChannelOutboundHandler {
                 self.writeAndflush(buffer: buffer, ctx: ctx, promise: promise)
             case .string(let string):
                 var buffer = ctx.channel.allocator.buffer(capacity: string.count)
-                buffer.write(string: string)
+                buffer.writeString(string)
                 self.writeAndflush(buffer: buffer, ctx: ctx, promise: promise)
             case .staticString(let string):
                 var buffer = ctx.channel.allocator.buffer(capacity: string.utf8CodeUnitCount)
-                buffer.write(staticString: string)
+                buffer.writeStaticString(string)
                 self.writeAndflush(buffer: buffer, ctx: ctx, promise: promise)
             case .data(let data):
                 var buffer = ctx.channel.allocator.buffer(capacity: data.count)
-                buffer.write(bytes: data)
+                #warning("TODO: use nio foundation compat")
+                buffer.writeBytes(data)
                 self.writeAndflush(buffer: buffer, ctx: ctx, promise: promise)
             case .dispatchData(let data):
                 var buffer = ctx.channel.allocator.buffer(capacity: data.count)
-                buffer.write(bytes: data)
+                buffer.writeDispatchData(data)
                 self.writeAndflush(buffer: buffer, ctx: ctx, promise: promise)
             case .chunkedStream(let stream):
                 stream.read { result, stream in

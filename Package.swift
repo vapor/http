@@ -12,9 +12,13 @@ let package = Package(
         
         // Bindings to OpenSSL-compatible libraries for TLS support in SwiftNIO
         .package(url: "https://github.com/tanner0101/swift-nio-ssl.git", .branch("master")),
+        
+        // Swift logging API
+        // .package(url: "https://github.com/weissi/swift-server-logging-api-proposal", .branch("master")),
     ],
     targets: [
         .target(name: "HTTPKit", dependencies: [
+            // "Logging", 
             "NIO",
             "NIOFoundationCompat",
             "NIOHTTP1",
