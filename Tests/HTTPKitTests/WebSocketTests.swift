@@ -82,7 +82,7 @@ class WebSocketTests: HTTPKitTestCase {
             on: self.eventLoopGroup
         )
         try server.start(delegate: delegate).wait()
-        try server.close().wait()
+        try server.shutdown().wait()
         // uncomment to test websocket server
         // try server.onClose.wait()
     }
@@ -109,6 +109,7 @@ class WebSocketTests: HTTPKitTestCase {
             ws.send(raw: Array("Hello, ".utf8), opcode: .text, fin: false)
             ws.send(raw: Array("world".utf8), opcode: .continuation, fin: false)
             ws.send(raw: Array("!".utf8), opcode: .continuation)
+            ws.close()
         }
         do {
             let res = try client.send(req).wait()
@@ -117,7 +118,7 @@ class WebSocketTests: HTTPKitTestCase {
             promise.fail(error)
         }
         try XCTAssertEqual(promise.futureResult.wait(), "Hello, world!")
-        try server.close().wait()
+        try server.shutdown().wait()
     }
 }
 
