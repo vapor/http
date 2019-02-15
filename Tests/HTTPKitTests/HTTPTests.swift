@@ -77,7 +77,7 @@ class HTTPTests: HTTPKitTestCase {
         let res = try HTTPClient(on: self.eventLoopGroup)
             .send(req).wait()
         XCTAssertEqual(res.body.count, 2_000_000)
-        try server.close().wait()
+        try server.shutdown().wait()
         try server.onClose.wait()
     }
     
