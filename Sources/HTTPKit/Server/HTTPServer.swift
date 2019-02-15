@@ -17,8 +17,12 @@ public final class HTTPServer {
             }
     }
     
-    public func close() -> EventLoopFuture<Void> {
-        return self.server!.channel.close(mode: .all)
+    public func shutdown() -> EventLoopFuture<Void> {
+        #warning("TODO: create shutdown timeout")
+        let server = self.server!
+        let promise = server.channel.eventLoop.makePromise(of: Void.self)
+        server.quiesce.initiateShutdown(promise: promise)
+        return promise.futureResult
     }
     
     public var onClose: EventLoopFuture<Void> {
@@ -52,10 +56,16 @@ final class HTTPServerConnection {
         on eventLoopGroup: EventLoopGroup,
         delegate: HTTPServerDelegate
     ) -> EventLoopFuture<HTTPServerConnection> {
+        let quiesce = ServerQuiescingHelper(group: eventLoopGroup)
         let bootstrap = ServerBootstrap(group: eventLoopGroup)
             // Specify backlog and enable SO_REUSEADDR for the server itself
             .serverChannelOption(ChannelOptions.backlog, value: Int32(config.backlog))
             .serverChannelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: config.reuseAddress ? SocketOptionValue(1) : SocketOptionValue(0))
+            
+            // Set handlers that are applied to the Server's channel
+            .serverChannelInitializer { channel in
+                channel.pipeline.add(handler: quiesce.makeServerChannelHandler(channel: channel))
+            }
 
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
@@ -137,15 +147,18 @@ final class HTTPServerConnection {
             // .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: 1)
 
         return bootstrap.bind(host: config.hostname, port: config.port).map { channel in
-            return HTTPServerConnection(channel: channel)
+            return HTTPServerConnection(channel: channel, quiesce: quiesce)
         }
     }
     
     /// The running channel.
     var channel: Channel
+    
+    var quiesce: ServerQuiescingHelper
 
     /// Creates a new `HTTPServer`. Use the public static `.start` method.
-    private init(channel: Channel) {
+    private init(channel: Channel, quiesce: ServerQuiescingHelper) {
         self.channel = channel
+        self.quiesce = quiesce
     }
 }
