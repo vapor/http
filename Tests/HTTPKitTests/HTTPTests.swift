@@ -114,7 +114,7 @@ class HTTPTests: HTTPKitTestCase {
 
     func testRFC1123Flip() throws {
         let now = Date()
-        let boundary = now.timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
+        let boundary = 1.0 - now.timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
         let nowStamp = now.rfc1123
         Thread.sleep(forTimeInterval: boundary - 0.01)
         let beforeStamp = Date().rfc1123
