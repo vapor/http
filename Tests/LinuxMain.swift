@@ -29,11 +29,6 @@ extension HTTPKitTests.HTTPTests {
 		("testUncleanShutdown", testUncleanShutdown),
 		("testClientProxyPlaintext", testClientProxyPlaintext),
 		("testClientProxyTLS", testClientProxyTLS),
-	]
-}
-
-extension HTTPKitTests.Utilities {
-        static let __allUtilitiesTests = [
                 ("testRFC1123Flip", testRFC1123Flip),
 	]
 }
