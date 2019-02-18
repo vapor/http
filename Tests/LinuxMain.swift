@@ -50,7 +50,6 @@ public func __buildTestEntries() -> [XCTestCaseEntry] {
 		// NetKitTests
 		testCase(HTTPClientTests.__allHTTPClientTestsTests),
 		testCase(HTTPTests.__allHTTPTestsTests),
-                testCase(Utilities.__allUtilitiesTests),
 		testCase(WebSocketTests.__allWebSocketTestsTests),
 	]
 }
