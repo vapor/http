@@ -1,7 +1,7 @@
 import HTTPKit
 import XCTest
 
-class HTTPKitTestCase: XCTestCase {
+class Utilities: XCTestCase {
     var eventLoopGroup: EventLoopGroup!
     
     override func setUp() {
