@@ -32,6 +32,12 @@ extension HTTPKitTests.HTTPTests {
 	]
 }
 
+extension HTTPKitTests.Utilities {
+        static let __allUtilitiesTests = [
+                ("testRFC1123Flip", testRFC1123Flip),
+	]
+}
+
 extension HTTPKitTests.WebSocketTests {
 	static let __allWebSocketTestsTests = [
 		("testClient", testClient),
@@ -49,6 +55,7 @@ public func __buildTestEntries() -> [XCTestCaseEntry] {
 		// NetKitTests
 		testCase(HTTPClientTests.__allHTTPClientTestsTests),
 		testCase(HTTPTests.__allHTTPTestsTests),
+                testCase(Utilities.__allUtilitiesTests),
 		testCase(WebSocketTests.__allWebSocketTestsTests),
 	]
 }
