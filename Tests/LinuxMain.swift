@@ -29,7 +29,7 @@ extension HTTPKitTests.HTTPTests {
 		("testUncleanShutdown", testUncleanShutdown),
 		("testClientProxyPlaintext", testClientProxyPlaintext),
 		("testClientProxyTLS", testClientProxyTLS),
-                ("testRFC1123Flip", testRFC1123Flip),
+		("testRFC1123Flip", testRFC1123Flip),
 	]
 }
 
