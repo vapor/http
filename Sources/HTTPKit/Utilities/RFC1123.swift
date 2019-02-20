@@ -67,7 +67,9 @@ internal final class RFC1123DateCache {
             return existing
         } else {
             let new = RFC1123DateCache()
-            eventLoop.scheduleRepeatedTask(initialDelay: .seconds(1), delay: .seconds(1)) { task in
+            let fracSeconds = 1.0 - Date().timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
+            let msToNextSecond = Int64(fracSeconds * 1000) + 1
+            eventLoop.scheduleRepeatedTask(initialDelay: .milliseconds(msToNextSecond), delay: .seconds(1)) { task in
                 new.updateTimestamp()
             }
             thread.currentValue = new
@@ -145,7 +147,7 @@ internal final class RFC1123DateCache {
         rfc1123.append(stringNumbers[seconds])
         rfc1123.append(" GMT")
 
-        // cache the new timestamp and its expiration
+        // cache the new timestamp
         self.timestamp = rfc1123
     }
 }
@@ -174,4 +176,3 @@ private let stringNumbers = [
 ]
 
 private let secondsInDay = 60 * 60 * 24
-private let accuracy: Int = 1 // seconds

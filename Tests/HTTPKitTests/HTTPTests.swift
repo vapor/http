@@ -111,6 +111,23 @@ class HTTPTests: HTTPKitTestCase {
         ).get("https://vapor.codes/").wait()
         XCTAssertEqual(res.status, .ok)
     }
+
+    func testRFC1123Flip() throws {
+        var now: Date?
+        var boundary = 0.0
+        while boundary <= 0.01 {
+            now = Date()
+            boundary = 1.0 - now!.timeIntervalSince1970.truncatingRemainder(dividingBy: 1)
+        }
+        let nowStamp = now!.rfc1123
+        Thread.sleep(forTimeInterval: boundary - 0.01)
+        let beforeStamp = Date().rfc1123
+        Thread.sleep(forTimeInterval: 0.02)
+        let afterStamp = Date().rfc1123
+        
+        XCTAssertEqual(nowStamp, beforeStamp)
+        XCTAssertNotEqual(beforeStamp, afterStamp)
+    }
 }
 
 
