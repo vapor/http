@@ -13,7 +13,7 @@ enum HTTPBodyStorage {
     case stream(HTTPBodyStream)
 
     /// The size of the HTTP body's data.
-    /// `nil` of the body is a non-determinate stream.
+    /// `nil` is a stream.
     var count: Int? {
         switch self {
         case .data(let data): return data.count
