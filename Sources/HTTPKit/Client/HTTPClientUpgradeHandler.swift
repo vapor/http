@@ -25,8 +25,8 @@ internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler, RemovableCh
         case .pending(let upgrader):
             let res = self.unwrapInboundIn(data)
             if res.status == .switchingProtocols {
-                ctx.pipeline.remove(handler: self, promise: nil)
-                self.otherHTTPHandlers.forEach { ctx.pipeline.remove(handler: $0, promise: nil) }
+                ctx.pipeline.removeHandler(self, promise: nil)
+                self.otherHTTPHandlers.forEach { ctx.pipeline.removeHandler($0, promise: nil) }
                 upgrader.upgrade(ctx: ctx, upgradeResponse: .init(
                     version: res.version,
                     status: res.status,

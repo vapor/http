@@ -2,7 +2,7 @@ extension ChannelPipeline {
     /// Adds the supplied `WebSocket` to this `ChannelPipeline`.
     public func add(webSocket: WebSocket) -> EventLoopFuture<Void> {
         let handler = WebSocketHandler(webSocket: webSocket)
-        return add(handler: handler)
+        return self.addHandler(handler)
     }
 }
 

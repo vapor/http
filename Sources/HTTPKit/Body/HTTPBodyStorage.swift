@@ -10,7 +10,7 @@ enum HTTPBodyStorage {
     case staticString(StaticString)
     case dispatchData(DispatchData)
     case string(String)
-    case chunkedStream(HTTPChunkedStream)
+    case stream(HTTPBodyStream)
 
     /// The size of the HTTP body's data.
     /// `nil` of the body is a non-determinate stream.
@@ -21,7 +21,7 @@ enum HTTPBodyStorage {
         case .staticString(let staticString): return staticString.utf8CodeUnitCount
         case .string(let string): return string.utf8.count
         case .buffer(let buffer): return buffer.readableBytes
-        case .chunkedStream: return nil
+        case .stream: return nil
         case .none: return 0
         }
     }
@@ -31,24 +31,35 @@ enum HTTPBodyStorage {
         switch self {
         case .buffer(var buffer): return buffer.readData(length: buffer.readableBytes)
         case .data(let data): return data
-        case .dispatchData(let dispatch): return Data(dispatch)
-        case .staticString(let string): return Data(bytes: string.utf8Start, count: string.utf8CodeUnitCount)
+        case .dispatchData(let dispatchData): return Data(dispatchData)
+        case .staticString(let staticString): return Data(bytes: staticString.utf8Start, count: staticString.utf8CodeUnitCount)
         case .string(let string): return Data(string.utf8)
-        case .chunkedStream: return nil
+        case .stream: return nil
         case .none: return nil
         }
     }
-
-    /// Consumes data if streaming or returns static data.
-    func consumeData(max: Int, on eventLoop: EventLoop) -> EventLoopFuture<Data> {
-        if let data = self.data {
-            return eventLoop.makeSucceededFuture(data)
-        } else {
-            switch self {
-            case .chunkedStream(let stream): return stream.drain(max: max)
-            case .none: return eventLoop.makeSucceededFuture(.init())
-            default: fatalError("Unexpected HTTP body storage: \(self)")
-            }
+    
+    var buffer: ByteBuffer? {
+        switch self {
+        case .buffer(let buffer): return buffer
+        case .data(let data):
+            var buffer = ByteBufferAllocator().buffer(capacity: data.count)
+            buffer.writeBytes(data)
+            return buffer
+        case .dispatchData(let dispatchData):
+            var buffer = ByteBufferAllocator().buffer(capacity: dispatchData.count)
+            buffer.writeDispatchData(dispatchData)
+            return buffer
+        case .staticString(let staticString):
+            var buffer = ByteBufferAllocator().buffer(capacity: staticString.count)
+            buffer.writeStaticString(staticString)
+            return buffer
+        case .string(let string):
+            var buffer = ByteBufferAllocator().buffer(capacity: string.count)
+            buffer.writeString(string)
+            return buffer
+        case .stream: return nil
+        case .none: return nil
         }
     }
 }

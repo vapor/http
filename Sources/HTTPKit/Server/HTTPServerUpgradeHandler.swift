@@ -32,8 +32,8 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler, RemovableChannelHand
         if connectionHeaders.contains("upgrade") {
             // remove http decoder
             let buffer = UpgradeBufferHandler()
-            _ = ctx.channel.pipeline.add(handler: buffer, after: self.httpRequestDecoder).flatMap {
-                return ctx.channel.pipeline.remove(handler: self.httpRequestDecoder)
+            _ = ctx.channel.pipeline.addHandler(buffer, position: .after(self.httpRequestDecoder)).flatMap {
+                return ctx.channel.pipeline.removeHandler(self.httpRequestDecoder)
             }
             self.upgradeState = .pending(req, buffer)
         }
@@ -53,7 +53,7 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler, RemovableChannelHand
                 // do upgrade
                 let handlers: [RemovableChannelHandler] = [self] + self.otherHTTPHandlers
                 _ = EventLoopFuture<Void>.andAllComplete(handlers.map { handler in
-                    return ctx.pipeline.remove(handler: handler)
+                    return ctx.pipeline.removeHandler(handler)
                 }, on: ctx.eventLoop).flatMap { _ in
                     return upgrader.upgrade(
                         ctx: ctx,
@@ -64,14 +64,14 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler, RemovableChannelHand
                         )
                     )
                 }.flatMap {
-                    return ctx.pipeline.remove(handler: buffer)
+                    return ctx.pipeline.removeHandler(buffer)
                 }
                 self.upgradeState = .upgraded
             } else {
                 // reset handlers
                 self.upgradeState = .ready
-                _ = ctx.channel.pipeline.add(handler: self.httpRequestDecoder, after: buffer).flatMap {
-                    return ctx.channel.pipeline.remove(handler: buffer)
+                _ = ctx.channel.pipeline.addHandler(self.httpRequestDecoder, position: .after(buffer)).flatMap {
+                    return ctx.channel.pipeline.removeHandler(buffer)
                 }
             }
         case .ready: break

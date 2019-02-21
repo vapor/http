@@ -51,7 +51,24 @@ let res = HTTPResponse(body: "pong" as StaticString)
 
 struct EchoResponder: HTTPServerDelegate {
     func respond(to req: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
-        return channel.eventLoop.makeSucceededFuture(res)
+        let promise = channel.eventLoop.makePromise(of: HTTPResponse.self)
+        print("got: \(req)")
+        if let stream = req.body.stream {
+            stream.read { chunk, stream in
+                switch chunk {
+                case .chunk(var chunk):
+                    let string = chunk.readString(length: chunk.readableBytes) ?? ""
+                    print("streamed: \(string.debugDescription)")
+                case .end:
+                    promise.succeed(res)
+                case .error(let error):
+                    promise.fail(error)
+                }
+            }
+        } else {
+            promise.succeed(res)
+        }
+        return promise.futureResult
     }
 }
 let responder = EchoResponder()
