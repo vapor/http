@@ -14,6 +14,18 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
     public var data: Data? {
         return storage.data
     }
+    
+    /// Returns the body's contents as `ByteBuffer`. `nil` if the body is streaming.
+    public var buffer: ByteBuffer? {
+        return self.storage.buffer
+    }
+    
+    public var stream: HTTPBodyStream? {
+        switch self.storage {
+        case .stream(let stream): return stream
+        default: return nil
+        }
+    }
 
     /// The size of the body's contents. `nil` if the body is streaming.
     public var count: Int? {
@@ -24,7 +36,7 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
     public var description: String {
         switch storage {
         case .data, .buffer, .dispatchData, .staticString, .string, .none: return debugDescription
-        case .chunkedStream(let stream):
+        case .stream(let stream):
             guard !stream.isClosed else {
                 return debugDescription
             }
@@ -41,13 +53,13 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
         case .dispatchData(let data): return String(data: Data(data), encoding: .ascii) ?? "n/a"
         case .staticString(let string): return string.description
         case .string(let string): return string
-        case .chunkedStream(let stream):
+        case .stream(let stream):
             guard !stream.isClosed else {
                 return "<consumed chunk stream>"
             }
             do {
-                let data = try stream.drain(max: maxDebugStreamingBodySize).wait()
-                return String(data: data, encoding: .utf8) ?? "n/a"
+                var data = try stream.consume(max: maxDebugStreamingBodySize).wait()
+                return data.readString(length: data.readableBytes) ?? "<n/a>"
             } catch {
                 return "<chunked stream error: \(error)>"
             }
@@ -83,8 +95,8 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
     }
 
     /// Create a new body from an `HTTPChunkedStream`.
-    public init(chunked: HTTPChunkedStream) {
-        self.storage = .chunkedStream(chunked)
+    public init(stream: HTTPBodyStream) {
+        self.storage = .stream(stream)
     }
 
     /// Create a new body from a Swift NIO `ByteBuffer`.
@@ -106,8 +118,15 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
     ///            This only applies to streaming bodies, like chunked streams.
     ///            Defaults to 1MB.
     ///     - eventLoop: The event loop to perform this async work on.
-    public func consumeData(max: Int = 1_000_000, on eventLoop: EventLoop) -> EventLoopFuture<Data> {
-        return storage.consumeData(max: max, on: eventLoop)
+    public func consume(max: Int = 1_000_000, on eventLoop: EventLoop) -> EventLoopFuture<ByteBuffer> {
+        if let buffer = self.buffer {
+            return eventLoop.makeSucceededFuture(buffer)
+        } else if let stream = self.stream {
+            return stream.consume(max: max)
+        } else {
+            let empty = ByteBufferAllocator().buffer(capacity: 0)
+            return eventLoop.makeSucceededFuture(empty)
+        }
     }
 
     /// See `LosslessHTTPBodyRepresentable`.

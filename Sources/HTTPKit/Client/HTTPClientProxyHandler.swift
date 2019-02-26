@@ -44,7 +44,7 @@ final class HTTPClientProxyHandler: ChannelDuplexHandler, RemovableChannelHandle
         self.onConnect(ctx)
         self.buffer.forEach { ctx.write(self.wrapOutboundOut($0), promise: nil) }
         ctx.flush()
-        _ = ctx.pipeline.remove(handler: self)
+        _ = ctx.pipeline.removeHandler(self)
     }
     
     private func sendConnect(ctx: ChannelHandlerContext) {

@@ -63,8 +63,8 @@ internal final class HTTPClientConnection {
                     let proxy = HTTPClientProxyHandler(hostname: hostname, port: port ?? 443) { ctx in
                         
                         // re-add HTTPDecoder since it may consider the connection to be closed
-                        _ = ctx.pipeline.remove(handler: httpResDecoder)
-                        _ = ctx.pipeline.add(handler: httpResDecoder, after: httpReqEncoder)
+                        _ = ctx.pipeline.removeHandler(httpResDecoder)
+                        _ = ctx.pipeline.addHandler(httpResDecoder, position: .after(httpReqEncoder))
                         
 
                         // if necessary, add TLS handlers
@@ -74,7 +74,7 @@ internal final class HTTPClientConnection {
                                 context: sslContext,
                                 serverHostname: hostname.isIPAddress() ? nil : hostname
                             )
-                            _ = ctx.pipeline.add(handler: tlsHandler, first: true)
+                            _ = ctx.pipeline.addHandler(tlsHandler, position: .first)
                         }
                     }
                     handlers.append(proxy)
@@ -94,7 +94,7 @@ internal final class HTTPClientConnection {
                 let upgrader = HTTPClientUpgradeHandler(otherHTTPHandlers: otherHTTPHandlers)
                 handlers.append(upgrader)
                 handlers.append(handler)
-                return channel.pipeline.addHandlers(handlers, first: false)
+                return channel.pipeline.addHandlers(handlers, position: .last)
         }
         let connectHostname: String
         let connectPort: Int

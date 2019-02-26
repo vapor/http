@@ -64,7 +64,7 @@ final class HTTPServerConnection {
             
             // Set handlers that are applied to the Server's channel
             .serverChannelInitializer { channel in
-                channel.pipeline.add(handler: quiesce.makeServerChannelHandler(channel: channel))
+                channel.pipeline.addHandler(quiesce.makeServerChannelHandler(channel: channel))
             }
 
             // Set the handlers that are applied to the accepted Channels
@@ -137,7 +137,7 @@ final class HTTPServerConnection {
                 handlers.append(handler)
                 
                 // configure the pipeline
-                return channel.pipeline.addHandlers(handlers, first: false)
+                return channel.pipeline.addHandlers(handlers, position: .last)
             }
 
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels

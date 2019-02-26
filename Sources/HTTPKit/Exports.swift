@@ -9,6 +9,5 @@ extension FixedWidthInteger {
     }
 }
 
-extension HTTPResponseDecoder: RemovableChannelHandler { }
 extension HTTPRequestEncoder: RemovableChannelHandler { }
 extension HTTPResponseCompressor: RemovableChannelHandler { }

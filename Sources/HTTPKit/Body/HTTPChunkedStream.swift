@@ -1,6 +1,9 @@
 import Foundation
 import NIO
 
+@available(*, deprecated, renamed: "HTTPBodyStream")
+public typealias HTTPChunkedStream = HTTPBodyStream
+
 /// A `"Transfer-Encoding: chunked"` stream of data used by `HTTPBody`.
 ///
 ///     let chunkedStream = HTTPChunkedStream(on: req)
@@ -15,22 +18,35 @@ import NIO
 /// `HTTPChunkedStream` allows you to send data asynchronously without a predefined length.
 /// The `HTTPMessage` will be considered complete when the end chunk is sent.
 #warning("TODO: cleanup")
-public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
+public final class HTTPBodyStream: LosslessHTTPBodyRepresentable {
+    /// Supported types that can be sent and recieved from a `HTTPChunkedStream`.
+    public enum Result {
+        /// A normal data chunk.
+        /// There will be 0 or more of these.
+        case chunk(ByteBuffer)
+        /// Indicates an error.
+        /// There will be 0 or 1 of these. 0 if the stream closes cleanly.
+        case error(Error)
+        /// Indicates the stream has completed.
+        /// There will be 0 or 1 of these. 0 if the stream errors.
+        case end
+    }
+    
     /// Handles an incoming `HTTPChunkedStreamResult`.
-    public typealias HTTPChunkedHandler = (HTTPChunkedStreamResult, HTTPChunkedStream) -> EventLoopFuture<Void>
+    public typealias Handler = (Result, HTTPBodyStream) -> ()
+    
+    /// See `BasicWorker`.
+    public var eventLoop: EventLoop
+    
+    /// If `true`, this `HTTPChunkedStream` has already sent an `end` chunk.
+    public private(set) var isClosed: Bool
 
     /// This stream's `HTTPChunkedHandler`, if one is set.
-    private var handler: HTTPChunkedHandler?
+    private var handler: Handler?
 
     /// If a `handler` has not been set when `write(_:)` is called, this property
     /// is used to store the waiting data.
-    private var waiting: (HTTPChunkedStreamResult, EventLoopPromise<Void>)?
-
-    /// See `BasicWorker`.
-    public var eventLoop: EventLoop
-
-    /// If `true`, this `HTTPChunkedStream` has already sent an `end` chunk.
-    public private(set) var isClosed: Bool
+    private var buffer: [Result]
 
     /// Creates a new `HTTPChunkedStream`.
     ///
@@ -39,6 +55,7 @@ public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
     public init(on eventLoop: EventLoop) {
         self.eventLoop = eventLoop
         self.isClosed = false
+        self.buffer = []
     }
 
     /// Sets a handler for reading `HTTPChunkedStreamResult`s from the stream.
@@ -50,11 +67,12 @@ public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
     ///
     /// - parameters:
     ///     - handler: `HTTPChunkedHandler` to use for receiving chunks from this stream.
-    public func read(_ handler: @escaping HTTPChunkedHandler) {
+    public func read(_ handler: @escaping Handler) {
         self.handler = handler
-        if let (chunk, promise) = waiting {
-            handler(chunk, self).cascade(to: promise)
+        for item in self.buffer {
+            handler(item, self)
         }
+        self.buffer = []
     }
 
     /// Writes a `HTTPChunkedStreamResult` to the stream.
@@ -67,19 +85,15 @@ public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
     ///     - chunk: A `HTTPChunkedStreamResult` to write to the stream.
     /// - returns: A `Future` that will be completed when the write was successful.
     ///            You must wait for this future to complete before calling `write(_:)` again.
-    public func write(_ chunk: HTTPChunkedStreamResult) -> EventLoopFuture<Void> {
+    public func write(_ chunk: Result) {
         if case .end = chunk {
             self.isClosed = true
         }
 
         if let handler = handler {
-            return handler(chunk, self)
+            handler(chunk, self)
         } else {
-            let promise = eventLoop.makePromise(of: Void.self)
-            #warning("TODO: properly buffer this")
-            assert(waiting == nil)
-            waiting = (chunk, promise)
-            return promise.futureResult
+            self.buffer.append(chunk)
         }
     }
 
@@ -93,41 +107,27 @@ public final class HTTPChunkedStream: LosslessHTTPBodyRepresentable {
     ///     - max: The maximum number of bytes to allow before throwing an error.
     ///            Use this to prevent using excessive memory on your server.
     /// - returns: `Future` containing the collected `Data`.
-    public func drain(max: Int) -> EventLoopFuture<Data> {
-        let promise = eventLoop.makePromise(of: Data.self)
-        var data = Data()
-        handler = { chunk, stream in
+    public func consume(max: Int) -> EventLoopFuture<ByteBuffer> {
+        let promise = eventLoop.makePromise(of: ByteBuffer.self)
+        var data = ByteBufferAllocator().buffer(capacity: 0)
+        self.read { chunk, stream in
             switch chunk {
             case .chunk(var buffer):
-                if data.count + buffer.readableBytes >= max {
+                if data.readableBytes + buffer.readableBytes >= max {
                     let error = HTTPError(.maxBodySize)
                     promise.fail(error)
                 } else {
-                    data += buffer.readData(length: buffer.readableBytes) ?? Data()
+                    data.writeBuffer(&buffer)
                 }
             case .error(let error): promise.fail(error)
             case .end: promise.succeed(data)
             }
-            return self.eventLoop.makeSucceededFuture(())
         }
         return promise.futureResult
     }
 
     /// See `HTTPBodyRepresentable`.
     public func convertToHTTPBody() -> HTTPBody {
-        return .init(chunked: self)
+        return .init(stream: self)
     }
-}
-
-/// Supported types that can be sent and recieved from a `HTTPChunkedStream`.
-public enum HTTPChunkedStreamResult {
-    /// A normal data chunk.
-    /// There will be 0 or more of these.
-    case chunk(ByteBuffer)
-    /// Indicates an error.
-    /// There will be 0 or 1 of these. 0 if the stream closes cleanly.
-    case error(Error)
-    /// Indicates the stream has completed.
-    /// There will be 0 or 1 of these. 0 if the stream errors.
-    case end
 }

@@ -42,7 +42,7 @@ final class HTTPServerHandler: ChannelInboundHandler, RemovableChannelHandler {
     
     func serialize(_ res: HTTPResponse, for req: HTTPRequest, ctx: ChannelHandlerContext) {
         switch req.body.storage {
-        case .chunkedStream(let stream):
+        case .stream(let stream):
             assert(stream.isClosed, "HTTPResponse sent while HTTPRequest had unconsumed chunked data.")
         default: break
         }

@@ -54,17 +54,17 @@ final class HTTPServerResponseEncoder: ChannelOutboundHandler, RemovableChannelH
                 var buffer = ctx.channel.allocator.buffer(capacity: data.count)
                 buffer.writeDispatchData(data)
                 self.writeAndflush(buffer: buffer, ctx: ctx, promise: promise)
-            case .chunkedStream(let stream):
+            case .stream(let stream):
                 stream.read { result, stream in
                     switch result {
                     case .chunk(let buffer):
-                        return ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))))
+                        ctx.writeAndFlush(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
                     case .end:
                         promise?.succeed(())
-                        return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                        ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
                     case .error(let error):
                         promise?.fail(error)
-                        return ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)))
+                        ctx.writeAndFlush(self.wrapOutboundOut(.end(nil)), promise: nil)
                     }
                 }
             }
