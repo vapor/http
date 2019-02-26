@@ -64,6 +64,7 @@ class HTTPTests: HTTPKitTestCase {
             config: .init(
                 hostname: "localhost",
                 port: 8080,
+                supportVersions: [.one],
                 errorHandler: { error in
                     XCTFail("\(error)")
                 }
