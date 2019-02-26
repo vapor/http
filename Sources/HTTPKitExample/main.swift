@@ -78,7 +78,8 @@ print("Plaintext server starting on http://\(hostname):8080")
 let plaintextServer = HTTPServer(
     config: .init(
         hostname: hostname,
-        port: 8080
+        port: 8080,
+        supportVersions: [.one]
     ),
     on: elg
 )
@@ -94,9 +95,10 @@ let tlsServer = HTTPServer(
     config: .init(
         hostname: hostname,
         port: 8443,
+        supportVersions: [.one, .two],
         tlsConfig: .forServer(
-            certificateChain: [.file("/Users/tanner0101/dev/vapor/http/certs/cert.pem")],
-            privateKey: .file("/Users/tanner0101/dev/vapor/http/certs/key.pem")
+            certificateChain: [.file("/Users/tanner0101/dev/vapor/http-kit/certs/cert.pem")],
+            privateKey: .file("/Users/tanner0101/dev/vapor/http-kit/certs/key.pem")
         )
     ),
     on: elg

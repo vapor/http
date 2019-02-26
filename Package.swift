@@ -13,6 +13,9 @@ let package = Package(
         // Bindings to OpenSSL-compatible libraries for TLS support in SwiftNIO
         .package(url: "https://github.com/apple/swift-nio-ssl.git", .branch("master")),
         
+        // HTTP/2 support for SwiftNIO
+        .package(url: "https://github.com/apple/swift-nio-http2.git", .branch("master")),
+        
         // Swift logging API
         // .package(url: "https://github.com/weissi/swift-server-logging-api-proposal", .branch("master")),
     ],
@@ -22,6 +25,7 @@ let package = Package(
             "NIO",
             "NIOFoundationCompat",
             "NIOHTTP1",
+            "NIOHTTP2",
             "NIOOpenSSL",
             "NIOWebSocket"
         ]),

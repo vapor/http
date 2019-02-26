@@ -1,6 +1,6 @@
 // import Logging
 
-final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHandler {
+final class HTTPServerRequestPartDecoder: ChannelInboundHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPServerRequestPart
     typealias InboundOut = HTTPRequest
     
@@ -77,7 +77,13 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHan
             headersNoUpdate: head.headers,
             body: body
         )
-        req.isKeepAlive = head.isKeepAlive
+        #warning("TODO: https://github.com/apple/swift-nio/issues/849")
+        switch head.version.major {
+        case 2:
+            req.isKeepAlive = true
+        default:
+            req.isKeepAlive = head.isKeepAlive
+        }
         context.fireChannelRead(self.wrapInboundOut(req))
     }
 }
