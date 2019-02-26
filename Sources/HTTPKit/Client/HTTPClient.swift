@@ -17,10 +17,17 @@ public final class HTTPClient {
     public func send(_ req: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
         let hostname = req.url.host ?? ""
         let port = req.url.port ?? (req.url.scheme == "https" ? 443 : 80)
+        let tlsConfig: TLSConfiguration?
+        switch req.url.scheme {
+        case "https":
+            tlsConfig = self.config.tlsConfig ?? .forClient()
+        default:
+            tlsConfig = nil
+        }
         return HTTPClientConnection.connect(
             hostname: hostname,
             port: port,
-            tlsConfig: req.url.scheme == "https" ? self.config.tlsConfig : nil,
+            tlsConfig: tlsConfig,
             proxy: self.config.proxy,
             connectTimeout: self.config.connectTimeout,
             on: self.eventLoopGroup.next(),
