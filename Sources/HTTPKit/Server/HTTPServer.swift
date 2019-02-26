@@ -35,48 +35,11 @@ public final class HTTPServer {
     }
 }
 
-final class ALPNNegotationHandler: ChannelInboundHandler, RemovableChannelHandler {
-    typealias InboundIn = Never
-    
-    let onNegotiate: (ChannelHandlerContext, String?) -> ()
-    
-    init(onNegotiate: @escaping (ChannelHandlerContext, String?) -> ()) {
-        self.onNegotiate = onNegotiate
-    }
-    
-    func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
-        switch event {
-        case let userEvent as TLSUserEvent:
-            switch userEvent {
-            case .handshakeCompleted(let negotiatedProtocol):
-                context.pipeline.removeHandler(self, promise: nil)
-                self.onNegotiate(context, negotiatedProtocol)
-            case .shutdownCompleted: break
-            }
-        default: break
-        }
-        context.fireUserInboundEventTriggered(event)
-    }
-}
-
-extension EventLoopFuture {
-    func assertSuccess() {
-        var result: Value?
-        self.whenComplete {
-            switch $0 {
-            case .failure(let failure): assertionFailure("\(failure)")
-            case .success(let success): result = success
-            }
-        }
-        Swift.assert(result != nil)
-    }
-}
-
-final class ErrorHandler: ChannelInboundHandler {
+final class HTTPServerErrorHandler: ChannelInboundHandler {
     typealias InboundIn = Never
     
     func errorCaught(context: ChannelHandlerContext, error: Error) {
-        print("Server received error: \(error)")
+        print("HTTP Server received error: \(error)")
         context.close(promise: nil)
     }
 }
@@ -149,7 +112,7 @@ final class HTTPServerConnection {
                                     streamID: streamID
                                 ))
                             }).flatMap { _ in
-                                return channel.pipeline.addHandler(ErrorHandler())
+                                return channel.pipeline.addHandler(HTTPServerErrorHandler())
                             }
                         }, http1PipelineConfigurator: { pipeline in
                             return pipeline.addHandlers(http1Handlers(
@@ -210,13 +173,13 @@ private func http2Handlers(
     handlers.append(http2)
     
     // add NIO -> HTTP request decoder
-    let serverReqDecoder = HTTPServerRequestPartDecoder(
+    let serverReqDecoder = HTTPRequestPartDecoder(
         maxBodySize: config.maxBodySize
     )
     handlers.append(serverReqDecoder)
     
     // add NIO -> HTTP response encoder
-    let serverResEncoder = HTTPServerResponsePartEncoder(
+    let serverResEncoder = HTTPResponsePartEncoder(
         serverHeader: config.serverName,
         dateCache: .eventLoop(channel.eventLoop)
     )
@@ -265,14 +228,14 @@ private func http1Handlers(
     }
     
     // add NIO -> HTTP request decoder
-    let serverReqDecoder = HTTPServerRequestPartDecoder(
+    let serverReqDecoder = HTTPRequestPartDecoder(
         maxBodySize: config.maxBodySize
     )
     handlers.append(serverReqDecoder)
     otherHTTPHandlers.append(serverReqDecoder)
     
     // add NIO -> HTTP response encoder
-    let serverResEncoder = HTTPServerResponsePartEncoder(
+    let serverResEncoder = HTTPResponsePartEncoder(
         serverHeader: config.serverName,
         dateCache: .eventLoop(channel.eventLoop)
     )

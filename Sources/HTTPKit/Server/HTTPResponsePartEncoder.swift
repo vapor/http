@@ -1,4 +1,4 @@
-final class HTTPServerResponsePartEncoder: ChannelOutboundHandler, RemovableChannelHandler {
+final class HTTPResponsePartEncoder: ChannelOutboundHandler, RemovableChannelHandler {
     typealias OutboundIn = HTTPResponse
     typealias OutboundOut = HTTPServerResponsePart
     

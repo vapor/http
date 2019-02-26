@@ -1,6 +1,6 @@
 // import Logging
 
-final class HTTPServerRequestPartDecoder: ChannelInboundHandler, RemovableChannelHandler {
+final class HTTPRequestPartDecoder: ChannelInboundHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPServerRequestPart
     typealias InboundOut = HTTPRequest
     
