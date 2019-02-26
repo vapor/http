@@ -32,8 +32,8 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHan
         // self.logger = Logging.make("http-kit.server-decoder")
     }
     
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-        assert(ctx.channel.eventLoop.inEventLoop)
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        assert(context.channel.eventLoop.inEventLoop)
         switch self.unwrapInboundIn(data) {
         case .head(let head):
             // self.logger.trace("got req head \(head)")
@@ -47,9 +47,9 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHan
             case .awaitingBody(let head):
                 self.requestState = .awaitingEnd(head, chunk)
             case .awaitingEnd(let head, let bodyStart):
-                let stream = HTTPBodyStream(on: ctx.channel.eventLoop)
+                let stream = HTTPBodyStream(on: context.channel.eventLoop)
                 self.requestState = .streamingBody(stream)
-                self.fireRequestRead(head: head, body: .init(stream: stream), ctx: ctx)
+                self.fireRequestRead(head: head, body: .init(stream: stream), context: context)
                 stream.write(.chunk(bodyStart))
                 stream.write(.chunk(chunk))
             case .streamingBody(let stream):
@@ -60,16 +60,16 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHan
             switch self.requestState {
             case .ready: assertionFailure("Unexpected state: \(self.requestState)")
             case .awaitingBody(let head):
-                self.fireRequestRead(head: head, body: .empty, ctx: ctx)
+                self.fireRequestRead(head: head, body: .empty, context: context)
             case .awaitingEnd(let head, let chunk):
-                self.fireRequestRead(head: head, body: .init(buffer: chunk), ctx: ctx)
+                self.fireRequestRead(head: head, body: .init(buffer: chunk), context: context)
             case .streamingBody(let stream): stream.write(.end)
             }
             self.requestState = .ready
         }
     }
     
-    private func fireRequestRead(head: HTTPRequestHead, body: HTTPBody, ctx: ChannelHandlerContext) {
+    private func fireRequestRead(head: HTTPRequestHead, body: HTTPBody, context: ChannelHandlerContext) {
         var req = HTTPRequest(
             method: head.method,
             urlString: head.uri,
@@ -78,6 +78,6 @@ final class HTTPServerRequestDecoder: ChannelInboundHandler, RemovableChannelHan
             body: body
         )
         req.isKeepAlive = head.isKeepAlive
-        ctx.fireChannelRead(self.wrapInboundOut(req))
+        context.fireChannelRead(self.wrapInboundOut(req))
     }
 }

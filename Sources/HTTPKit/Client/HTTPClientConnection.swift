@@ -60,11 +60,11 @@ internal final class HTTPClientConnection {
                 switch proxy.storage {
                 case .none: break
                 case .server:
-                    let proxy = HTTPClientProxyHandler(hostname: hostname, port: port ?? 443) { ctx in
+                    let proxy = HTTPClientProxyHandler(hostname: hostname, port: port ?? 443) { context in
                         
                         // re-add HTTPDecoder since it may consider the connection to be closed
-                        _ = ctx.pipeline.removeHandler(httpResDecoder)
-                        _ = ctx.pipeline.addHandler(httpResDecoder, position: .after(httpReqEncoder))
+                        _ = context.pipeline.removeHandler(httpResDecoder)
+                        _ = context.pipeline.addHandler(httpResDecoder, position: .after(httpReqEncoder))
                         
 
                         // if necessary, add TLS handlers
@@ -74,7 +74,7 @@ internal final class HTTPClientConnection {
                                 context: sslContext,
                                 serverHostname: hostname.isIPAddress() ? nil : hostname
                             )
-                            _ = ctx.pipeline.addHandler(tlsHandler, position: .first)
+                            _ = context.pipeline.addHandler(tlsHandler, position: .first)
                         }
                     }
                     handlers.append(proxy)
@@ -142,8 +142,8 @@ internal final class HTTPClientConnection {
     /// - returns: A `Future` `HTTPResponse` containing the server's response.
     public func send(_ req: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
         let promise = self.channel.eventLoop.makePromise(of: HTTPResponse.self)
-        let ctx = HTTPClientRequestContext(request: req, promise: promise)
-        self.channel.write(ctx, promise: nil)
+        let context = HTTPClientRequestContext(request: req, promise: promise)
+        self.channel.write(context, promise: nil)
         return promise.futureResult
     }
     

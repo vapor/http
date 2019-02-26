@@ -5,5 +5,5 @@ public protocol HTTPClientProtocolUpgrader {
     
     /// Called if `isValidUpgradeResponse` returns `true`. This should return the `UpgradeResult`
     /// that will ultimately be returned by `HTTPClient.upgrade(...)`.
-    func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<Void>
+    func upgrade(context: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<Void>
 }

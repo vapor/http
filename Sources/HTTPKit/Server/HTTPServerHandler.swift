@@ -15,7 +15,7 @@ final class HTTPServerHandler: ChannelInboundHandler, RemovableChannelHandler {
         self.errorHandler = errorHandler
     }
     
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var req = self.unwrapInboundIn(data)
 
         // change HEAD -> GET
@@ -26,21 +26,21 @@ final class HTTPServerHandler: ChannelInboundHandler, RemovableChannelHandler {
         }
         
         // query delegate for response
-        self.delegate.respond(to: req, on: ctx.channel).whenComplete { res in
+        self.delegate.respond(to: req, on: context.channel).whenComplete { res in
             switch res {
             case .failure(let error):
                 self.errorHandler(error)
-                ctx.close(promise: nil)
+                context.close(promise: nil)
             case .success(var res):
                 if originalMethod == .HEAD {
                     res.body = .init()
                 }
-                self.serialize(res, for: req, ctx: ctx)
+                self.serialize(res, for: req, context: context)
             }
         }
     }
     
-    func serialize(_ res: HTTPResponse, for req: HTTPRequest, ctx: ChannelHandlerContext) {
+    func serialize(_ res: HTTPResponse, for req: HTTPRequest, context: ChannelHandlerContext) {
         switch req.body.storage {
         case .stream(let stream):
             assert(stream.isClosed, "HTTPResponse sent while HTTPRequest had unconsumed chunked data.")
@@ -49,11 +49,11 @@ final class HTTPServerHandler: ChannelInboundHandler, RemovableChannelHandler {
         
         var res = res
         res.headers.add(name: .connection, value: req.isKeepAlive ? "keep-alive" : "close")
-        let done = ctx.write(self.wrapOutboundOut(res))
+        let done = context.write(self.wrapOutboundOut(res))
         
         if !req.isKeepAlive {
             _ = done.flatMap {
-                return ctx.close()
+                return context.close()
             }
         }
     }

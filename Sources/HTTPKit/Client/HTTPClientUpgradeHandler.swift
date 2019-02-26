@@ -18,28 +18,27 @@ internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler, RemovableCh
         self.state = .ready
     }
 
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
-        ctx.fireChannelRead(data)
-        
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+        context.fireChannelRead(data)
         switch self.state {
         case .pending(let upgrader):
             let res = self.unwrapInboundIn(data)
             if res.status == .switchingProtocols {
-                ctx.pipeline.removeHandler(self, promise: nil)
-                self.otherHTTPHandlers.forEach { ctx.pipeline.removeHandler($0, promise: nil) }
-                upgrader.upgrade(ctx: ctx, upgradeResponse: .init(
+                context.pipeline.removeHandler(self, promise: nil)
+                self.otherHTTPHandlers.forEach { context.pipeline.removeHandler($0, promise: nil) }
+                upgrader.upgrade(context: context, upgradeResponse: .init(
                     version: res.version,
                     status: res.status,
                     headers: res.headers
                 )).whenFailure { error in
-                    self.errorCaught(ctx: ctx, error: error)
+                    self.errorCaught(context: context, error: error)
                 }
             }
         case .ready: break
         }
     }
     
-    func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+    func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         var req = self.unwrapOutboundIn(data)
         if let upgrader = req.upgrader {
             for (name, value) in upgrader.buildUpgradeRequest() {
@@ -47,6 +46,6 @@ internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler, RemovableCh
             }
             self.state = .pending(upgrader)
         }
-        ctx.write(self.wrapOutboundOut(req), promise: promise)
+        context.write(self.wrapOutboundOut(req), promise: promise)
     }
 }

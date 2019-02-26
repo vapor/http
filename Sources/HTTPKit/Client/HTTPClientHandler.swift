@@ -9,35 +9,35 @@ internal final class HTTPClientHandler: ChannelDuplexHandler, RemovableChannelHa
         self.queue = []
     }
     
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         let res = self.unwrapInboundIn(data)
         self.queue[0].promise.succeed(res)
         self.queue.removeFirst()
     }
     
-    func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+    func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = self.unwrapOutboundIn(data)
         self.queue.append(req)
-        ctx.write(self.wrapOutboundOut(req.request), promise: nil)
-        ctx.flush()
+        context.write(self.wrapOutboundOut(req.request), promise: nil)
+        context.flush()
     }
     
-    func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
         switch self.queue.count {
         case 0:
-            ctx.fireErrorCaught(error)
+            context.fireErrorCaught(error)
         default:
             self.queue.removeFirst().promise.fail(error)
         }
     }
     
-    func close(ctx: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
+    func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
         if let promise = promise {
             // we need to do some error mapping here, so create a new promise
-            let p = ctx.eventLoop.makePromise(of: Void.self)
+            let p = context.eventLoop.makePromise(of: Void.self)
             
             // forward the close request with our new promise
-            ctx.close(mode: mode, promise: p)
+            context.close(mode: mode, promise: p)
             
             // forward close future results based on whether
             // the close was successful
@@ -62,7 +62,7 @@ internal final class HTTPClientHandler: ChannelDuplexHandler, RemovableChannelHa
             }
         } else {
             // no close promise anyway, just forward request
-            ctx.close(mode: mode, promise: nil)
+            context.close(mode: mode, promise: nil)
         }
     }
 }

@@ -17,45 +17,45 @@ final class HTTPClientProxyHandler: ChannelDuplexHandler, RemovableChannelHandle
         self.buffer = []
     }
     
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         let res = self.unwrapInboundIn(data)
         switch res {
         case .head(let head):
             assert(head.status == .ok)
         case .end:
-            self.configureTLS(ctx: ctx)
+            self.configureTLS(context: context)
         default: assertionFailure("invalid state: \(res)")
         }
     }
     
-    func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+    func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = self.unwrapOutboundIn(data)
         self.buffer.append(req)
         promise?.succeed(())
     }
     
-    func channelActive(ctx: ChannelHandlerContext) {
-        self.sendConnect(ctx: ctx)
+    func channelActive(context: ChannelHandlerContext) {
+        self.sendConnect(context: context)
     }
     
     // MARK: Private
     
-    private func configureTLS(ctx: ChannelHandlerContext) {
-        self.onConnect(ctx)
-        self.buffer.forEach { ctx.write(self.wrapOutboundOut($0), promise: nil) }
-        ctx.flush()
-        _ = ctx.pipeline.removeHandler(self)
+    private func configureTLS(context: ChannelHandlerContext) {
+        self.onConnect(context)
+        self.buffer.forEach { context.write(self.wrapOutboundOut($0), promise: nil) }
+        context.flush()
+        _ = context.pipeline.removeHandler(self)
     }
     
-    private func sendConnect(ctx: ChannelHandlerContext) {
+    private func sendConnect(context: ChannelHandlerContext) {
         var head = HTTPRequestHead(
             version: .init(major: 1, minor: 1),
             method: .CONNECT,
             uri: "\(self.hostname):\(self.port)"
         )
         head.headers.add(name: "proxy-connection", value: "keep-alive")
-        ctx.write(self.wrapOutboundOut(.head(head)), promise: nil)
-        ctx.write(self.wrapOutboundOut(.end(nil)), promise: nil)
-        ctx.flush()
+        context.write(self.wrapOutboundOut(.head(head)), promise: nil)
+        context.write(self.wrapOutboundOut(.end(nil)), promise: nil)
+        context.flush()
     }
 }

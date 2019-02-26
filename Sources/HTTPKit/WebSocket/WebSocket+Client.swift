@@ -104,12 +104,12 @@ public final class WebSocketClientUpgrader: HTTPClientProtocolUpgrader {
     }
 
     /// See `HTTPClientProtocolUpgrader`.
-    public func upgrade(ctx: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<Void> {
-        return ctx.channel.pipeline.addHandlers([
+    public func upgrade(context: ChannelHandlerContext, upgradeResponse: HTTPResponseHead) -> EventLoopFuture<Void> {
+        return context.channel.pipeline.addHandlers([
             WebSocketFrameEncoder(),
             ByteToMessageHandler(WebSocketFrameDecoder(maxFrameSize: maxFrameSize))
         ], position: .first).flatMap {
-            self.upgradePipelineHandler(ctx.channel, upgradeResponse)
+            self.upgradePipelineHandler(context.channel, upgradeResponse)
         }
     }
 }

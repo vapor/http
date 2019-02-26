@@ -11,7 +11,7 @@ internal final class HTTPClientRequestEncoder: ChannelOutboundHandler, Removable
     }
     
     /// See `ChannelOutboundHandler`.
-    func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+    func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = unwrapOutboundIn(data)
         var headers = req.headers
         headers.add(name: .host, value: self.hostname)
@@ -30,12 +30,12 @@ internal final class HTTPClientRequestEncoder: ChannelOutboundHandler, Removable
             uri: path.hasPrefix("/") ? path : "/" + path
         )
         httpHead.headers = headers
-        ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
+        context.write(wrapOutboundOut(.head(httpHead)), promise: nil)
         if let data = req.body.data {
             var buffer = ByteBufferAllocator().buffer(capacity: data.count)
             buffer.writeBytes(data)
-            ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
+            context.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
         }
-        ctx.write(self.wrapOutboundOut(.end(nil)), promise: promise)
+        context.write(self.wrapOutboundOut(.end(nil)), promise: promise)
     }
 }

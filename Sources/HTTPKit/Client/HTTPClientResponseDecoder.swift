@@ -18,7 +18,7 @@ internal final class HTTPClientResponseDecoder: ChannelInboundHandler, Removable
     }
     
     /// See `ChannelInboundHandler`.
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         let res = self.unwrapInboundIn(data)
         switch res {
         case .head(let head):
@@ -52,7 +52,7 @@ internal final class HTTPClientResponseDecoder: ChannelInboundHandler, Removable
                     body: body
                 )
                 self.state = .ready
-                ctx.fireChannelRead(wrapOutboundOut(res))
+                context.fireChannelRead(wrapOutboundOut(res))
             }
         }
     }

@@ -156,7 +156,7 @@ private final class CollectAcceptedChannelsHandler: ChannelInboundHandler {
         self.channelCollector = channelCollector
     }
     
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         let channel = self.unwrapInboundIn(data)
         do {
             try self.channelCollector.channelAdded(channel)
@@ -164,7 +164,7 @@ private final class CollectAcceptedChannelsHandler: ChannelInboundHandler {
             closeFuture.whenComplete { result in
                 self.channelCollector.channelRemoved(channel)
             }
-            ctx.fireChannelRead(data)
+            context.fireChannelRead(data)
         } catch ShutdownError.alreadyShutdown {
             channel.close(promise: nil)
         } catch {

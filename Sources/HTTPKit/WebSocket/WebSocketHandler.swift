@@ -28,20 +28,20 @@ private final class WebSocketHandler: ChannelInboundHandler {
     }
 
     /// See `ChannelInboundHandler`.
-    func channelActive(ctx: ChannelHandlerContext) {
+    func channelActive(context: ChannelHandlerContext) {
         // connected
     }
 
     /// See `ChannelInboundHandler`.
-    func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         var frame = self.unwrapInboundIn(data)
         switch frame.opcode {
-        case .connectionClose: receivedClose(ctx: ctx, frame: frame)
+        case .connectionClose: self.receivedClose(context: context, frame: frame)
         case .ping:
             if !frame.fin {
-                closeOnError(ctx: ctx) // control frames can't be fragmented it should be final
+                closeOnError(context: context) // control frames can't be fragmented it should be final
             } else {
-                pong(ctx: ctx, frame: frame)
+                pong(context: context, frame: frame)
             }
         case .text, .binary:
             // create a new frame sequence or use existing
@@ -61,7 +61,7 @@ private final class WebSocketHandler: ChannelInboundHandler {
                 frameSequence.append(frame)
                 self.frameSequence = frameSequence
             } else {
-                closeOnError(ctx: ctx)
+                self.closeOnError(context: context)
             }
         default:
             // We ignore all other frames.
@@ -83,12 +83,12 @@ private final class WebSocketHandler: ChannelInboundHandler {
     }
 
     /// See `ChannelInboundHandler`.
-    func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
         webSocket.onErrorCallback(webSocket, error)
     }
 
     /// Closes gracefully.
-    private func receivedClose(ctx: ChannelHandlerContext, frame: WebSocketFrame) {
+    private func receivedClose(context: ChannelHandlerContext, frame: WebSocketFrame) {
         /// Parse the close frame.
         var data = frame.unmaskedData
         if let closeCode = data.readInteger(as: UInt16.self)
@@ -102,34 +102,34 @@ private final class WebSocketHandler: ChannelInboundHandler {
         // frame and then close, unless we already sent our own close frame.
         if webSocket.isClosed {
             // Cool, we started the close and were waiting for the user. We're done.
-            ctx.close(promise: nil)
+            context.close(promise: nil)
         } else {
             // This is an unsolicited close. We're going to send a response frame and
             // then, when we've sent it, close up shop. We should send back the close code the remote
             // peer sent us, unless they didn't send one at all.
             let closeFrame = WebSocketFrame(fin: true, opcode: .connectionClose, data: data)
-            _ = ctx.writeAndFlush(wrapOutboundOut(closeFrame)).whenComplete { _ in
-                _ = ctx.close(promise: nil)
+            _ = context.writeAndFlush(wrapOutboundOut(closeFrame)).whenComplete { _ in
+                _ = context.close(promise: nil)
             }
         }
     }
 
     /// Sends a pong frame in response to ping.
-    private func pong(ctx: ChannelHandlerContext, frame: WebSocketFrame) {
+    private func pong(context: ChannelHandlerContext, frame: WebSocketFrame) {
         let pongFrame = WebSocketFrame(
             fin: true,
             opcode: .pong,
             maskKey: webSocket.mode.makeMaskKey(),
             data: frame.data
         )
-        ctx.writeAndFlush(self.wrapOutboundOut(pongFrame), promise: nil)
+        context.writeAndFlush(self.wrapOutboundOut(pongFrame), promise: nil)
     }
 
     /// Closes the connection with error frame.
-    private func closeOnError(ctx: ChannelHandlerContext) {
+    private func closeOnError(context: ChannelHandlerContext) {
         // We have hit an error, we want to close. We do that by sending a close frame and then
         // shutting down the write side of the connection.
-        var data = ctx.channel.allocator.buffer(capacity: 2)
+        var data = context.channel.allocator.buffer(capacity: 2)
         let error = WebSocketErrorCode.protocolError
         data.write(webSocketErrorCode: error)
         let frame = WebSocketFrame(
@@ -139,9 +139,9 @@ private final class WebSocketHandler: ChannelInboundHandler {
                 data: data
         )
 
-        _ = ctx.writeAndFlush(self.wrapOutboundOut(frame)).flatMap {
-            ctx.close(mode: .output)
+        _ = context.writeAndFlush(self.wrapOutboundOut(frame)).flatMap {
+            context.close(mode: .output)
         }
-        webSocket.isClosed = true
+        self.webSocket.isClosed = true
     }
 }
