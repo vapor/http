@@ -131,7 +131,7 @@ public struct HTTPHeaderValue {
                             let prev = trailing.index(trailing.startIndex, offsetBy: i - 1)
                             let curr = trailing.index(trailing.startIndex, offsetBy: i)
                             if trailing[curr] == "\"" {
-                                if trailing[prev] != "\\" {
+                                if trailing[prev] != #"\"# {
                                     quoteIndex = curr
                                     break findQuote
                                 } else {
