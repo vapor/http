@@ -131,7 +131,7 @@ public struct HTTPHeaderValue {
                             let prev = trailing.index(trailing.startIndex, offsetBy: i - 1)
                             let curr = trailing.index(trailing.startIndex, offsetBy: i)
                             if trailing[curr] == "\"" {
-                                if trailing[prev] != "\\" {
+                                if trailing[prev] != #"\"# {
                                     quoteIndex = curr
                                     break findQuote
                                 } else {
@@ -195,5 +195,28 @@ public struct HTTPHeaderValue {
         }
         
         return HTTPHeaderValue(.init(value), parameters: parameters)
+    }
+}
+
+extension HTTPHeaderValue: Codable {
+    /// Initialize a `HTTPHeaderValue` from a Decoder.
+    ///
+    /// This will decode a `String` from the decoder and parse it to a `HTTPHeaderValue`.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let string = try container.decode(String.self)
+        guard let tempValue = HTTPHeaderValue.parse(string) else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid header value string")
+        }
+        self.parameters = tempValue.parameters
+        self.value = tempValue.value
+    }
+    
+    /// Encode a `HTTPHeaderValue` into an Encoder.
+    ///
+    /// This will encode the `HTTPHeaderValue` as a `String`.
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.serialize())
     }
 }
