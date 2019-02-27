@@ -199,9 +199,9 @@ public struct HTTPHeaderValue {
 }
 
 extension HTTPHeaderValue: Codable {
-    /// Initialize a HTTPHeaderValue from a Decoder
+    /// Initialize a `HTTPHeaderValue` from a Decoder.
     ///
-    /// This will decode a String from the decoder and parse it
+    /// This will decode a String from the decoder and parse it to a `HTTPHeaderValue`.
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
@@ -212,9 +212,9 @@ extension HTTPHeaderValue: Codable {
         self.value = tempValue.value
     }
     
-    /// Encode a HTTPHeaderValue into an Encoder
+    /// Encode a `HTTPHeaderValue` into an Encoder.
     ///
-    /// This will encode the HTTPHeaderValue as a String
+    /// This will encode the `HTTPHeaderValue` as a String.
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.serialize())
