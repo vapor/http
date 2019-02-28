@@ -121,6 +121,8 @@ public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     public static let contentRange = HTTPHeaderName("Content-Range")
     /// Content-Script-Type header.
     public static let contentScriptType = HTTPHeaderName("Content-Script-Type")
+    /// Content-Security-Policy
+    public static let contentSecurityPolicy = HTTPHeaderName("Content-Security-Policy")
     /// Content-Style-Type header.
     public static let contentStyleType = HTTPHeaderName("Content-Style-Type")
     /// Content-Type header.
@@ -343,14 +345,13 @@ public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     public static let wantDigest = HTTPHeaderName("Want-Digest")
     /// Warning header.
     public static let warning = HTTPHeaderName("Warning")
-    /// X-Frame-Options header.
-    public static let xFrameOptions = HTTPHeaderName("X-Frame-Options")
-    /// Content-Security-Policy
-    public static let contentSecurityPolicy = HTTPHeaderName("Content-Security-Policy")
-    /// X-XSS-Protection header
-    public static let xssProtection = HTTPHeaderName("X-XSS-Protection")
     /// X-Content-Type-Options
     public static let xContentTypeOptions = HTTPHeaderName("X-Content-Type-Options")
+    /// X-Frame-Options header.
+    public static let xFrameOptions = HTTPHeaderName("X-Frame-Options")
+    /// X-XSS-Protection header
+    public static let xssProtection = HTTPHeaderName("X-XSS-Protection")
+    
 
     // https://www.iana.org/assignments/message-headers/message-headers.xhtml
     // Provisional Message Header Field Names
@@ -427,4 +428,3 @@ public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     /// X-Requested-With header.
     public static let xRequestedWith = HTTPHeaderName("X-Requested-With")
 }
-
