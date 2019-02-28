@@ -345,6 +345,12 @@ public struct HTTPHeaderName: Codable, Hashable, CustomStringConvertible {
     public static let warning = HTTPHeaderName("Warning")
     /// X-Frame-Options header.
     public static let xFrameOptions = HTTPHeaderName("X-Frame-Options")
+    /// Content-Security-Policy
+    public static let contentSecurityPolicy = HTTPHeaderName("Content-Security-Policy")
+    /// X-XSS-Protection header
+    public static let xssProtection = HTTPHeaderName("X-XSS-Protection")
+    /// X-Content-Type-Options
+    public static let xContentTypeOptions = HTTPHeaderName("X-Content-Type-Options")
 
     // https://www.iana.org/assignments/message-headers/message-headers.xhtml
     // Provisional Message Header Field Names
