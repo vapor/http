@@ -44,8 +44,9 @@ internal final class HTTPClientHandler: ChannelDuplexHandler, RemovableChannelHa
             p.futureResult.whenSuccess { promise.succeed(()) }
             p.futureResult.whenFailure { error in
                 if
-                    let sslError = error as? OpenSSLError,
-                    case .uncleanShutdown = sslError,
+                    let sslError = error as? NIOSSLError,
+                    case .shutdownFailed(let boringError) = sslError,
+                    case .uncleanShutdown = boringError,
                     self.queue.isEmpty
                 {
                     // we can ignore unclear shutdown errors

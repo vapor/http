@@ -1,11 +1,11 @@
-extension HTTPResponse {
-    public mutating func webSocketUpgrade(
-        headers: HTTPHeaders = [:],
-        for req: HTTPRequest,
+extension HTTPRequest {
+    public func makeWebSocketUpgradeResponse(
+        extraHeaders: HTTPHeaders = [:],
+        on channel: Channel,
         onUpgrade: @escaping (WebSocket) -> ()
-    ) throws {
-        let upgrader = WebSocketUpgrader(shouldUpgrade: { _ in
-            return headers
+    ) -> EventLoopFuture<HTTPResponse> {
+        let upgrader = WebSocketUpgrader(shouldUpgrade: { channel, _ in
+            return channel.eventLoop.makeSucceededFuture(extraHeaders)
         }, upgradePipelineHandler: { channel, req in
             let webSocket = WebSocket(channel: channel, mode: .server)
             onUpgrade(webSocket)
@@ -13,19 +13,22 @@ extension HTTPResponse {
         })
         
         var head = HTTPRequestHead(
-            version: req.version,
-            method: req.method,
-            uri: req.urlString
+            version: self.version,
+            method: self.method,
+            uri: self.urlString
         )
-        head.headers = req.headers
-        let headers = try upgrader.buildUpgradeResponse(
+        head.headers = self.headers
+        return upgrader.buildUpgradeResponse(
+            channel: channel,
             upgradeRequest: head,
             initialResponseHeaders: headers
-        )
-        for (name, value) in headers {
-            self.headers.replaceOrAdd(name: name, value: value)
+        ).map { headers in
+            var res = HTTPResponse(
+                status: .switchingProtocols,
+                headers: headers
+            )
+            res.upgrader = upgrader
+            return res
         }
-        self.status = .switchingProtocols
-        self.upgrader = upgrader
     }
 }

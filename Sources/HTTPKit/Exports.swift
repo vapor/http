@@ -1,6 +1,9 @@
 @_exported import NIO
+@_exported import NIOExtras
+@_exported import NIOHTTPCompression
+@_exported import NIOHTTP2
 @_exported import NIOHTTP1
-@_exported import NIOOpenSSL
+@_exported import NIOSSL
 @_exported import NIOWebSocket
 
 extension FixedWidthInteger {

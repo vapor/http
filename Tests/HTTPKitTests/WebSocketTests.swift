@@ -134,15 +134,8 @@ struct WebSocketServerDelegate: HTTPServerDelegate {
             return channel.eventLoop.makeFailedFuture(CookieError())
         }
         
-        
-        do {
-            var res = HTTPResponse()
-            try res.webSocketUpgrade(for: req) { ws in
-                self.onUpgrade(ws, req)
-            }
-            return channel.eventLoop.makeSucceededFuture(res)
-        } catch {
-            return channel.eventLoop.makeFailedFuture(error)
+        return req.makeWebSocketUpgradeResponse(on: channel) { ws in
+            self.onUpgrade(ws, req)
         }
     }
 }

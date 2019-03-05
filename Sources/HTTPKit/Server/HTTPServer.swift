@@ -93,11 +93,11 @@ final class HTTPServerConnection {
                     if config.supportVersions.contains(.one) {
                         tlsConfig.applicationProtocols.append("http/1.1")
                     }
-                    let sslContext: SSLContext
-                    let tlsHandler: OpenSSLServerHandler
+                    let sslContext: NIOSSLContext
+                    let tlsHandler: NIOSSLServerHandler
                     do {
-                        sslContext = try SSLContext(configuration: tlsConfig)
-                        tlsHandler = try OpenSSLServerHandler(context: sslContext)
+                        sslContext = try NIOSSLContext(configuration: tlsConfig)
+                        tlsHandler = try NIOSSLServerHandler(context: sslContext)
                     } catch {
                         print("Could not configure TLS: \(error)")
                         return channel.close(mode: .all)
