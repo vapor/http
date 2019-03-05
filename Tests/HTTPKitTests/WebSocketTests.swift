@@ -98,7 +98,8 @@ class WebSocketTests: HTTPKitTestCase {
         let server = HTTPServer(
             config: .init(
                 hostname: "127.0.0.1",
-                port: 8888
+                port: 8888,
+                supportVersions: [.one]
             ),
             on: self.eventLoopGroup
         )
@@ -133,15 +134,8 @@ struct WebSocketServerDelegate: HTTPServerDelegate {
             return channel.eventLoop.makeFailedFuture(CookieError())
         }
         
-        
-        do {
-            var res = HTTPResponse()
-            try res.webSocketUpgrade(for: req) { ws in
-                self.onUpgrade(ws, req)
-            }
-            return channel.eventLoop.makeSucceededFuture(res)
-        } catch {
-            return channel.eventLoop.makeFailedFuture(error)
+        return req.makeWebSocketUpgradeResponse(on: channel) { ws in
+            self.onUpgrade(ws, req)
         }
     }
 }

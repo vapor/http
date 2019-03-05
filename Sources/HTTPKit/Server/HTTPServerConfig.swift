@@ -1,5 +1,10 @@
 import Foundation
 
+public enum HTTPVersionMajor: Equatable, Hashable {
+    case one
+    case two
+}
+
 /// Engine server config struct.
 ///
 ///     let serverConfig = HTTPServerConfig.default(port: 8123)
@@ -33,7 +38,7 @@ public struct HTTPServerConfig {
     /// When `true`, HTTP server will support pipelined requests.
     public var supportPipelining: Bool
     
-    public var supportHTTP2: Bool
+    public var supportVersions: Set<HTTPVersionMajor>
     
     public var tlsConfig: TLSConfiguration?
     
@@ -71,7 +76,7 @@ public struct HTTPServerConfig {
         webSocketMaxFrameSize: Int = 1 << 14,
         supportCompression: Bool = false,
         supportPipelining: Bool = false,
-        supportHTTP2: Bool = false,
+        supportVersions: Set<HTTPVersionMajor> = [.one, .two],
         tlsConfig: TLSConfiguration? = nil,
         serverName: String? = nil,
         errorHandler: @escaping (Error) -> () = { _ in }
@@ -85,7 +90,7 @@ public struct HTTPServerConfig {
         self.webSocketMaxFrameSize = webSocketMaxFrameSize
         self.supportCompression = supportCompression
         self.supportPipelining = supportPipelining
-        self.supportHTTP2 = supportHTTP2
+        self.supportVersions = supportVersions
         self.tlsConfig = tlsConfig
         self.serverName = serverName
         self.errorHandler = errorHandler

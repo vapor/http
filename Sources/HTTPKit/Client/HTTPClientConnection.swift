@@ -37,8 +37,8 @@ internal final class HTTPClientConnection {
                 switch proxy.storage {
                 case .none:
                     if let tlsConfig = tlsConfig {
-                        let sslContext = try! SSLContext(configuration: tlsConfig)
-                        let tlsHandler = try! OpenSSLClientHandler(
+                        let sslContext = try! NIOSSLContext(configuration: tlsConfig)
+                        let tlsHandler = try! NIOSSLClientHandler(
                             context: sslContext,
                             serverHostname: hostname.isIPAddress() ? nil : hostname
                         )
@@ -69,8 +69,8 @@ internal final class HTTPClientConnection {
 
                         // if necessary, add TLS handlers
                         if let tlsConfig = tlsConfig {
-                            let sslContext = try! SSLContext(configuration: tlsConfig)
-                            let tlsHandler = try! OpenSSLClientHandler(
+                            let sslContext = try! NIOSSLContext(configuration: tlsConfig)
+                            let tlsHandler = try! NIOSSLClientHandler(
                                 context: sslContext,
                                 serverHostname: hostname.isIPAddress() ? nil : hostname
                             )
