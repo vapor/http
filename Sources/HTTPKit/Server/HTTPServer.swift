@@ -1,3 +1,8 @@
+import NIOTLS
+import NIO
+import NIOHTTP1
+import NIOHTTP2
+
 public final class HTTPServer {
     public let config: HTTPServerConfig
     public let eventLoopGroup: EventLoopGroup
@@ -29,6 +34,16 @@ public final class HTTPServer {
         return self.server!.channel.closeFuture
     }
 }
+
+final class HTTPServerErrorHandler: ChannelInboundHandler {
+    typealias InboundIn = Never
+    
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
+        print("HTTP Server received error: \(error)")
+        context.close(promise: nil)
+    }
+}
+
 
 /// Simple HTTP server generic on an HTTP responder
 /// that will be used to generate responses to incoming requests.
@@ -69,75 +84,56 @@ final class HTTPServerConnection {
 
             // Set the handlers that are applied to the accepted Channels
             .childChannelInitializer { channel in
-                // create server pipeline array
-                var handlers: [ChannelHandler] = []
-                var otherHTTPHandlers: [RemovableChannelHandler] = []
-                
                 // add TLS handlers if configured
-                if let tlsConfig = config.tlsConfig {
-                    #warning("TODO: fix force try")
-                    let sslContext = try! SSLContext(configuration: tlsConfig)
-                    let tlsHandler = try! OpenSSLServerHandler(context: sslContext)
-                    handlers.append(tlsHandler)
+                if var tlsConfig = config.tlsConfig {
+                    // prioritize http/2
+                    if config.supportVersions.contains(.two) {
+                        tlsConfig.applicationProtocols.append("h2")
+                    }
+                    if config.supportVersions.contains(.one) {
+                        tlsConfig.applicationProtocols.append("http/1.1")
+                    }
+                    let sslContext: NIOSSLContext
+                    let tlsHandler: NIOSSLServerHandler
+                    do {
+                        sslContext = try NIOSSLContext(configuration: tlsConfig)
+                        tlsHandler = try NIOSSLServerHandler(context: sslContext)
+                    } catch {
+                        print("Could not configure TLS: \(error)")
+                        return channel.close(mode: .all)
+                    }
+                    return channel.pipeline.addHandler(tlsHandler).flatMap {
+                        return channel.pipeline.configureHTTP2SecureUpgrade(h2PipelineConfigurator: { pipeline in
+                            return channel.configureHTTP2Pipeline(mode: .server, inboundStreamStateInitializer: { channel, streamID in
+                                return channel.pipeline.addHandlers(http2Handlers(
+                                    config: config,
+                                    delegate: delegate,
+                                    channel: channel,
+                                    streamID: streamID
+                                ))
+                            }).flatMap { _ in
+                                return channel.pipeline.addHandler(HTTPServerErrorHandler())
+                            }
+                        }, http1PipelineConfigurator: { pipeline in
+                            return pipeline.addHandlers(http1Handlers(
+                                config: config,
+                                delegate: delegate,
+                                channel: channel
+                            ))
+                        })
+                    }
+                } else {
+                    guard !config.supportVersions.contains(.two) else {
+                        fatalError("Plaintext HTTP/2 (h2c) not yet supported.")
+                    }
+                    let handlers = http1Handlers(
+                        config: config,
+                        delegate: delegate,
+                        channel: channel
+                    )
+                    // configure the pipeline
+                    return channel.pipeline.addHandlers(handlers, position: .last)
                 }
-
-                // configure HTTP/1
-                // add http parsing and serializing
-                let httpResEncoder = HTTPResponseEncoder()
-                let httpReqDecoder = HTTPRequestDecoder(
-                    leftOverBytesStrategy: .forwardBytes
-                )
-                handlers += [httpResEncoder, httpReqDecoder]
-                otherHTTPHandlers += [httpResEncoder]
-                
-                // add pipelining support if configured
-                if config.supportPipelining {
-                    let pipelineHandler = HTTPServerPipelineHandler()
-                    handlers.append(pipelineHandler)
-                    otherHTTPHandlers.append(pipelineHandler)
-                }
-                
-                // add response compressor if configured
-                if config.supportCompression {
-                    let compressionHandler = HTTPResponseCompressor()
-                    handlers.append(compressionHandler)
-                    otherHTTPHandlers.append(compressionHandler)
-                }
-                
-                // add NIO -> HTTP request decoder
-                let serverReqDecoder = HTTPServerRequestDecoder(
-                    maxBodySize: config.maxBodySize
-                )
-                handlers.append(serverReqDecoder)
-                otherHTTPHandlers.append(serverReqDecoder)
-                
-                // add NIO -> HTTP response encoder
-                let serverResEncoder = HTTPServerResponseEncoder(
-                    serverHeader: config.serverName,
-                    dateCache: .eventLoop(channel.eventLoop)
-                )
-                handlers.append(serverResEncoder)
-                otherHTTPHandlers.append(serverResEncoder)
-                
-                // add server request -> response delegate
-                let handler = HTTPServerHandler(
-                    delegate: delegate,
-                    errorHandler: config.errorHandler
-                )
-                otherHTTPHandlers.append(handler)
-                
-                // add HTTP upgrade handler
-                let upgrader = HTTPServerUpgradeHandler(
-                    httpRequestDecoder: httpReqDecoder,
-                    otherHTTPHandlers: otherHTTPHandlers
-                )
-                handlers.append(upgrader)
-                
-                // wait to add delegate as final step
-                handlers.append(handler)
-                
-                // configure the pipeline
-                return channel.pipeline.addHandlers(handlers, position: .last)
             }
 
             // Enable TCP_NODELAY and SO_REUSEADDR for the accepted Channels
@@ -161,4 +157,106 @@ final class HTTPServerConnection {
         self.channel = channel
         self.quiesce = quiesce
     }
+}
+
+
+private func http2Handlers(
+    config: HTTPServerConfig,
+    delegate: HTTPServerDelegate,
+    channel: Channel,
+    streamID: HTTP2StreamID
+) -> [ChannelHandler] {
+    // create server pipeline array
+    var handlers: [ChannelHandler] = []
+    
+    let http2 = HTTP2ToHTTP1ServerCodec(streamID: streamID)
+    handlers.append(http2)
+    
+    // add NIO -> HTTP request decoder
+    let serverReqDecoder = HTTPRequestPartDecoder(
+        maxBodySize: config.maxBodySize
+    )
+    handlers.append(serverReqDecoder)
+    
+    // add NIO -> HTTP response encoder
+    let serverResEncoder = HTTPResponsePartEncoder(
+        serverHeader: config.serverName,
+        dateCache: .eventLoop(channel.eventLoop)
+    )
+    handlers.append(serverResEncoder)
+    
+    // add server request -> response delegate
+    let handler = HTTPServerHandler(
+        delegate: delegate,
+        errorHandler: config.errorHandler
+    )
+    handlers.append(handler)
+
+    return handlers
+}
+
+private func http1Handlers(
+    config: HTTPServerConfig,
+    delegate: HTTPServerDelegate,
+    channel: Channel
+) -> [ChannelHandler] {
+    // create server pipeline array
+    var handlers: [ChannelHandler] = []
+    var otherHTTPHandlers: [RemovableChannelHandler] = []
+    
+    // configure HTTP/1
+    // add http parsing and serializing
+    let httpResEncoder = HTTPResponseEncoder()
+    let httpReqDecoder = HTTPRequestDecoder(
+        leftOverBytesStrategy: .forwardBytes
+    )
+    handlers += [httpResEncoder, httpReqDecoder]
+    otherHTTPHandlers += [httpResEncoder]
+    
+    // add pipelining support if configured
+    if config.supportPipelining {
+        let pipelineHandler = HTTPServerPipelineHandler()
+        handlers.append(pipelineHandler)
+        otherHTTPHandlers.append(pipelineHandler)
+    }
+    
+    // add response compressor if configured
+    if config.supportCompression {
+        let compressionHandler = HTTPResponseCompressor()
+        handlers.append(compressionHandler)
+        otherHTTPHandlers.append(compressionHandler)
+    }
+    
+    // add NIO -> HTTP request decoder
+    let serverReqDecoder = HTTPRequestPartDecoder(
+        maxBodySize: config.maxBodySize
+    )
+    handlers.append(serverReqDecoder)
+    otherHTTPHandlers.append(serverReqDecoder)
+    
+    // add NIO -> HTTP response encoder
+    let serverResEncoder = HTTPResponsePartEncoder(
+        serverHeader: config.serverName,
+        dateCache: .eventLoop(channel.eventLoop)
+    )
+    handlers.append(serverResEncoder)
+    otherHTTPHandlers.append(serverResEncoder)
+    
+    // add server request -> response delegate
+    let handler = HTTPServerHandler(
+        delegate: delegate,
+        errorHandler: config.errorHandler
+    )
+    otherHTTPHandlers.append(handler)
+    
+    // add HTTP upgrade handler
+    let upgrader = HTTPServerUpgradeHandler(
+        httpRequestDecoder: httpReqDecoder,
+        otherHTTPHandlers: otherHTTPHandlers
+    )
+    handlers.append(upgrader)
+    
+    // wait to add delegate as final step
+    handlers.append(handler)
+    return handlers
 }

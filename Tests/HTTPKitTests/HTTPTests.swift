@@ -64,6 +64,7 @@ class HTTPTests: HTTPKitTestCase {
             config: .init(
                 hostname: "localhost",
                 port: 8080,
+                supportVersions: [.one],
                 errorHandler: { error in
                     XCTFail("\(error)")
                 }
@@ -127,6 +128,12 @@ class HTTPTests: HTTPKitTestCase {
         
         XCTAssertEqual(nowStamp, beforeStamp)
         XCTAssertNotEqual(beforeStamp, afterStamp)
+    }
+    
+    func testClientDefaultConfig() throws {
+        let client = HTTPClient(on: self.eventLoopGroup)
+        let res = try client.get("https://vapor.codes").wait()
+        XCTAssertEqual(res.status, .ok)
     }
 }
 
