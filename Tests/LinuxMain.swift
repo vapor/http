@@ -23,6 +23,7 @@ extension HTTPKitTests.HTTPTests {
 	static let __allHTTPTestsTests = [
 		("testCookieParse", testCookieParse),
 		("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
+		("testMultipleCookiesAreSerializedCorrectly", testMultipleCookiesAreSerializedCorrectly),
 		("testAcceptHeader", testAcceptHeader),
 		("testRemotePeer", testRemotePeer),
 		("testLargeResponseClose", testLargeResponseClose),

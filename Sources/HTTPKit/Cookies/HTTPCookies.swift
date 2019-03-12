@@ -72,11 +72,7 @@ public struct HTTPCookies: ExpressibleByDictionaryLiteral {
 
     /// Seriaizes the `Cookies` for a `Response`
     public func serialize(into response: inout HTTPResponse)  {
-        guard !cookies.isEmpty else {
-            response.headers.remove(name: .setCookie)
-            return
-        }
-
+        response.headers.remove(name: .setCookie)
         for (name, value) in cookies {
             response.headers.add(name: .setCookie, value: value.serialize(name: name))
         }
