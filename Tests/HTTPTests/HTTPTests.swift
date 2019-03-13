@@ -34,6 +34,19 @@ class HTTPTests: XCTestCase {
         XCTAssertEqual(httpReq.headers.firstValue(name: .cookie), "id=value")
     }
 
+    func testMultipleCookiesAreSerializedCorrectly() throws {
+         var httpRes = HTTPResponse()
+         httpRes.cookies["a"] = HTTPCookieValue(string: "1")
+         XCTAssertEqual(httpRes.headers[.setCookie].filter { $0.contains("a=1") }.count, 1)
+         httpRes.cookies["b"] = HTTPCookieValue(string: "2")
+         XCTAssertEqual(httpRes.headers[.setCookie].filter { $0.contains("a=1") }.count, 1)
+         XCTAssertEqual(httpRes.headers[.setCookie].filter { $0.contains("b=2") }.count, 1)
+         httpRes.cookies["c"] = HTTPCookieValue(string: "3")
+         XCTAssertEqual(httpRes.headers[.setCookie].filter { $0.contains("a=1") }.count, 1)
+         XCTAssertEqual(httpRes.headers[.setCookie].filter { $0.contains("b=2") }.count, 1)
+         XCTAssertEqual(httpRes.headers[.setCookie].filter { $0.contains("c=3") }.count, 1)
+     }
+
     func testAcceptHeader() throws {
         let httpReq = HTTPRequest(method: .GET, url: "/", headers: ["Accept": "text/html, application/json, application/xml;q=0.9, */*;q=0.8"])
         XCTAssertTrue(httpReq.accept.mediaTypes.contains(.html))
@@ -111,6 +124,7 @@ class HTTPTests: XCTestCase {
         ("testAcceptHeader", testAcceptHeader),
         ("testRemotePeer", testRemotePeer),
         ("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
+        ("testMultipleCookiesAreSerializedCorrectly", testMultipleCookiesAreSerializedCorrectly),
         ("testLargeResponseClose", testLargeResponseClose),
         ("testUpgradeFail", testUpgradeFail),
     ]
