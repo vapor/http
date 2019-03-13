@@ -1,5 +1,3 @@
-// import Logging
-
 final class HTTPServerHandler: ChannelInboundHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPRequest
     typealias OutboundOut = HTTPResponse

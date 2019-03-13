@@ -1,4 +1,4 @@
-// import Logging
+import Logging
 
 final class HTTPRequestPartDecoder: ChannelInboundHandler, RemovableChannelHandler {
     typealias InboundIn = HTTPServerRequestPart
@@ -24,19 +24,20 @@ final class HTTPRequestPartDecoder: ChannelInboundHandler, RemovableChannelHandl
     /// Maximum body size allowed per request.
     private let maxBodySize: Int
     
-    // private let logger: Logger
+    private let logger: Logger
     
     init(maxBodySize: Int) {
         self.maxBodySize = maxBodySize
         self.requestState = .ready
-        // self.logger = Logging.make("http-kit.server-decoder")
+        self.logger = Logger(label: "http-kit.server-decoder")
     }
     
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         assert(context.channel.eventLoop.inEventLoop)
-        switch self.unwrapInboundIn(data) {
+        let part = self.unwrapInboundIn(data)
+        self.logger.debug("got \(part)")
+        switch part {
         case .head(let head):
-            // self.logger.trace("got req head \(head)")
             switch self.requestState {
             case .ready: self.requestState = .awaitingBody(head)
             default: assertionFailure("Unexpected state: \(self.requestState)")
