@@ -37,7 +37,7 @@ jobs:
     steps:
       - run:
           name: Clone Vapor
-          command: git clone -b master https://github.com/vapor/vapor.git
+          command: git clone -b 3 https://github.com/vapor/vapor.git
           working_directory: ~/
       - run:
           name: Switch Vapor to this HTTP revision

@@ -11,7 +11,7 @@ class HTTPClientTests: XCTestCase {
     }
 
     func testHTTPBinAnything() throws {
-        try testURL("http://httpbin.org/anything", contains: "http://httpbin.org/anything")
+        try testURL("http://httpbin.org/anything", contains: "httpbin.org/anything")
     }
 
     func testGoogleAPIsFCM() throws {
