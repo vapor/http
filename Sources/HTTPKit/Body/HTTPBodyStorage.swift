@@ -51,7 +51,7 @@ enum HTTPBodyStorage {
             buffer.writeDispatchData(dispatchData)
             return buffer
         case .staticString(let staticString):
-            var buffer = ByteBufferAllocator().buffer(capacity: staticString.count)
+            var buffer = ByteBufferAllocator().buffer(capacity: staticString.utf8CodeUnitCount)
             buffer.writeStaticString(staticString)
             return buffer
         case .string(let string):

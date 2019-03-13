@@ -1,38 +1,30 @@
 import HTTPKit
-// import Logging
+import Logging
 
-//struct Handler: LogHandler {
-//    let label: String
-//    init(label: String, level: Logging.Level) {
-//        self.label = label
-//        self.metadata = .init()
-//        self.logLevel = level
-//    }
-//    
-//    func log(
-//        level: Logging.Level,
-//        message: String,
-//        metadata: Logging.Metadata?,
-//        error: Error?,
-//        file: StaticString,
-//        function: StaticString,
-//        line: UInt
-//    ) {
-//        print("[\(self.label)] [\(level)] \(message)")
-//    }
-//    
-//    subscript(metadataKey _: String) -> Logging.Metadata.Value? {
-//        get { fatalError() }
-//        set(newValue) { fatalError() }
-//    }
-//    
-//    var metadata: Logging.Metadata
-//    var logLevel: Logging.Level
-//}
-//
-//Logging.bootstrap { label in
-//    return Handler(label: label, level: .trace)
-//}
+struct Handler: LogHandler {
+    let label: String
+    init(label: String, level: Logger.Level) {
+        self.label = label
+        self.metadata = .init()
+        self.logLevel = level
+    }
+
+    func log(level: Logger.Level, message: Logger.Message, metadata: Logger.Metadata?, file: StaticString, function: StaticString, line: UInt) {
+        print("[\(self.label)] [\(level)] \(message)")
+    }
+    
+    subscript(metadataKey _: String) -> Logger.Metadata.Value? {
+        get { fatalError() }
+        set(newValue) { fatalError() }
+    }
+    
+    var metadata: Logger.Metadata
+    var logLevel: Logger.Level
+}
+
+LoggingSystem.bootstrap { label in
+    return Handler(label: label, level: .debug)
+}
 
 let hostname = "127.0.0.1"
 let elg = MultiThreadedEventLoopGroup(numberOfThreads: 8)

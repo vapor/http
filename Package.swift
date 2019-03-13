@@ -8,10 +8,10 @@ let package = Package(
     ],
     dependencies: [
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
-        .package(url: "https://github.com/apple/swift-nio.git", .branch("master")),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0-convergence.1"),
         
         // Bindings to OpenSSL-compatible libraries for TLS support in SwiftNIO
-        .package(url: "https://github.com/apple/swift-nio-ssl.git", .branch("master")),
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.0.0-convergence.1"),
         
         // HTTP/2 support for SwiftNIO
         .package(url: "https://github.com/apple/swift-nio-http2.git", .branch("master")),
@@ -20,11 +20,11 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-nio-extras.git", .branch("master")),
         
         // Swift logging API
-        // .package(url: "https://github.com/weissi/swift-server-logging-api-proposal", .branch("master")),
+        .package(url: "https://github.com/apple/swift-log.git", .branch("master")),
     ],
     targets: [
         .target(name: "HTTPKit", dependencies: [
-            // "Logging", 
+            "Logging",
             "NIO",
             "NIOExtras",
             "NIOFoundationCompat",

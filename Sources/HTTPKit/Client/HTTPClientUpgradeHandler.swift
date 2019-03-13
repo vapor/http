@@ -9,12 +9,12 @@ internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler, RemovableCh
     }
 
     var state: UpgradeState
-    let otherHTTPHandlers: [RemovableChannelHandler]
+    let httpHandlerNames: [String]
 
     init(
-        otherHTTPHandlers: [RemovableChannelHandler]
+        httpHandlerNames: [String]
     ) {
-        self.otherHTTPHandlers = otherHTTPHandlers
+        self.httpHandlerNames = httpHandlerNames
         self.state = .ready
     }
 
@@ -24,15 +24,19 @@ internal final class HTTPClientUpgradeHandler: ChannelDuplexHandler, RemovableCh
         case .pending(let upgrader):
             let res = self.unwrapInboundIn(data)
             if res.status == .switchingProtocols {
-                context.pipeline.removeHandler(self, promise: nil)
-                self.otherHTTPHandlers.forEach { context.pipeline.removeHandler($0, promise: nil) }
-                upgrader.upgrade(context: context, upgradeResponse: .init(
-                    version: res.version,
-                    status: res.status,
-                    headers: res.headers
-                )).whenFailure { error in
+                let futures = [
+                    context.pipeline.removeHandler(self)
+                ] + self.httpHandlerNames.map { context.pipeline.removeHandler(name: $0) }
+                EventLoopFuture<Void>.andAllSucceed(futures, on: context.eventLoop).flatMap { () -> EventLoopFuture<Void> in
+                    return upgrader.upgrade(context: context, upgradeResponse: .init(
+                        version: res.version,
+                        status: res.status,
+                        headers: res.headers
+                    ))
+                }.whenFailure { error in
                     self.errorCaught(context: context, error: error)
                 }
+                
             }
         case .ready: break
         }

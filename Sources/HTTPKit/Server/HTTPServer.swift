@@ -207,9 +207,9 @@ private func http1Handlers(
     // configure HTTP/1
     // add http parsing and serializing
     let httpResEncoder = HTTPResponseEncoder()
-    let httpReqDecoder = HTTPRequestDecoder(
+    let httpReqDecoder = ByteToMessageHandler(HTTPRequestDecoder(
         leftOverBytesStrategy: .forwardBytes
-    )
+    ))
     handlers += [httpResEncoder, httpReqDecoder]
     otherHTTPHandlers += [httpResEncoder]
     
