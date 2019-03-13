@@ -31,8 +31,8 @@ internal final class HTTPClientConnection {
             .connectTimeout(connectTimeout)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
-                var handlers: [ChannelHandler] = []
-                var otherHTTPHandlers: [RemovableChannelHandler] = []
+                var handlers: [(String, ChannelHandler)] = []
+                var httpHandlerNames: [String] = []
                 
                 switch proxy.storage {
                 case .none:
@@ -42,7 +42,7 @@ internal final class HTTPClientConnection {
                             context: sslContext,
                             serverHostname: hostname.isIPAddress() ? nil : hostname
                         )
-                        handlers.append(tlsHandler)
+                        handlers.append(("tls", tlsHandler))
                     }
                 case .server:
                     // tls will be set up after connect
@@ -50,12 +50,12 @@ internal final class HTTPClientConnection {
                 }
                 
                 let httpReqEncoder = HTTPRequestEncoder()
-                handlers.append(httpReqEncoder)
-                otherHTTPHandlers.append(httpReqEncoder)
+                handlers.append(("http-encoder", httpReqEncoder))
+                httpHandlerNames.append("http-encoder")
                 
-                let httpResDecoder = HTTPResponseDecoder()
-                handlers.append(httpResDecoder)
-                otherHTTPHandlers.append(httpResDecoder)
+                let httpResDecoder = ByteToMessageHandler(HTTPResponseDecoder())
+                handlers.append(("http-decoder", httpResDecoder))
+                httpHandlerNames.append("http-decoder")
                 
                 switch proxy.storage {
                 case .none: break
@@ -63,10 +63,13 @@ internal final class HTTPClientConnection {
                     let proxy = HTTPClientProxyHandler(hostname: hostname, port: port ?? 443) { context in
                         
                         // re-add HTTPDecoder since it may consider the connection to be closed
-                        _ = context.pipeline.removeHandler(httpResDecoder)
-                        _ = context.pipeline.addHandler(httpResDecoder, position: .after(httpReqEncoder))
+                        _ = context.pipeline.removeHandler(name: "http-decoder")
+                        _ = context.pipeline.addHandler(
+                            ByteToMessageHandler(HTTPResponseDecoder()),
+                            name: "http-decoder",
+                            position: .after(httpReqEncoder)
+                        )
                         
-
                         // if necessary, add TLS handlers
                         if let tlsConfig = tlsConfig {
                             let sslContext = try! NIOSSLContext(configuration: tlsConfig)
@@ -77,24 +80,27 @@ internal final class HTTPClientConnection {
                             _ = context.pipeline.addHandler(tlsHandler, position: .first)
                         }
                     }
-                    handlers.append(proxy)
+                    handlers.append(("http-proxy", proxy))
                 }
                 
                 let clientResDecoder = HTTPClientResponseDecoder()
-                handlers.append(clientResDecoder)
-                otherHTTPHandlers.append(clientResDecoder)
+                handlers.append(("client-decoder", clientResDecoder))
+                httpHandlerNames.append("client-decoder")
                 
                 let clientReqEncoder = HTTPClientRequestEncoder(hostname: hostname)
-                handlers.append(clientReqEncoder)
-                otherHTTPHandlers.append(clientReqEncoder)
+                handlers.append(("client-encoder", clientReqEncoder))
+                httpHandlerNames.append("client-encoder")
                 
                 let handler = HTTPClientHandler()
-                otherHTTPHandlers.append(handler)
+                httpHandlerNames.append("client")
                 
-                let upgrader = HTTPClientUpgradeHandler(otherHTTPHandlers: otherHTTPHandlers)
-                handlers.append(upgrader)
-                handlers.append(handler)
-                return channel.pipeline.addHandlers(handlers, position: .last)
+                let upgrader = HTTPClientUpgradeHandler(httpHandlerNames: httpHandlerNames)
+                handlers.append(("upgrader", upgrader))
+                handlers.append(("client", handler))
+                return .andAllSucceed(
+                    handlers.map { channel.pipeline.addHandler($1, name: $0, position: .last) },
+                    on: channel.eventLoop
+                )
         }
         let connectHostname: String
         let connectPort: Int

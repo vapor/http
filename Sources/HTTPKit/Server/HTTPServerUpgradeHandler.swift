@@ -12,11 +12,11 @@ final class HTTPServerUpgradeHandler: ChannelDuplexHandler, RemovableChannelHand
     
     
     private var upgradeState: UpgradeState
-    let httpRequestDecoder: HTTPRequestDecoder
+    let httpRequestDecoder: ByteToMessageHandler<HTTPRequestDecoder>
     let otherHTTPHandlers: [RemovableChannelHandler]
     
     init(
-        httpRequestDecoder: HTTPRequestDecoder,
+        httpRequestDecoder: ByteToMessageHandler<HTTPRequestDecoder>,
         otherHTTPHandlers: [RemovableChannelHandler]
     ) {
         self.upgradeState = .ready
