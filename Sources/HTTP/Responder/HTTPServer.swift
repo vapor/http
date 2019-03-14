@@ -144,9 +144,7 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
     /// See `ChannelInboundHandler`.
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
         debugOnly { assert(ctx.channel.eventLoop.inEventLoop) }
-        let part = unwrapInboundIn(data)
-        // print(self.state)
-        switch part {
+        switch unwrapInboundIn(data) {
         case .head(let head):
             debugOnly {
                 /// only perform this switch in debug mode
@@ -197,6 +195,9 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                 } else {
                     body = .init(buffer: self._collectingBody)
                 }
+                // drop reference so that the ByteBuffer can be uniquely referenced
+                // by the HTTPBody
+                self._collectingBody = nil
                 respond(to: head, body: body, ctx: ctx)
             case .streamingBody(let stream): _ = stream.write(.end)
             }
