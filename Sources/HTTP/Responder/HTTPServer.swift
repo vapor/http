@@ -138,11 +138,15 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
         self.serverHeader = serverHeader
         self.state = .ready
     }
+    
+    private var _collectingBody: ByteBuffer!
 
     /// See `ChannelInboundHandler`.
     func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
         debugOnly { assert(ctx.channel.eventLoop.inEventLoop) }
-        switch unwrapInboundIn(data) {
+        let part = unwrapInboundIn(data)
+        // print(self.state)
+        switch part {
         case .head(let head):
             debugOnly {
                 /// only perform this switch in debug mode
@@ -166,24 +170,19 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
                     state = .streamingBody(stream)
                     respond(to: head, body: .init(chunked: stream), ctx: ctx)
                 } else {
-                    state = .collectingBody(head, nil)
+                    state = .collectingBody(head)
+                    self._collectingBody = ByteBufferAllocator().buffer(capacity: 0)
                 }
 
                 /// 2: perform the actual body read now
                 channelRead(ctx: ctx, data: data)
-            case .collectingBody(let head, let existingBody):
-                let body: ByteBuffer
-                if var existing = existingBody {
-                    if existing.readableBytes + chunk.readableBytes > self.maxBodySize {
-                        ERROR("[HTTP] Request size exceeded maximum, connection closed.")
-                        ctx.close(promise: nil)
-                    }
-                    existing.write(buffer: &chunk)
-                    body = existing
-                } else {
-                    body = chunk
+            case .collectingBody(let head):
+                if self._collectingBody.readableBytes + chunk.readableBytes > self.maxBodySize {
+                    ERROR("[HTTP] Request size exceeded maximum, connection closed.")
+                    ctx.close(promise: nil)
                 }
-                state = .collectingBody(head, body)
+                self._collectingBody.write(buffer: &chunk)
+                state = .collectingBody(head)
             case .streamingBody(let stream): _ = stream.write(.chunk(chunk))
             }
         case .end(let tailHeaders):
@@ -191,8 +190,13 @@ private final class HTTPServerHandler<R>: ChannelInboundHandler where R: HTTPSer
             switch state {
             case .ready: debugOnly { assertionFailure("Unexpected state: \(state)") }
             case .awaitingBody(let head): respond(to: head, body: .empty, ctx: ctx)
-            case .collectingBody(let head, let body):
-                let body: HTTPBody = body.flatMap(HTTPBody.init(buffer:)) ?? .empty
+            case .collectingBody(let head):
+                let body: HTTPBody
+                if self._collectingBody.readableBytes == 0 {
+                    body = .empty
+                } else {
+                    body = .init(buffer: self._collectingBody)
+                }
                 respond(to: head, body: body, ctx: ctx)
             case .streamingBody(let stream): _ = stream.write(.end)
             }
@@ -327,7 +331,7 @@ private enum HTTPServerState {
     /// a body never comes
     case awaitingBody(HTTPRequestHead)
     /// Collecting fixed-length body
-    case collectingBody(HTTPRequestHead, ByteBuffer?)
+    case collectingBody(HTTPRequestHead)
     /// Collecting streaming body
     case streamingBody(HTTPChunkedStream)
 }
