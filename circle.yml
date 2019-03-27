@@ -8,8 +8,8 @@ jobs:
         name: tinyproxy
     steps:
       - checkout
-      - run: swift build -Xswiftc -DDEBUG
-      - run: swift test -Xswiftc -DDEBUG
+      - run: swift build -Xswiftc -DDOCKER
+      - run: swift test -Xswiftc -DDOCKER
 
 workflows:
   version: 2
