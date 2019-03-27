@@ -153,7 +153,7 @@ class HTTPTests: HTTPKitTestCase {
 
 struct CookieError: Error { }
 
-#if os(Linux)
+#if DOCKER
 let proxyHostname = "tinyproxy"
 #else
 let proxyHostname = "127.0.0.1"

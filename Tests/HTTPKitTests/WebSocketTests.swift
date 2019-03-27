@@ -77,7 +77,7 @@ class WebSocketTests: HTTPKitTestCase {
         let server = HTTPServer(
             config: .init(
                 hostname: "127.0.0.1",
-                port: 8888
+                port: 8001
             ),
             on: self.eventLoopGroup
         )
@@ -98,14 +98,14 @@ class WebSocketTests: HTTPKitTestCase {
         let server = HTTPServer(
             config: .init(
                 hostname: "127.0.0.1",
-                port: 8888,
+                port: 8002,
                 supportVersions: [.one]
             ),
             on: self.eventLoopGroup
         )
         try server.start(delegate: delegate).wait()
         let client = HTTPClient(on: self.eventLoopGroup)
-        var req = HTTPRequest(url: "ws://127.0.0.1:8888/")
+        var req = HTTPRequest(url: "ws://127.0.0.1:8002/")
         req.webSocketUpgrade { ws in
             ws.send(raw: Array("Hello, ".utf8), opcode: .text, fin: false)
             ws.send(raw: Array("world".utf8), opcode: .continuation, fin: false)
