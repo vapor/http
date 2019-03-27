@@ -1,7 +1,7 @@
 import HTTPKit
 import XCTest
 
-class WebSocketTests: HTTPKitTestCase {
+class WebSocketTests: XCTestCase {
     func testClient() throws {
         // ws://echo.websocket.org
         let client = HTTPClient(on: self.eventLoopGroup)
@@ -121,9 +121,22 @@ class WebSocketTests: HTTPKitTestCase {
         try XCTAssertEqual(promise.futureResult.wait(), "Hello, world!")
         try server.shutdown().wait()
     }
+    
+    
+    var eventLoopGroup: EventLoopGroup!
+    
+    override func setUp() {
+        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    }
+    
+    override func tearDown() {
+        try! self.eventLoopGroup.syncShutdownGracefully()
+    }
 }
 
-struct WebSocketServerDelegate: HTTPServerDelegate {
+// MARK: Private
+
+private struct WebSocketServerDelegate: HTTPServerDelegate {
     let onUpgrade: (WebSocket, HTTPRequest) -> ()
     init(onUpgrade: @escaping (WebSocket, HTTPRequest) -> ()) {
         self.onUpgrade = onUpgrade

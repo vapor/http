@@ -15,6 +15,14 @@ public struct HTTPBody: LosslessHTTPBodyRepresentable, CustomStringConvertible, 
         return storage.data
     }
     
+    public var string: String? {
+        switch self.storage {
+        case .string(let string): return string
+        case .buffer(var buffer): return buffer.readString(length: buffer.readableBytes)
+        default: return nil
+        }
+    }
+    
     /// Returns the body's contents as `ByteBuffer`. `nil` if the body is streaming.
     public var buffer: ByteBuffer? {
         return self.storage.buffer

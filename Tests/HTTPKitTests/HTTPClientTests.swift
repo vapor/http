@@ -41,9 +41,70 @@ class HTTPClientTests: XCTestCase {
     func testQuery() throws {
         try testURL("http://httpbin.org/get?foo=bar", contains: "bar")
     }
+    
+    func testClientDefaultConfig() throws {
+        let client = HTTPClient(on: self.eventLoopGroup)
+        let res = try client.get("https://vapor.codes").wait()
+        XCTAssertEqual(res.status, .ok)
+    }
+    
+    func testRemotePeer() throws {
+        let client = HTTPClient(on: self.eventLoopGroup)
+        let httpReq = HTTPRequest(method: .GET, url: "http://vapor.codes/")
+        let httpRes = try client.send(httpReq).wait()
+        // TODO: how to get access to channel?
+        // XCTAssertEqual(httpRes.remotePeer(on: client.channel).port, 80)
+    }
+    
+    func testUncleanShutdown() throws {
+        let res = try HTTPClient(
+            config: .init(
+                tlsConfig: .forClient(certificateVerification: .none)
+            ),
+            on: self.eventLoopGroup
+            ).get("https://www.google.com/search?q=vapor").wait()
+        XCTAssertEqual(res.status, .ok)
+    }
+    
+    func testClientProxyPlaintext() throws {
+        let res = try HTTPClient(
+            config: .init(
+                proxy: .server(hostname: proxyHostname, port: 8888)
+            ),
+            on: self.eventLoopGroup
+            ).get("http://httpbin.org/anything").wait()
+        XCTAssertEqual(res.status, .ok)
+    }
+    
+    func testClientProxyTLS() throws {
+        let res = try HTTPClient(
+            config: .init(
+                tlsConfig: .forClient(certificateVerification: .none),
+                proxy: .server(hostname: proxyHostname, port: 8888)
+            ),
+            on: self.eventLoopGroup
+            ).get("https://vapor.codes/").wait()
+        XCTAssertEqual(res.status, .ok)
+    }
+    
+    var eventLoopGroup: EventLoopGroup!
+    
+    override func setUp() {
+        self.eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+    }
+    
+    override func tearDown() {
+        try! self.eventLoopGroup.syncShutdownGracefully()
+    }
 }
 
 // MARK: Private
+
+#if DOCKER
+private let proxyHostname = "tinyproxy"
+#else
+private let proxyHostname = "127.0.0.1"
+#endif
 
 private func testURL(_ string: String, times: Int = 3, contains: String) throws {
     try testURL(string, times: times) { res in

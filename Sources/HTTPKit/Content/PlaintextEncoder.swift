@@ -1,9 +1,9 @@
-import Foundation
+import struct Foundation.Data
 
 /// Encodes data as plaintext, utf8.
-public final class HTTPPlaintextEncoder: HTTPMessageEncoder {
+public struct PlaintextEncoder: HTTPMessageEncoder {
     /// Private encoder.
-    private let encoder: _DataEncoder
+    private let encoder: _PlaintextEncoder
     
     /// The specific plaintext `MediaType` to use.
     private let contentType: HTTPMediaType
@@ -33,7 +33,7 @@ public final class HTTPPlaintextEncoder: HTTPMessageEncoder {
 
 // MARK: Private
 
-private final class _DataEncoder: Encoder {
+private final class _PlaintextEncoder: Encoder {
     public var codingPath: [CodingKey]
     public var userInfo: [CodingUserInfoKey: Any]
     public var plaintext: String?
@@ -62,8 +62,8 @@ private final class DataEncodingContainer: SingleValueEncodingContainer {
         return encoder.codingPath
     }
     
-    let encoder: _DataEncoder
-    init(encoder: _DataEncoder) {
+    let encoder: _PlaintextEncoder
+    init(encoder: _PlaintextEncoder) {
         self.encoder = encoder
     }
     
