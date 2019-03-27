@@ -87,7 +87,7 @@ public struct HTTPRequest: HTTPMessage {
         url: URLRepresentable = URL.root,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
-        body: LosslessHTTPBodyRepresentable = HTTPBody()
+        body: HTTPBody = .empty
     ) {
         self.init(
             method: method,

@@ -32,7 +32,7 @@ import Foundation
 ///                   "/" / "[" / "]" / "?" / "="
 ///     ; Must be in quoted-string,
 ///     ; to use within parameter values
-public struct HTTPHeaderValue {
+public struct HTTPHeaderValue: Codable {
     /// The `HeaderValue`'s main value.
     ///
     /// In the `HeaderValue` `"application/json; charset=utf8"`:
@@ -53,6 +53,27 @@ public struct HTTPHeaderValue {
         self.parameters = parameters
     }
     
+    /// Initialize a `HTTPHeaderValue` from a Decoder.
+    ///
+    /// This will decode a `String` from the decoder and parse it to a `HTTPHeaderValue`.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let string = try container.decode(String.self)
+        guard let tempValue = HTTPHeaderValue.parse(string) else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid header value string")
+        }
+        self.parameters = tempValue.parameters
+        self.value = tempValue.value
+    }
+    
+    /// Encode a `HTTPHeaderValue` into an Encoder.
+    ///
+    /// This will encode the `HTTPHeaderValue` as a `String`.
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.serialize())
+    }
+    
     /// Serializes this `HeaderValue` to a `String`.
     public func serialize() -> String {
         var string = "\(value)"
@@ -64,7 +85,7 @@ public struct HTTPHeaderValue {
     
     /// Parse a `HeaderValue` from a `String`.
     ///
-    ///     guard let headerValue = HeaderValue.parse("application/json; charset=utf8") else { ... }
+    ///     guard let headerValue = HTTPHeaderValue.parse("application/json; charset=utf8") else { ... }
     ///
     public static func parse(_ data: String) -> HTTPHeaderValue? {
         let data = data
@@ -194,29 +215,6 @@ public struct HTTPHeaderValue {
             parameters[.init(trimmedKey)] = .init(trimmedVal)
         }
         
-        return HTTPHeaderValue(.init(value), parameters: parameters)
-    }
-}
-
-extension HTTPHeaderValue: Codable {
-    /// Initialize a `HTTPHeaderValue` from a Decoder.
-    ///
-    /// This will decode a `String` from the decoder and parse it to a `HTTPHeaderValue`.
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let string = try container.decode(String.self)
-        guard let tempValue = HTTPHeaderValue.parse(string) else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid header value string")
-        }
-        self.parameters = tempValue.parameters
-        self.value = tempValue.value
-    }
-    
-    /// Encode a `HTTPHeaderValue` into an Encoder.
-    ///
-    /// This will encode the `HTTPHeaderValue` as a `String`.
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(self.serialize())
+        return .init(.init(value), parameters: parameters)
     }
 }

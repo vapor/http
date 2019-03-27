@@ -7,7 +7,7 @@ class HTTPServerTests: XCTestCase {
             func respond(to request: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
                 let res = HTTPResponse(
                     status: .ok,
-                    body: String(repeating: "0", count: 2_000_000)
+                    body: .init(string: .init(repeating: "0", count: 2_000_000))
                 )
                 return channel.eventLoop.makeSucceededFuture(res)
             }

@@ -44,7 +44,7 @@ class HTTPClientTests: XCTestCase {
     
     func testClientDefaultConfig() throws {
         let client = HTTPClient(on: self.eventLoopGroup)
-        let res = try client.get("https://vapor.codes").wait()
+        let res = try client.send(HTTPRequest(method: .GET, url: "https://vapor.codes")).wait()
         XCTAssertEqual(res.status, .ok)
     }
     
@@ -58,32 +58,32 @@ class HTTPClientTests: XCTestCase {
     
     func testUncleanShutdown() throws {
         let res = try HTTPClient(
-            config: .init(
+            configuration: .init(
                 tlsConfig: .forClient(certificateVerification: .none)
             ),
             on: self.eventLoopGroup
-            ).get("https://www.google.com/search?q=vapor").wait()
+        ).send(HTTPRequest(method: .GET, url: "https://www.google.com/search?q=vapor")).wait()
         XCTAssertEqual(res.status, .ok)
     }
     
     func testClientProxyPlaintext() throws {
         let res = try HTTPClient(
-            config: .init(
+            configuration: .init(
                 proxy: .server(hostname: proxyHostname, port: 8888)
             ),
             on: self.eventLoopGroup
-            ).get("http://httpbin.org/anything").wait()
+        ).send(HTTPRequest(method: .GET, url: "http://httpbin.org/anything")).wait()
         XCTAssertEqual(res.status, .ok)
     }
     
     func testClientProxyTLS() throws {
         let res = try HTTPClient(
-            config: .init(
+            configuration: .init(
                 tlsConfig: .forClient(certificateVerification: .none),
                 proxy: .server(hostname: proxyHostname, port: 8888)
             ),
             on: self.eventLoopGroup
-            ).get("https://vapor.codes/").wait()
+        ).send(HTTPRequest(method: .GET, url: "https://vapor.codes/")).wait()
         XCTAssertEqual(res.status, .ok)
     }
     
@@ -132,9 +132,9 @@ private func testURL(
         let tlsConfig: TLSConfiguration
         tlsConfig = .forClient()
         let res = try HTTPClient(
-            config: .init(tlsConfig: tlsConfig),
+            configuration: .init(tlsConfig: tlsConfig),
             on: worker
-        ).get(string).wait()
+        ).send(HTTPRequest(method: .GET, url: string)).wait()
         try check(res)
     }
     try worker.syncShutdownGracefully()

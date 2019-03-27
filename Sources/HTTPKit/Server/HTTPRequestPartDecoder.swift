@@ -15,7 +15,7 @@ final class HTTPRequestPartDecoder: ChannelInboundHandler, RemovableChannelHandl
         // first chunk
         case awaitingEnd(HTTPRequestHead, ByteBuffer)
         /// Collecting streaming body
-        case streamingBody(HTTPBodyStream)
+        case streamingBody(HTTPBody.Stream)
     }
     
     /// Current HTTP state.
@@ -48,7 +48,7 @@ final class HTTPRequestPartDecoder: ChannelInboundHandler, RemovableChannelHandl
             case .awaitingBody(let head):
                 self.requestState = .awaitingEnd(head, chunk)
             case .awaitingEnd(let head, let bodyStart):
-                let stream = HTTPBodyStream(on: context.channel.eventLoop)
+                let stream = HTTPBody.Stream(on: context.channel.eventLoop)
                 self.requestState = .streamingBody(stream)
                 self.fireRequestRead(head: head, body: .init(stream: stream), context: context)
                 stream.write(.chunk(bodyStart))

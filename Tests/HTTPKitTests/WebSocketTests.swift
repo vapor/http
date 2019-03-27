@@ -29,7 +29,7 @@ class WebSocketTests: XCTestCase {
     func testClientTLS() throws {
         // wss://echo.websocket.org
         let client = HTTPClient(
-            config: .init(
+            configuration: .init(
                 tlsConfig: .forClient(certificateVerification: .none)
             ),
             on: self.eventLoopGroup

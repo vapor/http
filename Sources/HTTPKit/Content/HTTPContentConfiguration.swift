@@ -17,10 +17,10 @@ import class Foundation.JSONDecoder
 ///
 /// Most often, these configured coders are used to encode and decode types conforming to `Content`.
 /// See the `Content` protocol for more information.
-public struct HTTPContentConfig {
+public struct HTTPContentConfiguration {
     // MARK: Default
     
-    public static var global: HTTPContentConfig = .default()
+    public static var global: HTTPContentConfiguration = .default()
     
     /// Creates a `ContentConfig` containing all of Vapor's default coders.
     ///
@@ -28,8 +28,8 @@ public struct HTTPContentConfig {
     ///     // add or replace coders
     ///     services.register(contentConfig)
     ///
-    public static func `default`() -> HTTPContentConfig {
-        var config = HTTPContentConfig()
+    public static func `default`() -> HTTPContentConfiguration {
+        var config = HTTPContentConfiguration()
         
         // json
         do {
