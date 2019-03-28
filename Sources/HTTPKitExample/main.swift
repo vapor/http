@@ -14,7 +14,7 @@ try print(res0.wait().status)
 try print(res1.wait().status)
 try print(res2.wait().status)
 
-let res = HTTPResponse(body: .init(staticString: "pong"))
+let res = HTTPResponse(body: HTTPBody(staticString: "pong"))
 
 struct EchoResponder: HTTPServerDelegate {
     func respond(to req: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
