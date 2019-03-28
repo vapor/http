@@ -7,7 +7,7 @@ extension HTTPRequest {
         url: URLRepresentable = URL.root,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
-        body: LosslessHTTPBodyRepresentable = HTTPBody(),
+        body: HTTPBody = .empty,
         onUpgrade: @escaping (WebSocket) -> ()
     ) throws -> HTTPRequest {
         var req = HTTPRequest(method: method, url: url, version: version, headers: headers, body: body)

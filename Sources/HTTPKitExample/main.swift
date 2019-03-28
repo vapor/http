@@ -6,15 +6,15 @@ let elg = MultiThreadedEventLoopGroup(numberOfThreads: 8)
 
 let client = HTTPClient(on: elg)
 
-let res0 = client.get("http://httpbin.org/status/200")
-let res1 = client.get("http://httpbin.org/status/201")
-let res2 = client.get("http://httpbin.org/status/202")
+let res0 = client.send(HTTPRequest(method: .GET, url: "http://httpbin.org/status/200"))
+let res1 = client.send(HTTPRequest(method: .GET, url: "http://httpbin.org/status/201"))
+let res2 = client.send(HTTPRequest(method: .GET, url: "http://httpbin.org/status/2020"))
 
 try print(res0.wait().status)
 try print(res1.wait().status)
 try print(res2.wait().status)
 
-let res = HTTPResponse(body: "pong" as StaticString)
+let res = HTTPResponse(body: .init(staticString: "pong"))
 
 struct EchoResponder: HTTPServerDelegate {
     func respond(to req: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {

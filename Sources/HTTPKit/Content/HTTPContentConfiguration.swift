@@ -1,4 +1,5 @@
-import Foundation
+import class Foundation.JSONEncoder
+import class Foundation.JSONDecoder
 
 /// Configures which `Encoder`s and `Decoder`s to use when interacting with data in HTTP messages.
 ///
@@ -16,10 +17,10 @@ import Foundation
 ///
 /// Most often, these configured coders are used to encode and decode types conforming to `Content`.
 /// See the `Content` protocol for more information.
-public struct HTTPContentConfig {
+public struct HTTPContentConfiguration {
     // MARK: Default
     
-    public static var global: HTTPContentConfig = .default()
+    public static var global: HTTPContentConfiguration = .default()
     
     /// Creates a `ContentConfig` containing all of Vapor's default coders.
     ///
@@ -27,8 +28,8 @@ public struct HTTPContentConfig {
     ///     // add or replace coders
     ///     services.register(contentConfig)
     ///
-    public static func `default`() -> HTTPContentConfig {
-        var config = HTTPContentConfig()
+    public static func `default`() -> HTTPContentConfiguration {
+        var config = HTTPContentConfiguration()
         
         // json
         do {
@@ -45,14 +46,14 @@ public struct HTTPContentConfig {
         }
         
         // data
-        config.use(encoder: HTTPPlaintextEncoder(), for: .plainText)
-        config.use(encoder: HTTPPlaintextEncoder(.html), for: .html)
+        config.use(encoder: PlaintextEncoder(), for: .plainText)
+        config.use(encoder: PlaintextEncoder(.html), for: .html)
         
-        #warning("TODO: update url encoded / form data encoders")
-        //        // form-urlencoded
-        //        config.use(encoder: URLEncodedFormEncoder(), for: .urlEncodedForm)
-        //        config.use(decoder: URLEncodedFormDecoder(), for: .urlEncodedForm)
-        //
+        // form-urlencoded
+        config.use(encoder: URLEncodedFormEncoder(), for: .urlEncodedForm)
+        config.use(decoder: URLEncodedFormDecoder(), for: .urlEncodedForm)
+        
+        #warning("TODO: update form data encoders")
         //        // form-data, doesn't support `Data{En|De}coder` because a predefined boundary is required
         //        config.use(encoder: FormDataEncoder(), for: .formData)
         //        config.use(decoder: FormDataDecoder(), for: .formData)

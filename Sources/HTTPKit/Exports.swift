@@ -6,6 +6,9 @@
 @_exported import NIOSSL
 @_exported import NIOWebSocket
 
+import protocol NIO.RemovableChannelHandler
+import class NIOHTTP1.HTTPRequestEncoder
+
 extension FixedWidthInteger {
     static var anyRandom: Self {
         return Self.random(in: Self.min..<Self.max)
@@ -13,4 +16,3 @@ extension FixedWidthInteger {
 }
 
 extension HTTPRequestEncoder: RemovableChannelHandler { }
-extension HTTPResponseCompressor: RemovableChannelHandler { }

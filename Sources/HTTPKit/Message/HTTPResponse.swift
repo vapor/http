@@ -64,7 +64,7 @@ public struct HTTPResponse: HTTPMessage {
         status: HTTPResponseStatus = .ok,
         version: HTTPVersion = .init(major: 1, minor: 1),
         headers: HTTPHeaders = .init(),
-        body: LosslessHTTPBodyRepresentable = HTTPBody()
+        body: HTTPBody = .empty
     ) {
         self.init(
             status: status,
