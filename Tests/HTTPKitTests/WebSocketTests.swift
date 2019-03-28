@@ -75,7 +75,7 @@ class WebSocketTests: XCTestCase {
             }
         }
         let server = HTTPServer(
-            config: .init(
+            configuration: .init(
                 hostname: "127.0.0.1",
                 port: 8001
             ),
@@ -96,7 +96,7 @@ class WebSocketTests: XCTestCase {
             }
         }
         let server = HTTPServer(
-            config: .init(
+            configuration: .init(
                 hostname: "127.0.0.1",
                 port: 8002,
                 supportVersions: [.one]

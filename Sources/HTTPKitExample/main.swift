@@ -8,7 +8,7 @@ let client = HTTPClient(on: elg)
 
 let res0 = client.send(HTTPRequest(method: .GET, url: "http://httpbin.org/status/200"))
 let res1 = client.send(HTTPRequest(method: .GET, url: "http://httpbin.org/status/201"))
-let res2 = client.send(HTTPRequest(method: .GET, url: "http://httpbin.org/status/2020"))
+let res2 = client.send(HTTPRequest(method: .GET, url: "http://httpbin.org/status/202"))
 
 try print(res0.wait().status)
 try print(res1.wait().status)
@@ -43,7 +43,7 @@ let responder = EchoResponder()
 print("Plaintext server starting on http://\(hostname):8080")
 
 let plaintextServer = HTTPServer(
-    config: .init(
+    configuration: .init(
         hostname: hostname,
         port: 8080,
         supportVersions: [.one]
@@ -59,7 +59,8 @@ try plaintextServer.start(delegate: responder).wait()
 print("TLS server starting on https://\(hostname):8443")
 
 let tlsServer = HTTPServer(
-    config: .init(
+    configuration
+    : .init(
         hostname: hostname,
         port: 8443,
         supportVersions: [.one, .two],

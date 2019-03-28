@@ -13,7 +13,7 @@ class HTTPServerTests: XCTestCase {
             }
         }
         let server = HTTPServer(
-            config: .init(
+            configuration: .init(
                 hostname: "localhost",
                 port: 8080,
                 supportVersions: [.one],
