@@ -53,10 +53,9 @@ public struct HTTPContentConfiguration {
         config.use(encoder: URLEncodedFormEncoder(), for: .urlEncodedForm)
         config.use(decoder: URLEncodedFormDecoder(), for: .urlEncodedForm)
         
-        #warning("TODO: update form data encoders")
-        //        // form-data, doesn't support `Data{En|De}coder` because a predefined boundary is required
-        //        config.use(encoder: FormDataEncoder(), for: .formData)
-        //        config.use(decoder: FormDataDecoder(), for: .formData)
+        // form-data
+        config.use(encoder: FormDataEncoder(), for: .formData)
+        config.use(decoder: FormDataDecoder(), for: .formData)
         
         return config
     }

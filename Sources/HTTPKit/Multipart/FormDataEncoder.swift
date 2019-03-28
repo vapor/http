@@ -3,10 +3,20 @@
 /// See [RFC#2388](https://tools.ietf.org/html/rfc2388) for more information about `multipart/form-data` encoding.
 ///
 /// Seealso `MultipartParser` for more information about the `multipart` encoding.
-public final class FormDataEncoder {
+public final class FormDataEncoder: HTTPMessageEncoder {
     /// Creates a new `FormDataEncoder`.
     public init() { }
-
+    
+    /// `HTTPMessageEncoder` conformance.
+    public func encode<E, M>(_ encodable: E, to message: inout M) throws
+        where E: Encodable, M: HTTPMessage
+    {
+        let boundary = "----vaporBoundary\(randomBoundaryData())"
+        message.contentType = HTTPMediaType(type: "multipart", subType: "form-data", parameters: ["boundary": boundary])
+        let encoded = try self.encode(encodable, boundary: boundary)
+        message.body = .init(string: encoded)
+    }
+    
     /// Encodes an `Encodable` item to `Data` using the supplied boundary.
     ///
     ///     let a = Foo(string: "a", int: 42, double: 3.14, array: [1, 2, 3])
@@ -28,6 +38,16 @@ public final class FormDataEncoder {
 }
 
 // MARK: Private
+
+private let chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+private func randomBoundaryData() -> String {
+    var string = ""
+    for _ in 0..<16 {
+        string.append(chars.randomElement()!)
+    }
+    return string
+}
 
 private final class FormDataEncoderContext {
     var parts: [MultipartPart]

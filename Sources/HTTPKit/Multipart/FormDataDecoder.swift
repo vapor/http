@@ -3,9 +3,20 @@
 /// See [RFC#2388](https://tools.ietf.org/html/rfc2388) for more information about `multipart/form-data` encoding.
 ///
 /// Seealso `MultipartParser` for more information about the `multipart` encoding.
-public final class FormDataDecoder {
+public final class FormDataDecoder: HTTPMessageDecoder {
     /// Creates a new `FormDataDecoder`.
     public init() { }
+    
+    /// `HTTPMessageDecoder` conformance.
+    public func decode<D, M>(_ decodable: D.Type, from message: M) throws -> D where D : Decodable, M : HTTPMessage {
+        guard let boundary = message.contentType?.parameters["boundary"] else {
+            throw HTTPError(.unknownContentType)
+        }
+        guard let string = message.body.string else {
+            throw HTTPError(.noContent)
+        }
+        return try self.decode(D.self, from: string, boundary: boundary)
+    }
 
     /// Decodes a `Decodable` item from `Data` using the supplied boundary.
     ///
