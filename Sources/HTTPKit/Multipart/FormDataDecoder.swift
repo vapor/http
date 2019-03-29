@@ -30,7 +30,12 @@ public final class FormDataDecoder: HTTPMessageDecoder {
     public func decode<D>(_ decodable: D.Type, from data: String, boundary: String) throws -> D
         where D: Decodable
     {
-        let parts = try MultipartParser().parse(data: data, boundary: boundary)
+        var parts: [MultipartPart] = []
+        let parser = MultipartParser(boundary: boundary)
+        parser.onPart = { part in
+            parts.append(part)
+        }
+        try parser.execute(data)
         let multipart = FormDataDecoderContext(parts: parts)
         let decoder = _FormDataDecoder(multipart: multipart, codingPath: [])
         return try D(from: decoder)

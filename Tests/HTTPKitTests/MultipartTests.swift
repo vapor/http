@@ -33,8 +33,12 @@ class MultipartTests: XCTestCase {
         \(multinamed)\r\n\
         ------WebKitFormBoundaryPVOZifB9OqEwP2fn--\r\n
         """
-        let parts = try! MultipartParser().parse(data: data, boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn")
-        print(parts)
+        let parser = MultipartParser(boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn")
+        var parts: [MultipartPart] = []
+        parser.onPart = { part in
+            parts.append(part)
+        }
+        try parser.execute(data)
         XCTAssertEqual(parts.count, 3)
         XCTAssertEqual(parts.firstPart(named: "test")?.data, "eqw-dd-sa----123;1[234")
         XCTAssertEqual(parts.firstPart(named: "named")?.data, named)
@@ -60,7 +64,12 @@ class MultipartTests: XCTestCase {
         \(multinamed)\r\n\
         ------WebKitFormBoundaryPVOZifB9OqEwP2fn--\r\n
         """
-        let parts = try MultipartParser().parse(data: data, boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn")
+        let parser = MultipartParser(boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn")
+        var parts: [MultipartPart] = []
+        parser.onPart = { part in
+            parts.append(part)
+        }
+        try parser.execute(data)
         let file = parts.firstPart(named: "multinamed[]")?.data
         XCTAssertEqual(file, named)
         try XCTAssertEqual(MultipartSerializer().serialize(parts: parts, boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn"), data)
@@ -140,6 +149,7 @@ class MultipartTests: XCTestCase {
         let foo = try FormDataDecoder().decode(Foo.self, from: data, boundary: "12345")
         XCTAssertEqual(foo.sometext, "some text sent via post...")
         XCTAssert(foo.files.contains("picture.jpg"))
+        print(foo.files)
     }
 
     func testFormDataDecoderMultiple() throws {
@@ -222,7 +232,12 @@ class MultipartTests: XCTestCase {
             foo\r\n\
             --123--\r\n
             """
-            let parts = try MultipartParser().parse(data: data, boundary: "123")
+            let parser = MultipartParser(boundary: "123")
+            var parts: [MultipartPart] = []
+            parser.onPart = { part in
+                parts.append(part)
+            }
+            try parser.execute(data)
             XCTAssertEqual(parts.count, 1)
         }
         do {
