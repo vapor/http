@@ -3,18 +3,18 @@ internal final class HTTPClientRequestEncoder: ChannelOutboundHandler, Removable
     typealias OutboundIn = HTTPRequest
     typealias OutboundOut = HTTPClientRequestPart
 
-    let hostname: String
+    let host: String
     
     /// Creates a new `HTTPClientRequestSerializer`.
-    init(hostname: String) {
-        self.hostname = hostname
+    init(host: String) {
+        self.host = host
     }
     
     /// See `ChannelOutboundHandler`.
     func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = unwrapOutboundIn(data)
         var headers = req.headers
-        headers.add(name: .host, value: self.hostname)
+        headers.add(name: .host, value: self.host)
         
         let path: String
         if let query = req.url.query {

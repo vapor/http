@@ -69,7 +69,8 @@ public final class HTTPClient {
     
     public func send(_ request: HTTPRequest) -> EventLoopFuture<HTTPResponse> {
         let hostname = request.url.host ?? ""
-        let port = request.url.port ?? (request.url.scheme == "https" ? 443 : 80)
+        let defaultSchemePort = request.url.scheme == "https" ? 443 : 80
+        let port = request.url.port ?? defaultSchemePort
         let tlsConfig: TLSConfiguration?
         switch request.url.scheme {
         case "https":
@@ -139,7 +140,13 @@ public final class HTTPClient {
             handlers.append(("client-decoder", clientResDecoder))
             httpHandlerNames.append("client-decoder")
             
-            let clientReqEncoder = HTTPClientRequestEncoder(hostname: hostname)
+            let clientReqEncoder: HTTPClientRequestEncoder
+            if port == defaultSchemePort {
+                clientReqEncoder = HTTPClientRequestEncoder(host: hostname)
+            } else {
+                clientReqEncoder = HTTPClientRequestEncoder(host: "\(hostname):\(port)")
+            }
+            
             handlers.append(("client-encoder", clientReqEncoder))
             httpHandlerNames.append("client-encoder")
             
