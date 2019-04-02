@@ -43,7 +43,7 @@ public protocol HTTPMessageDecoder {
 extension HTTPMessageDecoder {
     /// See `HTTPMessageDecoder`.
     /// - note: This method will use a default max size of 1MB.
-    func decode<D, M>(_ decodable: D.Type, from message: M, on worker: Worker) throws -> Future<D>
+    public func decode<D, M>(_ decodable: D.Type, from message: M, on worker: Worker) throws -> Future<D>
         where D: Decodable, M: HTTPMessage
     {
         return try decode(D.self, from: message, maxSize: 1_000_000, on: worker)
