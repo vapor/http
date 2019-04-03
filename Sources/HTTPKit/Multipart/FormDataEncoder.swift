@@ -3,7 +3,7 @@
 /// See [RFC#2388](https://tools.ietf.org/html/rfc2388) for more information about `multipart/form-data` encoding.
 ///
 /// Seealso `MultipartParser` for more information about the `multipart` encoding.
-public final class FormDataEncoder: HTTPMessageEncoder {
+public struct FormDataEncoder: HTTPMessageEncoder {
     /// Creates a new `FormDataEncoder`.
     public init() { }
     
