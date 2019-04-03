@@ -96,7 +96,7 @@ extension JSONDecoder: HTTPMessageDecoder {
     public func decode<D, M>(_ decodable: D.Type, from message: M, maxSize: Int, on worker: Worker) throws -> EventLoopFuture<D>
         where D: Decodable, M: HTTPMessage
     {
-        guard message.contentType == .json || message.contentType == .jsonApi else {
+        guard message.contentType == .json || message.contentType == .jsonAPI else {
             throw HTTPError(identifier: "contentType", reason: "HTTP message did not have JSON-compatible content-type.")
         }
         return message.body.consumeData(max: maxSize, on: worker).map(to: D.self) { data in
