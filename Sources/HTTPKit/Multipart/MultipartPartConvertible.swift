@@ -20,24 +20,25 @@ extension MultipartPart: MultipartPartConvertible {
 extension String: MultipartPartConvertible {
     /// See `MultipartPartConvertible`.
     public func convertToMultipartPart() throws -> MultipartPart {
-        return MultipartPart(data: self)
+        return MultipartPart(body: self)
     }
 
     /// See `MultipartPartConvertible`.
     public static func convertFromMultipartPart(_ part: MultipartPart) throws -> String {
-        return part.data
+        var buffer = part.body
+        return buffer.readString(length: buffer.readableBytes)!
     }
 }
 
 extension FixedWidthInteger {
     /// See `MultipartPartConvertible`.
     public func convertToMultipartPart() throws -> MultipartPart {
-        return MultipartPart(data: description, headers: [:])
+        return MultipartPart(headers: [:], body: self.description)
     }
 
     /// See `MultipartPartConvertible`.
     public static func convertFromMultipartPart(_ part: MultipartPart) throws -> Self {
-        guard let fwi = Self(part.data) else {
+        guard let fwi = try Self(String.convertFromMultipartPart(part)) else {
             throw MultipartError(identifier: "int", reason: "Could not convert `Data` to `\(Self.self)`.")
         }
         return fwi
@@ -59,12 +60,12 @@ extension UInt64: MultipartPartConvertible { }
 extension Float: MultipartPartConvertible {
     /// See `MultipartPartConvertible`.
     public func convertToMultipartPart() throws -> MultipartPart {
-        return MultipartPart(data: description)
+        return MultipartPart(body: description)
     }
 
     /// See `MultipartPartConvertible`.
     public static func convertFromMultipartPart(_ part: MultipartPart) throws -> Float {
-        guard let float = Float(part.data) else {
+        guard let float = try Float(String.convertFromMultipartPart(part)) else {
             throw MultipartError(identifier: "float", reason: "Could not convert `Data` to `\(Float.self)`.")
         }
         return float
@@ -74,12 +75,12 @@ extension Float: MultipartPartConvertible {
 extension Double: MultipartPartConvertible {
     /// See `MultipartPartConvertible`.
     public func convertToMultipartPart() throws -> MultipartPart {
-        return MultipartPart(data: description)
+        return MultipartPart(body: description)
     }
 
     /// See `MultipartPartConvertible`.
     public static func convertFromMultipartPart(_ part: MultipartPart) throws -> Double {
-        guard let double = Double(part.data) else {
+        guard let double = try Double(String.convertFromMultipartPart(part)) else {
             throw MultipartError(identifier: "double", reason: "Could not convert `Data` to `\(Double.self)`.")
         }
         return double
@@ -89,12 +90,12 @@ extension Double: MultipartPartConvertible {
 extension Bool: MultipartPartConvertible {
     /// See `MultipartPartConvertible`.
     public func convertToMultipartPart() throws -> MultipartPart {
-        return MultipartPart(data: description)
+        return MultipartPart(body: description)
     }
 
     /// See `MultipartPartConvertible`.
     public static func convertFromMultipartPart(_ part: MultipartPart) throws -> Bool {
-        guard let option = Bool(part.data) else {
+        guard let option = try Bool(String.convertFromMultipartPart(part)) else {
             throw MultipartError(identifier: "boolean", reason: "Could not convert `Data` to `Bool`. Must be one of: [true, false]")
         }
         return option
@@ -104,7 +105,7 @@ extension Bool: MultipartPartConvertible {
 extension HTTPFile: MultipartPartConvertible {
     /// See `MultipartPartConvertible`.
     public func convertToMultipartPart() throws -> MultipartPart {
-        var part = MultipartPart(data: data)
+        var part = MultipartPart(body: data)
         part.filename = filename
         part.contentType = contentType
         return part
@@ -115,18 +116,21 @@ extension HTTPFile: MultipartPartConvertible {
         guard let filename = part.filename else {
             throw MultipartError(identifier: "filename", reason: "Multipart part missing a filename.")
         }
-        return HTTPFile(data: part.data, filename: filename)
+        return HTTPFile(data: part.body, filename: filename)
     }
 }
 
 extension Data: MultipartPartConvertible {
     /// See `MultipartPartConvertible`.
     public func convertToMultipartPart() throws -> MultipartPart {
-        return MultipartPart(data: String(decoding: self, as: UTF8.self))
+        var buffer = ByteBufferAllocator().buffer(capacity: self.count)
+        buffer.writeBytes(self)
+        return MultipartPart(body: buffer)
     }
 
     /// See `MultipartPartConvertible`.
     public static func convertFromMultipartPart(_ part: MultipartPart) throws -> Data {
-        return Data(part.data.utf8)
+        var buffer = part.body
+        return buffer.readData(length: buffer.readableBytes)!
     }
 }

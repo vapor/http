@@ -1,11 +1,11 @@
 /// A single part of a `multipart`-encoded message.
-public struct MultipartPart {
-    /// The part's raw data.
-    public var data: String
-
+public struct MultipartPart: Equatable {
     /// The part's headers.
     public var headers: [String: String]
-
+    
+    /// The part's raw data.
+    public var body: ByteBuffer
+    
     /// Gets or sets the `filename` attribute from the part's `"Content-Disposition"` header.
     public var filename: String? {
         get { return contentDisposition?.parameters["filename"] }
@@ -50,14 +50,27 @@ public struct MultipartPart {
 
     /// Creates a new `MultipartPart`.
     ///
-    ///     let part = MultipartPart(data "hello", headers: ["Content-Type": "text/plain"])
+    ///     let part = MultipartPart(headers: ["Content-Type": "text/plain"], body: "hello")
     ///
     /// - parameters:
-    ///     - data: The part's data.
     ///     - headers: The part's headers.
-    public init(data: String, headers: [String: String] = [:]) {
-        self.data = data
+    ///     - body: The part's data.
+    public init(headers: [String: String] = [:], body: String) {
+        var buffer = ByteBufferAllocator().buffer(capacity: body.utf8.count)
+        buffer.writeString(body)
+        self.init(headers: headers, body: buffer)
+    }
+    
+    /// Creates a new `MultipartPart`.
+    ///
+    ///     let part = MultipartPart(headers: ["Content-Type": "text/plain"], body: "hello")
+    ///
+    /// - parameters:
+    ///     - headers: The part's headers.
+    ///     - body: The part's data.
+    public init(headers: [String: String] = [:], body: ByteBuffer) {
         self.headers = headers
+        self.body = body
     }
 }
 

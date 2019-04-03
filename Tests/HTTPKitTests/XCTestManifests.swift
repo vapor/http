@@ -64,6 +64,7 @@ extension MultipartTests {
         ("testFormDataDecoderFile", testFormDataDecoderFile),
         ("testFormDataDecoderMultiple", testFormDataDecoderMultiple),
         ("testFormDataDecoderW3", testFormDataDecoderW3),
+        ("testFormDataDecoderW3Streaming", testFormDataDecoderW3Streaming),
         ("testFormDataEncoder", testFormDataEncoder),
         ("testMultifile", testMultifile),
         ("testMultipleFile", testMultipleFile),

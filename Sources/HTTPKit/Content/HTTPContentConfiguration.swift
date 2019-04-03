@@ -17,6 +17,7 @@ import class Foundation.JSONDecoder
 ///
 /// Most often, these configured coders are used to encode and decode types conforming to `Content`.
 /// See the `Content` protocol for more information.
+#warning("TODO: move to vapor")
 public struct HTTPContentConfiguration {
     // MARK: Default
     

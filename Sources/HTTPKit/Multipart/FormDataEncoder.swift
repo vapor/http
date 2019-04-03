@@ -3,7 +3,7 @@
 /// See [RFC#2388](https://tools.ietf.org/html/rfc2388) for more information about `multipart/form-data` encoding.
 ///
 /// Seealso `MultipartParser` for more information about the `multipart` encoding.
-public final class FormDataEncoder: HTTPMessageEncoder {
+public struct FormDataEncoder: HTTPMessageEncoder {
     /// Creates a new `FormDataEncoder`.
     public init() { }
     
@@ -13,8 +13,17 @@ public final class FormDataEncoder: HTTPMessageEncoder {
     {
         let boundary = "----vaporBoundary\(randomBoundaryData())"
         message.contentType = HTTPMediaType(type: "multipart", subType: "form-data", parameters: ["boundary": boundary])
-        let encoded = try self.encode(encodable, boundary: boundary)
-        message.body = .init(string: encoded)
+        var buffer = ByteBufferAllocator().buffer(capacity: 0)
+        try self.encode(encodable, boundary: boundary, into: &buffer)
+        message.body = .init(buffer: buffer)
+    }
+    
+    public func encode<E>(_ encodable: E, boundary: String) throws -> String
+        where E: Encodable
+    {
+        var buffer = ByteBufferAllocator().buffer(capacity: 0)
+        try self.encode(encodable, boundary: boundary, into: &buffer)
+        return buffer.readString(length: buffer.readableBytes)!
     }
     
     /// Encodes an `Encodable` item to `Data` using the supplied boundary.
@@ -27,13 +36,13 @@ public final class FormDataEncoder: HTTPMessageEncoder {
     ///     - boundary: Multipart boundary to use for encoding. This must not appear anywhere in the encoded data.
     /// - throws: Any errors encoding the model with `Codable` or serializing the data.
     /// - returns: `multipart/form-data`-encoded `Data`.
-    public func encode<E>(_ encodable: E, boundary: String) throws -> String
+    public func encode<E>(_ encodable: E, boundary: String, into buffer: inout ByteBuffer) throws
         where E: Encodable
     {
         let multipart = FormDataEncoderContext()
         let encoder = _FormDataEncoder(multipart: multipart, codingPath: [])
         try encodable.encode(to: encoder)
-        return try MultipartSerializer().serialize(parts: multipart.parts, boundary: boundary)
+        try MultipartSerializer().serialize(parts: multipart.parts, boundary: boundary, into: &buffer)
     }
 }
 
