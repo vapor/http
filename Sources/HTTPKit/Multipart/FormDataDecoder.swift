@@ -30,11 +30,25 @@ public struct FormDataDecoder: HTTPMessageDecoder {
     public func decode<D>(_ decodable: D.Type, from data: String, boundary: String) throws -> D
         where D: Decodable
     {
-        var parts: [MultipartPart] = []
         let parser = MultipartParser(boundary: boundary)
-        parser.onPart = { part in
+        
+        var parts: [MultipartPart] = []
+        var headers: [String: String] = [:]
+        var body: String = ""
+        
+        parser.onHeader = { (field, value) in
+            headers[field] = value
+        }
+        parser.onBody = { new in
+            body += String(decoding: new, as: UTF8.self)
+        }
+        parser.onPartComplete = {
+            let part = MultipartPart(headers: headers, body: body)
+            headers = [:]
+            body = ""
             parts.append(part)
         }
+        
         try parser.execute(data)
         let multipart = FormDataDecoderContext(parts: parts)
         let decoder = _FormDataDecoder(multipart: multipart, codingPath: [])

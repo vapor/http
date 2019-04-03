@@ -12,7 +12,9 @@ import CMultipartParser
 ///
 /// Seealso `form-urlencoded` encoding where delimiter boundaries are not required.
 public final class MultipartParser {
-    public var onPart: (MultipartPart) -> ()
+    public var onHeader: (String, String) -> ()
+    public var onBody: ([UInt8]) -> ()
+    public var onPartComplete: () -> ()
     
     private var callbacks: multipartparser_callbacks
     private var parser: multipartparser
@@ -25,12 +27,12 @@ public final class MultipartParser {
     
     private var headerState: HeaderState
     
-    private var currentHeaders: [String: String]
-    private var currentData: String
-    
     /// Creates a new `MultipartParser`.
     public init(boundary: String) {
-        self.onPart = { _ in }
+        self.onHeader = { _, _ in }
+        self.onBody = { _ in }
+        self.onPartComplete = { }
+        
         var parser = multipartparser()
         multipartparser_init(&parser, boundary)
         var callbacks = multipartparser_callbacks()
@@ -38,8 +40,6 @@ public final class MultipartParser {
         self.callbacks = callbacks
         self.parser = parser
         self.headerState = .ready
-        self.currentHeaders = [:]
-        self.currentData = ""
         self.callbacks.on_header_field = { parser, data, size in
             guard let parser = parser else {
                 return 1
@@ -60,8 +60,11 @@ public final class MultipartParser {
             guard let parser = parser else {
                 return 1
             }
-            let string = String(cPointer: data, count: size)
-            parser.ref.handleData(string)
+            let buffer = UnsafeBufferPointer(
+                start: UnsafeRawPointer(data)?.assumingMemoryBound(to: UInt8.self),
+                count: size
+            )
+            parser.ref.handleData(.init(buffer))
             return 0
         }
         self.callbacks.on_body_begin = { parser in
@@ -112,7 +115,7 @@ public final class MultipartParser {
         case .field(let existing):
             self.headerState = .field(field: existing + new)
         case .value(let field, let value):
-            self.currentHeaders[field] = value
+            self.onHeader(field, value)
             self.headerState = .field(field: new)
         }
     }
@@ -130,22 +133,19 @@ public final class MultipartParser {
     private func handleHeadersComplete() {
         switch self.headerState {
         case .value(let field, let value):
-            self.currentHeaders[field] = value
+            self.onHeader(field, value)
             self.headerState = .ready
         case .ready: break
         default: fatalError()
         }
     }
     
-    private func handleData(_ data: String) {
-        self.currentData += data
+    private func handleData(_ data: [UInt8]) {
+        self.onBody(data)
     }
     
     private func handlePartEnd() {
-        let part = MultipartPart(data: self.currentData, headers: self.currentHeaders)
-        self.currentData = ""
-        self.currentHeaders = [:]
-        self.onPart(part)
+        self.onPartComplete()
     }
 }
 

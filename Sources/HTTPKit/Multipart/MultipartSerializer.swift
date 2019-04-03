@@ -20,7 +20,7 @@ public final class MultipartSerializer {
         var reserved = 0
         
         for part in parts {
-            reserved += part.data.count
+            reserved += part.body.count
         }
         
         body.reserveCapacity(reserved + 512)
@@ -31,7 +31,7 @@ public final class MultipartSerializer {
                 body += "\r\n"
             }
             body += "\r\n"
-            body += part.data
+            body += String(decoding: part.body, as: UTF8.self)
             body += "\r\n"
         }
         body += "--" + boundary + "--\r\n"

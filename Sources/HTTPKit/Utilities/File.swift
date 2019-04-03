@@ -4,7 +4,7 @@ public struct HTTPFile: Codable {
     public var filename: String
     
     /// The file's data.
-    public var data: String
+    public var data: [UInt8]
     
     /// Associated `MediaType` for this file's extension, if it has one.
     public var contentType: HTTPMediaType? {
@@ -24,6 +24,17 @@ public struct HTTPFile: Codable {
     ///     - data: The file's contents.
     ///     - filename: The name of the file, not including path.
     public init(data: String, filename: String) {
+        self.init(data: [UInt8](data.utf8), filename: filename)
+    }
+    
+    /// Creates a new `File`.
+    ///
+    ///     let file = File(data: "hello", filename: "foo.txt")
+    ///
+    /// - parameters:
+    ///     - data: The file's contents.
+    ///     - filename: The name of the file, not including path.
+    public init(data: [UInt8], filename: String) {
         self.data = data
         self.filename = filename
     }

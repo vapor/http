@@ -34,15 +34,29 @@ class MultipartTests: XCTestCase {
         ------WebKitFormBoundaryPVOZifB9OqEwP2fn--\r\n
         """
         let parser = MultipartParser(boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn")
+        
         var parts: [MultipartPart] = []
-        parser.onPart = { part in
+        var headers: [String: String] = [:]
+        var body: String = ""
+        
+        parser.onHeader = { (field, value) in
+            headers[field] = value
+        }
+        parser.onBody = { new in
+            body += String(decoding: new, as: UTF8.self)
+        }
+        parser.onPartComplete = {
+            let part = MultipartPart(headers: headers, body: body)
+            headers = [:]
+            body = ""
             parts.append(part)
         }
+        
         try parser.execute(data)
         XCTAssertEqual(parts.count, 3)
-        XCTAssertEqual(parts.firstPart(named: "test")?.data, "eqw-dd-sa----123;1[234")
-        XCTAssertEqual(parts.firstPart(named: "named")?.data, named)
-        XCTAssertEqual(parts.firstPart(named: "multinamed[]")?.data, multinamed)
+        XCTAssertEqual(parts.firstPart(named: "test")?.body, .init("eqw-dd-sa----123;1[234".utf8))
+        XCTAssertEqual(parts.firstPart(named: "named")?.body, .init(named.utf8))
+        XCTAssertEqual(parts.firstPart(named: "multinamed[]")?.body, .init(multinamed.utf8))
 
         let serialized = try MultipartSerializer().serialize(parts: parts, boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn")
         XCTAssertEqual(serialized, data)
@@ -66,12 +80,24 @@ class MultipartTests: XCTestCase {
         """
         let parser = MultipartParser(boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn")
         var parts: [MultipartPart] = []
-        parser.onPart = { part in
+        var headers: [String: String] = [:]
+        var body: String = ""
+        
+        parser.onHeader = { (field, value) in
+            headers[field] = value
+        }
+        parser.onBody = { new in
+            body += String(decoding: new, as: UTF8.self)
+        }
+        parser.onPartComplete = {
+            let part = MultipartPart(headers: headers, body: body)
+            headers = [:]
+            body = ""
             parts.append(part)
         }
         try parser.execute(data)
-        let file = parts.firstPart(named: "multinamed[]")?.data
-        XCTAssertEqual(file, named)
+        let file = parts.firstPart(named: "multinamed[]")?.body
+        XCTAssertEqual(file, .init(named.utf8))
         try XCTAssertEqual(MultipartSerializer().serialize(parts: parts, boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn"), data)
     }
 
@@ -177,12 +203,12 @@ class MultipartTests: XCTestCase {
         
         let expected = [
             MultipartPart(
-                data: "some text sent via post...",
-                headers: ["Content-Disposition": "form-data; name=\"sometext\""]
+                headers: ["Content-Disposition": "form-data; name=\"sometext\""],
+                body: "some text sent via post..."
             ),
             MultipartPart(
-                data: "--abcde\r\nContent-Disposition: file; file=\"picture.jpg\"\r\n\r\ncontent of jpg...abcde\r\nContent-Disposition: file; file=\"test.py\"\r\n\r\ncontent of test.py file ....abcde--",
-                headers: ["Content-Disposition": "form-data; name=\"files\"", "Content-Type": "multipart/mixed; boundary=abcde"]
+                headers: ["Content-Disposition": "form-data; name=\"files\"", "Content-Type": "multipart/mixed; boundary=abcde"],
+                body: "--abcde\r\nContent-Disposition: file; file=\"picture.jpg\"\r\n\r\ncontent of jpg...abcde\r\nContent-Disposition: file; file=\"test.py\"\r\n\r\ncontent of test.py file ....abcde--"
             )
         ]
         
@@ -195,7 +221,19 @@ class MultipartTests: XCTestCase {
             let parser = MultipartParser(boundary: "12345")
 
             var parts: [MultipartPart] = []
-            parser.onPart = { part in
+            var headers: [String: String] = [:]
+            var body: String = ""
+            
+            parser.onHeader = { (field, value) in
+                headers[field] = value
+            }
+            parser.onBody = { new in
+                body += String(decoding: new, as: UTF8.self)
+            }
+            parser.onPartComplete = {
+                let part = MultipartPart(headers: headers, body: body)
+                headers = [:]
+                body = ""
                 parts.append(part)
             }
 
@@ -272,7 +310,7 @@ class MultipartTests: XCTestCase {
         }
 
         let foo = try FormDataDecoder().decode(Foo.self, from: data, boundary: "hello")
-        XCTAssertEqual(foo.file.data, "string")
+        XCTAssertEqual(foo.file.data, .init("string".utf8))
         XCTAssertEqual(foo.file.filename, "foo.txt")
         XCTAssertEqual(foo.file.contentType, HTTPMediaType.plainText)
         XCTAssertEqual(foo.file.ext, "txt")
@@ -289,14 +327,26 @@ class MultipartTests: XCTestCase {
             """
             let parser = MultipartParser(boundary: "123")
             var parts: [MultipartPart] = []
-            parser.onPart = { part in
+            var headers: [String: String] = [:]
+            var body: String = ""
+            
+            parser.onHeader = { (field, value) in
+                headers[field] = value
+            }
+            parser.onBody = { new in
+                body += String(decoding: new, as: UTF8.self)
+            }
+            parser.onPartComplete = {
+                let part = MultipartPart(headers: headers, body: body)
+                headers = [:]
+                body = ""
                 parts.append(part)
             }
             try parser.execute(data)
             XCTAssertEqual(parts.count, 1)
         }
         do {
-            let part = MultipartPart(data: "foo")
+            let part = MultipartPart(body: "foo")
             let data = try MultipartSerializer().serialize(parts: [part], boundary: "123")
             XCTAssertEqual(data, "--123\r\n\r\nfoo\r\n--123--\r\n")
         }
