@@ -140,6 +140,9 @@ public final class HTTPClient {
             handlers.append(("client-decoder", clientResDecoder))
             httpHandlerNames.append("client-decoder")
             
+            // When port is different from the default port for the scheme
+            // it must be explicitly specified in the `Host` HTTP header.
+            // See https://tools.ietf.org/html/rfc2616#section-14.23
             let clientReqEncoder: HTTPClientRequestEncoder
             if port == defaultSchemePort {
                 clientReqEncoder = HTTPClientRequestEncoder(host: hostname)
