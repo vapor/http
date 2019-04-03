@@ -43,7 +43,7 @@ class MultipartTests: XCTestCase {
             headers[field] = value
         }
         parser.onBody = { new in
-            body += String(decoding: new, as: UTF8.self)
+            body += new.readString(length: new.readableBytes)!
         }
         parser.onPartComplete = {
             let part = MultipartPart(headers: headers, body: body)
@@ -54,9 +54,9 @@ class MultipartTests: XCTestCase {
         
         try parser.execute(data)
         XCTAssertEqual(parts.count, 3)
-        XCTAssertEqual(parts.firstPart(named: "test")?.body, .init("eqw-dd-sa----123;1[234".utf8))
-        XCTAssertEqual(parts.firstPart(named: "named")?.body, .init(named.utf8))
-        XCTAssertEqual(parts.firstPart(named: "multinamed[]")?.body, .init(multinamed.utf8))
+        XCTAssertEqual(parts.firstPart(named: "test")?.body.readableViewString, "eqw-dd-sa----123;1[234")
+        XCTAssertEqual(parts.firstPart(named: "named")?.body.readableViewString, named)
+        XCTAssertEqual(parts.firstPart(named: "multinamed[]")?.body.readableViewString, multinamed)
 
         let serialized = try MultipartSerializer().serialize(parts: parts, boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn")
         XCTAssertEqual(serialized, data)
@@ -87,7 +87,7 @@ class MultipartTests: XCTestCase {
             headers[field] = value
         }
         parser.onBody = { new in
-            body += String(decoding: new, as: UTF8.self)
+            body += new.readString(length: new.readableBytes)!
         }
         parser.onPartComplete = {
             let part = MultipartPart(headers: headers, body: body)
@@ -97,7 +97,7 @@ class MultipartTests: XCTestCase {
         }
         try parser.execute(data)
         let file = parts.firstPart(named: "multinamed[]")?.body
-        XCTAssertEqual(file, .init(named.utf8))
+        XCTAssertEqual(file?.readableViewString, named)
         try XCTAssertEqual(MultipartSerializer().serialize(parts: parts, boundary: "----WebKitFormBoundaryPVOZifB9OqEwP2fn"), data)
     }
 
@@ -228,7 +228,7 @@ class MultipartTests: XCTestCase {
                 headers[field] = value
             }
             parser.onBody = { new in
-                body += String(decoding: new, as: UTF8.self)
+                body += new.readString(length: new.readableBytes)!
             }
             parser.onPartComplete = {
                 let part = MultipartPart(headers: headers, body: body)
@@ -310,7 +310,7 @@ class MultipartTests: XCTestCase {
         }
 
         let foo = try FormDataDecoder().decode(Foo.self, from: data, boundary: "hello")
-        XCTAssertEqual(foo.file.data, .init("string".utf8))
+        XCTAssertEqual(foo.file.data.readableViewString, "string")
         XCTAssertEqual(foo.file.filename, "foo.txt")
         XCTAssertEqual(foo.file.contentType, HTTPMediaType.plainText)
         XCTAssertEqual(foo.file.ext, "txt")
@@ -334,7 +334,7 @@ class MultipartTests: XCTestCase {
                 headers[field] = value
             }
             parser.onBody = { new in
-                body += String(decoding: new, as: UTF8.self)
+                body += new.readString(length: new.readableBytes)!
             }
             parser.onPartComplete = {
                 let part = MultipartPart(headers: headers, body: body)
@@ -389,5 +389,11 @@ private extension Collection {
             defer { start = end }
             return self[start..<end]
         }
+    }
+}
+
+private extension ByteBuffer {
+    var readableViewString: String {
+        return self.getString(at: self.readerIndex, length: self.readableBytes) ?? "<nil>"
     }
 }

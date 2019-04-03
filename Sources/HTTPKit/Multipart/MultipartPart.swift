@@ -4,7 +4,7 @@ public struct MultipartPart: Equatable {
     public var headers: [String: String]
     
     /// The part's raw data.
-    public var body: [UInt8]
+    public var body: ByteBuffer
     
     /// Gets or sets the `filename` attribute from the part's `"Content-Disposition"` header.
     public var filename: String? {
@@ -56,7 +56,9 @@ public struct MultipartPart: Equatable {
     ///     - headers: The part's headers.
     ///     - body: The part's data.
     public init(headers: [String: String] = [:], body: String) {
-        self.init(headers: headers, body: [UInt8](body.utf8))
+        var buffer = ByteBufferAllocator().buffer(capacity: body.utf8.count)
+        buffer.writeString(body)
+        self.init(headers: headers, body: buffer)
     }
     
     /// Creates a new `MultipartPart`.
@@ -66,7 +68,7 @@ public struct MultipartPart: Equatable {
     /// - parameters:
     ///     - headers: The part's headers.
     ///     - body: The part's data.
-    public init(headers: [String: String] = [:], body: [UInt8]) {
+    public init(headers: [String: String] = [:], body: ByteBuffer) {
         self.headers = headers
         self.body = body
     }

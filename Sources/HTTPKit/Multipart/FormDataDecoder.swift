@@ -12,10 +12,18 @@ public struct FormDataDecoder: HTTPMessageDecoder {
         guard let boundary = message.contentType?.parameters["boundary"] else {
             throw HTTPError(.unknownContentType)
         }
-        guard let string = message.body.string else {
+        guard let buffer = message.body.buffer else {
             throw HTTPError(.noContent)
         }
-        return try self.decode(D.self, from: string, boundary: boundary)
+        return try self.decode(D.self, from: buffer, boundary: boundary)
+    }
+    
+    public func decode<D>(_ decodable: D.Type, from data: String, boundary: String) throws -> D
+        where D: Decodable
+    {
+        var buffer = ByteBufferAllocator().buffer(capacity: data.utf8.count)
+        buffer.writeString(data)
+        return try self.decode(D.self, from: buffer, boundary: boundary)
     }
 
     /// Decodes a `Decodable` item from `Data` using the supplied boundary.
@@ -27,25 +35,30 @@ public struct FormDataDecoder: HTTPMessageDecoder {
     ///     - boundary: Multipart boundary to used in the encoding.
     /// - throws: Any errors decoding the model with `Codable` or parsing the data.
     /// - returns: An instance of the decoded type `D`.
-    public func decode<D>(_ decodable: D.Type, from data: String, boundary: String) throws -> D
+    public func decode<D>(_ decodable: D.Type, from data: ByteBuffer, boundary: String) throws -> D
         where D: Decodable
     {
         let parser = MultipartParser(boundary: boundary)
         
         var parts: [MultipartPart] = []
         var headers: [String: String] = [:]
-        var body: String = ""
+        var body: ByteBuffer? = nil
         
         parser.onHeader = { (field, value) in
             headers[field] = value
         }
         parser.onBody = { new in
-            body += String(decoding: new, as: UTF8.self)
+            if var existing = body {
+                existing.writeBuffer(&new)
+                body = existing
+            } else {
+                body = new
+            }
         }
         parser.onPartComplete = {
-            let part = MultipartPart(headers: headers, body: body)
+            let part = MultipartPart(headers: headers, body: body!)
             headers = [:]
-            body = ""
+            body = nil
             parts.append(part)
         }
         

@@ -25,7 +25,8 @@ extension String: MultipartPartConvertible {
 
     /// See `MultipartPartConvertible`.
     public static func convertFromMultipartPart(_ part: MultipartPart) throws -> String {
-        return String(decoding: part.body, as: UTF8.self)
+        var buffer = part.body
+        return buffer.readString(length: buffer.readableBytes)!
     }
 }
 
@@ -122,11 +123,14 @@ extension HTTPFile: MultipartPartConvertible {
 extension Data: MultipartPartConvertible {
     /// See `MultipartPartConvertible`.
     public func convertToMultipartPart() throws -> MultipartPart {
-        return MultipartPart(body: .init(self))
+        var buffer = ByteBufferAllocator().buffer(capacity: self.count)
+        buffer.writeBytes(self)
+        return MultipartPart(body: buffer)
     }
 
     /// See `MultipartPartConvertible`.
     public static func convertFromMultipartPart(_ part: MultipartPart) throws -> Data {
-        return Data(part.body)
+        var buffer = part.body
+        return buffer.readData(length: buffer.readableBytes)!
     }
 }
