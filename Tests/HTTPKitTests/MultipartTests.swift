@@ -193,12 +193,12 @@ class MultipartTests: XCTestCase {
         
         for i in 1..<data.count {
             let parser = MultipartParser(boundary: "12345")
-            
+
             var parts: [MultipartPart] = []
             parser.onPart = { part in
                 parts.append(part)
             }
-            
+
             for chunk in data.chunked(by: i) {
                 try parser.execute(.init(chunk))
             }

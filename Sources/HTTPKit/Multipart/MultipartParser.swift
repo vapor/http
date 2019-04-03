@@ -85,11 +85,21 @@ public final class MultipartParser {
             return 0
         }
     }
-
+    
+    public func execute(_ data: ByteBuffer) throws {
+        try data.withUnsafeReadableBytes { buffer in
+            try self._execute(buffer.baseAddress?.assumingMemoryBound(to: Int8.self), count: buffer.count)
+        }
+    }
+    
     public func execute(_ data: String) throws {
+        try self._execute(data, count: data.utf8.count)
+    }
+    
+    private func _execute(_ data: UnsafePointer<Int8>?, count: Int) throws {
         withUnsafePointer(to: self, { pointer in
             self.parser.data = UnsafeMutableRawPointer(mutating: pointer)
-            multipartparser_execute(&self.parser, &self.callbacks, data, data.utf8.count)
+            multipartparser_execute(&self.parser, &self.callbacks, data, count)
         })
     }
     
