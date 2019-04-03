@@ -151,6 +151,61 @@ class MultipartTests: XCTestCase {
         XCTAssert(foo.files.contains("picture.jpg"))
         print(foo.files)
     }
+    
+    func testFormDataDecoderW3Streaming() throws {
+        /// Content-Type: multipart/form-data; boundary=12345
+        let data = """
+        --12345\r\n\
+        Content-Disposition: form-data; name="sometext"\r\n\
+        \r\n\
+        some text sent via post...\r\n\
+        --12345\r\n\
+        Content-Disposition: form-data; name="files"\r\n\
+        Content-Type: multipart/mixed; boundary=abcde\r\n\
+        \r\n\
+        --abcde\r\n\
+        Content-Disposition: file; file="picture.jpg"\r\n\
+        \r\n\
+        content of jpg...\r\n\
+        --abcde\r\n\
+        Content-Disposition: file; file="test.py"\r\n\
+        \r\n\
+        content of test.py file ....\r\n\
+        --abcde--\r\n\
+        --12345--\r\n
+        """
+        
+        let expected = [
+            MultipartPart(
+                data: "some text sent via post...",
+                headers: ["Content-Disposition": "form-data; name=\"sometext\""]
+            ),
+            MultipartPart(
+                data: "--abcde\r\nContent-Disposition: file; file=\"picture.jpg\"\r\n\r\ncontent of jpg...abcde\r\nContent-Disposition: file; file=\"test.py\"\r\n\r\ncontent of test.py file ....abcde--",
+                headers: ["Content-Disposition": "form-data; name=\"files\"", "Content-Type": "multipart/mixed; boundary=abcde"]
+            )
+        ]
+        
+        struct Foo: Decodable {
+            var sometext: String
+            var files: String
+        }
+        
+        for i in 1..<data.count {
+            let parser = MultipartParser(boundary: "12345")
+            
+            var parts: [MultipartPart] = []
+            parser.onPart = { part in
+                parts.append(part)
+            }
+            
+            for chunk in data.chunked(by: i) {
+                try parser.execute(.init(chunk))
+            }
+            
+            XCTAssertEqual(parts, expected)
+        }
+    }
 
     func testFormDataDecoderMultiple() throws {
         /// Content-Type: multipart/form-data; boundary=12345
@@ -271,5 +326,18 @@ class MultipartTests: XCTestCase {
 
         let files = try FormDataDecoder().decode(UserFiles.self, from: data, boundary: "123")
         XCTAssertEqual(files.upload.count, 3)
+    }
+}
+
+// https://stackoverflow.com/a/54524110/1041105
+private extension Collection {
+    func chunked(by maxLength: Int) -> [SubSequence] {
+        precondition(maxLength > 0, "groups must be greater than zero")
+        var start = startIndex
+        return stride(from: 0, to: count, by: maxLength).map { _ in
+            let end = index(start, offsetBy: maxLength, limitedBy: endIndex) ?? endIndex
+            defer { start = end }
+            return self[start..<end]
+        }
     }
 }

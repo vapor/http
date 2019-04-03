@@ -1,5 +1,5 @@
 /// A single part of a `multipart`-encoded message.
-public struct MultipartPart {
+public struct MultipartPart: Equatable {
     /// The part's raw data.
     public var data: String
 

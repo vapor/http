@@ -18,14 +18,15 @@ public final class MultipartParser {
     private var parser: multipartparser
     
     private enum HeaderState {
-        case field
-        case value(field: String)
+        case ready
+        case field(field: String)
+        case value(field: String, value: String)
     }
     
     private var headerState: HeaderState
+    
     private var currentHeaders: [String: String]
     private var currentData: String
-    private var hasInitialized: Bool
     
     /// Creates a new `MultipartParser`.
     public init(boundary: String) {
@@ -36,68 +37,92 @@ public final class MultipartParser {
         multipartparser_callbacks_init(&callbacks)
         self.callbacks = callbacks
         self.parser = parser
-        self.headerState = .field
+        self.headerState = .ready
         self.currentHeaders = [:]
         self.currentData = ""
-        self.hasInitialized = false
-    }
-
-    public func execute(_ data: String) throws {
-        if !self.hasInitialized {
-            self.initialize()
-            self.hasInitialized = true
-        }
-        #warning("TODO: how to do c baton in swift?")
-        withUnsafePointer(to: self, { pointer in
-            self.parser.data = UnsafeMutableRawPointer(mutating: pointer)
-        })
-        multipartparser_execute(&self.parser, &self.callbacks, data, data.utf8.count)
-    }
-    
-    private func initialize() {
         self.callbacks.on_header_field = { parser, data, size in
+            guard let parser = parser else {
+                return 1
+            }
             let string = String(cPointer: data, count: size)
-            parser!.pointee.data.assumingMemoryBound(to: MultipartParser.self).pointee.handleHeaderField(string)
+            parser.ref.handleHeaderField(string)
             return 0
         }
         self.callbacks.on_header_value = { parser, data, size in
+            guard let parser = parser else {
+                return 1
+            }
             let string = String(cPointer: data, count: size)
-            parser!.pointee.data.assumingMemoryBound(to: MultipartParser.self).pointee.handleHeaderValue(string)
+            parser.ref.handleHeaderValue(string)
             return 0
         }
         self.callbacks.on_data = { parser, data, size in
+            guard let parser = parser else {
+                return 1
+            }
             let string = String(cPointer: data, count: size)
-            parser!.pointee.data.assumingMemoryBound(to: MultipartParser.self).pointee.handleData(string)
+            parser.ref.handleData(string)
             return 0
         }
         self.callbacks.on_body_begin = { parser in
             return 0
         }
         self.callbacks.on_headers_complete = { parser in
+            guard let parser = parser else {
+                return 1
+            }
+            parser.ref.handleHeadersComplete()
             return 0
         }
         self.callbacks.on_part_end = { parser in
-            parser!.pointee.data.assumingMemoryBound(to: MultipartParser.self).pointee.handlePartEnd()
+            guard let parser = parser else {
+                return 1
+            }
+            parser.ref.handlePartEnd()
             return 0
         }
         self.callbacks.on_body_end = { parser in
             return 0
         }
     }
+
+    public func execute(_ data: String) throws {
+        withUnsafePointer(to: self, { pointer in
+            self.parser.data = UnsafeMutableRawPointer(mutating: pointer)
+            multipartparser_execute(&self.parser, &self.callbacks, data, data.utf8.count)
+        })
+    }
     
-    private func handleHeaderField(_ name: String) {
+    // MARK: Private
+    
+    private func handleHeaderField(_ new: String) {
         switch self.headerState {
-        case .field:
-            self.headerState = .value(field: name)
+        case .ready:
+            self.headerState = .field(field: new)
+        case .field(let existing):
+            self.headerState = .field(field: existing + new)
+        case .value(let field, let value):
+            self.currentHeaders[field] = value
+            self.headerState = .field(field: new)
+        }
+    }
+    
+    private func handleHeaderValue(_ new: String) {
+        switch self.headerState {
+        case .field(let name):
+            self.headerState = .value(field: name, value: new)
+        case .value(let name, let existing):
+            self.headerState = .value(field: name, value: existing + new)
         default: fatalError()
         }
     }
     
-    private func handleHeaderValue(_ value: String) {
+    private func handleHeadersComplete() {
         switch self.headerState {
-        case .value(let field):
-            self.headerState = .field
+        case .value(let field, let value):
             self.currentHeaders[field] = value
+            self.headerState = .ready
+        case .ready: break
         default: fatalError()
         }
     }
@@ -111,6 +136,12 @@ public final class MultipartParser {
         self.currentData = ""
         self.currentHeaders = [:]
         self.onPart(part)
+    }
+}
+
+private extension  UnsafeMutablePointer where Pointee == multipartparser {
+    var ref: MultipartParser {
+        return self.pointee.data.assumingMemoryBound(to: MultipartParser.self).pointee
     }
 }
 
