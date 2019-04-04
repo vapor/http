@@ -23,9 +23,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-log.git", .branch("master")),
     ],
     targets: [
-        .target(name: "CMultipartParser"),
         .target(name: "HTTPKit", dependencies: [
-            "CMultipartParser",
             "Logging",
             "NIO",
             "NIOExtras",
