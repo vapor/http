@@ -43,7 +43,7 @@ public protocol HTTPMessageDecoder {
 extension HTTPMessageDecoder {
     /// See `HTTPMessageDecoder`.
     /// - note: This method will use a default max size of 1MB.
-    func decode<D, M>(_ decodable: D.Type, from message: M, on worker: Worker) throws -> Future<D>
+    public func decode<D, M>(_ decodable: D.Type, from message: M, on worker: Worker) throws -> Future<D>
         where D: Decodable, M: HTTPMessage
     {
         return try decode(D.self, from: message, maxSize: 1_000_000, on: worker)
@@ -96,7 +96,7 @@ extension JSONDecoder: HTTPMessageDecoder {
     public func decode<D, M>(_ decodable: D.Type, from message: M, maxSize: Int, on worker: Worker) throws -> EventLoopFuture<D>
         where D: Decodable, M: HTTPMessage
     {
-        guard message.contentType == .json else {
+        guard message.contentType == .json || message.contentType == .jsonAPI else {
             throw HTTPError(identifier: "contentType", reason: "HTTP message did not have JSON-compatible content-type.")
         }
         return message.body.consumeData(max: maxSize, on: worker).map(to: D.self) { data in
