@@ -189,6 +189,8 @@ public extension HTTPMediaType {
     static let multipart = HTTPMediaType(type: "multipart", subType: "mixed")
     /// JSON media type.
     static let json = HTTPMediaType(type: "application", subType: "json", parameters: ["charset": "utf-8"])
+    /// JSON API media type (see https://jsonapi.org/format/).
+    static let jsonAPI = HTTPMediaType(type: "application", subType: "vnd.api+json", parameters: ["charset": "utf-8"])
     /// XML media type.
     static let xml = HTTPMediaType(type: "application", subType: "xml", parameters: ["charset": "utf-8"])
     /// DTD media type.

@@ -45,7 +45,7 @@ extension JSONDecoder: HTTPMessageDecoder {
     public func decode<D, M>(_ decodable: D.Type, from message: M) throws -> D
         where D: Decodable, M: HTTPMessage
     {
-        guard message.contentType == .json else {
+        guard message.contentType == .json || message.contentType == .jsonApi else {
             throw HTTPError(.unknownContentType)
         }
         guard let data = message.body.data else {
