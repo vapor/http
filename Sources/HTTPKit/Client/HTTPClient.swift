@@ -145,9 +145,9 @@ public final class HTTPClient {
             // See https://tools.ietf.org/html/rfc2616#section-14.23
             let clientReqEncoder: HTTPClientRequestEncoder
             if port == defaultSchemePort {
-                clientReqEncoder = HTTPClientRequestEncoder(host: hostname)
+                clientReqEncoder = HTTPClientRequestEncoder(hostHeaderValue: hostname)
             } else {
-                clientReqEncoder = HTTPClientRequestEncoder(host: "\(hostname):\(port)")
+                clientReqEncoder = HTTPClientRequestEncoder(hostHeaderValue: "\(hostname):\(port)")
             }
             
             handlers.append(("client-encoder", clientReqEncoder))
