@@ -13,7 +13,13 @@ public struct HTTPFile: Codable {
     
     /// The file extension, if it has one.
     public var ext: String? {
-        return filename.split(separator: ".").last.map(String.init)
+        let parts = filename.split(separator: ".")
+
+        if parts.count > 1 {
+            return parts.last.map(String.init)
+        } else {
+            return nil
+        }
     }
     
     public init(from decoder: Decoder) throws {
