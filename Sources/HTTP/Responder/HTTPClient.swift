@@ -121,8 +121,12 @@ private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
     func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = unwrapOutboundIn(data)
         var headers = req.headers
-        headers.add(name: .host, value: hostname)
-        headers.replaceOrAdd(name: .userAgent, value: "Vapor/3.0 (Swift)")
+        if !headers.contains(name: .host) {
+            headers.add(name: .host, value: hostname)
+        }
+        if !headers.contains(name: .userAgent) {
+            headers.add(name: .userAgent, value: "Vapor/3.0 (Swift)")
+        }
         var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.absoluteString)
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
