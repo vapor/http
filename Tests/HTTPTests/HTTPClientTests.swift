@@ -1,4 +1,4 @@
-import HTTP
+@testable import HTTP
 import XCTest
 
 class HTTPClientTests: XCTestCase {
@@ -37,6 +37,26 @@ class HTTPClientTests: XCTestCase {
     func testQuery() throws {
         try testURL("http://httpbin.org/get?foo=bar", contains: "bar")
     }
+    
+    func testHeaderDecoration() throws {
+        try testHeaders(hostname: "hostA",
+                        sentHeaders: [],
+                        expectedHeaders: [(.host, "hostA"),
+                                          (.userAgent, HTTPClient.defaultUserAgent)])
+        try testHeaders(hostname: "hostA",
+                        sentHeaders: [("Host", "hostB")],
+                        expectedHeaders: [(.host, "hostB"),
+                                          (.userAgent, HTTPClient.defaultUserAgent)])
+        try testHeaders(hostname: "hostA",
+                        sentHeaders: [("User-Agent", "foobar")],
+                        expectedHeaders: [(.host, "hostA"),
+                                          (.userAgent, "foobar")])
+        try testHeaders(hostname: "hostA",
+                        sentHeaders: [("Host", "hostB"),
+                                      ("User-Agent", "foobar")],
+                        expectedHeaders: [(.host, "hostB"),
+                                          (.userAgent, "foobar")])
+    }
 
     static let allTests = [
         ("testHTTPBin418", testHTTPBin418),
@@ -48,6 +68,7 @@ class HTTPClientTests: XCTestCase {
         ("testGoogleWithTLS", testGoogleWithTLS),
         ("testSNIWebsite", testSNIWebsite),
         ("testQuery", testQuery),
+        ("testHeaderDecoration", testHeaderDecoration),
     ]
 }
 
@@ -81,5 +102,15 @@ private func testURL(
             return client.send(req)
         }.wait()
         try check(res)
+    }
+}
+
+private func testHeaders(hostname: String, sentHeaders: [(String, String)], expectedHeaders: [(HTTPHeaderName, String?)]) throws {
+    var headers = HTTPHeaders(sentHeaders)
+    let httpSerializer = HTTPClientRequestSerializer(hostname: hostname)
+    headers = httpSerializer.decoratedHeaders(original: headers)
+    for headerPair in expectedHeaders {
+        XCTAssertEqual(headers.contains(name: headerPair.0), headerPair.1 != nil)
+        XCTAssertEqual(headers.firstValue(name: headerPair.0), headerPair.1)
     }
 }
