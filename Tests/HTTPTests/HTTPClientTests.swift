@@ -1,4 +1,4 @@
-@testable import HTTP
+import HTTP
 import XCTest
 
 class HTTPClientTests: XCTestCase {
@@ -39,23 +39,13 @@ class HTTPClientTests: XCTestCase {
     }
     
     func testHeaderDecoration() throws {
-        try testHeaders(hostname: "hostA",
-                        sentHeaders: [],
-                        expectedHeaders: [(.host, "hostA"),
-                                          (.userAgent, HTTPClient.defaultUserAgent)])
-        try testHeaders(hostname: "hostA",
-                        sentHeaders: [("Host", "hostB")],
-                        expectedHeaders: [(.host, "hostB"),
-                                          (.userAgent, HTTPClient.defaultUserAgent)])
-        try testHeaders(hostname: "hostA",
-                        sentHeaders: [("User-Agent", "foobar")],
-                        expectedHeaders: [(.host, "hostA"),
-                                          (.userAgent, "foobar")])
-        try testHeaders(hostname: "hostA",
-                        sentHeaders: [("Host", "hostB"),
-                                      ("User-Agent", "foobar")],
-                        expectedHeaders: [(.host, "hostB"),
-                                          (.userAgent, "foobar")])
+        try testHeaders(sentHeaders: [:],
+                        expectedHeaders: [("Host", "httpbin.org"),
+                                          ("User-Agent", HTTPClient.defaultUserAgent)])
+        try testHeaders(sentHeaders: ["Host": "hostb",
+                                      "User-Agent": "foobar"],
+                        expectedHeaders: [("Host", "hostb"),
+                                          ("User-Agent", "foobar")])
     }
 
     static let allTests = [
@@ -83,8 +73,21 @@ private func testURL(_ string: String, times: Int = 3, contains: String) throws 
     }
 }
 
+private func testHeaders(
+    times: Int = 3,
+    sentHeaders: HTTPHeaders,
+    expectedHeaders: [(String, String)]) throws {
+    try testURL("https://httpbin.org/anything", headers: sentHeaders, times: times) { res in
+        let string = String(data: res.body.data ?? Data(), encoding: .ascii) ?? ""
+        for headerPair in expectedHeaders {
+            XCTAssertTrue(string.contains("\"\(headerPair.0)\": \"\(headerPair.1)\""))
+        }
+    }
+}
+
 private func testURL(
     _ string: String,
+    headers: HTTPHeaders = [:],
     times: Int = 3,
     check: (HTTPResponse) throws -> ()
 ) throws {
@@ -98,19 +101,9 @@ private func testURL(
             var comps =  URLComponents()
             comps.path = url.path.isEmpty ? "/" : url.path
             comps.query = url.query
-            let req = HTTPRequest(method: .GET, url: comps.url ?? .root)
+            let req = HTTPRequest(method: .GET, url: comps.url ?? .root, headers: headers)
             return client.send(req)
         }.wait()
         try check(res)
-    }
-}
-
-private func testHeaders(hostname: String, sentHeaders: [(String, String)], expectedHeaders: [(HTTPHeaderName, String?)]) throws {
-    var headers = HTTPHeaders(sentHeaders)
-    let httpSerializer = HTTPClientRequestSerializer(hostname: hostname)
-    headers = httpSerializer.decoratedHeaders(original: headers)
-    for headerPair in expectedHeaders {
-        XCTAssertEqual(headers.contains(name: headerPair.0), headerPair.1 != nil)
-        XCTAssertEqual(headers.firstValue(name: headerPair.0), headerPair.1)
     }
 }

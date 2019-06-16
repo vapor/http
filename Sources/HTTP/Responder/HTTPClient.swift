@@ -102,10 +102,10 @@ public final class HTTPClient {
     }
 }
 
-// MARK: Internal
+// MARK: Private
 
 /// Private `ChannelOutboundHandler` that serializes `HTTPRequest` to `HTTPClientRequestPart`.
-final class HTTPClientRequestSerializer: ChannelOutboundHandler {
+private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
     /// See `ChannelOutboundHandler`.
     typealias OutboundIn = HTTPRequest
 
@@ -150,8 +150,6 @@ final class HTTPClientRequestSerializer: ChannelOutboundHandler {
         return newHeaders
     }
 }
-
-// MARK: Private
 
 /// Private `ChannelInboundHandler` that parses `HTTPClientResponsePart` to `HTTPResponse`.
 private final class HTTPClientResponseParser: ChannelInboundHandler {
