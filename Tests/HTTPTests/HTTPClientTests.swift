@@ -37,6 +37,16 @@ class HTTPClientTests: XCTestCase {
     func testQuery() throws {
         try testURL("http://httpbin.org/get?foo=bar", contains: "bar")
     }
+    
+    func testHeaderDecoration() throws {
+        try testHeaders(sentHeaders: [:],
+                        expectedHeaders: [("Host", "httpbin.org"),
+                                          ("User-Agent", HTTPClient.defaultUserAgent)])
+        try testHeaders(sentHeaders: ["Host": "hostb",
+                                      "User-Agent": "foobar"],
+                        expectedHeaders: [("Host", "hostb"),
+                                          ("User-Agent", "foobar")])
+    }
 
     static let allTests = [
         ("testHTTPBin418", testHTTPBin418),
@@ -48,6 +58,7 @@ class HTTPClientTests: XCTestCase {
         ("testGoogleWithTLS", testGoogleWithTLS),
         ("testSNIWebsite", testSNIWebsite),
         ("testQuery", testQuery),
+        ("testHeaderDecoration", testHeaderDecoration),
     ]
 }
 
@@ -62,8 +73,21 @@ private func testURL(_ string: String, times: Int = 3, contains: String) throws 
     }
 }
 
+private func testHeaders(
+    times: Int = 3,
+    sentHeaders: HTTPHeaders,
+    expectedHeaders: [(String, String)]) throws {
+    try testURL("https://httpbin.org/anything", headers: sentHeaders, times: times) { res in
+        let string = String(data: res.body.data ?? Data(), encoding: .ascii) ?? ""
+        for headerPair in expectedHeaders {
+            XCTAssertTrue(string.contains("\"\(headerPair.0)\": \"\(headerPair.1)\""))
+        }
+    }
+}
+
 private func testURL(
     _ string: String,
+    headers: HTTPHeaders = [:],
     times: Int = 3,
     check: (HTTPResponse) throws -> ()
 ) throws {
@@ -77,7 +101,7 @@ private func testURL(
             var comps =  URLComponents()
             comps.path = url.path.isEmpty ? "/" : url.path
             comps.query = url.query
-            let req = HTTPRequest(method: .GET, url: comps.url ?? .root)
+            let req = HTTPRequest(method: .GET, url: comps.url ?? .root, headers: headers)
             return client.send(req)
         }.wait()
         try check(res)

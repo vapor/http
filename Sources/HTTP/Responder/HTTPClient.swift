@@ -7,6 +7,9 @@
 ///
 public final class HTTPClient {
     // MARK: Static
+    
+    /// The default User Agent to send to browsers.
+    public static let defaultUserAgent = "Vapor/3.0 (Swift)"
 
     /// Creates a new `HTTPClient` connected over TCP or TLS.
     ///
@@ -120,9 +123,7 @@ private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
     /// See `ChannelOutboundHandler`.
     func write(ctx: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
         let req = unwrapOutboundIn(data)
-        var headers = req.headers
-        headers.add(name: .host, value: hostname)
-        headers.replaceOrAdd(name: .userAgent, value: "Vapor/3.0 (Swift)")
+        let headers = decoratedHeaders(original: req.headers)
         var httpHead = HTTPRequestHead(version: req.version, method: req.method, uri: req.url.absoluteString)
         httpHead.headers = headers
         ctx.write(wrapOutboundOut(.head(httpHead)), promise: nil)
@@ -132,6 +133,21 @@ private final class HTTPClientRequestSerializer: ChannelOutboundHandler {
             ctx.write(self.wrapOutboundOut(.body(.byteBuffer(buffer))), promise: nil)
         }
         ctx.write(self.wrapOutboundOut(.end(nil)), promise: nil)
+    }
+    
+    /// Adds required headers to a HTTP request.
+    func decoratedHeaders(original: HTTPHeaders) -> HTTPHeaders {
+        var newHeaders = original
+        
+        // Only set headers if they are unspecified.
+        if !newHeaders.contains(name: .host) {
+            newHeaders.add(name: .host, value: hostname)
+        }
+        if !newHeaders.contains(name: .userAgent) {
+            newHeaders.add(name: .userAgent, value: HTTPClient.defaultUserAgent)
+        }
+        
+        return newHeaders
     }
 }
 
