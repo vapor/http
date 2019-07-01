@@ -84,6 +84,14 @@ public final class HTTPServer {
 
     // MARK: Properties
 
+    /// The port the `HTTPServer` is bound to.
+    ///
+    /// Nil if `HTTPServer` is not bound to an IP port (eg. serving from a Unix socket or some other exotic channel).
+    public var port: Int? {
+        guard let port_uint16 = channel.localAddress?.port else { return nil }
+        return Int(exactly: port_uint16)
+    }
+
     /// A future that will be signaled when the server closes.
     public var onClose: Future<Void> {
         return channel.closeFuture
