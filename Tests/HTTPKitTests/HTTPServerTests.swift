@@ -15,7 +15,7 @@ class HTTPServerTests: XCTestCase {
         let server = HTTPServer(
             configuration: .init(
                 hostname: "localhost",
-                port: 8080,
+                port: 0,
                 supportVersions: [.one],
                 errorHandler: { error in
                     XCTFail("\(error)")
@@ -24,14 +24,45 @@ class HTTPServerTests: XCTestCase {
             on: self.eventLoopGroup
         )
         try server.start(delegate: LargeResponder()).wait()
+        defer {
+            try! server.shutdown().wait()
+            try! server.onClose.wait()
+        }
     
-        var req = HTTPRequest(method: .GET, url: "http://localhost:8080/")
+        var req = HTTPRequest(method: .GET, url: "http://localhost:\(server.port!)/")
         req.headers.replaceOrAdd(name: .connection, value: "close")
         let res = try HTTPClient(on: self.eventLoopGroup)
             .send(req).wait()
         XCTAssertEqual(res.body.count, 2_000_000)
-        try server.shutdown().wait()
-        try server.onClose.wait()
+    }
+
+    func testServerPort() throws {
+        struct Responder: HTTPServerDelegate {
+            func respond(to request: HTTPRequest, on channel: Channel) -> EventLoopFuture<HTTPResponse> {
+                let res = HTTPResponse(status: .ok, body: "OK")
+                return channel.eventLoop.makeSucceededFuture(res)
+            }
+        }
+
+        let server = HTTPServer(
+            configuration: .init(
+                hostname: "localhost",
+                port: 0,
+                supportVersions: [.one],
+                errorHandler: { error in
+                    XCTFail("\(error)")
+            }
+            ),
+            on: self.eventLoopGroup
+        )
+        try server.start(delegate: Responder()).wait()
+        defer {
+            try! server.shutdown().wait()
+            try! server.onClose.wait()
+        }
+
+        XCTAssertNotNil(server.port)
+        XCTAssertGreaterThan(server.port!, 0)
     }
     
     func testRFC1123Flip() throws {

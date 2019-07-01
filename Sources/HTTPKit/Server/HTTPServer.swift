@@ -113,7 +113,14 @@ public final class HTTPServer {
     
     public let configuration: Configuration
     public let eventLoopGroup: EventLoopGroup
-    
+
+    // MARK: Properties
+
+    /// The port the `HTTPServer` is bound to.
+    ///
+    /// Nil if `HTTPServer` is not bound to an IP port (eg. serving from a Unix socket or some other exotic channel).
+    public var port: Int? { return channel?.localAddress?.port }
+
     private var channel: Channel?
     private var quiesce: ServerQuiescingHelper?
     
