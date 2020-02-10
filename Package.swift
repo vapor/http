@@ -11,10 +11,10 @@ let package = Package(
         .package(url: "https://github.com/vapor/core.git", from: "3.0.0"),
         
         // Event-driven network application framework for high performance protocol servers & clients, non-blocking.
-        .package(url: "https://github.com/apple/swift-nio.git", from: "1.13.0"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "1.14.2"),
 
         // Bindings to OpenSSL-compatible libraries for TLS support in SwiftNIO
-        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.0.1"),
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", from: "1.4.0"),
     ],
     targets: [
         .target(name: "HTTP", dependencies: ["Async", "Bits", "Core", "Debugging", "NIO", "NIOOpenSSL", "NIOHTTP1"]),
