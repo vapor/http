@@ -14,9 +14,9 @@ class HTTPClientTests: XCTestCase {
         try testURL("http://httpbin.org/anything", contains: "httpbin.org/anything")
     }
 
-    func testGoogleAPIsFCM() throws {
-        try testURL("http://fcm.googleapis.com/fcm/send", contains: "<TITLE>Moved Temporarily</TITLE>")
-    }
+//    func testGoogleAPIsFCM() throws {
+//        try testURL("http://fcm.googleapis.com/fcm/send", contains: "<TITLE>Moved Temporarily</TITLE>")
+//    }
 
     func testExampleCom() throws {
         try testURL("http://example.com", contains: "<title>Example Domain</title>")
@@ -30,9 +30,9 @@ class HTTPClientTests: XCTestCase {
         try testURL("https://www.google.com/search?q=vapor+swift", contains: "web framework")
     }
     
-    func testSNIWebsite() throws {
-        try testURL("https://chrismeller.com", contains: "Chris")
-    }
+//    func testSNIWebsite() throws {
+//        try testURL("https://chrismeller.com", contains: "Chris")
+//    }
 
     func testQuery() throws {
         try testURL("http://httpbin.org/get?foo=bar", contains: "bar")
@@ -52,11 +52,11 @@ class HTTPClientTests: XCTestCase {
         ("testHTTPBin418", testHTTPBin418),
         ("testHTTPBinRobots", testHTTPBinRobots),
         ("testHTTPBinAnything", testHTTPBinAnything),
-        ("testGoogleAPIsFCM", testGoogleAPIsFCM),
+//        ("testGoogleAPIsFCM", testGoogleAPIsFCM),
         ("testExampleCom", testExampleCom),
         ("testZombo", testZombo),
         ("testGoogleWithTLS", testGoogleWithTLS),
-        ("testSNIWebsite", testSNIWebsite),
+//        ("testSNIWebsite", testSNIWebsite),
         ("testQuery", testQuery),
         ("testHeaderDecoration", testHeaderDecoration),
     ]
