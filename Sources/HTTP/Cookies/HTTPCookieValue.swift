@@ -107,7 +107,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
     ///     - path: The path at which the cookie is active. Defaults to `"/"`.
     ///     - isSecure: Limits the cookie to secure connections. Defaults to `false`.
     ///     - isHTTPOnly: Does not expose the cookie over non-HTTP channels. Defaults to `false`.
-    ///     - sameSite: See `HTTPSameSitePolicy`. Defaults to `nil`.
+    ///     - sameSite: See `HTTPSameSitePolicy`. Defaults to `lax`.
     public init(
         string: String,
         expires: Date? = nil,
@@ -116,7 +116,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
         path: String? = "/",
         isSecure: Bool = false,
         isHTTPOnly: Bool = false,
-        sameSite: HTTPSameSitePolicy = .lax
+        sameSite: HTTPSameSitePolicy? = nil
     ) {
         self.string = string
         self.expires = expires
@@ -125,7 +125,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
         self.path = path
         self.isSecure = isSecure
         self.isHTTPOnly = isHTTPOnly
-        self.sameSite = sameSite
+        self.sameSite = sameSite ?? .lax
     }
 
     /// See `ExpressibleByStringLiteral`.
