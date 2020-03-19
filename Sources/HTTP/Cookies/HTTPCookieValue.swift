@@ -169,7 +169,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
             serialized += "=Lax"
         case .strict:
             serialized += "=Strict"
-        case .lax:
+        case .none:
             serialized += "=None"
         }
 
