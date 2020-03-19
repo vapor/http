@@ -118,14 +118,16 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
         isHTTPOnly: Bool = false,
         sameSite: HTTPSameSitePolicy? = nil
     ) {
+        let sameSitePolicy = sameSite ?? .lax
+
         self.string = string
         self.expires = expires
         self.maxAge = maxAge
         self.domain = domain
         self.path = path
-        self.isSecure = isSecure
+        self.isSecure = isSecure || sameSitePolicy == .none //samesite none requires secure attribute to be set
         self.isHTTPOnly = isHTTPOnly
-        self.sameSite = sameSite ?? .lax
+        self.sameSite = sameSitePolicy
     }
 
     /// See `ExpressibleByStringLiteral`.
