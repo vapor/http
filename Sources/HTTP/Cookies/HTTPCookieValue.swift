@@ -37,7 +37,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
         var path: String?
         var secure = false
         var httpOnly = false
-        var sameSite: HTTPSameSitePolicy?
+        var sameSite: HTTPSameSitePolicy = .lax
 
         for (key, val) in header.parameters {
             switch key {
@@ -47,7 +47,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
             case "httponly": httpOnly = true
             case "secure": secure = true
             case "max-age": maxAge = Int(val) ?? 0
-            case "samesite": sameSite = HTTPSameSitePolicy(rawValue: val)
+            case "samesite": sameSite = HTTPSameSitePolicy(rawValue: val) ?? .lax
             default: break
             }
         }
@@ -91,7 +91,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
     /// A cookie which can only be sent in requests originating from the same origin as the target domain.
     ///
     /// This restriction mitigates attacks such as cross-site request forgery (XSRF).
-    public var sameSite: HTTPSameSitePolicy?
+    public var sameSite: HTTPSameSitePolicy
 
     // MARK: Init
 
@@ -116,7 +116,7 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
         path: String? = "/",
         isSecure: Bool = false,
         isHTTPOnly: Bool = false,
-        sameSite: HTTPSameSitePolicy? = nil
+        sameSite: HTTPSameSitePolicy = .lax
     ) {
         self.string = string
         self.expires = expires
@@ -163,14 +163,14 @@ public struct HTTPCookieValue: ExpressibleByStringLiteral {
             serialized += "; HttpOnly"
         }
 
-        if let sameSite = self.sameSite {
-            serialized += "; SameSite"
-            switch sameSite {
-            case .lax:
-                serialized += "=Lax"
-            case .strict:
-                serialized += "=Strict"
-            }
+        serialized += "; SameSite"
+        switch sameSite {
+        case .lax:
+            serialized += "=Lax"
+        case .strict:
+            serialized += "=Strict"
+        case .lax:
+            serialized += "=None"
         }
 
         return serialized
@@ -184,4 +184,6 @@ public enum HTTPSameSitePolicy: String {
     case strict = "Strict"
     /// Relaxed mode.
     case lax = "Lax"
+    //The browser will send cookies with both cross-site requests and same-site requests.
+    case none = "None"
 }

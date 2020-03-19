@@ -2,6 +2,7 @@ import HTTP
 import XCTest
 
 class HTTPTests: XCTestCase {
+    
     func testCookieParse() throws {
         /// from https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
         guard let (name, value) = HTTPCookieValue.parse("id=a3fWa; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
@@ -12,14 +13,16 @@ class HTTPTests: XCTestCase {
         XCTAssertEqual(value.expires, Date(rfc1123: "Wed, 21 Oct 2015 07:28:00 GMT"))
         XCTAssertEqual(value.isSecure, true)
         XCTAssertEqual(value.isHTTPOnly, true)
+        XCTAssertEqual(value.sameSite, HTTPSameSitePolicy.lax)
         
-        guard let cookie: (name: String, value: HTTPCookieValue) = HTTPCookieValue.parse("vapor=; Secure; HttpOnly") else {
+        guard let cookie: (name: String, value: HTTPCookieValue) = HTTPCookieValue.parse("vapor=; Secure; HttpOnly; SameSite=None") else {
             throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
         }
         XCTAssertEqual(cookie.name, "vapor")
         XCTAssertEqual(cookie.value.string, "")
         XCTAssertEqual(cookie.value.isSecure, true)
         XCTAssertEqual(cookie.value.isHTTPOnly, true)
+        XCTAssertEqual(cookie.value.sameSite, HTTPSameSitePolicy.none)
     }
     
     func testCookieIsSerializedCorrectly() throws {
