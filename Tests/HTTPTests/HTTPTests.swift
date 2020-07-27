@@ -2,6 +2,7 @@ import HTTP
 import XCTest
 
 class HTTPTests: XCTestCase {
+    
     func testCookieParse() throws {
         /// from https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies
         guard let (name, value) = HTTPCookieValue.parse("id=a3fWa; Expires=Wed, 21 Oct 2015 07:28:00 GMT; Secure; HttpOnly") else {
@@ -12,14 +13,37 @@ class HTTPTests: XCTestCase {
         XCTAssertEqual(value.expires, Date(rfc1123: "Wed, 21 Oct 2015 07:28:00 GMT"))
         XCTAssertEqual(value.isSecure, true)
         XCTAssertEqual(value.isHTTPOnly, true)
+        XCTAssertEqual(value.sameSite, .lax)
         
-        guard let cookie: (name: String, value: HTTPCookieValue) = HTTPCookieValue.parse("vapor=; Secure; HttpOnly") else {
+        guard let cookie: (name: String, value: HTTPCookieValue) = HTTPCookieValue.parse("vapor=; Secure; HttpOnly; SameSite=None") else {
             throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
         }
         XCTAssertEqual(cookie.name, "vapor")
         XCTAssertEqual(cookie.value.string, "")
         XCTAssertEqual(cookie.value.isSecure, true)
         XCTAssertEqual(cookie.value.isHTTPOnly, true)
+        XCTAssertEqual(cookie.value.sameSite, .none)
+    }
+    
+    func testCookieSameSiteAttribtue() throws {
+        let match = "id=cookie_data; Domain=example.com; Path=/; Secure; HttpOnly; SameSite=None"
+        
+        let value = HTTPCookieValue(string: "cookie_data", domain: "example.com", path: "/", isHTTPOnly: true, sameSite: .some(.none))
+        let serialized = value.serialize(name: "id")
+        
+        guard serialized == match else {
+            throw HTTPError(identifier: "cookie", reason: "Could not serialize test cookie")
+        }
+        
+        guard let cookie: (name: String, value: HTTPCookieValue) = HTTPCookieValue.parse(match) else {
+            throw HTTPError(identifier: "cookie", reason: "Could not parse test cookie")
+        }
+        
+        XCTAssertEqual(cookie.name, "id")
+        XCTAssertEqual(cookie.value.string, "cookie_data")
+        XCTAssertEqual(cookie.value.isSecure, true)
+        XCTAssertEqual(cookie.value.isHTTPOnly, true)
+        XCTAssertEqual(cookie.value.sameSite, .none)
     }
     
     func testCookieIsSerializedCorrectly() throws {
@@ -121,6 +145,7 @@ class HTTPTests: XCTestCase {
 
     static let allTests = [
         ("testCookieParse", testCookieParse),
+        ("testCookieSameSiteAttribtue", testCookieSameSiteAttribtue),
         ("testAcceptHeader", testAcceptHeader),
         ("testRemotePeer", testRemotePeer),
         ("testCookieIsSerializedCorrectly", testCookieIsSerializedCorrectly),
