@@ -100,20 +100,22 @@ class HTTPTests: XCTestCase {
         let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
         let server = try HTTPServer.start(
             hostname: "localhost",
-            port: 8080,
+            port: 0,
             responder: LargeResponder(),
             on: worker
         ) { error in
             XCTFail("\(error)")
         }.wait()
-        
-        let client = try HTTPClient.connect(hostname: "localhost", port: 8080, on: worker).wait()
+        defer {
+            try! server.close().wait()
+            try! server.onClose.wait()
+        }
+
+        let client = try HTTPClient.connect(hostname: "localhost", port: server.port, on: worker).wait()
         var req = HTTPRequest(method: .GET, url: "/")
         req.headers.replaceOrAdd(name: .connection, value: "close")
         let res = try client.send(req).wait()
         XCTAssertEqual(res.body.count, 2_000_000)
-        try server.close().wait()
-        try server.onClose.wait()
     }
     
     func testUpgradeFail() throws {
@@ -143,6 +145,30 @@ class HTTPTests: XCTestCase {
         }
     }
 
+    func testServerPort() throws {
+        struct Responder: HTTPServerResponder {
+            func respond(to request: HTTPRequest, on worker: Worker) -> EventLoopFuture<HTTPResponse> {
+                let res = HTTPResponse(status: .ok, body: "OK")
+                return worker.future(res)
+            }
+        }
+
+        let worker = MultiThreadedEventLoopGroup(numberOfThreads: 1)
+        let server = try HTTPServer.start(
+            hostname: "localhost",
+            port: 0,
+            responder: Responder(),
+            on: worker
+        ) { error in XCTFail("\(error)") }.wait()
+        defer {
+            try! server.close().wait()
+            try! server.onClose.wait()
+        }
+
+        XCTAssertNotNil(server.port)
+        XCTAssertGreaterThan(server.port!, 0)
+    }
+
     static let allTests = [
         ("testCookieParse", testCookieParse),
         ("testCookieSameSiteAttribtue", testCookieSameSiteAttribtue),
@@ -152,5 +178,6 @@ class HTTPTests: XCTestCase {
         ("testMultipleCookiesAreSerializedCorrectly", testMultipleCookiesAreSerializedCorrectly),
         ("testLargeResponseClose", testLargeResponseClose),
         ("testUpgradeFail", testUpgradeFail),
+        ("testServerPort", testServerPort),
     ]
 }
