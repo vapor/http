@@ -51,6 +51,7 @@ extension HTTPServerTests {
     static let __allTests__HTTPServerTests = [
         ("testLargeResponseClose", testLargeResponseClose),
         ("testRFC1123Flip", testRFC1123Flip),
+        ("testServerPort", testServerPort),
     ]
 }
 
